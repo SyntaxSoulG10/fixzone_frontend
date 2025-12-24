@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fix Zone – Smart Vehicle Service Management Platform
 
-## Getting Started
+## 1. Project Overview
+Fix Zone is a multi-tenant web application designed to digitalize and streamline operations of vehicle service centers, connecting multiple roles including Super Admins, Company Owners, Service Center Managers, and Customers.
 
-First, run the development server:
+The platform ensures data isolation per tenant, allowing each company or service center to access only its own data, while Super Admin manages the entire system.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 2. Objectives
+- **Digitalization**: Replace manual logs with an online system.
+- **Multi-Tenant Architecture**: Single platform, isolated data for multiple companies.
+- **Role-Based Experience**: Tailored dashboards for Super Admin, Owner, Manager, and Customer.
+- **Enhanced UX**: Modern, responsive UI with fixed sidebar/navbar.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 3. Core Roles
+- **👑 Super Admin**: Platform oversight (Tenants, Users, Global Data).
+- **🏢 Company Owner**: Manage specific company, service centers, and business analytics.
+- **🛠️ Service Center Manager**: Daily operations (Jobs, Vehicles, Customers) of a branch.
+- **🚗 Customer**: Booking services, viewing history, and tracking availability.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 4. Key Features
+### Guest & Authentication
+- Modern Landing Page.
+- Login/Signup with role selection.
+- Tenant context identification.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Dashboards
+- **Fixed Sidebar & Navbar layout**.
+- **Super Admin**: User/Tenant management, Global System Settings.
+- **Company Owner**: Branch management, Financial Analytics.
+- **Service Manager**: Active job tracking, Customer database.
+- **Customer**: Service history, Online booking.
 
-## Learn More
+## 5. Technology Stack (Frontend)
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS v4
+- **Icons**: React Icons
+- **Charts**: Recharts
+- **State/Logic**: React Hooks
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 6. Architecture Highlights
+- **Multi-Tenancy**: Data isolation at the view level (mocked in frontend via role-based routing).
+- **Responsive Design**: Mobile-first approach with collapsible menus (future) and adaptive grids.
