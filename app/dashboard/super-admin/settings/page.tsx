@@ -22,7 +22,7 @@ export default function SystemSettingsPage() {
                             <span className="text-sm text-slate-500">Enable maintenance mode</span>
                         </div>
                     </div>
-                    <button className=" mt-4">Save Changes</Button>
+                    <Button className=" mt-4">Save Changes</Button>
                 </form>
             </div>
         </div>

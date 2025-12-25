@@ -30,6 +30,7 @@ const ROLE_MENUS: any = {
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
         { name: 'Service Centers', icon: FiBriefcase, href: '/dashboard/company-owner/centers' },
+        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/company-owner/bookings' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/company-owner/analytics' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/company-owner/reports' },
         { name: 'Profile', icon: FiUsers, href: '/dashboard/company-owner/profile' },
@@ -55,10 +56,20 @@ export default function Sidebar() {
     const [role, setRole] = useState<string | null>(null);
 
     useEffect(() => {
-        // In a real app, this comes from context or a hook
-        const r = localStorage.getItem("userRole");
-        setRole(r || "customer");
-    }, []);
+        // Derive role from path to ensure correct menu is shown
+        if (pathname.includes('/super-admin')) {
+            setRole('super_admin');
+        } else if (pathname.includes('/company-owner')) {
+            setRole('company_owner');
+        } else if (pathname.includes('/service-manager')) {
+            setRole('service_manager');
+        } else if (pathname.includes('/customer')) {
+            setRole('customer');
+        } else {
+            const r = localStorage.getItem("userRole");
+            setRole(r || "customer");
+        }
+    }, [pathname]);
 
     if (!role) return <div className="w-64 bg-white border-r border-slate-200 h-screen hidden md:block"></div>;
 

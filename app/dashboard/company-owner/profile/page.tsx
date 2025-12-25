@@ -37,8 +37,8 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
-                        <button type="button" className="">Cancel</Button>
-                        <button type="button" className="">Save Changes</Button>
+                        <Button type="button" className="">Cancel</Button>
+                        <Button type="button" className="">Save Changes</Button>
                     </div>
                 </form>
             </div>
