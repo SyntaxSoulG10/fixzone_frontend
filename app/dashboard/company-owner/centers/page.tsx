@@ -1,7 +1,16 @@
 "use client";
 
-import Button from "@/components/UI/Button"; import PageHeader from "@/components/UI/PageHeader";
-import { FiMoreVertical, FiMapPin, FiPhone } from "react-icons/fi";
+import {
+    Grid,
+    Card,
+    Box,
+    Typography,
+    Button,
+    IconButton,
+    Divider
+} from "@mui/material";
+import { FiMoreVertical, FiMapPin, FiPhone, FiPlus } from "react-icons/fi";
+import Link from 'next/link';
 
 const MY_CENTERS = [
     { id: 1, name: "Downtown Branch", location: "123 Main St, New York, NY", phone: "+1 (555) 123-4567", revenue: "$45,200", status: "Active" },
@@ -10,50 +19,89 @@ const MY_CENTERS = [
 
 export default function MyCentersPage() {
     return (
-        <div>
-            <PageHeader
-                title="My Service Centers"
-                description="Manage your branches and locations."
-                action={
-                    <Button>
-                        + New Branch
-                    </Button>
-                }
-            />
+        <Box pb={3}>
+            {/* Header */}
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
+                        My Service Centers
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Manage your branches and locations.
+                    </Typography>
+                </Box>
+                <Button variant="contained" color="primary" sx={{ color: '#ffffff' }}>
+                    <FiPlus style={{ marginRight: 8 }} /> New Branch
+                </Button>
+            </Box>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Grid container spacing={3}>
                 {MY_CENTERS.map((center) => (
-                    <div key={center.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-xl text-primary font-bold">
-                                {center.name.charAt(0)}
-                            </div>
-                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">{center.status}</span>
-                        </div>
+                    <Grid key={center.id} size={{ xs: 12, md: 6, lg: 4 }}>
+                        <Card sx={{ height: '100%', p: 3 }}>
+                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                                <Box
+                                    width={48}
+                                    height={48}
+                                    borderRadius="0.5rem"
+                                    bgcolor="primary.main"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    color="#ffffff"
+                                    fontSize="1.25rem"
+                                    fontWeight="bold"
+                                    boxShadow={3}
+                                >
+                                    {center.name.charAt(0)}
+                                </Box>
+                                <Box
+                                    px={1}
+                                    py={0.5}
+                                    bgcolor="success.main"
+                                    color="#ffffff"
+                                    borderRadius="0.25rem"
+                                    fontSize="0.75rem"
+                                    fontWeight="bold"
+                                    sx={{ opacity: 0.9, boxShadow: 1 }}
+                                >
+                                    {center.status}
+                                </Box>
+                            </Box>
 
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">{center.name}</h3>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                {center.name}
+                            </Typography>
 
-                        <div className="space-y-2 text-sm text-slate-500 mb-6">
-                            <div className="flex items-center gap-2">
-                                <FiMapPin className="text-slate-400" />
-                                {center.location}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <FiPhone className="text-slate-400" />
-                                {center.phone}
-                            </div>
-                        </div>
+                            <Box display="flex" flexDirection="column" gap={1} mb={3}>
+                                <Box display="flex" alignItems="center" gap={1} color="text.secondary">
+                                    <FiMapPin />
+                                    <Typography variant="body2">{center.location}</Typography>
+                                </Box>
+                                <Box display="flex" alignItems="center" gap={1} color="text.secondary">
+                                    <FiPhone />
+                                    <Typography variant="body2">{center.phone}</Typography>
+                                </Box>
+                            </Box>
 
-                        <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-slate-500 uppercase font-semibold">Revenue (Dec)</p>
-                                <p className="text-lg font-bold text-slate-900">{center.revenue}</p>
-                            </div>
-                            <Button variant="ghost" className="text-primary hover:text-primary-hover font-medium text-sm hover:bg-slate-50">Manage</Button>
-                        </div>
-                    </div>
+                            <Divider sx={{ my: 2 }} />
+
+                            <Box display="flex" alignItems="center" justifyContent="space-between" pt={1}>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                        Revenue (Dec)
+                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold">
+                                        {center.revenue}
+                                    </Typography>
+                                </Box>
+                                <Button variant="text" color="primary">Manage</Button>
+                            </Box>
+                        </Card>
+                    </Grid>
                 ))}
-            </div>
-        </div>
+            </Grid>
+        </Box>
     );
 }
+
