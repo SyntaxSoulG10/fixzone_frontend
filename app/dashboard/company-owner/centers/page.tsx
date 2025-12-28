@@ -31,8 +31,6 @@ import {
     FiPlus,
     FiEdit2,
     FiTrash2,
-    FiUserCheck,
-    FiActivity,
     FiLayout
 } from "react-icons/fi";
 
@@ -115,6 +113,35 @@ export default function MyCentersPage() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name as string]: value }));
+    };
+
+    const getCenterStatusStyles = (status: string) => {
+        switch (status) {
+            case 'Active':
+                return {
+                    bgcolor: '#E6F4EA',
+                    color: '#1E8E3E',
+                    border: '1px solid #E6F4EA'
+                };
+            case 'Maintenance':
+                return {
+                    bgcolor: '#FFF4E5',
+                    color: '#B76E00',
+                    border: '1px solid #FFF4E5'
+                };
+            case 'Inactive':
+                return {
+                    bgcolor: '#FCE8E6',
+                    color: '#C5221F',
+                    border: '1px solid #FCE8E6'
+                };
+            default:
+                return {
+                    bgcolor: alpha(theme.palette.grey[500], 0.1),
+                    color: 'text.secondary',
+                    border: `1px solid ${alpha(theme.palette.grey[500], 0.1)}`
+                };
+        }
     };
 
     return (
@@ -219,11 +246,11 @@ export default function MyCentersPage() {
                                             label={center.status}
                                             size="small"
                                             sx={{
+                                                ...getCenterStatusStyles(center.status),
                                                 height: 24,
                                                 fontSize: '0.75rem',
-                                                bgcolor: center.status === 'Active' ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.grey[500], 0.1),
-                                                color: center.status === 'Active' ? 'success.main' : 'text.secondary',
-                                                fontWeight: 'bold'
+                                                fontWeight: 800,
+                                                borderRadius: '6px'
                                             }}
                                         />
                                     </Box>
