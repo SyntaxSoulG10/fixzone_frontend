@@ -1,89 +1,142 @@
 "use client";
 
-import Button from "@/components/UI/Button";
-import { FiCalendar, FiClock, FiAward, FiAlertCircle } from "react-icons/fi";
+import { useState } from "react";
+import { FiCalendar, FiTruck, FiCheckCircle, FiAward, FiBell, FiTrendingUp } from "react-icons/fi";
 
-export default function CustomerDashboard() {
-    return (
-        <div className="space-y-6">
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-8 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">Welcome Back, Alex!</h1>
-                    <p className="text-slate-300">Your vehicle is in good hands.</p>
+export default function ModernDashboardDark() {
+  const [selectedDate, setSelectedDate] = useState(17);
 
-                    <div className="mt-8 flex gap-4">
-                        <Button className="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-semibold transition-all">
-                            Book a Service
-                        </Button>
-                        <Button className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-semibold transition-all">
-                            View History
-                        </Button>
-                    </div>
-                </div>
-            </div>
+  const bookings = [
+    { branch: "ABC Service Station", status: "In Progress", vehicle: "Honda Civic 2020", service: "Standard Service", time: "Dec 17, 10:00 am", progress: 60, color: "from-orange-600 to-orange-400" },
+    { branch: "XYZ Auto Care", status: "Pending", vehicle: "Toyota Camry", service: "Full Service", time: "Dec 17, 11:30 am", progress: 0, color: "from-blue-600 to-blue-400" },
+    { branch: "LMN Motors", status: "Completed", vehicle: "Ford Focus", service: "Standard Service", time: "Dec 20, 09:00 am", progress: 100, color: "from-green-600 to-green-400" },
+  ];
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-blue-100 text-blue-600 rounded-lg text-xl"><FiCalendar /></div>
-                        <div>
-                            <p className="text-xs text-slate-500 font-medium uppercase">Next Service</p>
-                            <p className="font-bold text-slate-900">Dec 28, 2024</p>
-                        </div>
-                    </div>
-                    <p className="text-sm text-slate-600 pl-1">For <span className="font-semibold">Toyota Camry</span> at Downtown Branch.</p>
-                </div>
+  const upcomingAppointments = [
+    { vehicle: "Honda Civic", branch: "ABC Service", time: "Dec 28, 10:00 am" },
+    { vehicle: "Toyota Camry", branch: "XYZ Auto Care", time: "Dec 30, 11:30 am" },
+  ];
 
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-yellow-100 text-yellow-600 rounded-lg text-xl"><FiAward /></div>
-                        <div>
-                            <p className="text-xs text-slate-500 font-medium uppercase">Loyalty Points</p>
-                            <p className="font-bold text-slate-900">1,250 Pts</p>
-                        </div>
-                    </div>
-                    <p className="text-sm text-slate-600 pl-1">You are a <span className="text-yellow-600 font-semibold">Gold Member</span>.</p>
-                </div>
+  const notifications = [
+    { icon: "✅", message: "Honda Civic service completed", time: "10:00 am" },
+    { icon: "💬", message: "New offer: 20% off full service!", time: "Yesterday" },
+    { icon: "⚠️", message: "Toyota Camry next service due Dec 30", time: "2 days ago" },
+    { icon: "💡", message: "Check your loyalty points balance", time: "3 days ago" },
+  ];
 
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-green-100 text-green-600 rounded-lg text-xl"><FiCheckCircle /></div>
-                        <div>
-                            <p className="text-xs text-slate-500 font-medium uppercase">Vehicle Status</p>
-                            <p className="font-bold text-slate-900">All Good</p>
-                        </div>
-                    </div>
-                    <p className="text-sm text-slate-600 pl-1">Last checkup was 2 months ago.</p>
-                </div>
-            </div>
+  return (
+    <div className="p-6 bg-gray-100 min-h-screen text-gray-900 font-sans space-y-8">
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">My Vehicles</h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                    <div className="border border-slate-200 rounded-xl p-4 flex gap-4 hover:border-primary/50 transition-colors cursor-pointer ring-1 ring-primary/5">
-                        <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
-                            <FiTruck className="text-2xl" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-bold text-slate-900">Toyota Camry</h3>
-                                    <p className="text-sm text-slate-500">ABC-1234</p>
-                                </div>
-                                <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">Healthy</span>
-                            </div>
-                            <div className="mt-4 flex gap-2">
-                                <button className="text-xs font-bold text-primary hover:underline">Service History</button>
-                                <span className="text-slate-300">|</span>
-                                <button className="text-xs font-bold text-slate-600 hover:text-slate-900">View Details</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-r from-blue-900 to-blue-600 rounded-3xl p-8 shadow-lg">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, Alex 👋</h1>
+            <p className="text-gray-200 text-sm">Your vehicles are ready for the next service!</p>
+          </div>
+          <FiBell className="h-7 w-7 text-gray-200 cursor-pointer hover:text-yellow-400 transition" />
         </div>
-    );
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {[
+          { title: "Next Service", value: "Dec 28", icon: <FiCalendar className="text-blue-500 text-2xl" /> },
+          { title: "Loyalty Points", value: "1,250", icon: <FiAward className="text-yellow-500 text-2xl" /> },
+          { title: "Vehicle Status", value: "Healthy", icon: <FiCheckCircle className="text-green-500 text-2xl" /> },
+          { title: "Completed Services", value: "8", icon: <FiTrendingUp className="text-purple-500 text-2xl" /> },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white rounded-2xl shadow p-5 border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              {stat.icon}
+              <p className="text-xs uppercase text-gray-500 font-semibold">{stat.title}</p>
+            </div>
+            <p className="font-bold text-lg">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar + Bookings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Calendar */}
+        <div className="bg-white rounded-3xl p-6 shadow">
+          <h2 className="text-lg font-bold mb-4">Schedule Calendar</h2>
+
+          <div className="grid grid-cols-7 text-xs text-gray-400 text-center mb-2">
+            {["S","M","T","W","T","F","S"].map(d => <div key={d}>{d}</div>)}
+          </div>
+
+          <div className="grid grid-cols-7 gap-2">
+            {[...Array(31)].map((_, i) => {
+              const day = i + 1;
+              const count = bookings.filter(b => b.time.includes(`Dec ${day}`)).length;
+
+              let bg = "bg-gray-100";
+              if (count === 1) bg = "bg-blue-200";
+              if (count >= 2) bg = "bg-blue-500 text-white";
+
+              return (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDate(day)}
+                  className={`py-2 rounded-lg ${bg} ${day === selectedDate && "ring-2 ring-blue-500"}`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Notifications */}
+          <div className="mt-6">
+            <h3 className="font-bold mb-3">Messages & Notifications</h3>
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {notifications.map((n, i) => (
+                <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-lg border">
+                  <span className="text-xl">{n.icon}</span>
+                  <div>
+                    <p className="text-sm">{n.message}</p>
+                    <span className="text-xs text-gray-400">{n.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Booking Details */}
+        <div className="bg-white rounded-3xl p-6 shadow">
+          <h2 className="text-lg font-bold mb-4">Booking Details</h2>
+
+          <div className="space-y-4">
+            {bookings.map((b, i) => (
+              <div key={i} className={`p-4 rounded-2xl bg-gradient-to-r ${b.color} text-white`}>
+                <h3 className="font-bold">{b.branch}</h3>
+                <p className="text-sm">{b.vehicle}</p>
+                <p className="text-xs opacity-80">{b.service} • {b.time}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <h3 className="font-bold mb-3">Upcoming Appointments</h3>
+            {upcomingAppointments.map((a, i) => (
+              <div key={i} className="p-3 border rounded-lg mb-2">
+                {a.vehicle} • {a.branch} • {a.time}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Button */}
+      <button className="fixed bottom-8 right-8 bg-blue-700 text-white p-4 rounded-full shadow-lg">
+        + Book Service
+      </button>
+    </div>
+  );
 }
 
-import { FiTruck, FiCheckCircle } from "react-icons/fi";
+
+
