@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiCalendar, FiTruck, FiCheckCircle, FiAward, FiBell, FiTrendingUp } from "react-icons/fi";
+import { FiCalendar, FiCheckCircle, FiAward, FiBell, FiTrendingUp } from "react-icons/fi";
 
 export default function ModernDashboardDark() {
   const [selectedDate, setSelectedDate] = useState(17);
@@ -25,16 +25,16 @@ export default function ModernDashboardDark() {
   ];
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen text-gray-900 font-sans space-y-8">
+    <div className="p-6 bg-gray-100 min-h-screen text-gray-900 space-y-8">
 
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-blue-900 to-blue-600 rounded-3xl p-8 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-900 to-blue-600 rounded-3xl p-8 shadow-lg">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, Alex 👋</h1>
             <p className="text-gray-200 text-sm">Your vehicles are ready for the next service!</p>
           </div>
-          <FiBell className="h-7 w-7 text-gray-200 cursor-pointer hover:text-yellow-400 transition" />
+          <FiBell className="h-7 w-7 text-gray-200 hover:text-yellow-400 cursor-pointer" />
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export default function ModernDashboardDark() {
           { title: "Vehicle Status", value: "Healthy", icon: <FiCheckCircle className="text-green-500 text-2xl" /> },
           { title: "Completed Services", value: "8", icon: <FiTrendingUp className="text-purple-500 text-2xl" /> },
         ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl shadow p-5 border border-gray-200">
+          <div key={i} className="bg-white rounded-2xl shadow p-5 border">
             <div className="flex items-center gap-3 mb-2">
               {stat.icon}
               <p className="text-xs uppercase text-gray-500 font-semibold">{stat.title}</p>
@@ -56,15 +56,18 @@ export default function ModernDashboardDark() {
         ))}
       </div>
 
-      {/* Calendar + Bookings */}
+      {/* Calendar + Booking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Calendar */}
         <div className="bg-white rounded-3xl p-6 shadow">
           <h2 className="text-lg font-bold mb-4">Schedule Calendar</h2>
 
+          {/* ✅ FIXED KEYS HERE */}
           <div className="grid grid-cols-7 text-xs text-gray-400 text-center mb-2">
-            {["S","M","T","W","T","F","S"].map(d => <div key={d}>{d}</div>)}
+            {["S","M","T","W","T","F","S"].map((d, i) => (
+              <div key={i}>{d}</div>
+            ))}
           </div>
 
           <div className="grid grid-cols-7 gap-2">
@@ -80,7 +83,7 @@ export default function ModernDashboardDark() {
                 <button
                   key={day}
                   onClick={() => setSelectedDate(day)}
-                  className={`py-2 rounded-lg ${bg} ${day === selectedDate && "ring-2 ring-blue-500"}`}
+                  className={`py-2 rounded-lg ${bg} ${day === selectedDate ? "ring-2 ring-blue-500" : ""}`}
                 >
                   {day}
                 </button>
@@ -137,6 +140,7 @@ export default function ModernDashboardDark() {
     </div>
   );
 }
+
 
 
 
