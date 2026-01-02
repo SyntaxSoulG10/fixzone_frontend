@@ -32,7 +32,6 @@ const ROLE_MENUS: any = {
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
         { name: 'Service Centers', icon: FiBriefcase, href: '/dashboard/company-owner/centers' },
-        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/company-owner/bookings' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/company-owner/analytics' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/company-owner/reports' },
         { name: 'Managers', icon: FiUsers, href: '/dashboard/company-owner/managers' },
