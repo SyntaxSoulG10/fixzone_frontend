@@ -118,7 +118,7 @@ export default function CustomersPage() {
                             label: 'growth'
                         }}
                         icon={<FiUserPlus />}
-                        color="success" // Note: The StatCard component uses this for the icon bg
+                        color="primary" // Note: The StatCard component uses this for the icon bg
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -131,7 +131,7 @@ export default function CustomersPage() {
                             label: 'High retention rate'
                         }}
                         icon={<FiRefreshCw />}
-                        color="info"
+                        color="primary"
                     />
                 </Grid>
             </Grid>

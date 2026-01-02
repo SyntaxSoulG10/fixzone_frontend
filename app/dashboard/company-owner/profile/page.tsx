@@ -138,7 +138,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                                 '& .MuiTab-root': {
                                     color: 'text.secondary',
                                     '&.Mui-selected': {
-                                        color: '#344767', // Dark blue/grey for selected text
+                                        color: '#EA580C',
                                     }
                                 }
                             }}

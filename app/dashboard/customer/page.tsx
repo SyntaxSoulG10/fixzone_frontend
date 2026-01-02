@@ -26,7 +26,7 @@ export default function CustomerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-blue-100 text-blue-600 rounded-lg text-xl"><FiCalendar /></div>
+                        <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg text-xl shadow-lg shadow-orange-500/40"><FiCalendar /></div>
                         <div>
                             <p className="text-xs text-slate-500 font-medium uppercase">Next Service</p>
                             <p className="font-bold text-slate-900">Dec 28, 2024</p>
@@ -37,7 +37,7 @@ export default function CustomerDashboard() {
 
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-yellow-100 text-yellow-600 rounded-lg text-xl"><FiAward /></div>
+                        <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg text-xl shadow-lg shadow-orange-500/40"><FiAward /></div>
                         <div>
                             <p className="text-xs text-slate-500 font-medium uppercase">Loyalty Points</p>
                             <p className="font-bold text-slate-900">1,250 Pts</p>
@@ -48,7 +48,7 @@ export default function CustomerDashboard() {
 
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-green-100 text-green-600 rounded-lg text-xl"><FiCheckCircle /></div>
+                        <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg text-xl shadow-lg shadow-orange-500/40"><FiCheckCircle /></div>
                         <div>
                             <p className="text-xs text-slate-500 font-medium uppercase">Vehicle Status</p>
                             <p className="font-bold text-slate-900">All Good</p>

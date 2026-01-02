@@ -122,7 +122,7 @@ export default function CompanyOwnerDashboard() {
             {/* Main Content Area with Tabs */}
             <Box mb={4}>
                 <Box borderBottom={1} borderColor="divider" mb={3}>
-                    <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="inherit" indicatorColor="primary">
+                    <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="primary" indicatorColor="primary">
                         <Tab label="Overview" value="overview" icon={<FiGrid />} iconPosition="start" />
                         <Tab label="Performance" value="performance" icon={<FiBarChart2 />} iconPosition="start" />
                         <Tab label="Recent Activity" value="activity" icon={<FiClock />} iconPosition="start" />

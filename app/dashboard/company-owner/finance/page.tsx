@@ -59,8 +59,8 @@ const GROWTH_DATA = [
 
 const PAYMENT_DATA = [
     { name: 'Card', value: 60, color: '#EA580C' },
-    { name: 'Online', value: 25, color: '#FB923C' },
-    { name: 'Cash', value: 15, color: '#FDBA74' },
+    { name: 'Online', value: 25, color: '#F97316' }, // Orange-500
+    { name: 'Cash', value: 15, color: '#FB923C' }, // Orange-400
 ];
 
 const StatCard = ({ title, value, subtext, icon: Icon, color }: any) => {
@@ -72,7 +72,7 @@ const StatCard = ({ title, value, subtext, icon: Icon, color }: any) => {
                     position: 'absolute',
                     top: -20,
                     left: 20,
-                    bgcolor: color,
+                    background: 'linear-gradient(195deg, #FB923C, #EA580C)',
                     borderRadius: 3,
                     p: 2,
                     boxShadow: theme.shadows[4],
@@ -145,7 +145,7 @@ export default function FinancePage() {
                         value="18.5%"
                         subtext="Consistent upward trend"
                         icon={FiTrendingUp}
-                        color={theme.palette.success.main}
+                        color={theme.palette.primary.main}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -154,7 +154,7 @@ export default function FinancePage() {
                         value="$450"
                         subtext="Per job ticket"
                         icon={FiCreditCard}
-                        color={theme.palette.info.main}
+                        color={theme.palette.primary.main}
                     />
                 </Grid>
             </Grid>
