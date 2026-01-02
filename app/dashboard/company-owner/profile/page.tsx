@@ -19,7 +19,11 @@ import {
     IconButton,
     Snackbar,
     Alert,
-    Badge
+    Badge,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from "@mui/material";
 import { FiHome, FiSettings, FiEdit2, FiFacebook, FiTwitter, FiInstagram, FiTool, FiActivity, FiSave, FiX, FiCamera } from "react-icons/fi";
 
@@ -172,7 +176,7 @@ function PlatformSettings() {
                     <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
                 </Box>
                 <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
-                    Visibility
+                    Customer Settings
                 </Typography>
                 <Box display="flex" flexDirection="column">
                     <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
@@ -324,6 +328,62 @@ export default function ProfilePage() {
         }
     };
 
+    // Dialog States
+    const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
+    const [openDeactivateDialog, setOpenDeactivateDialog] = useState(false);
+
+    // Password Form State
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    });
+
+    // Deactivate Input State
+    const [deactivateInput, setDeactivateInput] = useState("");
+
+    // Handlers
+    const handleOpenPasswordDialog = () => setOpenPasswordDialog(true);
+    const handleClosePasswordDialog = () => {
+        setOpenPasswordDialog(false);
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    };
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+    };
+
+    const handleChangePasswordSubmit = () => {
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setSnackbarMessage("New passwords do not match.");
+            setSnackbarOpen(true);
+            return;
+        }
+        // Simulate API call
+        setSnackbarMessage("Password changed successfully.");
+        setSnackbarOpen(true);
+        handleClosePasswordDialog();
+    };
+
+    const handleOpenDeactivateDialog = () => setOpenDeactivateDialog(true);
+    const handleCloseDeactivateDialog = () => {
+        setOpenDeactivateDialog(false);
+        setDeactivateInput("");
+    };
+
+    const handleDeactivateConfirm = () => {
+        if (deactivateInput !== "DELETE") {
+            setSnackbarMessage("Please type DELETE to confirm.");
+            setSnackbarOpen(true);
+            return;
+        }
+        // Simulate API call
+        setSnackbarMessage("Account deactivation initiated.");
+        setSnackbarOpen(true);
+        handleCloseDeactivateDialog();
+    };
+
+
     return (
         <ProfileHeader
             tabValue={tabValue}
@@ -423,7 +483,13 @@ export default function ProfilePage() {
                                     <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>
                                         Password
                                     </Typography>
-                                    <Button variant="outlined" color="primary" fullWidth sx={{ mb: 3 }}>
+                                    <Button
+                                        variant="outlined"
+                                        color="primary"
+                                        fullWidth
+                                        sx={{ mb: 3 }}
+                                        onClick={handleOpenPasswordDialog}
+                                    >
                                         Change Password
                                     </Button>
 
@@ -433,7 +499,12 @@ export default function ProfilePage() {
                                     <Typography variant="caption" color="text.secondary" display="block" mb={2}>
                                         Once you delete your account, there is no going back. Please be certain.
                                     </Typography>
-                                    <Button variant="outlined" color="error" fullWidth>
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        fullWidth
+                                        onClick={handleOpenDeactivateDialog}
+                                    >
                                         Deactivate Account
                                     </Button>
                                 </Box>
@@ -442,6 +513,75 @@ export default function ProfilePage() {
                     </Grid>
                 )}
             </Box>
+
+            {/* Change Password Dialog */}
+            <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} fullWidth maxWidth="sm">
+                <DialogTitle>Change Password</DialogTitle>
+                <DialogContent>
+                    <Box display="flex" flexDirection="column" gap={2} pt={1}>
+                        <TextField
+                            label="Current Password"
+                            type="password"
+                            fullWidth
+                            name="currentPassword"
+                            value={passwordForm.currentPassword}
+                            onChange={handlePasswordChange}
+                        />
+                        <TextField
+                            label="New Password"
+                            type="password"
+                            fullWidth
+                            name="newPassword"
+                            value={passwordForm.newPassword}
+                            onChange={handlePasswordChange}
+                        />
+                        <TextField
+                            label="Confirm New Password"
+                            type="password"
+                            fullWidth
+                            name="confirmPassword"
+                            value={passwordForm.confirmPassword}
+                            onChange={handlePasswordChange}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClosePasswordDialog} color="inherit">Cancel</Button>
+                    <Button onClick={handleChangePasswordSubmit} variant="contained" color="primary" sx={{ color: '#fff' }}>Update Password</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Deactivate Dialog */}
+            <Dialog open={openDeactivateDialog} onClose={handleCloseDeactivateDialog} fullWidth maxWidth="sm">
+                <DialogTitle sx={{ color: 'error.main' }}>Deactivate Account</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" paragraph>
+                        Are you sure you want to deactivate your company account? This action cannot be undone immediately.
+                        All your data will be archived for 30 days before permanent deletion.
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Type <strong>DELETE</strong> below to confirm.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        placeholder="DELETE"
+                        value={deactivateInput}
+                        onChange={(e) => setDeactivateInput(e.target.value)}
+                        error={deactivateInput.length > 0 && deactivateInput !== "DELETE"}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDeactivateDialog} color="inherit">Cancel</Button>
+                    <Button
+                        onClick={handleDeactivateConfirm}
+                        variant="contained"
+                        color="error"
+                        disabled={deactivateInput !== "DELETE"}
+                    >
+                        Deactivate My Account
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Snackbar
                 open={snackbarOpen}
