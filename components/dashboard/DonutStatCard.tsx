@@ -26,20 +26,28 @@ interface DonutStatCardProps {
     totalValue: string | number;
     unit: string;
     description?: string; // e.g., "Consumption"
+    subtext?: string;
     data: DataItem[];
 }
 
-export default function DonutStatCard({ title, totalValue, unit, data }: DonutStatCardProps) {
+export default function DonutStatCard({ title, totalValue, unit, data, subtext }: DonutStatCardProps) {
     return (
         <Card sx={{ height: '100%', p: 3 }}>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h6" fontWeight="bold" color="text.primary">
-                    {title}
-                </Typography>
-                <IconButton size="small">
-                    <FiInfo size={18} />
-                </IconButton>
+            <Box mb={3}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h6" fontWeight="bold" color="text.primary">
+                        {title}
+                    </Typography>
+                    <IconButton size="small">
+                        <FiInfo size={18} />
+                    </IconButton>
+                </Box>
+                {subtext && (
+                    <Typography variant="button" fontWeight="light" color="text.secondary" sx={{ textTransform: 'none' }}>
+                        {subtext}
+                    </Typography>
+                )}
             </Box>
 
             {/* Content Container */}
@@ -53,8 +61,8 @@ export default function DonutStatCard({ title, totalValue, unit, data }: DonutSt
                                 data={data}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={80} // Thin donut
-                                outerRadius={100}
+                                innerRadius="75%"
+                                outerRadius="90%"
                                 paddingAngle={2}
                                 dataKey="value"
                                 startAngle={90}
