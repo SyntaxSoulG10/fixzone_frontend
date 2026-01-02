@@ -29,7 +29,9 @@ import {
     TableHead,
     TableRow,
     Paper,
-    InputAdornment
+    InputAdornment,
+    Checkbox,
+    FormControlLabel
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
@@ -41,7 +43,9 @@ import {
     FiSearch,
     FiMail,
     FiPhone,
-    FiPower
+    FiPower,
+    FiLock,
+    FiCheckCircle
 } from "react-icons/fi";
 
 // Mock Data
@@ -54,6 +58,7 @@ const INITIAL_MANAGERS = [
         phone: "+1 (555) 101-2020",
         status: "Active",
         avatar: "",
+        lastLogin: "2 hours ago"
     },
     {
         id: 2,
@@ -63,6 +68,7 @@ const INITIAL_MANAGERS = [
         phone: "+1 (555) 303-4040",
         status: "Active",
         avatar: "",
+        lastLogin: "1 day ago"
     },
     {
         id: 3,
@@ -72,6 +78,7 @@ const INITIAL_MANAGERS = [
         phone: "+1 (555) 505-6060",
         status: "Inactive",
         avatar: "",
+        lastLogin: "Never"
     }
 ];
 
@@ -105,11 +112,12 @@ export default function ManagersPage() {
         center: "",
         email: "",
         phone: "",
-        status: "Active"
+        status: "Active",
+        sendInvite: true
     });
 
     const handleOpenAdd = () => {
-        setFormData({ name: "", center: "", email: "", phone: "", status: "Active" });
+        setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
         setIsEditMode(false);
         setOpenDialog(true);
     };
@@ -120,7 +128,8 @@ export default function ManagersPage() {
             center: manager.center,
             email: manager.email,
             phone: manager.phone,
-            status: manager.status
+            status: manager.status,
+            sendInvite: false
         });
         setSelectedId(manager.id);
         setIsEditMode(true);
@@ -135,20 +144,27 @@ export default function ManagersPage() {
 
         if (isEditMode && selectedId !== null) {
             setManagers(prev => prev.map(m =>
-                m.id === selectedId ? { ...m, ...formData } : m
+                m.id === selectedId ? { ...m, ...formData, lastLogin: m.lastLogin } : m
             ));
             setSnackbar({ open: true, message: 'Manager updated successfully', severity: 'success' });
         } else {
             const newId = Math.max(...managers.map(m => m.id), 0) + 1;
-            setManagers(prev => [...prev, { id: newId, ...formData, avatar: "" }]);
-            setSnackbar({ open: true, message: 'Manager added successfully', severity: 'success' });
+            setManagers(prev => [...prev, { id: newId, ...formData, avatar: "", lastLogin: "Never" }]);
+            if (formData.sendInvite) {
+                // Simulate sending email
+                console.log(`Sending invitation email to ${formData.email}`);
+                setSnackbar({ open: true, message: 'Manager added & invitation sent!', severity: 'success' });
+            } else {
+                setSnackbar({ open: true, message: 'Manager added successfully', severity: 'success' });
+            }
         }
         setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name as string]: value }));
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<{ name?: string; value: unknown }>) => {
+        const target = e.target as HTMLInputElement;
+        const { name, value, checked, type } = target;
+        setFormData(prev => ({ ...prev, [name as string]: type === 'checkbox' ? checked : value }));
     };
 
     const handleToggleStatus = (id: number, currentStatus: string) => {
@@ -156,7 +172,7 @@ export default function ManagersPage() {
         setManagers(prev => prev.map(m => m.id === id ? { ...m, status: newStatus } : m));
         setSnackbar({
             open: true,
-            message: `Manager ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
+            message: `Account access ${newStatus === 'Active' ? 'enabled' : 'disabled'}`,
             severity: 'success'
         });
     };
@@ -222,8 +238,8 @@ export default function ManagersPage() {
                         <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Assigned Service Center</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Contact Details</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Assigned Center</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Access Info</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Status</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary', textAlign: 'right' }}>Actions</TableCell>
                             </TableRow>
@@ -240,17 +256,18 @@ export default function ManagersPage() {
                                                 <Typography variant="subtitle2" fontWeight="bold">
                                                     {manager.name}
                                                 </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    ID: #{manager.id}
-                                                </Typography>
+                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                    <FiBriefcase size={12} color={theme.palette.text.secondary} />
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        Manager
+                                                    </Typography>
+                                                </Box>
                                             </Box>
                                         </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            <FiBriefcase color={theme.palette.text.secondary} />
-                                            <Typography variant="body2">{manager.center}</Typography>
-                                        </Box>
+                                        <Typography variant="body2" fontWeight="medium">{manager.center}</Typography>
+                                        <Typography variant="caption" color="text.secondary">Active Assignment</Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Box display="flex" flexDirection="column" gap={0.5}>
@@ -259,8 +276,8 @@ export default function ManagersPage() {
                                                 <Typography variant="caption">{manager.email}</Typography>
                                             </Box>
                                             <Box display="flex" alignItems="center" gap={1}>
-                                                <FiPhone size={14} color={theme.palette.text.secondary} />
-                                                <Typography variant="caption">{manager.phone}</Typography>
+                                                <FiLock size={14} color={theme.palette.text.secondary} />
+                                                <Typography variant="caption">Last login: {manager.lastLogin}</Typography>
                                             </Box>
                                         </Box>
                                     </TableCell>
@@ -284,16 +301,16 @@ export default function ManagersPage() {
                                                 onClick={() => handleOpenEdit(manager)}
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}
                                             >
-                                                Assign / Edit
+                                                Edit Access
                                             </Button>
                                             <Button
                                                 size="small"
                                                 color={manager.status === 'Active' ? 'error' : 'success'}
                                                 onClick={() => handleToggleStatus(manager.id, manager.status)}
-                                                startIcon={<FiPower />}
+                                                startIcon={manager.status === 'Active' ? <FiPower /> : <FiCheckCircle />}
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}
                                             >
-                                                {manager.status === 'Active' ? 'Disable' : 'Enable'}
+                                                {manager.status === 'Active' ? 'Disable' : 'Activate'}
                                             </Button>
                                         </Box>
                                     </TableCell>
@@ -322,7 +339,7 @@ export default function ManagersPage() {
                 }}
             >
                 <DialogTitle sx={{ pb: 1, typography: 'h5', fontWeight: 'bold' }}>
-                    {isEditMode ? "Edit Manager" : "Add New Manager"}
+                    {isEditMode ? "Edit Manager Access" : "Add New Manager"}
                 </DialogTitle>
                 <DialogContent>
                     <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
@@ -336,11 +353,11 @@ export default function ManagersPage() {
                             required
                         />
                         <FormControl fullWidth required>
-                            <InputLabel>Assigned Service Center</InputLabel>
+                            <InputLabel>Assign Service Center</InputLabel>
                             <Select
                                 name="center"
                                 value={formData.center}
-                                label="Assigned Service Center"
+                                label="Assign Service Center"
                                 // @ts-ignore
                                 onChange={handleChange}
                             >
@@ -350,12 +367,13 @@ export default function ManagersPage() {
                             </Select>
                         </FormControl>
                         <TextField
-                            label="Email Address"
+                            label="Email Address (Login ID)"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             fullWidth
                             variant="outlined"
+                            helperText="This email will be used for logging in."
                         />
                         <TextField
                             label="Phone Number"
@@ -365,19 +383,51 @@ export default function ManagersPage() {
                             fullWidth
                             variant="outlined"
                         />
-                        <FormControl fullWidth>
-                            <InputLabel>Status</InputLabel>
-                            <Select
-                                name="status"
-                                value={formData.status}
-                                label="Status"
-                                // @ts-ignore
-                                onChange={handleChange}
-                            >
-                                <MenuItem value="Active">Active</MenuItem>
-                                <MenuItem value="Inactive">Inactive</MenuItem>
-                            </Select>
-                        </FormControl>
+
+                        <Divider sx={{ my: 1 }}><Typography variant="caption" color="text.secondary">Access Control & Security</Typography></Divider>
+
+                        <Box p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                <Typography variant="subtitle2" color="text.secondary">System Role</Typography>
+                                <Chip label="Manager" color="primary" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                            </Box>
+                            <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                                This user will have full management access to the assigned service center dashboard.
+                            </Typography>
+
+                            {!isEditMode && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.sendInvite}
+                                            onChange={handleChange}
+                                            name="sendInvite"
+                                            color="primary"
+                                        />
+                                    }
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2" fontWeight="medium">Send Email Invitation</Typography>
+                                            <Typography variant="caption" color="text.secondary">User will receive a link to set their own password (Recommended).</Typography>
+                                        </Box>
+                                    }
+                                />
+                            )}
+
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel>Account Status</InputLabel>
+                                <Select
+                                    name="status"
+                                    value={formData.status}
+                                    label="Account Status"
+                                    // @ts-ignore
+                                    onChange={handleChange}
+                                >
+                                    <MenuItem value="Active">Active (Access Enabled)</MenuItem>
+                                    <MenuItem value="Inactive">Inactive (Access Disabled)</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>
@@ -388,7 +438,7 @@ export default function ManagersPage() {
                         color="primary"
                         sx={{ borderRadius: 2, px: 4, color: '#fff', boxShadow: theme.shadows[2] }}
                     >
-                        {isEditMode ? "Save Changes" : "Add Manager"}
+                        {isEditMode ? "Save Changes" : "Create Account"}
                     </Button>
                 </DialogActions>
             </Dialog>
