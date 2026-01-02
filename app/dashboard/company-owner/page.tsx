@@ -56,7 +56,7 @@ export default function CompanyOwnerDashboard() {
                         </Button>
                     </Link>
                     <Link href="/dashboard/company-owner/bookings" style={{ textDecoration: 'none' }}>
-                        <Button variant="contained" color="warning" sx={{ height: 44, color: '#ffffff !important' }}>
+                        <Button variant="contained" color="primary" sx={{ height: 44, color: '#ffffff !important' }}>
                             <FiPlus style={{ marginRight: 8 }} /> New Booking
                         </Button>
                     </Link>
@@ -75,7 +75,7 @@ export default function CompanyOwnerDashboard() {
                             label: 'vs. last month'
                         }}
                         icon={<FiDollarSign />}
-                        color="warning"
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -88,7 +88,7 @@ export default function CompanyOwnerDashboard() {
                             label: 'New branch opened'
                         }}
                         icon={<FiBriefcase />}
-                        color="dark"
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -101,7 +101,7 @@ export default function CompanyOwnerDashboard() {
                             label: 'vs. last month'
                         }}
                         icon={<FiUsers />}
-                        color="dark"
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -114,7 +114,7 @@ export default function CompanyOwnerDashboard() {
                             label: 'vs. yesterday'
                         }}
                         icon={<FiClock />}
-                        color="warning"
+                        color="primary"
                     />
                 </Grid>
             </Grid>
@@ -143,7 +143,7 @@ export default function CompanyOwnerDashboard() {
                         title="Service Reports"
                         icon={<FiFileText size={24} />}
                         href="/dashboard/company-owner/reports"
-                        color="warning"
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -173,7 +173,7 @@ export default function CompanyOwnerDashboard() {
 
 function QuickActionBtn({ title, icon, href, color }: any) {
     // Determine styles based on color prop logic (replicating original intent with MUI)
-    const isWarning = color === 'warning';
+    const isPrimary = color === 'primary';
 
     return (
         <Link href={href} style={{ textDecoration: 'none', width: '100%' }}>
@@ -184,8 +184,8 @@ function QuickActionBtn({ title, icon, href, color }: any) {
                 gap: 2,
                 transition: 'transform 0.2s',
                 '&:hover': { transform: 'scale(1.02)' },
-                bgcolor: isWarning ? 'warning.main' : 'background.paper',
-                color: isWarning ? '#ffffff' : 'text.primary'
+                bgcolor: isPrimary ? 'primary.main' : 'background.paper',
+                color: isPrimary ? '#ffffff' : 'text.primary'
             }}>
                 <Box fontSize={24} color="inherit">
                     {icon}

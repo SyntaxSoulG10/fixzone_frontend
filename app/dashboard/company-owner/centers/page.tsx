@@ -219,7 +219,7 @@ export default function MyCentersPage() {
                                 <Box
                                     sx={{
                                         background: center.status === 'Active'
-                                            ? `linear-gradient(195deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`
+                                            ? `linear-gradient(195deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
                                             : `linear-gradient(195deg, ${theme.palette.grey[600]}, ${theme.palette.grey[800]})`,
                                         boxShadow: center.status === 'Active' ? theme.shadows[4] : theme.shadows[2],
                                         color: '#ffffff',
@@ -293,7 +293,7 @@ export default function MyCentersPage() {
                                         <Grid size={4}>
                                             <Box textAlign="center">
                                                 <Typography variant="caption" color="text.secondary" display="block">Load</Typography>
-                                                <Typography variant="body2" fontWeight="bold" color={center.capacity > 80 ? 'warning.main' : 'text.primary'}>
+                                                <Typography variant="body2" fontWeight="bold" color={center.capacity > 80 ? 'primary.main' : 'text.primary'}>
                                                     {center.capacity}%
                                                 </Typography>
                                             </Box>
@@ -321,7 +321,7 @@ export default function MyCentersPage() {
                                         <Button
                                             variant="outlined"
                                             size="small"
-                                            color="warning"
+                                            color="primary"
                                             startIcon={<FiEdit2 />}
                                             onClick={() => {
                                                 setFormData({

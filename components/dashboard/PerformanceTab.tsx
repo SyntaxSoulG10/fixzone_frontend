@@ -55,7 +55,7 @@ export default function PerformanceTab() {
                             </Typography>
                         }
                         date="updated just now"
-                        color="info"
+                        color="primary"
                         chart={
                             isMounted ? (
                                 <ResponsiveContainer width="100%" height="100%">

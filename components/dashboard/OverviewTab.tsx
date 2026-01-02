@@ -61,7 +61,7 @@ export default function OverviewTab() {
                             </Box>
                         }
                         date="updated 4 min ago"
-                        color="success" // mapped to success (green)
+                        color="primary"
                         chart={
                             isMounted ? (
                                 <ResponsiveContainer width="100%" height="100%">
@@ -119,7 +119,7 @@ export default function OverviewTab() {
                                             width="2.5rem"
                                             height="2.5rem"
                                             borderRadius="50%"
-                                            bgcolor="warning.main"
+                                            bgcolor="primary.main"
                                             color="#ffffff"
                                             fontWeight="bold"
                                             boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
@@ -134,7 +134,7 @@ export default function OverviewTab() {
                                     <Box textAlign="right">
                                         <Typography variant="subtitle2" fontWeight="bold">$45,200</Typography>
                                         <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
-                                            <Box width="70%" height="100%" bgcolor="warning.main" borderRadius="xl" />
+                                            <Box width="70%" height="100%" bgcolor="primary.main" borderRadius="xl" />
                                         </Box>
                                     </Box>
                                 </Box>
@@ -146,7 +146,7 @@ export default function OverviewTab() {
 
             {/* Right Column: Live Activity */}
             <Grid size={{ xs: 12, lg: 4 }}>
-                <Card sx={{ height: '100%', mt: { xs: 3, lg: 4 } }}>
+                <Card sx={{ height: '100%' }}>
                     <Box p={2}>
                         <Typography variant="h6" fontWeight="bold" gutterBottom>
                             Recent Activity
@@ -155,7 +155,7 @@ export default function OverviewTab() {
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <Box key={i} display="flex" gap={2}>
                                     <Box display="flex" flexDirection="column" alignItems="center">
-                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="warning.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #ffd59f" />
+                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="primary.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #FED7AA" />
                                         {i !== 5 && <Box width="2px" flexGrow={1} bgcolor="grey.200" my={0.5} />}
                                     </Box>
                                     <Box pb={i !== 5 ? 2 : 0}>

@@ -28,8 +28,8 @@ const colors = {
     },
 
     primary: {
-        main: "#fb8c00", // Orange
-        focus: "#fc9d26",
+        main: "#EA580C",
+        focus: "#FB923C",
     },
 
     secondary: {
@@ -48,8 +48,8 @@ const colors = {
     },
 
     warning: {
-        main: "#fb8c00",
-        focus: "#fc9d26",
+        main: "#EA580C",
+        focus: "#FB923C",
     },
 
     error: {
@@ -81,8 +81,8 @@ const colors = {
 
     gradients: {
         primary: {
-            main: "#FFA726", // Orange gradient
-            state: "#FB8C00",
+            main: "#FB923C",
+            state: "#EA580C",
         },
 
         secondary: {
@@ -101,8 +101,8 @@ const colors = {
         },
 
         warning: {
-            main: "#FFA726",
-            state: "#FB8C00",
+            main: "#FB923C",
+            state: "#EA580C",
         },
 
         error: {
@@ -185,8 +185,8 @@ const colors = {
 
     badgeColors: {
         primary: {
-            background: "#ffd59f", // Orange badge bg (took from warning)
-            text: "#c87000",
+            background: "#FED7AA",
+            text: "#EA580C",
         },
 
         secondary: {
@@ -205,8 +205,8 @@ const colors = {
         },
 
         warning: {
-            background: "#ffd59f",
-            text: "#c87000",
+            background: "#FED7AA",
+            text: "#EA580C",
         },
 
         error: {
@@ -226,11 +226,11 @@ const colors = {
     },
 
     coloredShadows: {
-        primary: "#ff9900", // Orange shadow
+        primary: "#EA580C",
         secondary: "#110e0e",
         info: "#00bbd4",
         success: "#4caf4f",
-        warning: "#ff9900",
+        warning: "#EA580C",
         error: "#f44336",
         light: "#adb5bd",
         dark: "#404040",

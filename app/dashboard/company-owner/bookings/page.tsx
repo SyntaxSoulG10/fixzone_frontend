@@ -183,7 +183,7 @@ export default function BookingsPage() {
                             Manage and Track all Service Booking.
                         </Typography>
                     </Box>
-                    <Button variant="contained" color="warning" sx={{ color: '#ffffff', textTransform: 'none', borderRadius: 2 }}>
+                    <Button variant="contained" color="primary" sx={{ color: '#ffffff', textTransform: 'none', borderRadius: 2 }}>
                         New Booking
                     </Button>
                 </Box>
@@ -222,7 +222,7 @@ export default function BookingsPage() {
                             <Divider sx={{ my: 1 }} />
                             <Box display="flex" justifyContent="flex-end" gap={2} mt={1} mr={1}>
                                 <Button size="small" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>Cancel</Button>
-                                <Button size="small" variant="contained" color="warning" sx={{ color: 'white', fontWeight: 'bold', px: 3 }}>OK</Button>
+                                <Button size="small" variant="contained" color="primary" sx={{ color: 'white', fontWeight: 'bold', px: 3 }}>OK</Button>
                             </Box>
                         </Card>
                     </Grid>
@@ -236,7 +236,7 @@ export default function BookingsPage() {
                                     title="Total Booking"
                                     count={20}
                                     icon={<FiCalendar size={24} />}
-                                    color="dark"
+                                    color="primary"
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
@@ -252,7 +252,7 @@ export default function BookingsPage() {
                                     title="Upcoming"
                                     count={20}
                                     icon={<FiArrowUp size={24} />}
-                                    color="info"
+                                    color="primary"
                                 />
                             </Grid>
                         </Grid>
@@ -290,9 +290,9 @@ export default function BookingsPage() {
                         />
                         <Button
                             variant="outlined"
-                            color="warning"
+                            color="primary"
                             startIcon={<FiFilter />}
-                            sx={{ borderRadius: 2, px: 3, borderColor: 'warning.main', color: 'warning.main' }}
+                            sx={{ borderRadius: 2, px: 3, borderColor: 'primary.main', color: 'primary.main' }}
                         >
                             Filter
                         </Button>

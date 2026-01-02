@@ -31,7 +31,7 @@ import {
     Pie,
     Cell
 } from 'recharts';
-import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp } from "react-icons/fi";
+import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
 import React from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
@@ -108,7 +108,20 @@ export default function AnalyticsPage() {
                             amount: '+3%',
                             label: 'than last month'
                         }}
-                        color="info"
+                        color="primary"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Pending Jobs"
+                        count="42"
+                        percentage={{
+                            color: 'danger',
+                            amount: '-5%',
+                            label: 'vs. yesterday'
+                        }}
+                        icon={<FiClock />}
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -143,7 +156,7 @@ export default function AnalyticsPage() {
                                 </Box>
                             }
                             date="updated 4 min ago"
-                            color="dark"
+                            color="primary"
                             chart={
                                 isMounted ? (
                                     <ResponsiveContainer width="100%" height="100%">
@@ -192,7 +205,7 @@ export default function AnalyticsPage() {
                             title="Customer Growth"
                             description="New vs Active Customers over time"
                             date="campaign sent 2 days ago"
-                            color="info"
+                            color="primary"
                             chart={
                                 isMounted ? (
                                     <ResponsiveContainer width="100%" height="100%">
@@ -237,7 +250,7 @@ export default function AnalyticsPage() {
                         unit="JOBS"
                         data={(() => {
                             const total = serviceTypeData.reduce((acc, curr) => acc + curr.value, 0);
-                            const referenceColors = ['#e91e63', '#343a40', '#2196f3', '#4caf50', '#ff9800'];
+                            const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
                             return serviceTypeData.map((item, index) => ({
                                 name: item.name,
                                 value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
@@ -250,13 +263,13 @@ export default function AnalyticsPage() {
                 {/* Top Centers Table */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', overflow: 'visible' }}>
-                        
-                            
-                                <Box pt={3} px={3}>
-    <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
-</Box>
-                           
-                        
+
+
+                        <Box pt={3} px={3}>
+                            <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
+                        </Box>
+
+
                         <Box p={2}>
                             <TableContainer>
                                 <Table>
@@ -271,7 +284,7 @@ export default function AnalyticsPage() {
                                         <TableRow>
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="warning.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
                                                     Downtown Branch
                                                 </Box>
                                             </TableCell>

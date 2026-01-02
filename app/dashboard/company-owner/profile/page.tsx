@@ -44,7 +44,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                 minHeight="18.75rem"
                 borderRadius="0.75rem"
                 sx={{
-                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FF6B00, #E65100)', // Premium Orange Gradient or Image
+                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)', // Premium Orange Gradient or Image
                     backgroundSize: "cover",
                     backgroundPosition: "50%",
                     overflow: "hidden",
@@ -96,7 +96,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                                         height: 32
                                     }}
                                 >
-                                    <FiCamera size={16} color="#FF6B00" />
+                                    <FiCamera size={16} color="#EA580C" />
                                 </IconButton>
                             }
                         >
@@ -105,7 +105,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                                 alt="profile-image"
                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
-                                <FiTool color="#FF6B00" size={32} />
+                                <FiTool color="#EA580C" size={32} />
                             </Avatar>
                         </Badge>
                         <input
@@ -133,7 +133,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             textColor="inherit"
                             sx={{
                                 '& .MuiTabs-indicator': {
-                                    backgroundColor: '#FF6B00',
+                                    backgroundColor: '#EA580C',
                                 },
                                 '& .MuiTab-root': {
                                     color: 'text.secondary',
@@ -167,16 +167,16 @@ function PlatformSettings() {
                     Service Alerts
                 </Typography>
                 <Box display="flex" flexDirection="column" mb={3}>
-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
-                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
+                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
+                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
+                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
                 </Box>
                 <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
                     Visibility
                 </Typography>
                 <Box display="flex" flexDirection="column">
-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
-                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
+                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
+                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
                 </Box>
             </Box>
         </Card>
@@ -200,7 +200,7 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                         </IconButton>
                     </Box>
                 ) : (
-                    <Button variant="text" color="primary" sx={{ color: '#FF6B00' }} onClick={onEdit}>
+                    <Button variant="text" color="primary" sx={{ color: '#EA580C' }} onClick={onEdit}>
                         <FiEdit2 />
                     </Button>
                 )}
@@ -394,7 +394,7 @@ export default function ProfilePage() {
                                         <Button
                                             fullWidth
                                             variant="contained"
-                                            sx={{ bgcolor: '#FF6B00', color: '#fff', '&:hover': { bgcolor: '#E65100' } }}
+                                            sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}
                                             onClick={handleSaveStatus}
                                         >
                                             Save Status
