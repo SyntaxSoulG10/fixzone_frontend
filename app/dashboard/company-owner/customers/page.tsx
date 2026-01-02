@@ -98,27 +98,39 @@ export default function CustomersPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Customers"
-                        value="1,245"
-                        subtext="All registered clients"
-                        icon={FiUsers}
+                        count="1,245"
+                        percentage={{
+                            color: 'success',
+                            amount: '',
+                            label: 'All registered clients'
+                        }}
+                        icon={<FiUsers />}
                         color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="New This Month"
-                        value="48"
-                        subtext="+12% growth"
-                        icon={FiUserPlus}
-                        color="success"
+                        count="48"
+                        percentage={{
+                            color: 'success',
+                            amount: '+12%',
+                            label: 'growth'
+                        }}
+                        icon={<FiUserPlus />}
+                        color="success" // Note: The StatCard component uses this for the icon bg
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Repeat Customers"
-                        value="85%"
-                        subtext="High retention rate"
-                        icon={FiRefreshCw}
+                        count="85%"
+                        percentage={{
+                            color: 'info',
+                            amount: '',
+                            label: 'High retention rate'
+                        }}
+                        icon={<FiRefreshCw />}
                         color="info"
                     />
                 </Grid>
