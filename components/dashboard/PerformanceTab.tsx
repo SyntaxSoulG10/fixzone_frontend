@@ -31,9 +31,9 @@ const performanceData = [
 
 const centerPerformance = [
     { name: 'Downtown Hub', progress: 80, color: 'primary' },
-    { name: 'North Branch', progress: 65, color: 'info' },
-    { name: 'Westside Station', progress: 45, color: 'warning' },
-    { name: 'East End Garage', progress: 90, color: 'success' },
+    { name: 'North Branch', progress: 65, color: 'primary' },
+    { name: 'Westside Station', progress: 45, color: 'primary' },
+    { name: 'East End Garage', progress: 90, color: 'primary' },
 ];
 
 export default function PerformanceTab() {

@@ -7,7 +7,7 @@ const activities = [
     {
         title: "New Order #1832412",
         description: "21 Dec 11 PM",
-        color: "success",
+        color: "primary",
         icon: "shopping_cart"
     },
     {
@@ -19,7 +19,7 @@ const activities = [
     {
         title: "New card added for order #4395133",
         description: "20 Dec 2:20 AM",
-        color: "info",
+        color: "primary",
         icon: "credit_card"
     },
     {
@@ -31,7 +31,7 @@ const activities = [
     {
         title: "New order #9583120",
         description: "17 Dec",
-        color: "success",
+        color: "primary",
         icon: "shopping_cart"
     }
 ];

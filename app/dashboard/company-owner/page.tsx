@@ -187,7 +187,7 @@ function QuickActionBtn({ title, icon, href, color }: any) {
                 bgcolor: isPrimary ? 'primary.main' : 'background.paper',
                 color: isPrimary ? '#ffffff' : 'text.primary'
             }}>
-                <Box fontSize={24} color="inherit">
+                <Box fontSize={24} color={isPrimary ? "inherit" : "primary.main"}>
                     {icon}
                 </Box>
                 <Box flex={1}>

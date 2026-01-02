@@ -139,7 +139,7 @@ export default function BookingCalendar({ bookings }: BookingCalendarProps) {
                 {/* Week Days Header */}
                 <Grid container>
                     {weekDays.map((day) => (
-                        <Grid item xs={12 / 7} key={day} sx={{ borderBottom: 1, borderRight: 1, borderColor: 'divider', '&:nth--last-of-type(1)': { borderRight: 0 } }}>
+                        <Grid key={day} sx={{ width: '14.28%', borderBottom: 1, borderRight: 1, borderColor: 'divider', '&:nth-last-of-type(1)': { borderRight: 0 } }}>
                             <Box py={2} textAlign="center" bgcolor={alpha(theme.palette.primary.main, 0.04)}>
                                 <Typography variant="subtitle2" fontWeight="bold" color="text.secondary">
                                     {day}
@@ -158,10 +158,9 @@ export default function BookingCalendar({ bookings }: BookingCalendarProps) {
 
                         return (
                             <Grid
-                                item
-                                xs={12 / 7}
                                 key={day.toString()}
                                 sx={{
+                                    width: '14.28%',
                                     height: 160,
                                     borderBottom: 1,
                                     borderRight: 1,

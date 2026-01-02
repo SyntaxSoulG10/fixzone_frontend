@@ -31,7 +31,9 @@ import {
     FiPlus,
     FiEdit2,
     FiTrash2,
-    FiLayout
+    FiLayout,
+    FiUser,
+    FiPower
 } from "react-icons/fi";
 
 // Mock Initial Data
@@ -40,6 +42,7 @@ const INITIAL_CENTERS = [
         id: 1,
         name: "Downtown Branch",
         location: "123 Main St, New York, NY",
+        manager: "John Doe",
         phone: "+1 (555) 123-4567",
         revenue: "45200",
         status: "Active",
@@ -50,6 +53,7 @@ const INITIAL_CENTERS = [
         id: 2,
         name: "Westside Hub",
         location: "456 West Ave, New York, NY",
+        manager: "Jane Smith",
         phone: "+1 (555) 987-6543",
         revenue: "32100",
         status: "Active",
@@ -78,6 +82,7 @@ export default function MyCentersPage() {
     const [formData, setFormData] = useState({
         name: "",
         location: "",
+        manager: "",
         phone: "",
         status: "Active",
         mechanics: 5,
@@ -87,7 +92,7 @@ export default function MyCentersPage() {
     // --- CRUD Operations ---
 
     const handleOpenAdd = () => {
-        setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
+        setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
         setIsEditMode(false);
         setOpenDialog(true);
     };
@@ -115,6 +120,16 @@ export default function MyCentersPage() {
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };
 
+    const handleToggleStatus = (id: number, currentStatus: string) => {
+        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+        setCenters(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+        setSnackbar({
+            open: true,
+            message: `Center ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
+            severity: 'success'
+        });
+    };
+
     const getCenterStatusStyles = (status: string) => {
         switch (status) {
             case 'Active':
@@ -125,9 +140,9 @@ export default function MyCentersPage() {
                 };
             case 'Maintenance':
                 return {
-                    bgcolor: '#FFF4E5',
-                    color: '#B76E00',
-                    border: '1px solid #FFF4E5'
+                    bgcolor: '#FFF7ED', // Lighter orange background
+                    color: '#EA580C',   // Brand Primary Orange instead of brown
+                    border: '1px solid #FFF7ED'
                 };
             case 'Inactive':
                 return {
@@ -219,7 +234,7 @@ export default function MyCentersPage() {
                                 <Box
                                     sx={{
                                         background: center.status === 'Active'
-                                            ? `linear-gradient(195deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
+                                            ? `linear-gradient(195deg, #FB923C, #EA580C)`
                                             : `linear-gradient(195deg, ${theme.palette.grey[600]}, ${theme.palette.grey[800]})`,
                                         boxShadow: center.status === 'Active' ? theme.shadows[4] : theme.shadows[2],
                                         color: '#ffffff',
@@ -265,6 +280,10 @@ export default function MyCentersPage() {
                                             <Typography variant="body2" noWrap sx={{ opacity: 0.9 }}>{center.location}</Typography>
                                         </Box>
                                         <Box display="flex" alignItems="center" gap={1.5} color="text.secondary">
+                                            <FiUser size={16} style={{ opacity: 0.7 }} />
+                                            <Typography variant="body2" noWrap sx={{ opacity: 0.9 }}>{center.manager}</Typography>
+                                        </Box>
+                                        <Box display="flex" alignItems="center" gap={1.5} color="text.secondary">
                                             <FiPhone size={16} style={{ opacity: 0.7 }} />
                                             <Typography variant="body2" sx={{ opacity: 0.9 }}>{center.phone}</Typography>
                                         </Box>
@@ -306,20 +325,15 @@ export default function MyCentersPage() {
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
                                         <Button
                                             size="small"
-                                            color="error"
-                                            startIcon={<FiTrash2 />}
-                                            onClick={() => {
-                                                if (window.confirm("Are you sure you want to delete this center?")) {
-                                                    setCenters(prev => prev.filter(c => c.id !== center.id));
-                                                    setSnackbar({ open: true, message: 'Center deleted.', severity: 'success' });
-                                                }
-                                            }}
+                                            color={center.status === 'Active' ? 'error' : 'success'}
+                                            startIcon={<FiPower />}
+                                            onClick={() => handleToggleStatus(center.id, center.status)}
                                             sx={{ textTransform: 'none', fontWeight: 600 }}
                                         >
-                                            Delete
+                                            {center.status === 'Active' ? 'Disable' : 'Enable'}
                                         </Button>
                                         <Button
-                                            variant="outlined"
+                                            variant="contained"
                                             size="small"
                                             color="primary"
                                             startIcon={<FiEdit2 />}
@@ -327,6 +341,7 @@ export default function MyCentersPage() {
                                                 setFormData({
                                                     name: center.name,
                                                     location: center.location,
+                                                    manager: center.manager,
                                                     phone: center.phone,
                                                     status: center.status,
                                                     mechanics: center.mechanics,
@@ -336,7 +351,7 @@ export default function MyCentersPage() {
                                                 setIsEditMode(true);
                                                 setOpenDialog(true);
                                             }}
-                                            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
+                                            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5, color: '#fff', boxShadow: theme.shadows[2] }}
                                         >
                                             Edit
                                         </Button>
@@ -366,6 +381,14 @@ export default function MyCentersPage() {
                             label="Center Name"
                             name="name"
                             value={formData.name}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="outlined"
+                        />
+                        <TextField
+                            label="Manager Name"
+                            name="manager"
+                            value={formData.manager}
                             onChange={handleChange}
                             fullWidth
                             variant="outlined"
