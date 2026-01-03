@@ -75,6 +75,61 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Black Spacer & Stats */}
+      <div className="relative w-full h-auto md:h-40 bg-black z-30">
+        <div className="w-full px-4 py-12 md:p-0 md:absolute md:top-full md:left-0 md:right-0 md:-translate-y-1/2">
+          <div className="max-w-6xl mx-auto bg-white rounded-[2rem] shadow-2xl py-12 px-8 flex flex-col md:flex-row justify-around text-center border border-slate-100">
+            <div className="space-y-3">
+              <h3 className="text-4xl font-extrabold text-[#E65100]">1M+</h3>
+              <p className="text-slate-600 font-bold text-xl">Active Users</p>
+              <p className="text-slate-400 text-sm max-w-[200px] mx-auto leading-relaxed">Happy customers using our platform every day.</p>
+            </div>
+
+            <div className="hidden md:block w-px bg-slate-200"></div>
+
+            <div className="space-y-3">
+              <h3 className="text-4xl font-extrabold text-[#E65100]">1M+</h3>
+              <p className="text-slate-600 font-bold text-xl">Registered<br />Service Centers</p>
+              <p className="text-slate-400 text-sm max-w-[200px] mx-auto leading-relaxed">Trusted partners across the country.</p>
+            </div>
+
+            <div className="hidden md:block w-px bg-slate-200"></div>
+
+            <div className="space-y-3">
+              <h3 className="text-4xl font-extrabold text-[#E65100]">1M+</h3>
+              <p className="text-slate-600 font-bold text-xl">Services<br />Completed</p>
+              <p className="text-slate-400 text-sm max-w-[200px] mx-auto leading-relaxed">Fast, smooth, and fully digital service handling.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Buffer to push About Section down */}
+      <div className="w-full h-24 bg-black"></div>
+
+      {/* About Us Section */}
+      <section id="about" className="w-full flex flex-col md:flex-row">
+        <div className="w-full md:w-1/2 h-[300px] md:h-[600px] relative">
+          <img
+            src="/AboutUs_Pic.jpeg"
+            alt="Mechanic working on car"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="w-full md:w-1/2 bg-[#FFF9F4] flex flex-col justify-center px-12 md:px-20 pt-36 pb-20">
+          <span className="text-[#FF6B00] font-bold text-lg mb-4">About Us</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-8 leading-tight">
+            Where Technology Meets Trusted Service.
+          </h2>
+          <p className="text-slate-500 leading-relaxed text-lg mb-6">
+            FixZone is built to make vehicle servicing easier, faster, and more transparent for everyone.
+          </p>
+          <p className="text-slate-500 leading-relaxed text-lg">
+            We understand that managing vehicle service records, tracking repairs, and waiting for updates can be stressful — so we created a smart solution to fix that.
+          </p>
+        </div>
+      </section>
+
       {/* Features Grid */}
       <section id="features" className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
