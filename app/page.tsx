@@ -1,122 +1,76 @@
 "use client";
 
 import Link from "next/link";
-import { FiActivity, FiBriefcase, FiCheckCircle, FiLayout, FiUsers, FiShield } from "react-icons/fi";
+import { FiLayout, FiShield, FiBriefcase } from "react-icons/fi";
 import FeatureCard from "@/components/landing/FeatureCard";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col font-sans">
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 glass border-b border-orange-100/20">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-              F
-            </div>
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-600">
-              FixZone
-            </span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#solutions" className="hover:text-primary transition-colors">Solutions</a>
-            <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="px-5 py-2 text-sm font-medium text-slate-700 hover:text-primary transition-colors"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="px-5 py-2 text-sm font-medium bg-primary hover:bg-primary-hover text-white rounded-full shadow-lg hover:shadow-orange-500/25 transition-all transform hover:-translate-y-0.5"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen flex flex-col font-sans relative">
+
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-orange-50/50 blur-3xl opacity-60 rounded-bl-[100px]"></div>
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8 animate-slide-up">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold uppercase tracking-wide">
-              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse"></span>
-              Multi-tenant Platform
-            </div>
-            <h1 className="text-5xl lg:text-7xl font-bold leading-tight text-slate-900">
-              Manage Your <br />
-              <span className="text-primary relative">
-                Service Center
-                <svg className="absolute w-full h-3 -bottom-1 left-0 text-orange-200 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
-                  <path d="M0 5 Q 50 10 100 5 L 100 0 Q 50 5 0 0 Z" fill="currentColor" />
-                </svg>
-              </span>
-              <br /> Like a Pro.
-            </h1>
-            <p className="text-lg text-slate-600 leading-relaxed max-w-lg">
-              The all-in-one platform for vehicle service centers. Handle bookings,
-              jobs, customers, and multi-branch details in one unified dashboard.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/signup" className="px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-semibold shadow-xl shadow-orange-500/20 transition-all transform hover:-translate-y-1 text-center">
-                Start Free Trial
-              </Link>
-              <Link href="/demo" className="px-8 py-4 bg-white text-slate-700 border border-slate-200 hover:border-primary hover:text-primary rounded-xl font-semibold transition-all text-center">
-                View Live Demo
-              </Link>
-            </div>
+      <section className="relative w-full min-h-screen flex flex-col">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/HeroBg.png')" }}
+        >
+          {/* Gradient Overlay */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(180deg, 
+                rgba(234, 88, 12, 0.05) 0%, 
+                rgba(234, 88, 12, 0.40) 23%, 
+                rgba(234, 88, 12, 0.60) 44%, 
+                rgba(133, 50, 7, 0.70) 62%, 
+                rgba(20, 8, 2, 0.80) 80%, 
+                rgba(20, 8, 2, 1.00) 100%
+              )`
+            }}
+          ></div>
+        </div>
 
-            <div className="pt-8 flex items-center gap-6 text-sm text-slate-500">
-              <div className="flex items-center gap-2">
-                <FiCheckCircle className="text-primary" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FiCheckCircle className="text-primary" />
-                <span>14-day free trial</span>
-              </div>
-            </div>
+        {/* Navbar */}
+        <nav className="relative z-50 w-full px-6 py-6 max-w-7xl mx-auto flex justify-between items-center text-white">
+          <div className="flex items-center gap-2">
+            {/* Logo */}
+            <img src="/logo-dark.png" alt="FixZone Logo" className="h-14 w-auto object-contain" />
           </div>
 
-          <div className="relative animate-float delay-100 hidden lg:block">
-            <div className="relative z-10 glass rounded-2xl p-2 shadow-2xl skew-y-1 transform transition-all hover:skew-y-0 duration-500">
-              <img
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2670"
-                alt="Dashboard Preview"
-                className="rounded-xl w-full h-auto object-cover"
-              />
+          <div className="hidden md:flex items-center gap-10 font-medium text-lg">
+            <Link href="/" className="text-[#F2994A] hover:text-[#F2994A] transition-colors">Home</Link>
+            <Link href="#features" className="text-white hover:text-primary transition-colors">Features</Link>
+            <Link href="#about" className="text-white hover:text-primary transition-colors">About Us</Link>
+            <Link href="#contact" className="text-white hover:text-primary transition-colors">Contact</Link>
+          </div>
 
-              {/* Floating Cards */}
-              <div className="absolute -left-12 bottom-12 bg-white p-4 rounded-xl shadow-xl animate-float" style={{ animationDelay: '2s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                    <FiActivity />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Revenue</p>
-                    <p className="font-bold text-slate-800">+$12,450</p>
-                  </div>
-                </div>
-              </div>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="px-8 py-2.5 bg-gradient-to-b from-[#FFFFFF] to-[#D1D5DB] text-slate-900 rounded-lg font-bold hover:from-white hover:to-white transition-all shadow-lg border border-slate-200/50">
+              Login
+            </Link>
+            <Link href="/signup" className="px-8 py-2.5 bg-gradient-to-b from-[#EA580C] to-[#C2410C] text-white rounded-lg font-bold hover:from-[#EA580C] hover:to-[#EA580C] transition-all shadow-lg shadow-orange-900/20 border border-orange-600/20">
+              SignUp
+            </Link>
+          </div>
+        </nav>
 
-              <div className="absolute -right-8 top-12 bg-white p-4 rounded-xl shadow-xl animate-float" style={{ animationDelay: '1s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                    <FiUsers />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Active Customers</p>
-                    <p className="font-bold text-slate-800">1,204</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Hero Content */}
+        <div className="relative z-10 flex-grow flex flex-col items-center justify-center text-center px-4 pt-10">
+          <h1 className="text-5xl md:text-7xl lg:text-[5rem] font-bold text-white mb-6 leading-[1.1] max-w-6xl drop-shadow-2xl tracking-tight">
+            Manage Your Vehicle Service <br /> the Smart Way
+          </h1>
+          <p className="text-xl md:text-2xl text-slate-100 mb-12 max-w-3xl leading-relaxed drop-shadow-lg font-medium">
+            Track, book, and manage all your vehicle service needs in one place.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6">
+            <button className="px-8 py-3.5 bg-gradient-to-b from-[#FFFFFF] to-[#B0B0B0] text-slate-900 rounded-lg font-bold hover:from-white hover:to-white transition-all shadow-xl min-w-[160px] border border-slate-300">
+              View more
+            </button>
+            <Link href="/signup" className="px-8 py-3.5 bg-gradient-to-b from-[#E66412] to-[#B54204] text-white rounded-lg font-bold hover:from-[#E66412] hover:to-[#E66412] transition-all shadow-xl shadow-orange-900/40 min-w-[160px] border border-orange-700/20">
+              Get Started
+            </Link>
           </div>
         </div>
       </section>
@@ -155,12 +109,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                  F
-                </div>
-                <span className="text-2xl font-bold text-white">
-                  FixZone
-                </span>
+                <img src="/logo-dark.png" alt="FixZone Logo" className="h-8 w-auto brightness-0 invert" />
               </div>
               <p className="text-slate-400 max-w-sm">
                 Empowering automotive service providers with modern tools for better efficiency and customer satisfaction.
