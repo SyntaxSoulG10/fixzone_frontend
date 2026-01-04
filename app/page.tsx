@@ -6,6 +6,7 @@ import KeyFeatureCard from "@/components/landing/KeyFeatureCard";
 import TargetAudienceSection from "@/components/landing/TargetAudienceSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import PricingSection from "@/components/landing/PricingSection";
+import FAQSection from "@/components/landing/FAQSection";
 
 export default function LandingPage() {
   return (
@@ -192,6 +193,9 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <PricingSection />
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12">
