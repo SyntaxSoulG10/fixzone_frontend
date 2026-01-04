@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FiShield, FiCalendar, FiBell, FiSmartphone, FiClock, FiBarChart2 } from "react-icons/fi";
 import KeyFeatureCard from "@/components/landing/KeyFeatureCard";
+import TargetAudienceSection from "@/components/landing/TargetAudienceSection";
 
 export default function LandingPage() {
   return (
@@ -180,6 +181,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Target Audience Section */}
+      <TargetAudienceSection />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12">
