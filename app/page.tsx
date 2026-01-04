@@ -7,6 +7,7 @@ import TargetAudienceSection from "@/components/landing/TargetAudienceSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import PricingSection from "@/components/landing/PricingSection";
 import FAQSection from "@/components/landing/FAQSection";
+import CTASection from "@/components/landing/CTASection";
 
 export default function LandingPage() {
   return (
@@ -196,6 +197,9 @@ export default function LandingPage() {
 
       {/* FAQ Section */}
       <FAQSection />
+
+      {/* CTA Section */}
+      <CTASection />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12">
