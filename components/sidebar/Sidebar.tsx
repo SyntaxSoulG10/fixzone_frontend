@@ -41,10 +41,9 @@ const ROLE_MENUS: any = {
     ],
     service_manager: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/service-manager' },
-        { name: 'Jobs', icon: FiList, href: '/dashboard/service-manager/jobs' },
-        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
-        { name: 'Customers', icon: FiUsers, href: '/dashboard/service-manager/customers' },
-        { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
+        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/service-manager/bookings' },
+        { name: 'Mechanics', icon: FiTool, href: '/dashboard/service-manager/mechanics' },
+        { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
@@ -55,7 +54,11 @@ const ROLE_MENUS: any = {
     ]
 };
 
-export default function Sidebar() {
+interface SidebarProps {
+    isOpen?: boolean;
+}
+
+export default function Sidebar({ isOpen = true }: SidebarProps) {
     const pathname = usePathname();
     const [role, setRole] = useState<string | null>(null);
 
@@ -75,12 +78,15 @@ export default function Sidebar() {
         }
     }, [pathname]);
 
-    if (!role) return <div className="w-64 bg-white border-r border-slate-200 h-screen hidden md:block"></div>;
+    if (!role) return <div className={`w-64 bg-white border-r border-slate-200 h-screen hidden md:block ${!isOpen && 'hidden'}`}></div>;
 
     const menuItems = ROLE_MENUS[role] || ROLE_MENUS['customer'];
 
     return (
-        <aside className="w-64 bg-white border-r border-slate-200 h-screen hidden md:flex flex-col fixed left-0 top-0 pt-20 z-30">
+        <aside
+            className={`w-64 bg-white border-r border-slate-200 h-screen hidden md:flex flex-col fixed left-0 top-0 pt-20 z-30 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-64'
+                }`}
+        >
             <div className="flex-1 overflow-y-auto py-4">
                 <div className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Menu
