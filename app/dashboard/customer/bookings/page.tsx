@@ -141,13 +141,12 @@ export default function BookServicePage() {
         
         {/* Search Bar */}
         <div className="relative max-w-2xl">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
           <input
             type="text"
             placeholder="Search service stations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:bg-white transition-all"
+            className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:bg-white transition-all"
           />
         </div>
       </div>
@@ -323,13 +322,6 @@ export default function BookServicePage() {
                         <span>{station.location}</span>
                         <span className="text-slate-400">•</span>
                         <span className="text-slate-500">{station.distance}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <FiDollarSign className="w-4 h-4 text-slate-400" />
-                        <span className="font-medium">{station.priceRange}</span>
-                        <span className="text-slate-400">•</span>
-                        <span className="text-slate-500">Price Range</span>
                       </div>
                     </div>
 

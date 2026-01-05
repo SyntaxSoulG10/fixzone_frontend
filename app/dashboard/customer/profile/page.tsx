@@ -131,16 +131,18 @@ export default function CustomerProfilePage() {
                   <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200" alt="Car" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-3 bg-white">
-                  <p className="text-[10px] font-bold text-slate-800 truncate">BMW 2022-PW 8976</p>
+                  <p className="text-xs font-bold text-slate-800">BMW</p>
+                  <p className="text-[10px] text-slate-500">PW 8976</p>
                 </div>
               </div>
               {/* Vehicle Card 2 */}
               <div className="border border-slate-100 rounded-xl overflow-hidden">
                 <div className="h-24 bg-slate-100 relative">
-                  <img src="https://images.unsplash.com/photo-1562141989-c5c79ac8f576?auto=format&fit=crop&q=80&w=200" alt="Car" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200" alt="Car" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-3 bg-white">
-                  <p className="text-[10px] font-bold text-slate-800 truncate">Range Rover 2022-PW 8976</p>
+                  <p className="text-xs font-bold text-slate-800">Range Rover</p>
+                  <p className="text-[10px] text-slate-500">PW 8976</p>
                 </div>
               </div>
             </div>
@@ -156,3 +158,4 @@ export default function CustomerProfilePage() {
     </div>
   );
 }
+

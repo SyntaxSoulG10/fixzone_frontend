@@ -45,7 +45,6 @@ const ROLE_MENUS: any = {
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
         { name: 'Book Service', icon: FiCalendar, href: '/dashboard/customer/bookings' },
         { name: 'My bookings', icon: FiClock, href: '/dashboard/customer/history' },
-        { name: 'Messages', icon: FiList, href: '/dashboard/customer/notifications' },
         { name: 'My Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
     ]
 };
