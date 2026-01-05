@@ -1,6 +1,18 @@
 "use client";
 
-import Button from "@/components/UI/Button"; import PageHeader from "@/components/UI/PageHeader";
+import {
+    Box,
+    Typography,
+    Card,
+    List,
+    ListItem,
+    ListItemAvatar,
+    Avatar,
+    ListItemText,
+    ListItemSecondaryAction,
+    IconButton,
+    Divider
+} from "@mui/material";
 import { FiDownload, FiFileText } from "react-icons/fi";
 
 const DUMMY_REPORTS = [
@@ -12,32 +24,53 @@ const DUMMY_REPORTS = [
 
 export default function ReportsPage() {
     return (
-        <div>
-            <PageHeader
-                title="Reports"
-                description="Download financial and operational reports."
-            />
+        <Box pb={3}>
+            <Box mb={4}>
+                <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
+                    Reports
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Download financial and operational reports.
+                </Typography>
+            </Box>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="divide-y divide-slate-100">
-                    {DUMMY_REPORTS.map((report) => (
-                        <div key={report.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                                    <FiFileText className="text-xl" />
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-slate-900">{report.name}</h4>
-                                    <p className="text-xs text-slate-500">{report.date} • {report.type} • {report.size}</p>
-                                </div>
-                            </div>
-                            <Button variant="ghost" className="p-2 text-slate-400 hover:text-primary transition-colors rounded-full">
-                                <FiDownload className="text-xl" />
-                            </Button>
-                        </div>
+            <Card>
+                <List sx={{ width: '100%', bgcolor: 'background.paper', p: 0 }}>
+                    {DUMMY_REPORTS.map((report, index) => (
+                        <Box key={report.id}>
+                            <ListItem alignItems="center" sx={{ py: 3, px: 3 }}>
+                                <ListItemAvatar>
+                                    <Avatar sx={{ bgcolor: 'primary.main', color: '#ffffff', borderRadius: 'lg', boxShadow: 2 }}>
+                                        <FiFileText size={20} />
+                                    </Avatar>
+                                </ListItemAvatar>
+                                <ListItemText
+                                    primary={
+                                        <Typography variant="h6" fontWeight="medium">
+                                            {report.name}
+                                        </Typography>
+                                    }
+                                    secondary={
+                                        <Typography
+                                            component="span"
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
+                                            {report.date} • {report.type} • {report.size}
+                                        </Typography>
+                                    }
+                                />
+                                <ListItemSecondaryAction>
+                                    <IconButton edge="end" aria-label="download">
+                                        <FiDownload />
+                                    </IconButton>
+                                </ListItemSecondaryAction>
+                            </ListItem>
+                            {index < DUMMY_REPORTS.length - 1 && <Divider component="li" />}
+                        </Box>
                     ))}
-                </div>
-            </div>
-        </div>
+                </List>
+            </Card>
+        </Box>
     );
 }

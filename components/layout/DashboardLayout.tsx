@@ -1,11 +1,18 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/sidebar/Sidebar";
+import { useState } from "react";
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
             <Navbar />

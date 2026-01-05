@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { Outfit, Roboto } from "next/font/google";
+import { Roboto } from "next/font/google"; // Use Roboto as per Material Dashboard
 import "./globals.css";
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 
 const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
   weight: ["300", "400", "500", "700"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-roboto",
 });
 
 export const metadata: Metadata = {
@@ -26,10 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${outfit.variable} ${roboto.variable} antialiased bg-gray-50 text-slate-900 font-sans`}
-      >
-        {children}
+      <body className={roboto.className}>
+        <ThemeRegistry>
+          {children}
+        </ThemeRegistry>
       </body>
     </html>
   );

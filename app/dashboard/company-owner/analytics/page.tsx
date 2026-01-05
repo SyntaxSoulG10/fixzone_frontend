@@ -1,6 +1,21 @@
 "use client";
 
-import PageHeader from "@/components/UI/PageHeader";
+import {
+    Grid,
+    Card,
+    Box,
+    Typography,
+    Divider,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Icon
+} from "@mui/material";
+import StatCard from "@/components/dashboard/StatCard";
+import ChartCard from "@/components/dashboard/ChartCard";
 import {
     BarChart,
     Bar,
@@ -16,7 +31,9 @@ import {
     Pie,
     Cell
 } from 'recharts';
-import { FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
+import React from 'react';
+import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
 // Mock Data
 const revenueData = [
@@ -45,163 +62,262 @@ const serviceTypeData = [
     { name: 'Car Wash', value: 200 },
 ];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const PIE_COLORS = ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0'];
 
 export default function AnalyticsPage() {
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title="Business Analytics"
-                description="Deep dive into your company performance metrics."
-            />
+        <Box pb={3}>
+            {/* Header */}
+            <Box mb={4}>
+                <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
+                    Business Analytics
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Deep dive into your company performance metrics.
+                </Typography>
+            </Box>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Total Revenue (YTD)</h3>
-                    <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">$124,500</span>
-                        <span className="text-sm font-medium text-green-600 flex items-center">
-                            <FiArrowUp className="mr-1" /> 12%
-                        </span>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Total Jobs</h3>
-                    <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">1,204</span>
-                        <span className="text-sm font-medium text-green-600 flex items-center">
-                            <FiArrowUp className="mr-1" /> 8.5%
-                        </span>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Avg. Job Value</h3>
-                    <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">$103.40</span>
-                        <span className="text-sm font-medium text-red-600 flex items-center">
-                            <FiArrowDown className="mr-1" /> 2%
-                        </span>
-                    </div>
-                </div>
-            </div>
+            <Grid container spacing={3} mb={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Total Revenue"
+                        count="$124,500"
+                        icon={<FiDollarSign />}
+                        percentage={{
+                            color: 'success',
+                            amount: '+55%',
+                            label: 'than last week'
+                        }}
+                        color="success"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Total Jobs"
+                        count="1,204"
+                        icon={<FiBriefcase />}
+                        percentage={{
+                            color: 'success',
+                            amount: '+3%',
+                            label: 'than last month'
+                        }}
+                        color="primary"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Pending Jobs"
+                        count="42"
+                        percentage={{
+                            color: 'danger',
+                            amount: '-5%',
+                            label: 'vs. yesterday'
+                        }}
+                        icon={<FiClock />}
+                        color="primary"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Avg. Job Value"
+                        count="$103.40"
+                        icon={<FiArrowUp />}
+                        percentage={{
+                            color: 'danger',
+                            amount: '-2%',
+                            label: 'than yesterday'
+                        }}
+                        color="primary"
+                    />
+                </Grid>
+            </Grid>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Charts Section */}
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Box mb={3}>
+                        <ChartCard
+                            title="Revenue Overview"
+                            description={
+                                <Box display="flex" alignItems="center">
+                                    <Typography variant="button" fontWeight="bold" color="success.main">
+                                        +15%
+                                    </Typography>
+                                    <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
+                                        increase in today sales.
+                                    </Typography>
+                                </Box>
+                            }
+                            date="updated 4 min ago"
+                            color="primary"
+                            chart={
+                                isMounted ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart
+                                            data={revenueData}
+                                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                            <XAxis
+                                                dataKey="name"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tick={{ fill: '#fff', opacity: 0.8 }}
+                                            />
+                                            <YAxis
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickFormatter={(value) => `$${value}`}
+                                                tick={{ fill: '#fff', opacity: 0.8 }}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                itemStyle={{ color: '#1e293b' }}
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                stroke="#ffffff"
+                                                strokeWidth={3}
+                                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                                activeDot={{ r: 6, stroke: '#fff' }}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                ) : null
+                            }
+                        />
+                    </Box>
+                </Grid>
 
-                {/* Revenue Chart */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Overview</h3>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChartComponent />
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Box mb={3}>
+                        <ChartCard
+                            title="Customer Growth"
+                            description="New vs Active Customers over time"
+                            date="campaign sent 2 days ago"
+                            color="primary"
+                            chart={
+                                isMounted ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={customerGrowthData}
+                                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                            <XAxis
+                                                dataKey="name"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tick={{ fill: '#fff', opacity: 0.8 }}
+                                            />
+                                            <YAxis
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tick={{ fill: '#fff', opacity: 0.8 }}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                itemStyle={{ color: '#1e293b' }}
+                                            />
+                                            <Legend wrapperStyle={{ color: '#fff' }} />
+                                            <Bar dataKey="new" name="New" fill="#ffffff" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                                            <Bar dataKey="active" name="Active" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : null
+                            }
+                        />
+                    </Box>
+                </Grid>
 
-                {/* Customer Growth */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Customer Growth</h3>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={customerGrowthData}
-                                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar dataKey="new" name="New Customers" fill="#FF6B00" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="active" name="Active Customers" fill="#1E293B" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Service Type Distribution */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Services Breakdown</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={serviceTypeData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {serviceTypeData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                {/* Services Pie Chart */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <DonutStatCard
+                        title="Services Breakdown"
+                        totalValue={serviceTypeData.reduce((acc, curr) => acc + curr.value, 0)}
+                        unit="JOBS"
+                        data={(() => {
+                            const total = serviceTypeData.reduce((acc, curr) => acc + curr.value, 0);
+                            const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
+                            return serviceTypeData.map((item, index) => ({
+                                name: item.name,
+                                value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
+                                color: referenceColors[index % referenceColors.length]
+                            }));
+                        })()}
+                    />
+                </Grid>
 
                 {/* Top Centers Table */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Top Performing Centers</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="border-b border-slate-100">
-                                <tr>
-                                    <th className="py-2">Center Name</th>
-                                    <th className="py-2">Jobs</th>
-                                    <th className="py-2 text-right">Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                <tr>
-                                    <td className="py-3 font-medium">Downtown Branch</td>
-                                    <td className="py-3">450</td>
-                                    <td className="py-3 text-right font-bold text-slate-900">$45,200</td>
-                                </tr>
-                                <tr>
-                                    <td className="py-3 font-medium">Westside Hub</td>
-                                    <td className="py-3">320</td>
-                                    <td className="py-3 text-right font-bold text-slate-900">$32,100</td>
-                                </tr>
-                                <tr>
-                                    <td className="py-3 font-medium">North Garage</td>
-                                    <td className="py-3">180</td>
-                                    <td className="py-3 text-right font-bold text-slate-900">$18,400</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Card sx={{ height: '100%', overflow: 'visible' }}>
 
-function AreaChartComponent() {
-    return (
-        <LineChart
-            data={revenueData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-        >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-            <Tooltip
-                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            />
-            <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#FF6B00"
-                strokeWidth={3}
-                dot={{ r: 4, strokeWidth: 2 }}
-                activeDot={{ r: 6 }}
-            />
-        </LineChart>
-    )
+
+                        <Box pt={3} px={3}>
+                            <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
+                        </Box>
+
+
+                        <Box p={2}>
+                            <TableContainer>
+                                <Table>
+                                    <TableHead sx={{ display: 'table-header-group' }}>
+                                        <TableRow>
+                                            <TableCell>Center Name</TableCell>
+                                            <TableCell>Jobs</TableCell>
+                                            <TableCell align="right">Revenue</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
+                                                    Downtown Branch
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>450</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$45,200</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">W</Box>
+                                                    Westside Hub
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>320</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$32,100</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">N</Box>
+                                                    North Garage
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>180</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$18,400</TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Box>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Box>
+    );
 }
