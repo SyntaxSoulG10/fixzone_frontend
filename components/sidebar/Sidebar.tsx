@@ -47,10 +47,9 @@ const ROLE_MENUS: any = {
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
-        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/customer/bookings' },
-        { name: 'Service History', icon: FiClock, href: '/dashboard/customer/history' },
-        { name: 'Notifications', icon: FiList, href: '/dashboard/customer/notifications' },
-        { name: 'Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
+        { name: 'Book Service', icon: FiCalendar, href: '/dashboard/customer/bookings' },
+        { name: 'My bookings', icon: FiClock, href: '/dashboard/customer/history' },
+        { name: 'My Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
     ]
 };
 
