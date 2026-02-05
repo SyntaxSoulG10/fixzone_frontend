@@ -34,7 +34,7 @@ const FAQSection = () => {
     };
 
     return (
-        <section className="bg-[#140802] py-24 relative overflow-hidden">
+        <section id="faq" className="bg-[#140802] py-20 relative overflow-hidden">
             {/* Background Gradients */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px]"></div>
@@ -42,8 +42,8 @@ const FAQSection = () => {
             </div>
 
             <div className="max-w-4xl mx-auto px-6 relative z-10">
-                <div className="text-center mb-16 space-y-4">
-                    <span className="text-[#EA580C] font-bold text-lg uppercase tracking-wide">FAQ</span>
+                <div className="text-center mb-12 space-y-3">
+                    <span className="text-[#EA580C] font-bold text-base uppercase tracking-wide">FAQ</span>
                     <h2 className="text-3xl md:text-4xl font-bold text-slate-100 leading-tight">
                         Find answers to common <br />
                         questions about our services
@@ -56,19 +56,19 @@ const FAQSection = () => {
                         return (
                             <div
                                 key={index}
-                                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${isOpen
-                                        ? 'bg-white/10 border-orange-500/50'
-                                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                                className={`rounded-xl border transition-all duration-300 overflow-hidden ${isOpen
+                                    ? 'bg-white/10 border-orange-500/50'
+                                    : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
                                     }`}
                             >
                                 <button
                                     onClick={() => toggleFAQ(index)}
-                                    className="w-full flex items-center justify-between p-6 text-left focus:outline-none"
+                                    className="w-full flex items-center justify-between p-5 text-left focus:outline-none"
                                 >
-                                    <span className="text-lg font-medium text-slate-100 pr-8">
+                                    <span className="text-base md:text-lg font-medium text-slate-100 pr-8">
                                         {faq.question}
                                     </span>
-                                    <div className={`p-2 rounded-full ${isOpen ? 'bg-white text-[#EA580C]' : 'bg-transparent text-white'}`}>
+                                    <div className={`p-1.5 rounded-full ${isOpen ? 'bg-white text-[#EA580C]' : 'bg-transparent text-white'}`}>
                                         {isOpen ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
                                     </div>
                                 </button>
@@ -77,7 +77,7 @@ const FAQSection = () => {
                                     className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
                                         }`}
                                 >
-                                    <div className="px-6 pb-6 text-slate-300 leading-relaxed border-t border-white/5 pt-4 mx-6 mt-0">
+                                    <div className="px-5 pb-5 text-slate-300 leading-relaxed border-t border-white/5 pt-3 mx-5 mt-0 text-sm md:text-base">
                                         {faq.answer}
                                     </div>
                                 </div>
