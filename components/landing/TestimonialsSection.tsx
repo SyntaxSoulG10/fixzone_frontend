@@ -30,7 +30,7 @@ const testimonials = [
 
 const TestimonialsSection = () => {
     return (
-        <section className="bg-[#140802] py-24 relative overflow-hidden">
+        <section className="bg-[#140802] py-20 relative overflow-hidden">
             {/* Background Gradients */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-orange-600/10 rounded-full blur-[120px]"></div>
@@ -40,9 +40,9 @@ const TestimonialsSection = () => {
             <div className="max-w-7xl mx-auto px-6 relative z-10">
 
                 {/* Header */}
-                <div className="text-center mb-16 space-y-4">
-                    <span className="text-[#EA580C] font-bold text-lg uppercase tracking-wide">Testimonials</span>
-                    <h2 className="text-3xl md:text-5xl font-bold text-slate-100 leading-tight">
+                <div className="text-center mb-12 space-y-3">
+                    <span className="text-[#EA580C] font-bold text-base uppercase tracking-wide">Testimonials</span>
+                    <h2 className="text-3xl md:text-4xl font-bold text-slate-100 leading-tight">
                         Where Technology <br className="hidden md:block" />
                         <span className="text-slate-100">Meets Trusted Service.</span>
                     </h2>
@@ -53,12 +53,12 @@ const TestimonialsSection = () => {
                     {testimonials.map((testimonial) => (
                         <div
                             key={testimonial.id}
-                            className="group p-6 md:p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-orange-500/30 transition-all duration-300 hover:bg-white/[0.07]"
+                            className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-orange-500/30 transition-all duration-300 hover:bg-white/[0.07]"
                         >
-                            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                            <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
                                 {/* Avatar */}
                                 <div className="flex-shrink-0">
-                                    <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-orange-500/50 transition-colors">
+                                    <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-orange-500/50 transition-colors">
                                         <Image
                                             src={testimonial.image}
                                             alt={testimonial.name}
@@ -69,11 +69,11 @@ const TestimonialsSection = () => {
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-grow space-y-3">
-                                    <p className="text-lg text-slate-300 italic font-light leading-relaxed">
+                                <div className="flex-grow space-y-2">
+                                    <p className="text-base md:text-lg text-slate-300 italic font-light leading-relaxed">
                                         {testimonial.text}
                                     </p>
-                                    <p className="text-[#EA580C] font-semibold text-sm uppercase tracking-wider">
+                                    <p className="text-[#EA580C] font-semibold text-xs md:text-sm uppercase tracking-wider">
                                         — {testimonial.name}
                                     </p>
                                 </div>

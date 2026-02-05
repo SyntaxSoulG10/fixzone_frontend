@@ -6,7 +6,7 @@ import { FiTwitter, FiFacebook, FiInstagram, FiLinkedin } from 'react-icons/fi';
 
 const Footer = () => {
     return (
-        <footer className="bg-[#140802] text-slate-400 py-16 border-t border-white/5">
+        <footer id='footer' className="bg-[#140802] text-slate-400 py-16 border-t border-white/5">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
 
@@ -32,7 +32,7 @@ const Footer = () => {
                         <h4 className="text-slate-200 font-semibold mb-6">Company</h4>
                         <ul className="space-y-4 text-sm">
                             <li><Link href="#about" className="hover:text-[#EA580C] transition-colors">About us</Link></li>
-                            <li><Link href="#contact" className="hover:text-[#EA580C] transition-colors">Contact us</Link></li>
+                            <li><Link href="#footer" className="hover:text-[#EA580C] transition-colors">Contact us</Link></li>
                             <li><Link href="#" className="hover:text-[#EA580C] transition-colors">Careers</Link></li>
                             <li><Link href="#" className="hover:text-[#EA580C] transition-colors">Press</Link></li>
                         </ul>
@@ -43,10 +43,10 @@ const Footer = () => {
                         <h4 className="text-slate-200 font-semibold mb-6">Product</h4>
                         <ul className="space-y-4 text-sm">
                             <li><Link href="#features" className="hover:text-[#EA580C] transition-colors">Features</Link></li>
-                            <li><Link href="#" className="hover:text-[#EA580C] transition-colors">Pricing</Link></li>
+                            <li><Link href="#pricing" className="hover:text-[#EA580C] transition-colors">Pricing</Link></li>
                             <li><Link href="#" className="hover:text-[#EA580C] transition-colors">News</Link></li>
-                            <li><Link href="#" className="hover:text-[#EA580C] transition-colors">Help desk</Link></li>
-                            <li><Link href="#" className="hover:text-[#EA580C] transition-colors">Support</Link></li>
+                            <li><Link href="#faq" className="hover:text-[#EA580C] transition-colors">Help desk</Link></li>
+                            <li><Link href="#faq" className="hover:text-[#EA580C] transition-colors">Support</Link></li>
                         </ul>
                     </div>
 

@@ -4,16 +4,16 @@ import React from "react";
 import { FiUser, FiCheck, FiHome } from "react-icons/fi";
 
 const AudienceCard = ({ icon, title, features }: { icon: React.ReactNode, title: string, features: string[] }) => (
-    <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center flex-1 min-w-[300px] border border-slate-100 transition-transform hover:-translate-y-2 duration-300">
-        <div className="w-16 h-16 bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-3xl mb-6 shadow-lg shadow-orange-500/30">
+    <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center flex-1 min-w-[280px] border border-slate-100 transition-transform hover:-translate-y-2 duration-300">
+        <div className="w-14 h-14 bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-2xl mb-6 shadow-lg shadow-orange-500/30">
             {icon}
         </div>
-        <h3 className="text-2xl font-bold text-slate-800 mb-8 text-center">{title}</h3>
-        <ul className="space-y-4 w-full">
+        <h3 className="text-xl font-bold text-slate-800 mb-6 text-center">{title}</h3>
+        <ul className="space-y-3 w-full">
             {features.map((feature, index) => (
-                <li key={index} className="flex items-start gap-3 text-slate-600">
-                    <div className="mt-1 text-[#FF6B00] min-w-[20px]">
-                        <FiCheck className="w-5 h-5" />
+                <li key={index} className="flex items-start gap-3 text-slate-600 text-sm md:text-base">
+                    <div className="mt-1 text-[#FF6B00] min-w-[18px]">
+                        <FiCheck className="w-4 h-4" />
                     </div>
                     <span className="font-medium">{feature}</span>
                 </li>
@@ -38,7 +38,7 @@ export default function TargetAudienceSection() {
     ];
 
     return (
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-20 relative overflow-hidden">
             {/* Gradient Background */}
             <div
                 className="absolute inset-0 z-0"
@@ -47,12 +47,12 @@ export default function TargetAudienceSection() {
                 }}
             ></div>
 
-            <div className="max-w-6xl mx-auto px-6 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 className="text-slate-600 font-bold text-3xl md:text-4xl mb-4">Who Is It For?</h2>
+            <div className="max-w-5xl mx-auto px-6 relative z-10">
+                <div className="text-center mb-12">
+                    <h2 className="text-slate-600 font-bold text-2xl md:text-3xl mb-4">Who Is It For?</h2>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch">
+                <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch">
                     <AudienceCard
                         icon={<FiUser />}
                         title="Vehicle Owners"
