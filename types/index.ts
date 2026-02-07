@@ -2,7 +2,7 @@ export interface User {
     id: number | string;
     name: string;
     email: string;
-    role: 'Super Admin' | 'Company Owner' | 'Service Manager' | 'Customer' | 'Owner' | 'Manager';
+    role: 'Super Admin' | 'Company Owner' | 'Service Manager' | 'Customer' | 'Owner' | 'Manager' | 'Mechanic';
     status: 'Active' | 'Inactive' | 'Suspended' | 'Pending';
     lastLogin: string;
     joinedDate?: string;
@@ -22,7 +22,7 @@ export interface Subscription {
 
 export interface SystemMetric {
     title: string;
-    status: 'Healthy' | 'Online' | 'Operational' | 'Connected' | 'Down' | 'Degraded';
+    status: 'Healthy' | 'Online' | 'Operational' | 'Connected' | 'Down' | 'Degraded' | 'Secure';
     subtext: string;
 }
 
