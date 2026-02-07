@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
     FiUsers,
     FiBriefcase,
-    FiSettings,
     FiPieChart,
     FiFileText,
     FiCalendar,

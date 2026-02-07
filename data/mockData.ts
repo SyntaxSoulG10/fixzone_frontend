@@ -1,9 +1,6 @@
 import { User } from "@/types";
 
 export const MOCK_USERS: User[] = [
-    { id: "USR-1203", name: "John Anderson", email: "johna@example.com", role: "Customer", status: "Pending", lastLogin: "2 mins ago", joinedDate: "Nov 8, 2024", activity: "3 Bookings" },
-    { id: "USR-1204", name: "Lisa Brown", email: "lisab@example.com", role: "Owner", status: "Active", lastLogin: "1 hour ago", joinedDate: "Nov 7, 2024", activity: "1 Bookings" },
-    { id: "USR-1205", name: "Robert Taylor", email: "robertt@example.com", role: "Customer", status: "Active", lastLogin: "3 days ago", joinedDate: "Oct 15, 2024", activity: "AutoCare Plus" },
     { id: "USR-1206", name: "Anna Garcia", email: "annagarcia@example.com", role: "Manager", status: "Pending", lastLogin: "5 hours ago", joinedDate: "Oct 5, 2024", activity: "Express service Hub" },
     { id: "BK-0005", name: "Oliver Tuwin", email: "olivertuwin@example.com", role: "Customer", status: "Active", lastLogin: "1 day ago", joinedDate: "Sept 11, 2024", activity: "2 Bookings" },
     { id: "BK-0001", name: "Nike Fernando", email: "nikefernando@example.com", role: "Customer", status: "Pending", lastLogin: "10 mins ago", joinedDate: "Aug 2, 2024", activity: "Oil Changing" },
