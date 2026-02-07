@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
 
@@ -42,9 +43,13 @@ export default function LoginPage() {
 
                 <div className="relative z-10">
                     <Link href="/" className="flex items-center gap-2 mb-8">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                            F
-                        </div>
+                        <Image 
+                            src="/Logo-Light.png" 
+                            alt="FixZone Logo" 
+                            width={32} 
+                            height={32} 
+                            className="w-8 h-8 object-contain"
+                        />
                         <span className="text-2xl font-bold">FixZone</span>
                     </Link>
                     <h1 className="text-5xl font-bold leading-tight mb-6">

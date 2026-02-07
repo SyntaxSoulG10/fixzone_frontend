@@ -45,7 +45,15 @@ export default function StatCard({ title, count, percentage, icon, color = 'prim
     };
 
     return (
-        <Card sx={{ overflow: 'visible' }}>
+        <Card sx={{ 
+            overflow: 'visible',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            cursor: 'pointer',
+            '&:hover': {
+                transform: 'translateY(-5px)',
+                boxShadow: (theme) => theme.shadows[8]
+            }
+        }}>
             <Box display="flex" justifyContent="space-between" pt={1} px={2}>
                 <Box
                     sx={{
