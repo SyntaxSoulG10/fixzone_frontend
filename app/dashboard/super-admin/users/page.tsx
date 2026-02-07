@@ -5,8 +5,7 @@ import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { User } from "@/types";
 import { HiDotsVertical } from "react-icons/hi";
-import { FiUser, FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck } from "react-icons/fi";
-import { FiFilter, FiPlus } from "react-icons/fi";
+import { FiUser, FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck, FiFilter, FiPlus } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 
 export default function UsersPage() {

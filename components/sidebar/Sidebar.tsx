@@ -7,8 +7,6 @@ import {
     FiUsers,
     FiBriefcase,
     FiSettings,
-    FiTruck,
-    FiList,
     FiPieChart,
     FiFileText,
     FiCalendar,

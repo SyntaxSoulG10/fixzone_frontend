@@ -4,7 +4,7 @@ import { MOCK_STATIONS, Station } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { HiDotsVertical } from "react-icons/hi";
-import { FiUser, FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiTrendingUp, FiCheckCircle } from "react-icons/fi";
+import { FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiCheckCircle } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 
 export default function ServiceStationsPage() {
