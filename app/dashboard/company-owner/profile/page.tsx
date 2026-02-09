@@ -23,9 +23,26 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions
+    DialogActions,
+    LinearProgress,
+    Chip
 } from "@mui/material";
-import { FiHome, FiSettings, FiEdit2, FiFacebook, FiTwitter, FiInstagram, FiTool, FiActivity, FiSave, FiX, FiCamera } from "react-icons/fi";
+import {
+    FiHome,
+    FiSettings,
+    FiEdit2,
+    FiFacebook,
+    FiTwitter,
+    FiInstagram,
+    FiTool,
+    FiActivity,
+    FiSave,
+    FiX,
+    FiCamera,
+    FiCreditCard,
+    FiCheck,
+    FiDownload
+} from "react-icons/fi";
 
 // --- Components ---
 
@@ -81,6 +98,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                     mx: 3,
                     py: 2,
                     px: 2,
+                    zIndex: 1
                 }}
             >
                 <Grid container spacing={3} alignItems="center">
@@ -105,7 +123,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             }
                         >
                             <Avatar
-                                src={profileImage || "/assets/images/bruce-mars.jpg"}
+                                src={profileImage || ""}
                                 alt="profile-image"
                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
@@ -130,7 +148,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6, lg: 4 }} sx={{ ml: "auto" }}>
+                    <Grid size={{ xs: 12, md: 6, lg: 5 }} sx={{ ml: "auto" }}>
                         <Tabs
                             value={tabValue}
                             onChange={onTabChange}
@@ -149,6 +167,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                         >
                             <Tab label="Overview" icon={<FiHome size={18} />} iconPosition="start" />
                             <Tab label="Account" icon={<FiSettings size={18} />} iconPosition="start" />
+                            <Tab label="Billing" icon={<FiCreditCard size={18} />} iconPosition="start" />
                         </Tabs>
                     </Grid>
                 </Grid>
@@ -253,6 +272,128 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                 </Box>
             </Box>
         </Card>
+    );
+}
+
+function BillingTab() {
+    return (
+        <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 8 }}>
+                <Card sx={{ p: 3, mb: 3 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                Current Plan: Professional
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                You are currently on the Professional monthly plan.
+                            </Typography>
+                        </Box>
+                        <Chip label="Active" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                    </Box>
+
+                    <Box mt={3} p={2} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                                $49.00 / month
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Next payment: Feb 28, 2026
+                            </Typography>
+                        </Box>
+                        <Button variant="contained" color="primary" size="small" sx={{ color: 'white', textTransform: 'none' }}>
+                            Upgrade Plan
+                        </Button>
+                        <Button variant="text" size="small" sx={{ ml: 1, textTransform: 'none', color: 'text.secondary' }}>
+                            Cancel Subscription
+                        </Button>
+                    </Box>
+
+                    <Box mt={4}>
+                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                            Plan Usage
+                        </Typography>
+                        <Box mb={2}>
+                            <Box display="flex" justifyContent="space-between" mb={0.5}>
+                                <Typography variant="caption">Service Centers</Typography>
+                                <Typography variant="caption" fontWeight="bold">3 / 5</Typography>
+                            </Box>
+                            <LinearProgress variant="determinate" value={60} color="primary" sx={{ height: 6, borderRadius: 3 }} />
+                        </Box>
+                        <Box mb={2}>
+                            <Box display="flex" justifyContent="space-between" mb={0.5}>
+                                <Typography variant="caption">Team Members</Typography>
+                                <Typography variant="caption" fontWeight="bold">8 / 20</Typography>
+                            </Box>
+                            <LinearProgress variant="determinate" value={40} color="primary" sx={{ height: 6, borderRadius: 3 }} />
+                        </Box>
+                    </Box>
+                </Card>
+
+                <Card sx={{ p: 0 }}>
+                    <Box p={2} borderBottom="1px solid #eee">
+                        <Typography variant="h6" fontWeight="bold">
+                            Billing History
+                        </Typography>
+                    </Box>
+                    <Box>
+                        {[
+                            { date: "Jan 28, 2026", amount: "$49.00", status: "Paid", invoice: "#INV-2024-001" },
+                            { date: "Dec 28, 2025", amount: "$49.00", status: "Paid", invoice: "#INV-2023-012" },
+                            { date: "Nov 28, 2025", amount: "$49.00", status: "Paid", invoice: "#INV-2023-011" },
+                        ].map((item, index) => (
+                            <Box key={index} p={2} display="flex" justifyContent="space-between" alignItems="center" borderBottom={index !== 2 ? "1px solid #f1f5f9" : "none"}>
+                                <Box>
+                                    <Typography variant="body2" fontWeight="medium">{item.date}</Typography>
+                                    <Typography variant="caption" color="text.secondary">Invoice {item.invoice}</Typography>
+                                </Box>
+                                <Box display="flex" alignItems="center" gap={3}>
+                                    <Box textAlign="right">
+                                        <Typography variant="body2" fontWeight="medium">{item.amount}</Typography>
+                                        <Typography variant="caption" color="success.main">● {item.status}</Typography>
+                                    </Box>
+                                    <IconButton size="small">
+                                        <FiDownload size={16} />
+                                    </IconButton>
+                                </Box>
+                            </Box>
+                        ))}
+                    </Box>
+                </Card>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+                <Card sx={{ p: 3, mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Payment Method
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={2} p={2} border="1px solid #e2e8f0" borderRadius={2} mt={2}>
+                        <Box bgcolor="#eff6ff" p={1} borderRadius={1} color="#3b82f6">
+                            <FiCreditCard size={24} />
+                        </Box>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">Visa ending in 4242</Typography>
+                            <Typography variant="caption" color="text.secondary">Expiry 09/2028</Typography>
+                        </Box>
+                    </Box>
+                    <Button variant="outlined" fullWidth size="small" sx={{ mt: 2, textTransform: 'none' }}>
+                        Update Payment Method
+                    </Button>
+                </Card>
+
+                <Card sx={{ p: 3, bgcolor: '#fff7ed', border: '1px solid #fed7aa' }}>
+                    <Typography variant="subtitle2" fontWeight="bold" color="#ea580c" gutterBottom>
+                        Need more capacity?
+                    </Typography>
+                    <Typography variant="body2" color="#9a3412" paragraph>
+                        Upgrade to our Enterprise plan for unlimited service centers and priority support.
+                    </Typography>
+                    <Button variant="contained" size="small" sx={{ bgcolor: '#ea580c', color: 'white', '&:hover': { bgcolor: '#c2410c' }, textTransform: 'none' }}>
+                        View Enterprise Options
+                    </Button>
+                </Card>
+            </Grid>
+        </Grid>
     );
 }
 
@@ -511,6 +652,11 @@ export default function ProfilePage() {
                             </Card>
                         </Grid>
                     </Grid>
+                )}
+
+                {/* Tab 2: Billing */}
+                {tabValue === 2 && (
+                    <BillingTab />
                 )}
             </Box>
 

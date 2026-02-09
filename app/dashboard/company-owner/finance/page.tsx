@@ -13,14 +13,23 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
-    Stack
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip,
+    Avatar
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
     FiTrendingUp,
     FiCreditCard,
     FiDollarSign,
-    FiPieChart
+    FiPieChart,
+    FiDownload
 } from "react-icons/fi";
 import {
     BarChart,
@@ -57,10 +66,54 @@ const GROWTH_DATA = [
     { month: 'Jun', amount: 45000 },
 ];
 
-const PAYMENT_DATA = [
-    { name: 'Card', value: 60, color: '#EA580C' },
-    { name: 'Online', value: 25, color: '#F97316' }, // Orange-500
-    { name: 'Cash', value: 15, color: '#FB923C' }, // Orange-400
+
+
+const RECENT_TRANSACTIONS = [
+    {
+        id: "TRX-9821",
+        customer: "John Doe",
+        service: "Premium Detailing Package",
+        amount: "$149.99",
+        date: "Today, 10:42 AM",
+        status: "Completed",
+        method: "Credit Card"
+    },
+    {
+        id: "TRX-9822",
+        customer: "Sarah Smith",
+        service: "Standard Oil Change",
+        amount: "$49.99",
+        date: "Today, 09:15 AM",
+        status: "Completed",
+        method: "Apple Pay"
+    },
+    {
+        id: "TRX-9823",
+        customer: "Michael Brown",
+        service: "Full Diagnostic Scan",
+        amount: "$89.00",
+        date: "Yesterday, 04:30 PM",
+        status: "Pending",
+        method: "Bank Transfer"
+    },
+    {
+        id: "TRX-9824",
+        customer: "Emily Davis",
+        service: "Brake Pad Replacement",
+        amount: "$120.00",
+        date: "Yesterday, 02:15 PM",
+        status: "Completed",
+        method: "Cash"
+    },
+    {
+        id: "TRX-9825",
+        customer: "David Wilson",
+        service: "Standard Oil Change",
+        amount: "$49.99",
+        date: "Yesterday, 11:00 AM",
+        status: "Refunded",
+        method: "Credit Card"
+    }
 ];
 
 const StatCard = ({ title, value, subtext, icon: Icon, color }: any) => {
@@ -161,8 +214,7 @@ export default function FinancePage() {
 
             {/* Charts Section */}
             <Grid container spacing={3}>
-                {/* Monthly Growth Line Chart */}
-                <Grid size={{ xs: 12, lg: 8 }}>
+                <Grid size={{ xs: 12, lg: 12 }}>
                     <ChartCard
                         title="Revenue Overview"
                         description={
@@ -217,22 +269,85 @@ export default function FinancePage() {
                     />
                 </Grid>
 
-                {/* Payment Types Donut Chart */}
-                <Grid size={{ xs: 12, lg: 4 }}>
-                    <Box mt={4} height="100%">
-                        <DonutStatCard
-                            title="Payment Breakdown"
-                            totalValue={100}
-                            unit="TRXN"
-                            subtext="Percentage distribution"
-                            data={PAYMENT_DATA}
-                        />
+                {/* Revenue by Center Bar Chart */}
+                <Grid size={{ xs: 12, lg: 12 }}>
+                    <Box mt={4}>
+                        <Card sx={{ p: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                                <Typography variant="h6" fontWeight="bold">
+                                    Recent Transactions
+                                </Typography>
+                                <Button size="small" variant="text">View All</Button>
+                            </Box>
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Transaction ID</TableCell>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Customer</TableCell>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Service Package</TableCell>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Date</TableCell>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Amount</TableCell>
+                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }} align="center">Status</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {RECENT_TRANSACTIONS.map((trx) => (
+                                            <TableRow key={trx.id} hover>
+                                                <TableCell>
+                                                    <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                                                        {trx.id}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center" gap={1}>
+                                                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
+                                                            {trx.customer.charAt(0)}
+                                                        </Avatar>
+                                                        <Typography variant="body2" fontWeight="medium">
+                                                            {trx.customer}
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {trx.service}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {trx.date}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" fontWeight="bold" color="text.primary">
+                                                        {trx.amount}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Chip
+                                                        label={trx.status}
+                                                        size="small"
+                                                        color={
+                                                            trx.status === 'Completed' ? 'success' :
+                                                                trx.status === 'Pending' ? 'warning' : 'error'
+                                                        }
+                                                        variant="outlined"
+                                                        sx={{ fontWeight: 'bold', height: 24 }}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Card>
                     </Box>
                 </Grid>
 
                 {/* Revenue by Center Bar Chart */}
                 <Grid size={{ xs: 12, lg: 12 }}>
-                    <Box mt={12}>
+                    <Box mt={4}>
                         <ChartCard
                             title="Center Performance"
                             description="Revenue comparison across all branches"
