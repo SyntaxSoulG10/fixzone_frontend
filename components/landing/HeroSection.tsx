@@ -36,7 +36,7 @@ export default function HeroSection() {
             <nav className="relative z-50 w-full px-6 py-4 max-w-7xl mx-auto flex justify-between items-center text-white">
                 <div className="flex items-center gap-2">
                     {/* Logo */}
-                    <img src="/logo-dark.png" alt="FixZone Logo" className="h-12 md:h-16 w-auto object-contain" />
+                    <img src="/Logo-Dark.png" alt="FixZone Logo" className="h-12 md:h-16 w-auto object-contain" />
                 </div>
 
                 <div className="hidden md:flex items-center gap-8 font-medium text-base">
