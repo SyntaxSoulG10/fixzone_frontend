@@ -114,17 +114,7 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                 </nav>
             </div>
 
-            <div className="p-4 border-t border-slate-200">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                        {role.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-medium text-slate-900 truncate capitalize">{role.replace('_', ' ')}</p>
-                        <p className="text-xs text-slate-500 truncate">Tenant: FixZone Inc.</p>
-                    </div>
-                </div>
-            </div>
+
         </aside>
     );
 }
