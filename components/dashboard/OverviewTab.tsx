@@ -46,7 +46,7 @@ export default function OverviewTab() {
     return (
         <Grid container spacing={3}>
             {/* Left Column: Sales Chart */}
-            <Grid size={{ xs: 12, lg: 8 }}>
+            <Grid size={{ xs: 12 }}>
                 <Box mb={3}>
                     <ChartCard
                         title="Daily Sales"
@@ -139,41 +139,6 @@ export default function OverviewTab() {
                                     </Box>
                                 </Box>
                             ))}
-                        </Box>
-                    </Box>
-                </Card>
-            </Grid>
-
-            {/* Right Column: Live Activity */}
-            <Grid size={{ xs: 12, lg: 4 }}>
-                <Card sx={{ height: '100%' }}>
-                    <Box p={2}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Recent Activity
-                        </Typography>
-                        <Box display="flex" flexDirection="column" gap={3} mt={2}>
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <Box key={i} display="flex" gap={2}>
-                                    <Box display="flex" flexDirection="column" alignItems="center">
-                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="primary.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #FED7AA" />
-                                        {i !== 5 && <Box width="2px" flexGrow={1} bgcolor="grey.200" my={0.5} />}
-                                    </Box>
-                                    <Box pb={i !== 5 ? 2 : 0}>
-                                        <Typography variant="subtitle2" fontWeight="bold">New Job Created</Typography>
-                                        <Typography variant="caption" color="text.secondary" component="div">
-                                            Downtown Branch started a new tire service.
-                                        </Typography>
-                                        <Typography variant="caption" color="text.disabled" fontWeight="medium" mt={0.5} display="block">
-                                            10:42 AM
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ))}
-                        </Box>
-                        <Box mt={3}>
-                            <Button fullWidth variant="text" color="primary">
-                                View Full History
-                            </Button>
                         </Box>
                     </Box>
                 </Card>

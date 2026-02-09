@@ -16,7 +16,8 @@ import {
     FiHome,
     FiTool,
     FiDollarSign,
-    FiSmile
+    FiSmile,
+    FiLayers
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
@@ -31,6 +32,7 @@ const ROLE_MENUS: any = {
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
+        { name: 'Services', icon: FiLayers, href: '/dashboard/company-owner/services' },
         { name: 'Service Centers', icon: FiBriefcase, href: '/dashboard/company-owner/centers' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/company-owner/analytics' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/company-owner/reports' },
