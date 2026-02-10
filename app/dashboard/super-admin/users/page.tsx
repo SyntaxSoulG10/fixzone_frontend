@@ -5,7 +5,7 @@ import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { User } from "@/types";
 import { HiDotsVertical } from "react-icons/hi";
-import { FiUser, FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck, FiFilter, FiPlus } from "react-icons/fi";
+import { FiUser, FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck, FiFilter, FiPlus, FiEdit2, FiTrash2, FiSlash, FiCheckCircle, FiFlag, FiUserX, FiAlertTriangle, FiBell } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 
 export default function UsersPage() {
@@ -13,20 +13,15 @@ export default function UsersPage() {
         {
             header: "User Profile",
             accessor: (row: User) => (
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <img 
-                            src={`https://ui-avatars.com/api/?name=${row.name}&background=random`} 
-                            alt={row.name}
-                            className="w-10 h-10 rounded-full border-2 border-white shadow-sm" 
-                        />
-                        <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                            row.status === 'Active' ? 'bg-green-500' : 'bg-slate-300'
-                        }`}></span>
-                    </div>
+                <div className="flex items-center gap-4">
+                    <img 
+                        src={`https://ui-avatars.com/api/?name=${row.name}&background=random`} 
+                        alt={row.name}
+                        className="w-10 h-10 rounded-full border-2 border-white shadow-sm" 
+                    />
                     <div>
-                        <div className="font-bold text-slate-800 text-sm">{row.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{row.id}</div>
+                        <div className="font-bold text-slate-800 text-sm leading-snug">{row.name}</div>
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">{row.id}</div>
                     </div>
                 </div>
             )
@@ -54,9 +49,11 @@ export default function UsersPage() {
                 if (row.role === 'Mechanic') { icon = <FiTool />; color = "bg-orange-50 text-orange-700 border-orange-200"; }
 
                 return (
-                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${color}`}>
-                        <span className="text-xs">{icon}</span>
-                        <span className="font-bold text-xs uppercase tracking-wide">{row.role}</span>
+                    <div className="flex items-center h-full">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border min-w-[100px] justify-center ${color}`}>
+                            <span className="text-xs">{icon}</span>
+                            <span className="font-bold text-xs uppercase tracking-wide">{row.role}</span>
+                        </div>
                     </div>
                 );
             }
@@ -73,23 +70,25 @@ export default function UsersPage() {
         {
             header: "Status",
             accessor: (row: User) => (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                    row.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 
-                    'bg-slate-50 text-slate-600 border-slate-200'
-                }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${row.status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                    {row.status}
-                </span>
+                <div className="flex items-center h-full">
+                    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border min-w-[100px] shadow-sm ${
+                        row.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 
+                        'bg-slate-50 text-slate-600 border-slate-200'
+                    }`}>
+                        <span className={`w-2.5 h-2.5 rounded-full ${row.status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                        {row.status}
+                    </span>
+                 </div>
             )
         },
         {
             header: "Joined",
-            accessor: (row: User) => <span className="text-slate-500 text-xs font-medium">{row.joinedDate}</span>
+            accessor: (row: User) => <div className="flex items-center h-full"><span className="text-slate-500 text-xs font-medium font-mono">{row.joinedDate}</span></div>
         },
         {
             header: "Recent Task",
             accessor: (row: User) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 h-full">
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                     <span className="text-sm font-medium text-slate-700 truncate max-w-[120px]" title={row.activity}>
                         {row.activity}
@@ -98,14 +97,56 @@ export default function UsersPage() {
             )
         },
         {
-            header: "More",
-            accessor: () => <button className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"><HiDotsVertical /></button>
+            header: "Actions",
+            accessor: (row: User) => (
+                <div className="flex items-center gap-2 h-full">
+                    <button 
+                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 bg-slate-50"
+                         title="Notify User"
+                    >
+                         <FiBell className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Ban/Activate Toggle */}
+                    {row.status === 'Active' ? (
+                        <button 
+                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all border border-transparent hover:border-orange-100 bg-slate-50"
+                            title="Ban User"
+                        >
+                            <FiUserX className="w-4 h-4" />
+                        </button>
+                    ) : (
+                        <button 
+                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50"
+                            title="Activate User"
+                        >
+                            <FiUserCheck className="w-4 h-4" />
+                        </button>
+                    )}
+
+                    {/* Report User */}
+                    <button 
+                        className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all border border-transparent hover:border-purple-100 bg-slate-50"
+                        title="Report User Activity"
+                    >
+                        <FiAlertTriangle className="w-4 h-4" />
+                    </button>
+
+                    {/* Remove User */}
+                    <button 
+                        className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50"
+                        title="Remove User"
+                    >
+                        <FiTrash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )
         }
     ];
 
     return (
         <div className="space-y-8">
-            <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Management</h1>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

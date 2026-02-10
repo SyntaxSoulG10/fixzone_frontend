@@ -7,7 +7,7 @@ export default function SuperAdminDashboard() {
     return (
         <div className="space-y-8">
             {/* Friendly Welcome Banner (Gradient) */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-orange-900 p-8 text-white shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 to-orange-900 p-8 text-white shadow-lg">
                 <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -90,7 +90,7 @@ export default function SuperAdminDashboard() {
                 </div>
                 
                 {/* The Graph Card */}
-                <div className="bg-gradient-to-br from-[#FF8C60] to-[#E86C4A] rounded-2xl p-8 text-white shadow-xl shadow-orange-200 relative overflow-hidden group">
+                <div className="bg-linear-to-br from-[#FF8C60] to-[#E86C4A] rounded-2xl p-8 text-white shadow-xl shadow-orange-200 relative overflow-hidden group">
                     {/* Background decorations */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/5 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
@@ -112,13 +112,13 @@ export default function SuperAdminDashboard() {
                             <div key={i} className="flex flex-col items-center gap-3 group/bar w-full h-full justify-end">
                                 <div className="relative w-full h-full flex items-end justify-center">
                                     <div 
-                                        className="w-full max-w-[12px] md:max-w-[40px] bg-white/30 hover:bg-white rounded-t-lg transition-all duration-300 ease-out cursor-pointer relative group-hover/bar:scale-y-105 origin-bottom"
+                                        className="w-full max-w-3 md:max-w-10 bg-white/30 hover:bg-white rounded-t-lg transition-all duration-300 ease-out cursor-pointer relative group-hover/bar:scale-y-105 origin-bottom"
                                         style={{ height: `${h}%` }}
                                     >
                                         {/* Tooltip */}
                                         <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl transition-all transform translate-y-2 group-hover/bar:translate-y-0 pointer-events-none whitespace-nowrap z-20">
                                             ${h * 1240}
-                                            <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                                         </div>
                                     </div>
                                 </div>

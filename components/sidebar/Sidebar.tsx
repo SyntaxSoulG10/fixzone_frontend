@@ -14,7 +14,9 @@ import {
     FiTool,
     FiDollarSign,
     FiSmile,
-    FiActivity
+    FiActivity,
+    FiTag,
+    FiBell
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
@@ -23,6 +25,8 @@ const ROLE_MENUS: any = {
         { name: 'Service Stations', icon: FiBriefcase, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
         { name: 'Subscriptions', icon: FiDollarSign, href: '/dashboard/super-admin/subscriptions' },
+        { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
+        { name: 'Global Banners', icon: FiBell, href: '/dashboard/super-admin/banners' },
         { name: 'System Health', icon: FiActivity, href: '/dashboard/super-admin/system-health' },
     ],
     company_owner: [

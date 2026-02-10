@@ -9,7 +9,7 @@ import { useTheme } from '@mui/material/styles';
 
 interface StatCardProps {
     title: string;
-    count: string | number;
+    count: React.ReactNode;
     percentage?: {
         color: 'success' | 'danger' | 'warning' | 'info';
         amount: string;
@@ -81,7 +81,7 @@ export default function StatCard({ title, count, percentage, icon, color = 'prim
                     <Typography variant="button" fontWeight="light" color="text.secondary" textTransform="capitalize">
                         {title}
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="text.primary">
+                    <Typography variant="h4" fontWeight="bold" color="text.primary" sx={{ letterSpacing: -1 }}>
                         {count}
                     </Typography>
                 </Box>

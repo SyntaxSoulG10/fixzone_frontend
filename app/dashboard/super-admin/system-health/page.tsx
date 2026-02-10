@@ -99,31 +99,31 @@ export default function SystemHealthPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Recent Activity */}
-                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-xl shadow-slate-200/50 text-slate-300 font-mono text-sm relative overflow-hidden group">
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-slate-600 font-mono text-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
-                        <FiActivity className="w-32 h-32 text-white rotate-12" />
+                        <FiActivity className="w-32 h-32 text-orange-500 rotate-12" />
                     </div>
-                    <div className="flex justify-between items-center mb-6 relative z-10 border-b border-slate-800 pb-4">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <div className="flex justify-between items-center mb-6 relative z-10 border-b border-slate-100 pb-4">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                              <div className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
                              </div>
                              Live System Log
                         </h2>
-                        <button className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg transition-colors border border-slate-700">View Full Log</button>
+                        <button className="text-xs font-semibold bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-orange-600 px-3 py-1.5 rounded-lg transition-colors border border-slate-200">View Full Log</button>
                     </div>
-                    <div className="space-y-1 relative z-10 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                    <div className="space-y-1 relative z-10 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                         {MOCK_ACTIVITY.map((act) => (
-                            <div key={act.id} className="flex gap-4 p-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-default group/item">
-                                <span className="text-slate-500 whitespace-nowrap text-xs pt-0.5 font-bold">{act.time}</span>
+                            <div key={act.id} className="flex gap-4 p-2.5 rounded-lg hover:bg-orange-50 transition-colors cursor-default group/item">
+                                <span className="text-slate-400 whitespace-nowrap text-xs pt-0.5 font-bold">{act.time}</span>
                                 <div className={`${
-                                    act.type === 'success' ? 'text-green-400' :
-                                    act.type === 'error' ? 'text-red-400' :
-                                    act.type === 'warning' ? 'text-yellow-400' :
-                                    'text-blue-400'
+                                    act.type === 'success' ? 'text-green-600' :
+                                    act.type === 'error' ? 'text-red-500' :
+                                    act.type === 'warning' ? 'text-yellow-600' :
+                                    'text-blue-600'
                                 } flex-1`}>
-                                    <p className="group-hover/item:text-white transition-colors">{act.title}</p>
+                                    <p className="group-hover/item:text-orange-900 transition-colors">{act.title}</p>
                                 </div>
                             </div>
                         ))}
