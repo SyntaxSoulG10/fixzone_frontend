@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiCheck, FiEdit2, FiPlus, FiTrash, FiDollarSign } from "react-icons/fi";
+import { FiCheck, FiEdit2, FiPlus, FiTrash } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 
 interface ServicePlan {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/UI/Button";
-import { FiAlertCircle, FiCheckCircle, FiInfo, FiX, FiEye, FiBell } from "react-icons/fi";
+import { FiAlertCircle, FiCheckCircle, FiInfo, FiX, FiBell } from "react-icons/fi";
 
 type BannerType = 'info' | 'warning' | 'success' | 'error';
 interface Banner {

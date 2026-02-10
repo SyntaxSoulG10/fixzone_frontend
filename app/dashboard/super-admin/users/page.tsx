@@ -4,8 +4,7 @@ import { MOCK_USERS } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { User } from "@/types";
-import { HiDotsVertical } from "react-icons/hi";
-import { FiUser, FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck, FiFilter, FiPlus, FiEdit2, FiTrash2, FiSlash, FiCheckCircle, FiFlag, FiUserX, FiAlertTriangle, FiBell } from "react-icons/fi";
+import { FiBriefcase, FiTool, FiMail, FiClock, FiShield, FiUserPlus, FiUserCheck, FiFilter, FiUserX, FiAlertTriangle, FiBell, FiUser, FiTrash2, FiPlus } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 
 export default function UsersPage() {

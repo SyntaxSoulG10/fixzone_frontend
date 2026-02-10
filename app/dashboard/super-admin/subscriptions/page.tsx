@@ -6,7 +6,6 @@ import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { FiActivity, FiClock, FiDollarSign, FiSearch, FiFilter, FiDownload, FiCreditCard, FiAlertCircle, FiBell, FiAlertTriangle, FiSlash, FiFileText, FiCheckCircle } from "react-icons/fi";
 import { Subscription } from "@/types";
-import { HiDotsVertical } from "react-icons/hi";
 import Button from "@/components/UI/Button";
 
 export default function SubscriptionsPage() {

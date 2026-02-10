@@ -1,6 +1,5 @@
 "use client";
 
-import StatCard from "@/components/dashboard/StatCard";
 import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiSearch } from "react-icons/fi";
 
 export default function SuperAdminDashboard() {
@@ -13,7 +12,7 @@ export default function SuperAdminDashboard() {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">Welcome back, Super Admin!</h1>
-                        <p className="text-orange-100/80">Here's what's happening with your network today.</p>
+                        <p className="text-orange-100/80">Here&apos;s what&apos;s happening with your network today.</p>
                     </div>
 
                     {/* Integrated Search */}

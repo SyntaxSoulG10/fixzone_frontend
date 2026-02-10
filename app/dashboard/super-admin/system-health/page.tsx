@@ -1,14 +1,7 @@
 "use client";
 
 import { ActivityLog, PlatformStat, SystemMetric } from "@/types";
-import { FiCheckCircle, FiActivity, FiServer, FiDatabase, FiGlobe, FiShield, FiCpu, FiAlertCircle } from "react-icons/fi";
-
-const MOCK_METRICS: SystemMetric[] = [
-    { title: "Server Status", status: "Online", subtext: "Uptime: 99.9%" },
-    { title: "Database", status: "Healthy", subtext: "Response: 45ms" },
-    { title: "API Gateway", status: "Operational", subtext: "1.2M requests/day" },
-    { title: "Security", status: "Secure", subtext: "No threats detected" },
-];
+import { FiActivity, FiServer, FiDatabase, FiGlobe, FiShield, FiCpu } from "react-icons/fi";
 
 const MOCK_ACTIVITY: ActivityLog[] = [
     { id: 1, title: "[INFO] New service station registered successfully", time: "10:42:23 AM", type: "info" },
