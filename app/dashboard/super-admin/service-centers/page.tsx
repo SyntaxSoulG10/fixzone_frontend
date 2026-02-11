@@ -14,9 +14,9 @@ export default function ServiceStationsPage() {
     const topRatedStation = [...stations].sort((a, b) => b.ratings - a.ratings)[0];
 
     const filteredStations = stations.filter(s => 
-        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.owner?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.location?.toLowerCase().includes(searchQuery.toLowerCase())
+        (s.name ? s.name.toLowerCase() : "").includes(searchQuery.toLowerCase()) ||
+        (s.owner ? s.owner.toLowerCase() : "").includes(searchQuery.toLowerCase()) ||
+        (s.location ? s.location.toLowerCase() : "").includes(searchQuery.toLowerCase())
     );
 
     const handleApprove = (id: string | number) => {
