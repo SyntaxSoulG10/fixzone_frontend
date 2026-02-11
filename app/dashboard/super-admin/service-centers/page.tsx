@@ -3,7 +3,7 @@
 import { MOCK_STATIONS, Station } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash } from "react-icons/fi";
+import { FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { useState } from "react";
 
@@ -196,7 +196,7 @@ export default function ServiceStationsPage() {
                     </button>
                     <div className="relative flex-1 md:max-w-md group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FiFilter className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                            <FiSearch className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                         </div>
                         <input
                             type="text"
