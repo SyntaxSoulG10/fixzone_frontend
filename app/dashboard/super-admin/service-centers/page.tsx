@@ -9,8 +9,15 @@ import { useState } from "react";
 
 export default function ServiceStationsPage() {
     const [stations, setStations] = useState<Station[]>(MOCK_STATIONS);
+    const [searchQuery, setSearchQuery] = useState("");
     
     const topRatedStation = [...stations].sort((a, b) => b.ratings - a.ratings)[0];
+
+    const filteredStations = stations.filter(s => 
+        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.owner?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.location?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleApprove = (id: string | number) => {
         setStations(prev => prev.map(station => 
@@ -201,6 +208,8 @@ export default function ServiceStationsPage() {
                         <input
                             type="text"
                             placeholder="Search stations, owners, or locations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all text-sm"
                         />
                     </div>
@@ -219,7 +228,7 @@ export default function ServiceStationsPage() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                  <Table
                     columns={columns}
-                    data={stations}
+                    data={filteredStations}
                     keyField="id"
                 />
             </div>
