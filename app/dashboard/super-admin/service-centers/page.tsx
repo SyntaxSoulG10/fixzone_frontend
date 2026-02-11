@@ -50,6 +50,7 @@ export default function ServiceStationsPage() {
             header: "Owner",
             accessor: (row: Station) => (
                 <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                         src={`https://ui-avatars.com/api/?name=${row.owner}&background=random`} 
                         alt={row.owner}
@@ -103,7 +104,7 @@ export default function ServiceStationsPage() {
             header: "Plan",
             accessor: (row: Station) => (
                 <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm min-w-[80px] ${
+                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm min-w-20 ${
                         row.plan === 'Premium' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                         row.plan === 'Standard' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-slate-50 text-slate-600 border-slate-200'
@@ -117,7 +118,7 @@ export default function ServiceStationsPage() {
             header: "Status",
             accessor: (row: Station) => (
                 <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-[90px] ${
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${
                         row.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 
                         row.status === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         row.status === 'Suspended' ? 'bg-red-50 text-red-700 border-red-200' :
