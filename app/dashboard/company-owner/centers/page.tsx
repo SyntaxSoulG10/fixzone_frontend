@@ -212,7 +212,7 @@ export default function MyCentersPage() {
                                 No Service Centers Found
                             </Typography>
                             <Typography variant="body1" color="text.secondary" mb={4} maxWidth={400} mx="auto">
-                                You haven't added any service centers yet. Get started by adding your first location to track performance.
+                                You haven&apos;t added any service centers yet. Get started by adding your first location to track performance.
                             </Typography>
                             <Button variant="outlined" startIcon={<FiPlus />} onClick={handleOpenAdd}>
                                 Add First Center
@@ -421,7 +421,7 @@ export default function MyCentersPage() {
                                         name="status"
                                         value={formData.status}
                                         label="Status"
-                                        // @ts-ignore
+                                        // @ts-expect-error
                                         onChange={handleChange}
                                     >
                                         <MenuItem value="Active">Active</MenuItem>

@@ -3,14 +3,21 @@
 import { MOCK_STATIONS, Station } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash } from "react-icons/fi";
+import { FiFilter, FiPlus, FiStar, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { useState } from "react";
 
 export default function ServiceStationsPage() {
     const [stations, setStations] = useState<Station[]>(MOCK_STATIONS);
+    const [searchQuery, setSearchQuery] = useState("");
     
     const topRatedStation = [...stations].sort((a, b) => b.ratings - a.ratings)[0];
+
+    const filteredStations = stations.filter(s => 
+        (s.name ? s.name.toLowerCase() : "").includes(searchQuery.toLowerCase()) ||
+        (s.owner ? s.owner.toLowerCase() : "").includes(searchQuery.toLowerCase()) ||
+        (s.location ? s.location.toLowerCase() : "").includes(searchQuery.toLowerCase())
+    );
 
     const handleApprove = (id: string | number) => {
         setStations(prev => prev.map(station => 
@@ -43,6 +50,7 @@ export default function ServiceStationsPage() {
             header: "Owner",
             accessor: (row: Station) => (
                 <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                         src={`https://ui-avatars.com/api/?name=${row.owner}&background=random`} 
                         alt={row.owner}
@@ -96,7 +104,7 @@ export default function ServiceStationsPage() {
             header: "Plan",
             accessor: (row: Station) => (
                 <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm min-w-[80px] ${
+                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm min-w-20 ${
                         row.plan === 'Premium' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                         row.plan === 'Standard' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-slate-50 text-slate-600 border-slate-200'
@@ -110,7 +118,7 @@ export default function ServiceStationsPage() {
             header: "Status",
             accessor: (row: Station) => (
                 <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-[90px] ${
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${
                         row.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 
                         row.status === 'Pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         row.status === 'Suspended' ? 'bg-red-50 text-red-700 border-red-200' :
@@ -196,11 +204,13 @@ export default function ServiceStationsPage() {
                     </button>
                     <div className="relative flex-1 md:max-w-md group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FiFilter className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                            <FiSearch className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                         </div>
                         <input
                             type="text"
                             placeholder="Search stations, owners, or locations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all text-sm"
                         />
                     </div>
@@ -219,7 +229,7 @@ export default function ServiceStationsPage() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                  <Table
                     columns={columns}
-                    data={stations}
+                    data={filteredStations}
                     keyField="id"
                 />
             </div>
