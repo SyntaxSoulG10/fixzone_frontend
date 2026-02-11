@@ -4,11 +4,11 @@ import { useState } from "react";
 import { FiCalendar, FiFilter, FiCheckCircle, FiClock, FiAlertCircle } from "react-icons/fi";
 
 const BOOKINGS_DATA = [
-    { id: "BK-1001", customer: "Alice Johnson", vehicle: "Toyota Camry", variety: "Sedan", category: "General Service", mechanic: "Mike Ross", time: "09:00 AM", status: "In Progress" },
-    { id: "BK-1002", customer: "Bob Smith", vehicle: "Ford F-150", variety: "Truck", category: "Engine Repair", mechanic: "Harvey Specter", time: "10:30 AM", status: "Quality Check" },
-    { id: "BK-1003", customer: "Charlie Davis", vehicle: "Honda Civic", variety: "Sedan", category: "Oil Change", mechanic: "Rachel Zane", time: "11:00 AM", status: "Done" },
-    { id: "BK-1004", customer: "Diana Prince", vehicle: "Tesla Model 3", variety: "Electric", category: "Battery Check", mechanic: "Louis Litt", time: "01:00 PM", status: "In Progress" },
-    { id: "BK-1005", customer: "Evan Wright", vehicle: "BMW X5", variety: "SUV", category: "Brake Service", mechanic: "Donna Paulsen", time: "02:30 PM", status: "Pending" },
+    { id: "BK-1001", customer: "Alice Johnson", vehicle: "Toyota Camry", variety: "Sedan", category: "General Service", time: "09:00 AM", status: "In Progress" },
+    { id: "BK-1002", customer: "Bob Smith", vehicle: "Ford F-150", variety: "Truck", category: "Engine Repair", time: "10:30 AM", status: "Quality Check" },
+    { id: "BK-1003", customer: "Charlie Davis", vehicle: "Honda Civic", variety: "Sedan", category: "Oil Change", time: "11:00 AM", status: "Done" },
+    { id: "BK-1004", customer: "Diana Prince", vehicle: "Tesla Model 3", variety: "Electric", category: "Battery Check", time: "01:00 PM", status: "In Progress" },
+    { id: "BK-1005", customer: "Evan Wright", vehicle: "BMW X5", variety: "SUV", category: "Brake Service", time: "02:30 PM", status: "Pending" },
 ];
 
 export default function BookingsPage() {
@@ -16,7 +16,7 @@ export default function BookingsPage() {
 
     const filteredData = filter === "All"
         ? BOOKINGS_DATA
-        : BOOKINGS_DATA.filter(b => b.status === filter || b.mechanic.includes(filter) || b.customer.includes(filter));
+        : BOOKINGS_DATA.filter(b => b.status === filter || b.customer.includes(filter));
 
     return (
         <div className="space-y-6">
@@ -94,7 +94,6 @@ export default function BookingsPage() {
                                     <th className="px-6 py-4">Customer</th>
                                     <th className="px-6 py-4">Vehicle</th>
                                     <th className="px-6 py-4">Service</th>
-                                    <th className="px-6 py-4">Mechanic</th>
                                     <th className="px-6 py-4">Time</th>
                                     <th className="px-6 py-4">Status</th>
                                 </tr>
@@ -109,7 +108,6 @@ export default function BookingsPage() {
                                             <div className="text-xs text-slate-400">{booking.variety}</div>
                                         </td>
                                         <td className="px-6 py-4">{booking.category}</td>
-                                        <td className="px-6 py-4">{booking.mechanic}</td>
                                         <td className="px-6 py-4">{booking.time}</td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={booking.status} />
