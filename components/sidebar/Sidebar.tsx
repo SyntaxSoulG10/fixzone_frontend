@@ -17,7 +17,8 @@ import {
     FiTool,
     FiDollarSign,
     FiSmile,
-    FiLayers
+    FiLayers,
+    FiUser
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
@@ -44,8 +45,10 @@ const ROLE_MENUS: any = {
     service_manager: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/service-manager' },
         { name: 'Bookings', icon: FiCalendar, href: '/dashboard/service-manager/bookings' },
-        { name: 'Mechanics', icon: FiTool, href: '/dashboard/service-manager/mechanics' },
+        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
+        { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
+        { name: 'MyProfile', icon: FiUser, href: '/dashboard/service-manager/profile' },
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
