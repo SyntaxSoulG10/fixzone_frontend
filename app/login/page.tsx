@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
 
@@ -35,26 +34,21 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-50">
-            {/* Left: Branding */}
-            <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-900 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
-                <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
-
-                <div className="relative z-10">
-                    <Link href="/" className="flex items-center gap-2 mb-8">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                            F
-                        </div>
-                        <span className="text-2xl font-bold">FixZone</span>
-                    </Link>
-                    <h1 className="text-5xl font-bold leading-tight mb-6">
-                        Welcome back to the future of service management.
-                    </h1>
-                    <p className="text-slate-400 text-lg">
-                        Manage your service center with ease and efficiency.
-                    </p>
-                </div>
+        <div
+            className="min-h-screen relative flex justify-center items-center overflow-auto font-sans bg-cover bg-center bg-no-repeat py-10"
+            style={{ backgroundImage: "url('/loginBg.png')" }}
+        >
+            {/* Main Glass Card */}
+            <div className="relative z-10 w-full max-w-3xl mx-4">
+                <div className="bg-white/30 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 md:p-8 transition-all duration-500">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl w-full">
+                        <div className="w-full max-w-md mx-auto animate-fade-in">
+                            <div className="text-center mb-6">
+                                <h1 className="text-2xl font-bold text-[#FF8C42] mb-2">
+                                    Welcome Back
+                                </h1>
+                                <p className="text-gray-500 text-sm">Sign in to your account to continue.</p>
+                            </div>
 
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div>

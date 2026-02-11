@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase } from "react-icons/fi";
 
@@ -40,71 +39,69 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-50">
-            {/* Left: Branding */}
-            <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-900 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
-                <div className="absolute top-24 right-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+        <div
+            className="min-h-screen relative flex justify-center overflow-auto font-sans bg-cover bg-center bg-no-repeat py-10"
+            style={{ backgroundImage: "url('/loginBg.png')" }}
+        >
+            {/* Main Glass Card */}
+            <div className="relative z-10 w-full max-w-3xl mx-4">
+                <div className="bg-white/30 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 md:p-8 transition-all duration-500">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl w-full">
+                        {step === 1 ? (
+                            /* STEP 1: Role Selection */
+                            <div className="flex flex-col items-center animate-fade-in">
+                                <h1 className="text-2xl md:text-3xl font-bold text-[#FF8C42] mb-8 text-center">Who are you?</h1>
 
-                <div className="relative z-10">
-                    <Link href="/" className="flex items-center gap-2 mb-8">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                            F
-                        </div>
-                        <span className="text-2xl font-bold">FixZone</span>
-                    </Link>
-                    <h1 className="text-5xl font-bold leading-tight mb-6">
-                        Join the network of top service centers.
-                    </h1>
-                    <p className="text-slate-400 text-lg">
-                        Start managing your business or booking services today.
-                    </p>
-                </div>
-                <div className="relative z-10 text-sm text-slate-500">
-                    © 2024 FixZone Platform.
-                </div>
-            </div>
+                                <div className="flex flex-col md:flex-row gap-6 mb-8 w-full justify-center">
+                                    {/* Vehicle Owner Card */}
+                                    <button
+                                        type="button"
+                                        id="role-vehicle-owner"
+                                        onClick={() => setRole("vehicle-owner")}
+                                        className={`group flex flex-col items-center justify-center p-4 w-full md:w-56 h-56 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl bg-white
+                                            ${role === "vehicle-owner"
+                                                ? "border-[#FF8C42] shadow-orange-100 ring-4 ring-[#FF8C42]/10 scale-105"
+                                                : "border-gray-200 hover:border-[#FF8C42] hover:scale-105"}`}
+                                    >
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300
+                                            ${role === "vehicle-owner" ? "bg-[#FF8C42] text-white" : "bg-[#FF8C42] text-white"}`}>
+                                            <FiUser className="text-3xl" />
+                                        </div>
+                                        <span className="text-xl font-bold text-gray-800 text-center">Vehicle Owner</span>
+                                    </button>
 
-            {/* Right: Form */}
-            <div className="flex items-center justify-center p-8 bg-white overflow-y-auto">
-                <div className="w-full max-w-md space-y-8 my-auto">
-                    <div className="text-center lg:text-left">
-                        <h2 className="text-3xl font-bold text-slate-900">Create your account</h2>
-                        <p className="mt-2 text-slate-500">
-                            Already have an account? <Link href="/login" className="text-primary hover:text-primary-hover font-medium">Log in</Link>
-                        </p>
-                    </div>
+                                    {/* Service Center Owner Card */}
+                                    <button
+                                        type="button"
+                                        id="role-service-center"
+                                        onClick={() => setRole("service-center")}
+                                        className={`group flex flex-col items-center justify-center p-4 w-full md:w-56 h-56 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl bg-white
+                                            ${role === "service-center"
+                                                ? "border-[#FF8C42] shadow-orange-100 ring-4 ring-[#FF8C42]/10 scale-105"
+                                                : "border-gray-200 hover:border-[#FF8C42] hover:scale-105"}`}
+                                    >
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300
+                                            ${role === "service-center" ? "bg-[#FF8C42] text-white" : "bg-[#FF8C42] text-white"}`}>
+                                            <FiBriefcase className="text-2xl" />
+                                        </div>
+                                        <span className="text-lg font-bold text-gray-800 text-center">Service Center<br />Owner</span>
+                                    </button>
+                                </div>
 
-                    <form onSubmit={handleSignup} className="space-y-6">
-
-                        {/* Role Selection */}
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">I am a...</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("customer")}
-                                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${role === 'customer' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 hover:border-slate-300 text-slate-600'}`}
-                                >
-                                    <FiSmile className="mb-2 text-xl" />
-                                    <span className="text-xs font-medium">Customer</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("manager")}
-                                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${role === 'manager' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 hover:border-slate-300 text-slate-600'}`}
-                                >
-                                    <FiTool className="mb-2 text-xl" />
-                                    <span className="text-xs font-medium">Manager</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("owner")}
-                                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${role === 'owner' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 hover:border-slate-300 text-slate-600'}`}
-                                >
-                                    <FiBriefcase className="mb-2 text-xl" />
-                                    <span className="text-xs font-medium">Owner</span>
-                                </button>
+                                <div className="flex w-full justify-between items-center max-w-md mt-4 px-2">
+                                    <Link id="btn-back" href="/" className="px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-bold">
+                                        &lt; Back
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        id="btn-next"
+                                        onClick={() => role && setStep(2)}
+                                        disabled={!role}
+                                        className="px-6 py-2.5 bg-[#FF8C42] text-white rounded-xl hover:bg-[#F97316] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-bold shadow-lg shadow-orange-200"
+                                    >
+                                        Next &gt;
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             /* STEP 2: Sign Up Form */

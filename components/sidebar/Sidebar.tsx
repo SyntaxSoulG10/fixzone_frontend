@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import {
     FiUsers,
     FiBriefcase,
+    FiSettings,
+    FiTruck,
+    FiList,
     FiPieChart,
     FiFileText,
     FiCalendar,
@@ -14,25 +17,19 @@ import {
     FiTool,
     FiDollarSign,
     FiSmile,
-<<<<<<< HEAD
     FiLayers,
     FiUser
-=======
-    FiActivity,
-    FiTag,
-    FiBell
->>>>>>> origin/feature/super-admin-updates
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
     super_admin: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/super-admin' },
-        { name: 'Service Stations', icon: FiBriefcase, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
-        { name: 'Subscriptions', icon: FiDollarSign, href: '/dashboard/super-admin/subscriptions' },
-        { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
-        { name: 'Global Banners', icon: FiBell, href: '/dashboard/super-admin/banners' },
-        { name: 'System Health', icon: FiActivity, href: '/dashboard/super-admin/system-health' },
+        { name: 'Companies', icon: FiBriefcase, href: '/dashboard/super-admin/companies' },
+        { name: 'Service Centers', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
+        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/super-admin/vehicles' },
+        { name: 'Jobs', icon: FiList, href: '/dashboard/super-admin/jobs' },
+        { name: 'Settings', icon: FiSettings, href: '/dashboard/super-admin/settings' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
