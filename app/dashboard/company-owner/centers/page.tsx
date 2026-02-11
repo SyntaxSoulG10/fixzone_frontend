@@ -297,7 +297,7 @@ export default function MyCentersPage() {
                                             <Box textAlign="center">
                                                 <Typography variant="caption" color="text.secondary" display="block">Revenue</Typography>
                                                 <Typography variant="body2" fontWeight="bold" color="success.main">
-                                                    ${parseInt(center.revenue).toLocaleString()}
+                                                    Rs. {parseInt(center.revenue).toLocaleString()}
                                                 </Typography>
                                             </Box>
                                         </Grid>

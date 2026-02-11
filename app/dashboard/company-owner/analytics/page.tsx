@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="$124,500"
+                        count="Rs. 124,500"
                         icon={<FiDollarSign />}
                         percentage={{
                             color: 'success',
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Job Value"
-                        count="$103.40"
+                        count="Rs. 103.40"
                         icon={<FiArrowUp />}
                         percentage={{
                             color: 'danger',
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
                                                 fontSize={12}
                                                 tickLine={false}
                                                 axisLine={false}
-                                                tickFormatter={(value) => `$${value}`}
+                                                tickFormatter={(value) => `Rs. ${value}`}
                                                 tick={{ fill: '#fff', opacity: 0.8 }}
                                             />
                                             <Tooltip
@@ -289,7 +289,7 @@ export default function AnalyticsPage() {
                                                 </Box>
                                             </TableCell>
                                             <TableCell>450</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$45,200</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 45,200</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell>
@@ -299,7 +299,7 @@ export default function AnalyticsPage() {
                                                 </Box>
                                             </TableCell>
                                             <TableCell>320</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$32,100</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 32,100</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell>
@@ -309,7 +309,7 @@ export default function AnalyticsPage() {
                                                 </Box>
                                             </TableCell>
                                             <TableCell>180</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$18,400</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 18,400</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>

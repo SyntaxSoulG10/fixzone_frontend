@@ -196,7 +196,7 @@ export default function ServicesPage() {
                             </p>
 
                             <div className="flex items-baseline mb-6">
-                                <span className="text-3xl font-bold text-slate-900 tracking-tight">${pkg.price.toFixed(2)}</span>
+                                <span className="text-3xl font-bold text-slate-900 tracking-tight">Rs. {pkg.price.toFixed(2)}</span>
                                 <span className="text-slate-500 ml-1 text-sm font-medium">/ service</span>
                             </div>
 
@@ -261,7 +261,7 @@ export default function ServicesPage() {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-slate-700">Price ($)</label>
+                                        <label className="text-sm font-medium text-slate-700">Price (Rs.)</label>
                                         <input
                                             type="number"
                                             required
