@@ -10,20 +10,13 @@ export default function ServiceManagerDashboard() {
                 <h1 className="text-2xl font-bold text-slate-900">Service Center Dashboard</h1>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     title="Today Bookings"
-                    value="18"
+                    value="8"
                     change="+3"
                     icon={<FiCalendar />}
                     color="blue"
-                />
-                <StatCard
-                    title="Active Mechanics"
-                    value="6"
-                    change="2 Available"
-                    icon={<FaUserCog />}
-                    color="orange"
                 />
                 <StatCard
                     title="Today Revenue"
@@ -34,7 +27,7 @@ export default function ServiceManagerDashboard() {
                 />
                 <StatCard
                     title="Service in Progress"
-                    value="8"
+                    value="4"
                     change="Busy"
                     icon={<FiTool />}
                     color="purple"
@@ -57,7 +50,6 @@ export default function ServiceManagerDashboard() {
                                     <th className="px-6 py-4">Customer</th>
                                     <th className="px-6 py-4">Vehicle</th>
                                     <th className="px-6 py-4">Ref</th>
-                                    <th className="px-6 py-4">Mechanic</th>
                                     <th className="px-6 py-4">Status</th>
                                 </tr>
                             </thead>
@@ -66,12 +58,6 @@ export default function ServiceManagerDashboard() {
                                     <td className="px-6 py-4 font-medium text-slate-900">Sarah Connor</td>
                                     <td className="px-6 py-4">Toyota Camry</td>
                                     <td className="px-6 py-4 font-mono text-xs">#BK-9921</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-200"></div>
-                                            <span>Mike Ross</span>
-                                        </div>
-                                    </td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                             In Progress
@@ -83,14 +69,28 @@ export default function ServiceManagerDashboard() {
                                     <td className="px-6 py-4">Ford Mustang</td>
                                     <td className="px-6 py-4 font-mono text-xs">#BK-9925</td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-200"></div>
-                                            <span>Jane Doe</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             Done
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-slate-900">Michael Scott</td>
+                                    <td className="px-6 py-4">Chrysler Sebring</td>
+                                    <td className="px-6 py-4 font-mono text-xs">#BK-9928</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pending
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-slate-900">Dwight Schrute</td>
+                                    <td className="px-6 py-4">Pontiac Trans Am</td>
+                                    <td className="px-6 py-4 font-mono text-xs">#BK-9930</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            Quality Check
                                         </span>
                                     </td>
                                 </tr>
