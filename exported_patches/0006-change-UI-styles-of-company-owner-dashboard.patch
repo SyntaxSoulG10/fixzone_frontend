@@ -1,0 +1,3658 @@
+From 9657906776e85b8ccf4c495024ee8f425e70ccfa Mon Sep 17 00:00:00 2001
+From: Dinithi1625403 <dinithi1625403@gmail.com>
+Date: Sun, 28 Dec 2025 15:13:28 +0530
+Subject: [PATCH 06/35] change UI styles of company-owner dashboard
+
+---
+ .../company-owner/analytics/page.tsx          | 403 ++++++++------
+ app/dashboard/company-owner/bookings/page.tsx | 307 +++++++----
+ app/dashboard/company-owner/centers/page.tsx  | 138 +++--
+ app/dashboard/company-owner/page.tsx          | 411 ++++++---------
+ app/dashboard/company-owner/profile/page.tsx  | 491 ++++++++++++++++--
+ app/dashboard/company-owner/reports/page.tsx  |  85 ++-
+ app/layout.tsx                                |  22 +-
+ components/ThemeRegistry/EmotionCache.tsx     |  53 ++
+ components/ThemeRegistry/ThemeRegistry.tsx    |  18 +
+ components/dashboard/ActivityTab.tsx          |  90 ++++
+ components/dashboard/ChartCard.tsx            |  78 +++
+ components/dashboard/DonutStatCard.tsx        | 119 +++++
+ components/dashboard/OverviewTab.tsx          | 183 +++++++
+ components/dashboard/PerformanceTab.tsx       | 129 +++++
+ components/dashboard/StatCard.tsx             | 100 ++++
+ theme/base/borders.ts                         |  29 ++
+ theme/base/boxShadows.ts                      |  94 ++++
+ theme/base/colors.ts                          | 246 +++++++++
+ theme/base/typography.ts                      | 175 +++++++
+ theme/components/card.ts                      |  28 +
+ theme/functions/boxShadow.ts                  |  14 +
+ theme/functions/hexToRgb.ts                   |  15 +
+ theme/functions/linearGradient.ts             |   5 +
+ theme/functions/pxToRem.ts                    |   5 +
+ theme/functions/rgba.ts                       |   7 +
+ theme/index.ts                                |  59 +++
+ 26 files changed, 2680 insertions(+), 624 deletions(-)
+ create mode 100644 components/ThemeRegistry/EmotionCache.tsx
+ create mode 100644 components/ThemeRegistry/ThemeRegistry.tsx
+ create mode 100644 components/dashboard/ActivityTab.tsx
+ create mode 100644 components/dashboard/ChartCard.tsx
+ create mode 100644 components/dashboard/DonutStatCard.tsx
+ create mode 100644 components/dashboard/OverviewTab.tsx
+ create mode 100644 components/dashboard/PerformanceTab.tsx
+ create mode 100644 components/dashboard/StatCard.tsx
+ create mode 100644 theme/base/borders.ts
+ create mode 100644 theme/base/boxShadows.ts
+ create mode 100644 theme/base/colors.ts
+ create mode 100644 theme/base/typography.ts
+ create mode 100644 theme/components/card.ts
+ create mode 100644 theme/functions/boxShadow.ts
+ create mode 100644 theme/functions/hexToRgb.ts
+ create mode 100644 theme/functions/linearGradient.ts
+ create mode 100644 theme/functions/pxToRem.ts
+ create mode 100644 theme/functions/rgba.ts
+ create mode 100644 theme/index.ts
+
+diff --git a/app/dashboard/company-owner/analytics/page.tsx b/app/dashboard/company-owner/analytics/page.tsx
+index 7633ce5..471c8f8 100644
+--- a/app/dashboard/company-owner/analytics/page.tsx
++++ b/app/dashboard/company-owner/analytics/page.tsx
+@@ -1,6 +1,21 @@
+ "use client";
+ 
+-import PageHeader from "@/components/UI/PageHeader";
++import {
++    Grid,
++    Card,
++    Box,
++    Typography,
++    Divider,
++    Table,
++    TableBody,
++    TableCell,
++    TableContainer,
++    TableHead,
++    TableRow,
++    Icon
++} from "@mui/material";
++import StatCard from "@/components/dashboard/StatCard";
++import ChartCard from "@/components/dashboard/ChartCard";
+ import {
+     BarChart,
+     Bar,
+@@ -16,7 +31,9 @@ import {
+     Pie,
+     Cell
+ } from 'recharts';
+-import { FiArrowUp, FiArrowDown } from "react-icons/fi";
++import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp } from "react-icons/fi";
++import React from 'react';
++import DonutStatCard from "@/components/dashboard/DonutStatCard";
+ 
+ // Mock Data
+ const revenueData = [
+@@ -45,163 +62,249 @@ const serviceTypeData = [
+     { name: 'Car Wash', value: 200 },
+ ];
+ 
+-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
++const PIE_COLORS = ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0'];
+ 
+ export default function AnalyticsPage() {
++    const [isMounted, setIsMounted] = React.useState(false);
++
++    React.useEffect(() => {
++        setIsMounted(true);
++    }, []);
++
+     return (
+-        <div className="space-y-6">
+-            <PageHeader
+-                title="Business Analytics"
+-                description="Deep dive into your company performance metrics."
+-            />
++        <Box pb={3}>
++            {/* Header */}
++            <Box mb={4}>
++                <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
++                    Business Analytics
++                </Typography>
++                <Typography variant="body1" color="text.secondary">
++                    Deep dive into your company performance metrics.
++                </Typography>
++            </Box>
+ 
+             {/* Summary Cards */}
+-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Total Revenue (YTD)</h3>
+-                    <div className="mt-2 flex items-baseline gap-2">
+-                        <span className="text-3xl font-bold text-slate-900">$124,500</span>
+-                        <span className="text-sm font-medium text-green-600 flex items-center">
+-                            <FiArrowUp className="mr-1" /> 12%
+-                        </span>
+-                    </div>
+-                </div>
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Total Jobs</h3>
+-                    <div className="mt-2 flex items-baseline gap-2">
+-                        <span className="text-3xl font-bold text-slate-900">1,204</span>
+-                        <span className="text-sm font-medium text-green-600 flex items-center">
+-                            <FiArrowUp className="mr-1" /> 8.5%
+-                        </span>
+-                    </div>
+-                </div>
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-slate-500 text-sm font-medium uppercase">Avg. Job Value</h3>
+-                    <div className="mt-2 flex items-baseline gap-2">
+-                        <span className="text-3xl font-bold text-slate-900">$103.40</span>
+-                        <span className="text-sm font-medium text-red-600 flex items-center">
+-                            <FiArrowDown className="mr-1" /> 2%
+-                        </span>
+-                    </div>
+-                </div>
+-            </div>
+-
+-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
++            <Grid container spacing={3} mb={4}>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <StatCard
++                        title="Total Revenue"
++                        count="$124,500"
++                        icon={<FiDollarSign />}
++                        percentage={{
++                            color: 'success',
++                            amount: '+55%',
++                            label: 'than last week'
++                        }}
++                        color="success"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <StatCard
++                        title="Total Jobs"
++                        count="1,204"
++                        icon={<FiBriefcase />}
++                        percentage={{
++                            color: 'success',
++                            amount: '+3%',
++                            label: 'than last month'
++                        }}
++                        color="info"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <StatCard
++                        title="Avg. Job Value"
++                        count="$103.40"
++                        icon={<FiArrowUp />}
++                        percentage={{
++                            color: 'danger',
++                            amount: '-2%',
++                            label: 'than yesterday'
++                        }}
++                        color="primary"
++                    />
++                </Grid>
++            </Grid>
+ 
+-                {/* Revenue Chart */}
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Overview</h3>
+-                    <div className="h-80 w-full">
+-                        <ResponsiveContainer width="100%" height="100%">
+-                            <AreaChartComponent />
+-                        </ResponsiveContainer>
+-                    </div>
+-                </div>
++            {/* Charts Section */}
++            <Grid container spacing={3}>
++                <Grid size={{ xs: 12, lg: 6 }}>
++                    <Box mb={3}>
++                        <ChartCard
++                            title="Revenue Overview"
++                            description={
++                                <Box display="flex" alignItems="center">
++                                    <Typography variant="button" fontWeight="bold" color="success.main">
++                                        +15%
++                                    </Typography>
++                                    <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
++                                        increase in today sales.
++                                    </Typography>
++                                </Box>
++                            }
++                            date="updated 4 min ago"
++                            color="dark"
++                            chart={
++                                isMounted ? (
++                                    <ResponsiveContainer width="100%" height="100%">
++                                        <LineChart
++                                            data={revenueData}
++                                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
++                                        >
++                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
++                                            <XAxis
++                                                dataKey="name"
++                                                fontSize={12}
++                                                tickLine={false}
++                                                axisLine={false}
++                                                tick={{ fill: '#fff', opacity: 0.8 }}
++                                            />
++                                            <YAxis
++                                                fontSize={12}
++                                                tickLine={false}
++                                                axisLine={false}
++                                                tickFormatter={(value) => `$${value}`}
++                                                tick={{ fill: '#fff', opacity: 0.8 }}
++                                            />
++                                            <Tooltip
++                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
++                                                itemStyle={{ color: '#1e293b' }}
++                                            />
++                                            <Line
++                                                type="monotone"
++                                                dataKey="revenue"
++                                                stroke="#ffffff"
++                                                strokeWidth={3}
++                                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
++                                                activeDot={{ r: 6, stroke: '#fff' }}
++                                            />
++                                        </LineChart>
++                                    </ResponsiveContainer>
++                                ) : null
++                            }
++                        />
++                    </Box>
++                </Grid>
+ 
+-                {/* Customer Growth */}
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Customer Growth</h3>
+-                    <div className="h-80 w-full">
+-                        <ResponsiveContainer width="100%" height="100%">
+-                            <BarChart
+-                                data={customerGrowthData}
+-                                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+-                            >
+-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+-                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+-                                <Tooltip />
+-                                <Legend />
+-                                <Bar dataKey="new" name="New Customers" fill="#FF6B00" radius={[4, 4, 0, 0]} />
+-                                <Bar dataKey="active" name="Active Customers" fill="#1E293B" radius={[4, 4, 0, 0]} />
+-                            </BarChart>
+-                        </ResponsiveContainer>
+-                    </div>
+-                </div>
++                <Grid size={{ xs: 12, lg: 6 }}>
++                    <Box mb={3}>
++                        <ChartCard
++                            title="Customer Growth"
++                            description="New vs Active Customers over time"
++                            date="campaign sent 2 days ago"
++                            color="info"
++                            chart={
++                                isMounted ? (
++                                    <ResponsiveContainer width="100%" height="100%">
++                                        <BarChart
++                                            data={customerGrowthData}
++                                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
++                                        >
++                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
++                                            <XAxis
++                                                dataKey="name"
++                                                fontSize={12}
++                                                tickLine={false}
++                                                axisLine={false}
++                                                tick={{ fill: '#fff', opacity: 0.8 }}
++                                            />
++                                            <YAxis
++                                                fontSize={12}
++                                                tickLine={false}
++                                                axisLine={false}
++                                                tick={{ fill: '#fff', opacity: 0.8 }}
++                                            />
++                                            <Tooltip
++                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
++                                                itemStyle={{ color: '#1e293b' }}
++                                            />
++                                            <Legend wrapperStyle={{ color: '#fff' }} />
++                                            <Bar dataKey="new" name="New" fill="#ffffff" radius={[4, 4, 0, 0]} maxBarSize={30} />
++                                            <Bar dataKey="active" name="Active" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
++                                        </BarChart>
++                                    </ResponsiveContainer>
++                                ) : null
++                            }
++                        />
++                    </Box>
++                </Grid>
+ 
+-                {/* Service Type Distribution */}
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Services Breakdown</h3>
+-                    <div className="h-64 w-full">
+-                        <ResponsiveContainer width="100%" height="100%">
+-                            <PieChart>
+-                                <Pie
+-                                    data={serviceTypeData}
+-                                    cx="50%"
+-                                    cy="50%"
+-                                    innerRadius={60}
+-                                    outerRadius={80}
+-                                    paddingAngle={5}
+-                                    dataKey="value"
+-                                >
+-                                    {serviceTypeData.map((entry, index) => (
+-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+-                                    ))}
+-                                </Pie>
+-                                <Tooltip />
+-                                <Legend />
+-                            </PieChart>
+-                        </ResponsiveContainer>
+-                    </div>
+-                </div>
++                {/* Services Pie Chart */}
++                <Grid size={{ xs: 12, md: 6 }}>
++                    <DonutStatCard
++                        title="Services Breakdown"
++                        totalValue={serviceTypeData.reduce((acc, curr) => acc + curr.value, 0)}
++                        unit="JOBS"
++                        data={(() => {
++                            const total = serviceTypeData.reduce((acc, curr) => acc + curr.value, 0);
++                            const referenceColors = ['#e91e63', '#343a40', '#2196f3', '#4caf50', '#ff9800'];
++                            return serviceTypeData.map((item, index) => ({
++                                name: item.name,
++                                value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
++                                color: referenceColors[index % referenceColors.length]
++                            }));
++                        })()}
++                    />
++                </Grid>
+ 
+                 {/* Top Centers Table */}
+-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Top Performing Centers</h3>
+-                    <div className="overflow-x-auto">
+-                        <table className="w-full text-left text-sm text-slate-600">
+-                            <thead className="border-b border-slate-100">
+-                                <tr>
+-                                    <th className="py-2">Center Name</th>
+-                                    <th className="py-2">Jobs</th>
+-                                    <th className="py-2 text-right">Revenue</th>
+-                                </tr>
+-                            </thead>
+-                            <tbody className="divide-y divide-slate-100">
+-                                <tr>
+-                                    <td className="py-3 font-medium">Downtown Branch</td>
+-                                    <td className="py-3">450</td>
+-                                    <td className="py-3 text-right font-bold text-slate-900">$45,200</td>
+-                                </tr>
+-                                <tr>
+-                                    <td className="py-3 font-medium">Westside Hub</td>
+-                                    <td className="py-3">320</td>
+-                                    <td className="py-3 text-right font-bold text-slate-900">$32,100</td>
+-                                </tr>
+-                                <tr>
+-                                    <td className="py-3 font-medium">North Garage</td>
+-                                    <td className="py-3">180</td>
+-                                    <td className="py-3 text-right font-bold text-slate-900">$18,400</td>
+-                                </tr>
+-                            </tbody>
+-                        </table>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
++                <Grid size={{ xs: 12, md: 6 }}>
++                    <Card sx={{ height: '100%', overflow: 'visible' }}>
++                        
++                            
++                                <Box pt={3} px={3}>
++    <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
++</Box>
++                           
++                        
++                        <Box p={2}>
++                            <TableContainer>
++                                <Table>
++                                    <TableHead sx={{ display: 'table-header-group' }}>
++                                        <TableRow>
++                                            <TableCell>Center Name</TableCell>
++                                            <TableCell>Jobs</TableCell>
++                                            <TableCell align="right">Revenue</TableCell>
++                                        </TableRow>
++                                    </TableHead>
++                                    <TableBody>
++                                        <TableRow>
++                                            <TableCell>
++                                                <Box display="flex" alignItems="center" gap={2}>
++                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="warning.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
++                                                    Downtown Branch
++                                                </Box>
++                                            </TableCell>
++                                            <TableCell>450</TableCell>
++                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$45,200</TableCell>
++                                        </TableRow>
++                                        <TableRow>
++                                            <TableCell>
++                                                <Box display="flex" alignItems="center" gap={2}>
++                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">W</Box>
++                                                    Westside Hub
++                                                </Box>
++                                            </TableCell>
++                                            <TableCell>320</TableCell>
++                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$32,100</TableCell>
++                                        </TableRow>
++                                        <TableRow>
++                                            <TableCell>
++                                                <Box display="flex" alignItems="center" gap={2}>
++                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">N</Box>
++                                                    North Garage
++                                                </Box>
++                                            </TableCell>
++                                            <TableCell>180</TableCell>
++                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>$18,400</TableCell>
++                                        </TableRow>
++                                    </TableBody>
++                                </Table>
++                            </TableContainer>
++                        </Box>
++                    </Card>
++                </Grid>
++            </Grid>
++        </Box>
+     );
+ }
+-
+-function AreaChartComponent() {
+-    return (
+-        <LineChart
+-            data={revenueData}
+-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+-        >
+-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+-            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+-            <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+-            <Tooltip
+-                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+-            />
+-            <Line
+-                type="monotone"
+-                dataKey="revenue"
+-                stroke="#FF6B00"
+-                strokeWidth={3}
+-                dot={{ r: 4, strokeWidth: 2 }}
+-                activeDot={{ r: 6 }}
+-            />
+-        </LineChart>
+-    )
+-}
+diff --git a/app/dashboard/company-owner/bookings/page.tsx b/app/dashboard/company-owner/bookings/page.tsx
+index 62de950..b5622e3 100644
+--- a/app/dashboard/company-owner/bookings/page.tsx
++++ b/app/dashboard/company-owner/bookings/page.tsx
+@@ -1,10 +1,37 @@
+ "use client";
+ 
+ import { useState } from "react";
+-import Button from "@/components/UI/Button";
+-import PageHeader from "@/components/UI/PageHeader";
+-import Tabs from "@/components/UI/Tabs";
+-import { FiList, FiCalendar, FiFilter, FiSearch, FiMoreVertical } from "react-icons/fi";
++import {
++    Grid,
++    Card,
++    Box,
++    Typography,
++    Button,
++    Tabs,
++    Tab,
++    TextField,
++    InputAdornment,
++    Table,
++    TableBody,
++    TableCell,
++    TableContainer,
++    TableHead,
++    TableRow,
++    Chip,
++    IconButton,
++    Menu,
++    MenuItem
++} from "@mui/material";
++import {
++    FiList,
++    FiCalendar,
++    FiFilter,
++    FiSearch,
++    FiMoreVertical,
++    FiPlus
++} from "react-icons/fi";
++import Link from "next/link";
++// We might need a Calendar component later, but for now placeholder is fine
+ 
+ const DUMMY_BOOKINGS = [
+     { id: "BK-0001", customer: "Nike Fernando", vehicle: "Honda Civic 2020", service: "Standard Service", mechanic: "Mike Johnson", time: "8.00 AM", status: "Quality Check", date: "Aug 17, 2025" },
+@@ -16,119 +43,199 @@ const DUMMY_BOOKINGS = [
+ 
+ export default function BookingsPage() {
+     const [activeTab, setActiveTab] = useState('list');
++    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+ 
+-    const tabs = [
+-        { id: 'list', label: 'All Bookings', icon: <FiList /> },
+-        { id: 'calendar', label: 'Schedule Calendar', icon: <FiCalendar /> },
+-    ];
++    const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
++        setActiveTab(newValue);
++    };
++
++    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
++        setAnchorEl(event.currentTarget);
++    };
++
++    const handleMenuClose = () => {
++        setAnchorEl(null);
++    };
++
++    const getStatusColor = (status: string) => {
++        switch (status) {
++            case 'Quality Check': return 'success';
++            case 'In Progress': return 'warning';
++            case 'Pending': return 'default';
++            default: return 'default';
++        }
++    };
+ 
+     return (
+-        <div className="space-y-6">
+-            <PageHeader
+-                title="Booking Management"
+-                description="Manage and Track all Service Booking."
+-                action={
+-                    <Button>
+-                        + New Booking
++        <Box pb={3}>
++            {/* Header */}
++            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
++                <Box>
++                    <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
++                        Booking Management
++                    </Typography>
++                    <Typography variant="body1" color="text.secondary">
++                        Manage and Track all Service Booking.
++                    </Typography>
++                </Box>
++                <Link href="#" style={{ textDecoration: 'none' }}>
++                    <Button variant="contained" color="primary" sx={{ color: '#ffffff' }}>
++                        <FiPlus style={{ marginRight: 8 }} /> New Booking
+                     </Button>
+-                }
+-            />
++                </Link>
++            </Box>
+ 
+-            <Tabs
+-                tabs={tabs}
+-                activeTab={activeTab}
+-                onChange={setActiveTab}
+-                className="bg-white border border-slate-200 shadow-sm"
+-            />
++            {/* Tabs */}
++            <Card sx={{ mb: 3 }}>
++                <Tabs value={activeTab} onChange={handleTabChange} textColor="inherit" indicatorColor="primary" sx={{ px: 2, pt: 2 }}>
++                    <Tab label="All Bookings" value="list" icon={<FiList />} iconPosition="start" />
++                    <Tab label="Schedule Calendar" value="calendar" icon={<FiCalendar />} iconPosition="start" />
++                </Tabs>
+ 
+-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+                 {activeTab === 'list' && (
+-                    <>
++                    <Box p={3}>
+                         {/* Filters */}
+-                        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+-                            <div className="relative flex-1 w-full max-w-md">
+-                                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+-                                <input
+-                                    type="text"
+-                                    placeholder="Search Bookings..."
+-                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+-                                />
+-                            </div>
+-                            <Button variant="secondary" className="flex items-center gap-2 w-full sm:w-auto">
+-                                <FiFilter /> Filter
++                        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3} justifyContent="space-between">
++                            <TextField
++                                placeholder="Search Bookings..."
++                                variant="outlined"
++                                size="small"
++                                sx={{ flexGrow: 1, maxWidth: 400 }}
++                                InputProps={{
++                                    startAdornment: (
++                                        <InputAdornment position="start">
++                                            <FiSearch />
++                                        </InputAdornment>
++                                    ),
++                                }}
++                            />
++                            <Button variant="outlined" color="secondary" startIcon={<FiFilter />}>
++                                Filter
+                             </Button>
+-                        </div>
++                        </Box>
+ 
+                         {/* List View */}
+-                        <div className="overflow-x-auto">
+-                            <table className="w-full text-left text-sm text-slate-600">
+-                                <thead className="bg-slate-50 text-slate-900 font-semibold uppercase tracking-wider text-xs">
+-                                    <tr>
+-                                        <th className="px-6 py-4">Booking ID</th>
+-                                        <th className="px-6 py-4">Customer</th>
+-                                        <th className="px-6 py-4">Vehicle</th>
+-                                        <th className="px-6 py-4">Service</th>
+-                                        <th className="px-6 py-4">Mechanic</th>
+-                                        <th className="px-6 py-4">Time</th>
+-                                        <th className="px-6 py-4">Status</th>
+-                                        <th className="px-6 py-4 text-right">Actions</th>
+-                                    </tr>
+-                                </thead>
+-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
++                        <TableContainer>
++                            <Table>
++                                <TableHead sx={{ display: 'table-header-group' }}>
++                                    <TableRow>
++                                        <TableCell>Booking ID</TableCell>
++                                        <TableCell>Customer</TableCell>
++                                        <TableCell>Vehicle</TableCell>
++                                        <TableCell>Service</TableCell>
++                                        <TableCell>Mechanic</TableCell>
++                                        <TableCell>Time</TableCell>
++                                        <TableCell>Status</TableCell>
++                                        <TableCell align="right">Actions</TableCell>
++                                    </TableRow>
++                                </TableHead>
++                                <TableBody>
+                                     {DUMMY_BOOKINGS.map((booking) => (
+-                                        <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
+-                                            <td className="px-6 py-4 font-mono font-medium text-slate-900">{booking.id}</td>
+-                                            <td className="px-6 py-4 flex items-center gap-3">
+-                                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+-                                                    {booking.customer.charAt(0)}
+-                                                </div>
+-                                                <div className="font-medium text-slate-900">
+-                                                    {booking.customer}
+-                                                    <span className="block text-xs text-slate-500 font-normal">0713114270</span>
+-                                                </div>
+-                                            </td>
+-                                            <td className="px-6 py-4">
+-                                                <span className="font-medium text-slate-900">{booking.vehicle}</span>
+-                                                <span className="block text-xs text-slate-500">ABC-1234</span>
+-                                            </td>
+-                                            <td className="px-6 py-4 font-medium text-slate-900">{booking.service}</td>
+-                                            <td className="px-6 py-4">{booking.mechanic}</td>
+-                                            <td className="px-6 py-4">{booking.time}</td>
+-                                            <td className="px-6 py-4">
+-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${booking.status === 'Quality Check' ? 'bg-green-100 text-green-700' :
+-                                                        booking.status === 'In Progress' ? 'bg-orange-100 text-orange-700' :
+-                                                            'bg-slate-100 text-slate-700'
+-                                                    }`}>
+-                                                    {booking.status}
+-                                                </span>
+-                                            </td>
+-                                            <td className="px-6 py-4 text-right">
+-                                                <Button variant="ghost" className="p-2 rounded-full">
++                                        <TableRow key={booking.id} hover>
++                                            <TableCell>
++                                                <Typography variant="caption" fontWeight="bold" fontFamily="monospace">
++                                                    {booking.id}
++                                                </Typography>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Box display="flex" alignItems="center" gap={2}>
++                                                    <Box
++                                                        width={32}
++                                                        height={32}
++                                                        borderRadius="50%"
++                                                        bgcolor="info.main"
++                                                        display="flex"
++                                                        alignItems="center"
++                                                        justifyContent="center"
++                                                        fontSize={12}
++                                                        fontWeight="bold"
++                                                        color="#ffffff"
++                                                    >
++                                                        {booking.customer.charAt(0)}
++                                                    </Box>
++                                                    <Box>
++                                                        <Typography variant="body2" fontWeight="bold">
++                                                            {booking.customer}
++                                                        </Typography>
++                                                        <Typography variant="caption" color="text.secondary">
++                                                            0713114270
++                                                        </Typography>
++                                                    </Box>
++                                                </Box>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Typography variant="body2" fontWeight="bold">
++                                                    {booking.vehicle}
++                                                </Typography>
++                                                <Typography variant="caption" color="text.secondary">
++                                                    ABC-1234
++                                                </Typography>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Typography variant="body2">{booking.service}</Typography>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Typography variant="body2">{booking.mechanic}</Typography>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Typography variant="body2">{booking.time}</Typography>
++                                            </TableCell>
++                                            <TableCell>
++                                                <Chip
++                                                    label={booking.status}
++                                                    color={getStatusColor(booking.status) as any}
++                                                    size="small"
++                                                    sx={{ fontWeight: 'bold', color: booking.status === 'Pending' ? 'text.secondary' : '#ffffff' }}
++                                                />
++                                            </TableCell>
++                                            <TableCell align="right">
++                                                <IconButton size="small" onClick={handleMenuOpen}>
+                                                     <FiMoreVertical />
+-                                                </Button>
+-                                            </td>
+-                                        </tr>
++                                                </IconButton>
++                                                <Menu
++                                                    anchorEl={anchorEl}
++                                                    open={Boolean(anchorEl)}
++                                                    onClose={handleMenuClose}
++                                                >
++                                                    <MenuItem onClick={handleMenuClose}>View Details</MenuItem>
++                                                    <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
++                                                    <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>Delete</MenuItem>
++                                                </Menu>
++                                            </TableCell>
++                                        </TableRow>
+                                     ))}
+-                                </tbody>
+-                            </table>
+-                        </div>
+-                    </>
++                                </TableBody>
++                            </Table>
++                        </TableContainer>
++                    </Box>
+                 )}
+ 
+                 {activeTab === 'calendar' && (
+-                    <div className="p-8 text-center animate-in fade-in duration-300">
+-                        <div className="max-w-md mx-auto">
+-                            <div className="bg-slate-50 p-6 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center text-3xl text-slate-400">
+-                                <FiCalendar />
+-                            </div>
+-                            <h3 className="text-lg font-bold text-slate-900">Schedule Calendar</h3>
+-                            <p className="text-slate-500 mt-2">
+-                                Calendar view functionality coming soon. Implement FullCalendar or bespoke grid here.
+-                            </p>
+-                        </div>
+-                    </div>
++                    <Box p={8} textAlign="center">
++                        <Box
++                            mx="auto"
++                            mb={3}
++                            width={80}
++                            height={80}
++                            borderRadius="50%"
++                            bgcolor="grey.100"
++                            display="flex"
++                            alignItems="center"
++                            justifyContent="center"
++                            fontSize={32}
++                            color="text.secondary"
++                        >
++                            <FiCalendar />
++                        </Box>
++                        <Typography variant="h6" fontWeight="bold" gutterBottom>
++                            Schedule Calendar
++                        </Typography>
++                        <Typography variant="body2" color="text.secondary">
++                            Calendar view functionality coming soon. Implement FullCalendar or bespoke grid here.
++                        </Typography>
++                    </Box>
+                 )}
+-            </div>
+-        </div>
++            </Card>
++        </Box>
+     );
+ }
+diff --git a/app/dashboard/company-owner/centers/page.tsx b/app/dashboard/company-owner/centers/page.tsx
+index cf9adff..555f738 100644
+--- a/app/dashboard/company-owner/centers/page.tsx
++++ b/app/dashboard/company-owner/centers/page.tsx
+@@ -1,7 +1,16 @@
+ "use client";
+ 
+-import Button from "@/components/UI/Button"; import PageHeader from "@/components/UI/PageHeader";
+-import { FiMoreVertical, FiMapPin, FiPhone } from "react-icons/fi";
++import {
++    Grid,
++    Card,
++    Box,
++    Typography,
++    Button,
++    IconButton,
++    Divider
++} from "@mui/material";
++import { FiMoreVertical, FiMapPin, FiPhone, FiPlus } from "react-icons/fi";
++import Link from 'next/link';
+ 
+ const MY_CENTERS = [
+     { id: 1, name: "Downtown Branch", location: "123 Main St, New York, NY", phone: "+1 (555) 123-4567", revenue: "$45,200", status: "Active" },
+@@ -10,50 +19,89 @@ const MY_CENTERS = [
+ 
+ export default function MyCentersPage() {
+     return (
+-        <div>
+-            <PageHeader
+-                title="My Service Centers"
+-                description="Manage your branches and locations."
+-                action={
+-                    <Button>
+-                        + New Branch
+-                    </Button>
+-                }
+-            />
+-
+-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
++        <Box pb={3}>
++            {/* Header */}
++            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
++                <Box>
++                    <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
++                        My Service Centers
++                    </Typography>
++                    <Typography variant="body1" color="text.secondary">
++                        Manage your branches and locations.
++                    </Typography>
++                </Box>
++                <Button variant="contained" color="primary" sx={{ color: '#ffffff' }}>
++                    <FiPlus style={{ marginRight: 8 }} /> New Branch
++                </Button>
++            </Box>
++
++            <Grid container spacing={3}>
+                 {MY_CENTERS.map((center) => (
+-                    <div key={center.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
+-                        <div className="flex justify-between items-start mb-4">
+-                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-xl text-primary font-bold">
+-                                {center.name.charAt(0)}
+-                            </div>
+-                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">{center.status}</span>
+-                        </div>
+-
+-                        <h3 className="text-lg font-bold text-slate-900 mb-2">{center.name}</h3>
+-
+-                        <div className="space-y-2 text-sm text-slate-500 mb-6">
+-                            <div className="flex items-center gap-2">
+-                                <FiMapPin className="text-slate-400" />
+-                                {center.location}
+-                            </div>
+-                            <div className="flex items-center gap-2">
+-                                <FiPhone className="text-slate-400" />
+-                                {center.phone}
+-                            </div>
+-                        </div>
+-
+-                        <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
+-                            <div>
+-                                <p className="text-xs text-slate-500 uppercase font-semibold">Revenue (Dec)</p>
+-                                <p className="text-lg font-bold text-slate-900">{center.revenue}</p>
+-                            </div>
+-                            <Button variant="ghost" className="text-primary hover:text-primary-hover font-medium text-sm hover:bg-slate-50">Manage</Button>
+-                        </div>
+-                    </div>
++                    <Grid key={center.id} size={{ xs: 12, md: 6, lg: 4 }}>
++                        <Card sx={{ height: '100%', p: 3 }}>
++                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
++                                <Box
++                                    width={48}
++                                    height={48}
++                                    borderRadius="0.5rem"
++                                    bgcolor="primary.main"
++                                    display="flex"
++                                    alignItems="center"
++                                    justifyContent="center"
++                                    color="#ffffff"
++                                    fontSize="1.25rem"
++                                    fontWeight="bold"
++                                    boxShadow={3}
++                                >
++                                    {center.name.charAt(0)}
++                                </Box>
++                                <Box
++                                    px={1}
++                                    py={0.5}
++                                    bgcolor="success.main"
++                                    color="#ffffff"
++                                    borderRadius="0.25rem"
++                                    fontSize="0.75rem"
++                                    fontWeight="bold"
++                                    sx={{ opacity: 0.9, boxShadow: 1 }}
++                                >
++                                    {center.status}
++                                </Box>
++                            </Box>
++
++                            <Typography variant="h6" fontWeight="bold" gutterBottom>
++                                {center.name}
++                            </Typography>
++
++                            <Box display="flex" flexDirection="column" gap={1} mb={3}>
++                                <Box display="flex" alignItems="center" gap={1} color="text.secondary">
++                                    <FiMapPin />
++                                    <Typography variant="body2">{center.location}</Typography>
++                                </Box>
++                                <Box display="flex" alignItems="center" gap={1} color="text.secondary">
++                                    <FiPhone />
++                                    <Typography variant="body2">{center.phone}</Typography>
++                                </Box>
++                            </Box>
++
++                            <Divider sx={{ my: 2 }} />
++
++                            <Box display="flex" alignItems="center" justifyContent="space-between" pt={1}>
++                                <Box>
++                                    <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
++                                        Revenue (Dec)
++                                    </Typography>
++                                    <Typography variant="h6" fontWeight="bold">
++                                        {center.revenue}
++                                    </Typography>
++                                </Box>
++                                <Button variant="text" color="primary">Manage</Button>
++                            </Box>
++                        </Card>
++                    </Grid>
+                 ))}
+-            </div>
+-        </div>
++            </Grid>
++        </Box>
+     );
+ }
++
+diff --git a/app/dashboard/company-owner/page.tsx b/app/dashboard/company-owner/page.tsx
+index 41fe17a..1fd3560 100644
+--- a/app/dashboard/company-owner/page.tsx
++++ b/app/dashboard/company-owner/page.tsx
+@@ -2,14 +2,25 @@
+ 
+ import { useState } from "react";
+ import Link from "next/link";
+-import Button from "@/components/UI/Button";
+-import PageHeader from "@/components/UI/PageHeader";
+-import Tabs from "@/components/UI/Tabs";
++import {
++    Grid,
++    Box,
++    Typography,
++    Button,
++    Tabs,
++    Tab,
++    Card,
++    Icon
++} from "@mui/material";
++
++import StatCard from "@/components/dashboard/StatCard";
++import OverviewTab from "@/components/dashboard/OverviewTab";
++import PerformanceTab from "@/components/dashboard/PerformanceTab";
++import ActivityTab from "@/components/dashboard/ActivityTab";
+ import {
+     FiBriefcase,
+     FiDollarSign,
+     FiUsers,
+-    FiCheckCircle,
+     FiGrid,
+     FiBarChart2,
+     FiClock,
+@@ -17,278 +28,178 @@ import {
+     FiFileText,
+     FiCalendar,
+     FiArrowRight,
+-    FiTrendingUp
+ } from "react-icons/fi";
+ 
+ export default function CompanyOwnerDashboard() {
+     const [activeTab, setActiveTab] = useState('overview');
+ 
+-    const tabs = [
+-        { id: 'overview', label: 'Overview', icon: <FiGrid /> },
+-        { id: 'performance', label: 'Performance', icon: <FiBarChart2 /> },
+-        { id: 'activity', label: 'Recent Activity', icon: <FiClock /> },
+-    ];
++    const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
++        setActiveTab(newValue);
++    };
+ 
+     return (
+-        <div className="space-y-8 pb-10">
++        <Box pb={3}>
+             {/* Header Section */}
+-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+-                <div>
+-                    <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Company Dashboard</h1>
+-                    <p className="text-slate-500 mt-2 text-lg">
++            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'start' }} gap={3} mb={4}>
++                <Box>
++                    <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
++                        Company Dashboard
++                    </Typography>
++                    <Typography variant="body1" color="text.secondary">
+                         Welcome back! Manage your service centers and track performance.
+-                    </p>
+-                </div>
+-                <div className="flex gap-3">
+-                    <Link href="/dashboard/company-owner/centers">
+-                        <Button variant="secondary" className="h-11 hover:border-orange-200 hover:text-orange-600">
++                    </Typography>
++                </Box>
++                <Box display="flex" gap={2}>
++                    <Link href="/dashboard/company-owner/centers" style={{ textDecoration: 'none' }}>
++                        <Button variant="outlined" color="secondary" sx={{ height: 44 }}>
+                             Manage Centers
+                         </Button>
+                     </Link>
+-                    <Link href="/dashboard/company-owner/bookings">
+-                        <Button className="h-11 bg-gradient-to-tr from-orange-600 to-orange-400 border-none shadow-orange-200 hover:shadow-orange-300">
+-                            <FiPlus className="mr-2" /> New Booking
++                    <Link href="/dashboard/company-owner/bookings" style={{ textDecoration: 'none' }}>
++                        <Button variant="contained" color="warning" sx={{ height: 44, color: '#ffffff !important' }}>
++                            <FiPlus style={{ marginRight: 8 }} /> New Booking
+                         </Button>
+                     </Link>
+-                </div>
+-            </div>
+-
+-            {/* Quick Stats Row - Styled like the images (Floating Icons) */}
+-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10 pt-4">
+-                <StatCard
+-                    title="Total Revenue"
+-                    value="$124,500"
+-                    change="+12.5%"
+-                    trend="up"
+-                    icon={<FiDollarSign className="text-white text-xl" />}
+-                    color="bg-gradient-to-tr from-orange-600 to-orange-500" // Main Orange
+-                    footerText="vs. last month"
+-                />
+-                <StatCard
+-                    title="Active Centers"
+-                    value="8"
+-                    change="+1"
+-                    trend="up"
+-                    icon={<FiBriefcase className="text-white text-xl" />}
+-                    color="bg-slate-800" // Dark for contrast
+-                    footerText="New branch opened"
+-                />
+-                <StatCard
+-                    title="Total Customers"
+-                    value="1,240"
+-                    change="+8.2%"
+-                    trend="up"
+-                    icon={<FiUsers className="text-white text-xl" />}
+-                    color="bg-slate-700" // Darker slate
+-                    footerText="vs. last month"
+-                />
+-                <StatCard
+-                    title="Pending Jobs"
+-                    value="42"
+-                    change="-5%"
+-                    trend="down"
+-                    icon={<FiClock className="text-white text-xl" />}
+-                    color="bg-orange-400" // Lighter Orange
+-                    footerText="vs. yesterday"
+-                />
+-            </div>
+-
+-            {/* Main Content Area with Tabs */}
+-            <div className="space-y-6 mt-8">
+-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+-                    <Tabs
+-                        tabs={tabs}
+-                        activeTab={activeTab}
+-                        onChange={setActiveTab}
+-                        className="bg-transparent p-0 gap-4"
++                </Box>
++            </Box>
++
++            {/* Quick Stats Row */}
++            <Grid container spacing={3} mb={4}>
++                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
++                    <StatCard
++                        title="Total Revenue"
++                        count="$124,500"
++                        percentage={{
++                            color: 'success',
++                            amount: '+12.5%',
++                            label: 'vs. last month'
++                        }}
++                        icon={<FiDollarSign />}
++                        color="warning"
+                     />
+-                </div>
++                </Grid>
++                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
++                    <StatCard
++                        title="Active Centers"
++                        count="8"
++                        percentage={{
++                            color: 'success',
++                            amount: '+1',
++                            label: 'New branch opened'
++                        }}
++                        icon={<FiBriefcase />}
++                        color="dark"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
++                    <StatCard
++                        title="Total Customers"
++                        count="1,240"
++                        percentage={{
++                            color: 'success',
++                            amount: '+8.2%',
++                            label: 'vs. last month'
++                        }}
++                        icon={<FiUsers />}
++                        color="dark"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
++                    <StatCard
++                        title="Pending Jobs"
++                        count="42"
++                        percentage={{
++                            color: 'danger',
++                            amount: '-5%',
++                            label: 'vs. yesterday'
++                        }}
++                        icon={<FiClock />}
++                        color="warning"
++                    />
++                </Grid>
++            </Grid>
+ 
+-                <div className="min-h-[400px]">
++            {/* Main Content Area with Tabs */}
++            <Box mb={4}>
++                <Box borderBottom={1} borderColor="divider" mb={3}>
++                    <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="inherit" indicatorColor="primary">
++                        <Tab label="Overview" value="overview" icon={<FiGrid />} iconPosition="start" />
++                        <Tab label="Performance" value="performance" icon={<FiBarChart2 />} iconPosition="start" />
++                        <Tab label="Recent Activity" value="activity" icon={<FiClock />} iconPosition="start" />
++                    </Tabs>
++                </Box>
++
++                <Box minHeight={400}>
+                     {activeTab === 'overview' && <OverviewTab />}
+                     {activeTab === 'performance' && <PerformanceTab />}
+                     {activeTab === 'activity' && <ActivityTab />}
+-                </div>
+-            </div>
+-
+-            {/* Quick Actions Footer - Styled like 'Quick Actions' in image */}
+-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+-                <QuickActionBtn
+-                    title="Service Reports"
+-                    icon={<FiFileText />}
+-                    href="/dashboard/company-owner/reports"
+-                    color="bg-orange-50 text-orange-900 border-orange-100"
+-                    iconColor="text-orange-600"
+-                />
+-                <QuickActionBtn
+-                    title="Team Management"
+-                    icon={<FiUsers />}
+-                    href="/dashboard/company-owner/profile"
+-                    color="bg-slate-50 text-slate-800 hover:bg-orange-50 hover:text-orange-900"
+-                    iconColor="text-slate-500 group-hover:text-orange-600"
+-                />
+-                <QuickActionBtn
+-                    title="Booking Calendar"
+-                    icon={<FiCalendar />}
+-                    href="/dashboard/company-owner/bookings"
+-                    color="bg-slate-50 text-slate-800 hover:bg-orange-50 hover:text-orange-900"
+-                    iconColor="text-slate-500 group-hover:text-orange-600"
+-                />
+-            </div>
+-        </div>
++                </Box>
++            </Box>
++
++            {/* Quick Actions Footer */}
++            <Grid container spacing={3}>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <QuickActionBtn
++                        title="Service Reports"
++                        icon={<FiFileText size={24} />}
++                        href="/dashboard/company-owner/reports"
++                        color="warning"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <QuickActionBtn
++                        title="Team Management"
++                        icon={<FiUsers size={24} />}
++                        href="/dashboard/company-owner/profile"
++                        color="default"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <QuickActionBtn
++                        title="Booking Calendar"
++                        icon={<FiCalendar size={24} />}
++                        href="/dashboard/company-owner/bookings"
++                        color="default"
++                    />
++                </Grid>
++            </Grid>
++        </Box>
+     );
+ }
+ 
+ // --- Sub Components ---
++// QuickActionBtn remains local or moved?
++// Keeping QuickActionBtn local as it's small/specific
+ 
+-function OverviewTab() {
+-    return (
+-        <div className="grid lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+-            {/* Left Column: Revenue Chart Placeholder (Styled like 'Website Views' card) */}
+-            <div className="lg:col-span-2 space-y-8">
+-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 pt-8 relative mt-6">
+-                    <div className="bg-gradient-to-tr from-orange-600 to-orange-400 -mt-12 mb-4 mx-4 rounded-xl shadow-lg h-48 flex items-center justify-center shadow-orange-200">
+-                        <FiBarChart2 className="text-white text-5xl opacity-80" />
+-                    </div>
+-                    <div className="px-2">
+-                        <h3 className="text-lg font-bold text-slate-800">Revenue Analytics</h3>
+-                        <p className="text-sm text-slate-500">Monthly breakdown of service revenue.</p>
+-                        <div className="border-t border-slate-100 mt-4 pt-4 text-slate-500 text-sm flex items-center gap-2">
+-                            <FiClock /> updated 4 min ago
+-                        </div>
+-                    </div>
+-                </div>
+-
+-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+-                    <h3 className="text-lg font-bold text-slate-800 mb-6">Top Performing Centers</h3>
+-                    <div className="space-y-4">
+-                        {[1, 2, 3].map((i) => (
+-                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-orange-50 transition-colors group">
+-                                <div className="flex items-center gap-4">
+-                                    <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold group-hover:bg-orange-200 transition-colors">
+-                                        #{i}
+-                                    </div>
+-                                    <div>
+-                                        <p className="font-semibold text-slate-900">Downtown Service Hub</p>
+-                                        <p className="text-xs text-slate-500">New York, NY</p>
+-                                    </div>
+-                                </div>
+-                                <div className="text-right">
+-                                    <p className="font-bold text-slate-900">$45,200</p>
+-                                    <div className="w-24 h-1.5 bg-slate-200 rounded-full mt-2 ml-auto">
+-                                        <div className="h-full bg-orange-500 rounded-full" style={{ width: '70%' }}></div>
+-                                    </div>
+-                                </div>
+-                            </div>
+-                        ))}
+-                    </div>
+-                </div>
+-            </div>
+-
+-            {/* Right Column: Live Activity (Styled like 'Upcoming Today') */}
+-            <div className="lg:col-span-1">
+-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mt-6">
+-                    <h3 className="text-lg font-bold text-slate-800 mb-6">Recent Activity</h3>
+-                    <div className="space-y-6">
+-                        {[1, 2, 3, 4, 5].map((i) => (
+-                            <div key={i} className="flex items-start gap-4">
+-                                <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 ring-4 ring-orange-100"></span>
+-                                <div className="flex-1 pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+-                                    <p className="text-sm font-semibold text-slate-800">New Job Created</p>
+-                                    <p className="text-xs text-slate-500 mt-0.5">Downtown Branch started a new tire service.</p>
+-                                    <p className="text-[10px] text-slate-400 mt-2 font-medium">10:42 AM</p>
+-                                </div>
+-                            </div>
+-                        ))}
+-                    </div>
+-                    <Button variant="ghost" className="w-full mt-4 text-sm text-slate-500 hover:text-orange-600">
+-                        View Full History
+-                    </Button>
+-                </div>
+-            </div>
+-        </div>
+-    );
+-}
+-
+-function PerformanceTab() {
+-    return (
+-        <div className="bg-white rounded-xl border border-slate-100 p-8 text-center animate-in fade-in duration-500 shadow-sm">
+-            <div className="max-w-md mx-auto">
+-                <div className="w-16 h-16 bg-gradient-to-tr from-orange-500 to-orange-400 text-white rounded-xl shadow-lg flex items-center justify-center mx-auto mb-6 text-3xl shadow-orange-200">
+-                    <FiBarChart2 />
+-                </div>
+-                <h3 className="text-xl font-bold text-slate-800">Performance Analytics</h3>
+-                <p className="text-slate-500 mt-2 mb-6">Detailed performance metrics per service center will be available here.</p>
+-                <Link href="/dashboard/company-owner/analytics">
+-                    <Button className="bg-orange-600 hover:bg-orange-700 text-white shadow-orange-200">Go to Analytics</Button>
+-                </Link>
+-            </div>
+-        </div>
+-    );
+-}
+-
+-function ActivityTab() {
+-    return (
+-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 animate-in fade-in duration-500">
+-            <h3 className="text-lg font-bold text-slate-800 mb-6">Full Activity Log</h3>
+-            <div className="space-y-4">
+-                {[1, 2, 3, 4, 5, 6].map((i) => (
+-                    <div key={i} className="flex items-center gap-4 p-4 border border-slate-50 bg-slate-50/50 rounded-lg">
+-                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+-                            <FiClock />
+-                        </div>
+-                        <div className="flex-1">
+-                            <p className="text-sm font-medium text-slate-900">System Notification {i}</p>
+-                            <p className="text-xs text-slate-500">Details about the activity log entry goes here.</p>
+-                        </div>
+-                        <span className="text-xs text-slate-400">2h ago</span>
+-                    </div>
+-                ))}
+-            </div>
+-        </div>
+-    );
+-}
+-
+-// --- Component Props & Styles matching Image UI ---
+-
+-function StatCard({ title, value, change, trend, icon, color, footerText }: any) {
+-    return (
+-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 relative p-4 pt-8">
+-            {/* Floating Icon */}
+-            <div className={`absolute -top-4 left-4 w-12 h-12 rounded-lg shadow-lg flex items-center justify-center ${color}`}>
+-                {icon}
+-            </div>
+-
+-            {/* Content right-aligned */}
+-            <div className="text-right mb-4">
+-                <p className="text-slate-500 text-sm font-light">{title}</p>
+-                <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+-            </div>
+-
+-            {/* Footer with separator */}
+-            <div className="border-t border-slate-100 pt-3">
+-                <p className="text-xs text-slate-500 flex items-center gap-1">
+-                    <span className={`font-bold ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+-                        {change}
+-                    </span>
+-                    {footerText}
+-                </p>
+-            </div>
+-        </div>
+-    );
+-}
++function QuickActionBtn({ title, icon, href, color }: any) {
++    // Determine styles based on color prop logic (replicating original intent with MUI)
++    const isWarning = color === 'warning';
+ 
+-function QuickActionBtn({ title, icon, href, color, iconColor }: any) {
+     return (
+-        <Link href={href} className={`flex items-center gap-4 p-4 rounded-xl shadow-sm transition-all hover:scale-[1.02] border border-transparent hover:border-slate-200 ${color}`}>
+-            <div className={`text-2xl ${iconColor}`}>
+-                {icon}
+-            </div>
+-            <div className="flex-1">
+-                <h4 className="font-bold text-slate-800">{title}</h4>
+-                <p className="text-xs opacity-80">Click to view details</p>
+-            </div>
+-            <FiArrowRight className={`opacity-50 ${iconColor}`} />
++        <Link href={href} style={{ textDecoration: 'none', width: '100%' }}>
++            <Card sx={{
++                p: 2,
++                display: 'flex',
++                alignItems: 'center',
++                gap: 2,
++                transition: 'transform 0.2s',
++                '&:hover': { transform: 'scale(1.02)' },
++                bgcolor: isWarning ? 'warning.main' : 'background.paper',
++                color: isWarning ? '#ffffff' : 'text.primary'
++            }}>
++                <Box fontSize={24} color="inherit">
++                    {icon}
++                </Box>
++                <Box flex={1}>
++                    <Typography variant="subtitle1" fontWeight="bold" color="inherit">
++                        {title}
++                    </Typography>
++                    <Typography variant="caption" color="inherit" sx={{ opacity: 0.8 }}>
++                        Click to view details
++                    </Typography>
++                </Box>
++                <FiArrowRight style={{ opacity: 0.7 }} />
++            </Card>
+         </Link>
+     );
+ }
+diff --git a/app/dashboard/company-owner/profile/page.tsx b/app/dashboard/company-owner/profile/page.tsx
+index 2613b7e..620df6b 100644
+--- a/app/dashboard/company-owner/profile/page.tsx
++++ b/app/dashboard/company-owner/profile/page.tsx
+@@ -1,47 +1,458 @@
+ "use client";
+ 
+-import Button from "@/components/UI/Button"; import PageHeader from "@/components/UI/PageHeader";
++import { useState, useRef } from "react";
++import {
++    Box,
++    Typography,
++    Card,
++    Button,
++    Grid,
++    Avatar,
++    Tab,
++    Tabs,
++    Icon,
++    Divider,
++    Switch,
++    FormGroup,
++    FormControlLabel,
++    TextField,
++    IconButton,
++    Snackbar,
++    Alert,
++    Badge
++} from "@mui/material";
++import { FiHome, FiSettings, FiEdit2, FiFacebook, FiTwitter, FiInstagram, FiTool, FiActivity, FiSave, FiX, FiCamera } from "react-icons/fi";
++
++// --- Components ---
++
++function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: any) {
++    const bannerInputRef = useRef<HTMLInputElement>(null);
++    const profileInputRef = useRef<HTMLInputElement>(null);
++
++    const handleBannerClick = () => {
++        bannerInputRef.current?.click();
++    };
++
++    const handleProfileClick = () => {
++        profileInputRef.current?.click();
++    };
++
++    return (
++        <Box position="relative" mb={5}>
++            <Box
++                position="relative"
++                minHeight="18.75rem"
++                borderRadius="0.75rem"
++                sx={{
++                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FF6B00, #E65100)', // Premium Orange Gradient or Image
++                    backgroundSize: "cover",
++                    backgroundPosition: "50%",
++                    overflow: "hidden",
++                }}
++            >
++                {/* Banner Edit Button */}
++                <Box position="absolute" top={20} right={20}>
++                    <Button
++                        variant="contained"
++                        size="small"
++                        startIcon={<FiCamera />}
++                        onClick={handleBannerClick}
++                        sx={{ bgcolor: 'rgba(255, 255, 255, 0.8)', color: 'text.primary', '&:hover': { bgcolor: '#fff' } }}
++                    >
++                        Edit Cover
++                    </Button>
++                    <input
++                        type="file"
++                        ref={bannerInputRef}
++                        style={{ display: 'none' }}
++                        accept="image/*"
++                        onChange={onBannerChange}
++                    />
++                </Box>
++            </Box>
++            <Card
++                sx={{
++                    position: "relative",
++                    mt: -8,
++                    mx: 3,
++                    py: 2,
++                    px: 2,
++                }}
++            >
++                <Grid container spacing={3} alignItems="center">
++                    <Grid>
++                        <Badge
++                            overlap="circular"
++                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
++                            badgeContent={
++                                <IconButton
++                                    size="small"
++                                    onClick={handleProfileClick}
++                                    sx={{
++                                        bgcolor: 'background.paper',
++                                        boxShadow: 2,
++                                        '&:hover': { bgcolor: 'grey.100' },
++                                        width: 32,
++                                        height: 32
++                                    }}
++                                >
++                                    <FiCamera size={16} color="#FF6B00" />
++                                </IconButton>
++                            }
++                        >
++                            <Avatar
++                                src={profileImage || "/assets/images/bruce-mars.jpg"}
++                                alt="profile-image"
++                                sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
++                            >
++                                <FiTool color="#FF6B00" size={32} />
++                            </Avatar>
++                        </Badge>
++                        <input
++                            type="file"
++                            ref={profileInputRef}
++                            style={{ display: 'none' }}
++                            accept="image/*"
++                            onChange={onProfileImageChange}
++                        />
++                    </Grid>
++                    <Grid>
++                        <Box height="100%" mt={0.5} lineHeight={1}>
++                            <Typography variant="h5" fontWeight="medium">
++                                TechServe Solutions
++                            </Typography>
++                            <Typography variant="button" color="text.secondary" fontWeight="regular">
++                                Authorized Service Provider
++                            </Typography>
++                        </Box>
++                    </Grid>
++                    <Grid size={{ xs: 12, md: 6, lg: 4 }} sx={{ ml: "auto" }}>
++                        <Tabs
++                            value={tabValue}
++                            onChange={onTabChange}
++                            textColor="inherit"
++                            sx={{
++                                '& .MuiTabs-indicator': {
++                                    backgroundColor: '#FF6B00',
++                                },
++                                '& .MuiTab-root': {
++                                    color: 'text.secondary',
++                                    '&.Mui-selected': {
++                                        color: '#344767', // Dark blue/grey for selected text
++                                    }
++                                }
++                            }}
++                        >
++                            <Tab label="Overview" icon={<FiHome size={18} />} iconPosition="start" />
++                            <Tab label="Account" icon={<FiSettings size={18} />} iconPosition="start" />
++                        </Tabs>
++                    </Grid>
++                </Grid>
++                {children}
++            </Card>
++        </Box>
++    );
++}
++
++function PlatformSettings() {
++    return (
++        <Card sx={{ boxShadow: 'none', height: '100%' }}>
++            <Box p={2}>
++                <Typography variant="h6" fontWeight="medium" textTransform="capitalize">
++                    Platform Settings
++                </Typography>
++            </Box>
++            <Box pt={1} pb={2} px={2} lineHeight={1.25}>
++                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
++                    Service Alerts
++                </Typography>
++                <Box display="flex" flexDirection="column" mb={3}>
++                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
++                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
++                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
++                </Box>
++                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
++                    Visibility
++                </Typography>
++                <Box display="flex" flexDirection="column">
++                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
++                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
++                </Box>
++            </Box>
++        </Card>
++    );
++}
++
++function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: any) {
++    return (
++        <Card sx={{ height: "100%", boxShadow: 'none' }}>
++            <Box display="flex" justifyContent="space-between" alignItems="center" pt={2} px={2}>
++                <Typography variant="h6" fontWeight="medium" textTransform="capitalize">
++                    {title}
++                </Typography>
++                {isEditing ? (
++                    <Box display="flex" gap={1}>
++                        <IconButton size="small" onClick={onSave} color="success">
++                            <FiSave />
++                        </IconButton>
++                        <IconButton size="small" onClick={onCancel} color="error">
++                            <FiX />
++                        </IconButton>
++                    </Box>
++                ) : (
++                    <Button variant="text" color="primary" sx={{ color: '#FF6B00' }} onClick={onEdit}>
++                        <FiEdit2 />
++                    </Button>
++                )}
++            </Box>
++            <Box p={2}>
++                <Box mb={2} lineHeight={1}>
++                    <Typography variant="button" color="text.secondary" fontWeight="light">
++                        {description}
++                    </Typography>
++                </Box>
++                <Box sx={{ opacity: 0.3 }}>
++                    <Divider />
++                </Box>
++                <Box>
++                    {Object.keys(info).map((label) => (
++                        <Box key={label} display="flex" py={1} pr={2} alignItems="center">
++                            <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
++                                {label}:
++                            </Typography>
++                            {isEditing ? (
++                                <TextField
++                                    variant="standard"
++                                    fullWidth
++                                    value={info[label]}
++                                    onChange={(e) => onChange(label, e.target.value)}
++                                    size="small"
++                                    sx={{ ml: 1 }}
++                                />
++                            ) : (
++                                <Typography variant="button" fontWeight="regular" color="text.secondary">
++                                    &nbsp;{info[label]}
++                                </Typography>
++                            )}
++                        </Box>
++                    ))}
++                    <Box display="flex" py={1} pr={2} mt={1}>
++                        <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
++                            Social:
++                        </Typography>
++                        {social.map(({ icon, color }: any, index: number) => (
++                            <IconButton key={index} size="small" color={color}>
++                                {icon}
++                            </IconButton>
++                        ))}
++                    </Box>
++                </Box>
++            </Box>
++        </Card>
++    );
++}
+ 
+ export default function ProfilePage() {
++    const [tabValue, setTabValue] = useState(0);
++    const [isWorkshopOpen, setIsWorkshopOpen] = useState(true);
++    const [snackbarOpen, setSnackbarOpen] = useState(false);
++    const [snackbarMessage, setSnackbarMessage] = useState("");
++
++    // Image State
++    const [bannerImage, setBannerImage] = useState<string | null>(null);
++    const [profileImage, setProfileImage] = useState<string | null>(null);
++
++    // Profile Data State
++    const [isEditing, setIsEditing] = useState(false);
++    // Explicitly order keys for mapping
++    const [profileData, setProfileData] = useState<{ [key: string]: string }>({
++        "Company Name": "TechServe Solutions L.L.C.",
++        "Registration": "REG-8829103",
++        "Mobile": "+1 (555) 123-4567",
++        "Email": "support@techserve.com",
++        "Location": "New York, USA",
++    });
++    // Backup for cancel
++    const [originalProfileData, setOriginalProfileData] = useState(profileData);
++
++    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
++        setTabValue(newValue);
++    };
++
++    const handleEdit = () => {
++        setOriginalProfileData({ ...profileData });
++        setIsEditing(true);
++    };
++
++    const handleCancel = () => {
++        setProfileData({ ...originalProfileData });
++        setIsEditing(false);
++    };
++
++    const handleSaveProfile = () => {
++        setIsEditing(false);
++        setSnackbarMessage("Profile details updated successfully!");
++        setSnackbarOpen(true);
++    };
++
++    const handleProfileChange = (field: string, value: string) => {
++        setProfileData(prev => ({ ...prev, [field]: value }));
++    };
++
++    const handleSaveStatus = () => {
++        setSnackbarMessage("Workshop status and capacity saved!");
++        setSnackbarOpen(true);
++    };
++
++    const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
++        if (event.target.files && event.target.files[0]) {
++            const file = event.target.files[0];
++            const imageUrl = URL.createObjectURL(file);
++            setBannerImage(imageUrl);
++            setSnackbarMessage("Cover image updated!");
++            setSnackbarOpen(true);
++        }
++    };
++
++    const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
++        if (event.target.files && event.target.files[0]) {
++            const file = event.target.files[0];
++            const imageUrl = URL.createObjectURL(file);
++            setProfileImage(imageUrl);
++            setSnackbarMessage("Profile picture updated!");
++            setSnackbarOpen(true);
++        }
++    };
++
+     return (
+-        <div>
+-            <PageHeader
+-                title="Company Profile"
+-                description="Manage company details and branding."
+-            />
+-
+-            <div className="max-w-3xl bg-white rounded-xl border border-slate-200 shadow-sm p-8">
+-                <form className="space-y-6">
+-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+-                        <div>
+-                            <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
+-                            <input type="text" defaultValue="AutoFix Pro" className="w-full border-slate-200 rounded-lg" />
+-                        </div>
+-                        <div>
+-                            <label className="block text-sm font-medium text-slate-700 mb-1">Business Email</label>
+-                            <input type="email" defaultValue="contact@autofix.com" className="w-full border-slate-200 rounded-lg" />
+-                        </div>
+-                        <div>
+-                            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+-                            <input type="text" defaultValue="+1 (555) 123-4567" className="w-full border-slate-200 rounded-lg" />
+-                        </div>
+-                        <div>
+-                            <label className="block text-sm font-medium text-slate-700 mb-1">Website</label>
+-                            <input type="text" defaultValue="www.autofix.com" className="w-full border-slate-200 rounded-lg" />
+-                        </div>
+-                    </div>
+-
+-                    <div>
+-                        <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+-                        <textarea className="w-full border-slate-200 rounded-lg" rows={3} defaultValue="123 Main St, Suite 500, New York, NY 10001"></textarea>
+-                    </div>
+-
+-                    <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
+-                        <Button type="button" className="">Cancel</Button>
+-                        <Button type="button" className="">Save Changes</Button>
+-                    </div>
+-                </form>
+-            </div>
+-        </div>
++        <ProfileHeader
++            tabValue={tabValue}
++            onTabChange={handleTabChange}
++            bannerImage={bannerImage}
++            onBannerChange={handleBannerChange}
++            profileImage={profileImage}
++            onProfileImageChange={handleProfileImageChange}
++        >
++            <Box mt={5} mb={3}>
++                {/* Tab 0: Overview */}
++                {tabValue === 0 && (
++                    <Grid container spacing={1}>
++                        <Grid size={{ xs: 12, md: 7, xl: 8 }} sx={{ display: "flex" }}>
++                            <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
++                            <ProfileInfoCard
++                                title="Company Details"
++                                description="TechServe Solutions is a premier multi-brand vehicle service center specializing in diagnostics and express repairs. We are committed to transparency and speed."
++                                info={profileData}
++                                social={[
++                                    { icon: <FiFacebook />, color: "primary" },
++                                    { icon: <FiTwitter />, color: "info" },
++                                    { icon: <FiInstagram />, color: "warning" },
++                                ]}
++                                isEditing={isEditing}
++                                onEdit={handleEdit}
++                                onSave={handleSaveProfile}
++                                onCancel={handleCancel}
++                                onChange={handleProfileChange}
++                            />
++                            <Divider orientation="vertical" sx={{ mx: 0 }} />
++                        </Grid>
++                        <Grid size={{ xs: 12, md: 5, xl: 4 }}>
++                            <Box pl={3} pr={2} height="100%">
++                                <Typography variant="h6" fontWeight="medium" textTransform="capitalize" mb={2}>
++                                    Workshop Status
++                                </Typography>
++                                <Box component={Card} variant="outlined" p={3} sx={{ borderColor: 'grey.300' }}>
++                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
++                                        <Box display="flex" alignItems="center" gap={1}>
++                                            <FiActivity color={isWorkshopOpen ? "#4caf50" : "#f44336"} />
++                                            <Typography variant="button" fontWeight="bold" color={isWorkshopOpen ? "success.main" : "error.main"}>
++                                                {isWorkshopOpen ? "Currently Open" : "Closed"}
++                                            </Typography>
++                                        </Box>
++                                        <Switch
++                                            checked={isWorkshopOpen}
++                                            onChange={(e) => setIsWorkshopOpen(e.target.checked)}
++                                            color="success"
++                                        />
++                                    </Box>
++
++                                    <TextField
++                                        fullWidth
++                                        size="small"
++                                        label="Daily Capacity Limit"
++                                        defaultValue="25"
++                                        type="number"
++                                        sx={{ mb: 2 }}
++                                    />
++                                    <TextField
++                                        fullWidth
++                                        size="small"
++                                        label="Emergency Hotline"
++                                        defaultValue="+1 (555) 999-0000"
++                                    />
++                                    <Box pt={2}>
++                                        <Button
++                                            fullWidth
++                                            variant="contained"
++                                            sx={{ bgcolor: '#FF6B00', color: '#fff', '&:hover': { bgcolor: '#E65100' } }}
++                                            onClick={handleSaveStatus}
++                                        >
++                                            Save Status
++                                        </Button>
++                                    </Box>
++                                </Box>
++                            </Box>
++                        </Grid>
++                    </Grid>
++                )}
++
++                {/* Tab 1: Account (Settings) */}
++                {tabValue === 1 && (
++                    <Grid container spacing={1}>
++                        <Grid size={{ xs: 12, md: 6 }}>
++                            <PlatformSettings />
++                        </Grid>
++                        <Grid size={{ xs: 12, md: 6 }}>
++                            <Card sx={{ boxShadow: 'none', height: '100%' }}>
++                                <Box p={2}>
++                                    <Typography variant="h6" fontWeight="medium">
++                                        Security & Access
++                                    </Typography>
++                                </Box>
++                                <Box px={2} pb={3}>
++                                    <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>
++                                        Password
++                                    </Typography>
++                                    <Button variant="outlined" color="primary" fullWidth sx={{ mb: 3 }}>
++                                        Change Password
++                                    </Button>
++
++                                    <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>
++                                        Danger Zone
++                                    </Typography>
++                                    <Typography variant="caption" color="text.secondary" display="block" mb={2}>
++                                        Once you delete your account, there is no going back. Please be certain.
++                                    </Typography>
++                                    <Button variant="outlined" color="error" fullWidth>
++                                        Deactivate Account
++                                    </Button>
++                                </Box>
++                            </Card>
++                        </Grid>
++                    </Grid>
++                )}
++            </Box>
++
++            <Snackbar
++                open={snackbarOpen}
++                autoHideDuration={4000}
++                onClose={() => setSnackbarOpen(false)}
++                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
++            >
++                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
++                    {snackbarMessage}
++                </Alert>
++            </Snackbar>
++        </ProfileHeader>
+     );
+ }
+diff --git a/app/dashboard/company-owner/reports/page.tsx b/app/dashboard/company-owner/reports/page.tsx
+index 789b08b..590bd11 100644
+--- a/app/dashboard/company-owner/reports/page.tsx
++++ b/app/dashboard/company-owner/reports/page.tsx
+@@ -1,6 +1,18 @@
+ "use client";
+ 
+-import Button from "@/components/UI/Button"; import PageHeader from "@/components/UI/PageHeader";
++import {
++    Box,
++    Typography,
++    Card,
++    List,
++    ListItem,
++    ListItemAvatar,
++    Avatar,
++    ListItemText,
++    ListItemSecondaryAction,
++    IconButton,
++    Divider
++} from "@mui/material";
+ import { FiDownload, FiFileText } from "react-icons/fi";
+ 
+ const DUMMY_REPORTS = [
+@@ -12,32 +24,53 @@ const DUMMY_REPORTS = [
+ 
+ export default function ReportsPage() {
+     return (
+-        <div>
+-            <PageHeader
+-                title="Reports"
+-                description="Download financial and operational reports."
+-            />
++        <Box pb={3}>
++            <Box mb={4}>
++                <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
++                    Reports
++                </Typography>
++                <Typography variant="body1" color="text.secondary">
++                    Download financial and operational reports.
++                </Typography>
++            </Box>
+ 
+-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+-                <div className="divide-y divide-slate-100">
+-                    {DUMMY_REPORTS.map((report) => (
+-                        <div key={report.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+-                            <div className="flex items-center gap-4">
+-                                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+-                                    <FiFileText className="text-xl" />
+-                                </div>
+-                                <div>
+-                                    <h4 className="font-semibold text-slate-900">{report.name}</h4>
+-                                    <p className="text-xs text-slate-500">{report.date} • {report.type} • {report.size}</p>
+-                                </div>
+-                            </div>
+-                            <Button variant="ghost" className="p-2 text-slate-400 hover:text-primary transition-colors rounded-full">
+-                                <FiDownload className="text-xl" />
+-                            </Button>
+-                        </div>
++            <Card>
++                <List sx={{ width: '100%', bgcolor: 'background.paper', p: 0 }}>
++                    {DUMMY_REPORTS.map((report, index) => (
++                        <Box key={report.id}>
++                            <ListItem alignItems="center" sx={{ py: 3, px: 3 }}>
++                                <ListItemAvatar>
++                                    <Avatar sx={{ bgcolor: 'primary.main', color: '#ffffff', borderRadius: 'lg', boxShadow: 2 }}>
++                                        <FiFileText size={20} />
++                                    </Avatar>
++                                </ListItemAvatar>
++                                <ListItemText
++                                    primary={
++                                        <Typography variant="h6" fontWeight="medium">
++                                            {report.name}
++                                        </Typography>
++                                    }
++                                    secondary={
++                                        <Typography
++                                            component="span"
++                                            variant="body2"
++                                            color="text.secondary"
++                                        >
++                                            {report.date} • {report.type} • {report.size}
++                                        </Typography>
++                                    }
++                                />
++                                <ListItemSecondaryAction>
++                                    <IconButton edge="end" aria-label="download">
++                                        <FiDownload />
++                                    </IconButton>
++                                </ListItemSecondaryAction>
++                            </ListItem>
++                            {index < DUMMY_REPORTS.length - 1 && <Divider component="li" />}
++                        </Box>
+                     ))}
+-                </div>
+-            </div>
+-        </div>
++                </List>
++            </Card>
++        </Box>
+     );
+ }
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 6bf328f..187eedc 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,17 +1,13 @@
+ import type { Metadata } from "next";
+-import { Outfit, Roboto } from "next/font/google";
++import { Roboto } from "next/font/google"; // Use Roboto as per Material Dashboard
+ import "./globals.css";
+-
+-const outfit = Outfit({
+-  variable: "--font-outfit",
+-  subsets: ["latin"],
+-  weight: ["300", "400", "500", "600", "700"],
+-});
++import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
+ 
+ const roboto = Roboto({
+-  variable: "--font-roboto",
+-  subsets: ["latin"],
+   weight: ["300", "400", "500", "700"],
++  subsets: ["latin"],
++  display: "swap",
++  variable: "--font-roboto",
+ });
+ 
+ export const metadata: Metadata = {
+@@ -26,10 +22,10 @@ export default function RootLayout({
+ }>) {
+   return (
+     <html lang="en">
+-      <body
+-        className={`${outfit.variable} ${roboto.variable} antialiased bg-gray-50 text-slate-900 font-sans`}
+-      >
+-        {children}
++      <body className={roboto.className}>
++        <ThemeRegistry>
++          {children}
++        </ThemeRegistry>
+       </body>
+     </html>
+   );
+diff --git a/components/ThemeRegistry/EmotionCache.tsx b/components/ThemeRegistry/EmotionCache.tsx
+new file mode 100644
+index 0000000..37c553e
+--- /dev/null
++++ b/components/ThemeRegistry/EmotionCache.tsx
+@@ -0,0 +1,53 @@
++'use client';
++
++import * as React from 'react';
++import createCache from '@emotion/cache';
++import { useServerInsertedHTML } from 'next/navigation';
++import { CacheProvider } from '@emotion/react';
++
++export default function NextAppDirEmotionCacheProvider(props: any) {
++    const { options, children } = props;
++
++    const [{ cache, flush }] = React.useState(() => {
++        const cache = createCache(options);
++        cache.compat = true;
++        const prevInsert = cache.insert;
++        let inserted: string[] = [];
++        cache.insert = (...args) => {
++            const serialized = args[1];
++            if (cache.inserted[serialized.name] === undefined) {
++                inserted.push(serialized.name);
++            }
++            return prevInsert(...args);
++        };
++        const flush = () => {
++            const prevInserted = inserted;
++            inserted = [];
++            return prevInserted;
++        };
++        return { cache, flush };
++    });
++
++    useServerInsertedHTML(() => {
++        const names = flush();
++        if (names.length === 0) {
++            return null;
++        }
++        let styles = '';
++        // eslint-disable-next-line no-restricted-syntax
++        for (const name of names) {
++            styles += cache.inserted[name];
++        }
++        return (
++            <style
++                key={cache.key}
++                data-emotion={`${cache.key} ${names.join(' ')}`}
++                dangerouslySetInnerHTML={{
++                    __html: styles,
++                }}
++            />
++        );
++    });
++
++    return <CacheProvider value={cache}>{children}</CacheProvider>;
++}
+diff --git a/components/ThemeRegistry/ThemeRegistry.tsx b/components/ThemeRegistry/ThemeRegistry.tsx
+new file mode 100644
+index 0000000..6df7db6
+--- /dev/null
++++ b/components/ThemeRegistry/ThemeRegistry.tsx
+@@ -0,0 +1,18 @@
++"use client";
++
++import * as React from "react";
++import { ThemeProvider } from "@mui/material/styles";
++import CssBaseline from "@mui/material/CssBaseline";
++import NextAppDirEmotionCacheProvider from "./EmotionCache";
++import theme from "@/theme/index";
++
++export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
++    return (
++        <NextAppDirEmotionCacheProvider options={{ key: "mui" }}>
++            <ThemeProvider theme={theme}>
++                <CssBaseline />
++                {children}
++            </ThemeProvider>
++        </NextAppDirEmotionCacheProvider>
++    );
++}
+diff --git a/components/dashboard/ActivityTab.tsx b/components/dashboard/ActivityTab.tsx
+new file mode 100644
+index 0000000..f3e0ee8
+--- /dev/null
++++ b/components/dashboard/ActivityTab.tsx
+@@ -0,0 +1,90 @@
++"use client";
++
++import React from 'react';
++import { Card, Box, Typography, Button } from '@mui/material';
++
++const activities = [
++    {
++        title: "New Order #1832412",
++        description: "21 Dec 11 PM",
++        color: "success",
++        icon: "shopping_cart"
++    },
++    {
++        title: "Server payments for April",
++        description: "21 Dec 9:34 PM",
++        color: "primary", // orange in our theme
++        icon: "payment"
++    },
++    {
++        title: "New card added for order #4395133",
++        description: "20 Dec 2:20 AM",
++        color: "info",
++        icon: "credit_card"
++    },
++    {
++        title: "Unlock packages for development",
++        description: "18 Dec 4:54 AM",
++        color: "primary",
++        icon: "lock_open"
++    },
++    {
++        title: "New order #9583120",
++        description: "17 Dec",
++        color: "success",
++        icon: "shopping_cart"
++    }
++];
++
++export default function ActivityTab() {
++    return (
++        <Card sx={{ p: 3 }}>
++            <Box mb={2}>
++                <Typography variant="h6" fontWeight="bold">
++                    Activity Timeline
++                </Typography>
++                <Typography variant="button" color="text.secondary" fontWeight="regular">
++                    30 done this month
++                </Typography>
++            </Box>
++
++            <Box display="flex" flexDirection="column" mt={2}>
++                {activities.map((activity, index) => {
++                    const isLast = index === activities.length - 1;
++                    return (
++                        <Box key={index} display="flex" gap={2}>
++                            <Box display="flex" flexDirection="column" alignItems="center">
++                                {/* Dot */}
++                                <Box
++                                    width="0.75rem"
++                                    height="0.75rem"
++                                    borderRadius="50%"
++                                    bgcolor={`${activity.color}.main`}
++                                    boxShadow={`0 0 0 4px #fff`}
++                                    zIndex={1}
++                                />
++                                {/* Line */}
++                                {!isLast && (
++                                    <Box
++                                        width="2px"
++                                        flexGrow={1}
++                                        bgcolor="grey.300"
++                                        my={0.5}
++                                    />
++                                )}
++                            </Box>
++                            <Box pb={isLast ? 0 : 3} pt="2px">
++                                <Typography variant="button" fontWeight="bold" display="block" color="text.primary">
++                                    {activity.title}
++                                </Typography>
++                                <Typography variant="caption" color="text.secondary" fontWeight="regular">
++                                    {activity.description}
++                                </Typography>
++                            </Box>
++                        </Box>
++                    );
++                })}
++            </Box>
++        </Card>
++    );
++}
+diff --git a/components/dashboard/ChartCard.tsx b/components/dashboard/ChartCard.tsx
+new file mode 100644
+index 0000000..d23e48e
+--- /dev/null
++++ b/components/dashboard/ChartCard.tsx
+@@ -0,0 +1,78 @@
++"use client";
++
++import React, { ReactNode } from 'react';
++import Card from '@mui/material/Card';
++import Box from '@mui/material/Box';
++import Typography from '@mui/material/Typography';
++import Divider from '@mui/material/Divider';
++import { useTheme } from '@mui/material/styles';
++import { FiClock } from 'react-icons/fi';
++
++interface ChartCardProps {
++    title: string;
++    description: ReactNode;
++    date: string;
++    chart: ReactNode;
++    color?: 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' | 'dark' | 'orange' | 'green' | 'light';
++}
++
++export default function ChartCard({ title, description, date, chart, color = 'primary' }: ChartCardProps) {
++    const theme = useTheme();
++
++    // Map legacy colors to theme palette keys
++    const validColor = color === 'orange' ? 'primary' : (color === 'green' ? 'success' : color);
++
++    const getGradient = (col: string) => {
++        const gradients = (theme.palette as any).gradients;
++        if (gradients && gradients[col]) {
++            return `linear-gradient(195deg, ${gradients[col].main}, ${gradients[col].state})`;
++        }
++        return theme.palette.primary.main;
++    };
++
++    const getShadow = (col: string) => {
++        const boxShadows = (theme as any).boxShadows;
++        if (boxShadows && boxShadows.colored && boxShadows.colored[col]) {
++            return boxShadows.colored[col];
++        }
++        return boxShadows ? boxShadows.md : '';
++    };
++
++    return (
++        <Card sx={{ height: '100%', overflow: 'visible', mt: 4 }}>
++            <Box
++                sx={{
++                    background: getGradient(validColor),
++                    boxShadow: getShadow(validColor),
++                    color: validColor === 'light' ? 'text.primary' : '#ffffff',
++                    borderRadius: '0.75rem',
++                    padding: '1rem',
++                    position: 'relative',
++                    mt: '-40px',
++                    mx: 2,
++                    height: '12.5rem',
++                    overflow: 'hidden'
++                }}
++            >
++                <Box height="100%" width="100%">
++                    {chart}
++                </Box>
++            </Box>
++            <Box p={2}>
++                <Typography variant="h6" textTransform="capitalize" fontWeight="bold">
++                    {title}
++                </Typography>
++                <Typography component="div" variant="button" color="text.secondary" fontWeight="light">
++                    {description}
++                </Typography>
++                <Divider sx={{ my: 2 }} />
++                <Box display="flex" alignItems="center" color="text.secondary">
++                    <FiClock style={{ marginRight: '5px' }} />
++                    <Typography variant="button" fontWeight="light" color="text.secondary">
++                        {date}
++                    </Typography>
++                </Box>
++            </Box>
++        </Card>
++    );
++}
+diff --git a/components/dashboard/DonutStatCard.tsx b/components/dashboard/DonutStatCard.tsx
+new file mode 100644
+index 0000000..9a69570
+--- /dev/null
++++ b/components/dashboard/DonutStatCard.tsx
+@@ -0,0 +1,119 @@
++"use client";
++
++import React from 'react';
++import Card from '@mui/material/Card';
++import Box from '@mui/material/Box';
++import Typography from '@mui/material/Typography';
++import Divider from '@mui/material/Divider';
++import IconButton from '@mui/material/IconButton';
++import { FiInfo } from 'react-icons/fi';
++import {
++    PieChart,
++    Pie,
++    Cell,
++    ResponsiveContainer
++} from 'recharts';
++
++interface DataItem {
++    name: string;
++    value: number; // Percentage or raw value
++    color: string;
++    [key: string]: any;
++}
++
++interface DonutStatCardProps {
++    title: string;
++    totalValue: string | number;
++    unit: string;
++    description?: string; // e.g., "Consumption"
++    data: DataItem[];
++}
++
++export default function DonutStatCard({ title, totalValue, unit, data }: DonutStatCardProps) {
++    return (
++        <Card sx={{ height: '100%', p: 3 }}>
++            {/* Header */}
++            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
++                <Typography variant="h6" fontWeight="bold" color="text.primary">
++                    {title}
++                </Typography>
++                <IconButton size="small">
++                    <FiInfo size={18} />
++                </IconButton>
++            </Box>
++
++            {/* Content Container */}
++            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="center" height="100%">
++
++                {/* Left Side: Donut Chart */}
++                <Box width={{ xs: '100%', md: '50%' }} height={250} position="relative">
++                    <ResponsiveContainer width="100%" height="100%">
++                        <PieChart>
++                            <Pie
++                                data={data}
++                                cx="50%"
++                                cy="50%"
++                                innerRadius={80} // Thin donut
++                                outerRadius={100}
++                                paddingAngle={2}
++                                dataKey="value"
++                                startAngle={90}
++                                endAngle={-270}
++                                stroke="none"
++                            >
++                                {data.map((entry, index) => (
++                                    <Cell key={`cell-${index}`} fill={entry.color} />
++                                ))}
++                            </Pie>
++                        </PieChart>
++                    </ResponsiveContainer>
++
++                    {/* Center Text */}
++                    <Box
++                        position="absolute"
++                        top="50%"
++                        left="50%"
++                        sx={{ transform: 'translate(-50%, -50%)', textAlign: 'center' }}
++                    >
++                        <Typography variant="h4" fontWeight="bold" color="text.primary">
++                            {totalValue}
++                        </Typography>
++                        <Typography variant="button" color="text.secondary" fontWeight="regular">
++                            {unit}
++                        </Typography>
++                    </Box>
++                </Box>
++
++                {/* Right Side: Legend List */}
++                <Box width={{ xs: '100%', md: '50%' }} pl={{ md: 4 }}>
++                    <Box display="flex" flexDirection="column" gap={0}>
++                        {data.map((item, index) => (
++                            <Box key={index}>
++                                <Box py={1.5} display="flex" alignItems="center" justifyContent="space-between">
++                                    <Box display="flex" alignItems="center" gap={1.5}>
++                                        <Box
++                                            width={20}
++                                            height={20}
++                                            borderRadius="0.375rem" // roughly 6px
++                                            bgcolor={item.color}
++                                            sx={{ flexShrink: 0 }}
++                                        />
++                                        <Typography variant="button" fontWeight="bold" color="text.secondary" textTransform="capitalize" sx={{ lineHeight: 1 }}>
++                                            {item.name}
++                                        </Typography>
++                                    </Box>
++                                    <Typography variant="body2" color="text.secondary">
++                                        {item.value}%
++                                    </Typography>
++                                </Box>
++                                {index < data.length - 1 && (
++                                    <Divider sx={{ my: 0 }} />
++                                )}
++                            </Box>
++                        ))}
++                    </Box>
++                </Box>
++            </Box>
++        </Card>
++    );
++}
+diff --git a/components/dashboard/OverviewTab.tsx b/components/dashboard/OverviewTab.tsx
+new file mode 100644
+index 0000000..0553899
+--- /dev/null
++++ b/components/dashboard/OverviewTab.tsx
+@@ -0,0 +1,183 @@
++"use client";
++
++import React from 'react';
++import ChartCard from "@/components/dashboard/ChartCard";
++// import Button from "@/components/UI/Button"; // Replacing with MUI Button
++import Link from 'next/link';
++import { Grid, Card, Box, Typography, Button } from '@mui/material';
++import {
++    FiBarChart2,
++    FiClock,
++    FiFileText,
++    FiUsers,
++    FiCalendar,
++    FiArrowRight
++} from "react-icons/fi";
++import {
++    LineChart,
++    Line,
++    XAxis,
++    YAxis,
++    CartesianGrid,
++    Tooltip,
++    ResponsiveContainer
++} from 'recharts';
++
++// Data from material-dashboard-react-main (reportsLineChartData.js)
++const salesData = [
++    { name: 'Apr', sales: 50 },
++    { name: 'May', sales: 40 },
++    { name: 'Jun', sales: 300 },
++    { name: 'Jul', sales: 320 },
++    { name: 'Aug', sales: 500 },
++    { name: 'Sep', sales: 350 },
++    { name: 'Oct', sales: 200 },
++    { name: 'Nov', sales: 230 },
++    { name: 'Dec', sales: 500 },
++];
++
++export default function OverviewTab() {
++    const [isMounted, setIsMounted] = React.useState(false);
++
++    React.useEffect(() => {
++        setIsMounted(true);
++    }, []);
++
++    return (
++        <Grid container spacing={3}>
++            {/* Left Column: Sales Chart */}
++            <Grid size={{ xs: 12, lg: 8 }}>
++                <Box mb={3}>
++                    <ChartCard
++                        title="Daily Sales"
++                        description={
++                            <Box display="flex" alignItems="center">
++                                <Typography variant="button" fontWeight="bold" color="success.main">
++                                    +15%
++                                </Typography>
++                                <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
++                                    increase in today sales.
++                                </Typography>
++                            </Box>
++                        }
++                        date="updated 4 min ago"
++                        color="success" // mapped to success (green)
++                        chart={
++                            isMounted ? (
++                                <ResponsiveContainer width="100%" height="100%">
++                                    <LineChart
++                                        data={salesData}
++                                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
++                                    >
++                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
++                                        <XAxis
++                                            dataKey="name"
++                                            fontSize={12}
++                                            tickLine={false}
++                                            axisLine={false}
++                                            tick={{ fill: '#fff', opacity: 0.8 }}
++                                            interval={0}
++                                        />
++                                        <YAxis
++                                            fontSize={12}
++                                            tickLine={false}
++                                            axisLine={false}
++                                            tick={{ fill: '#fff', opacity: 0.8 }}
++                                        />
++                                        <Tooltip
++                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
++                                            itemStyle={{ color: '#1e293b' }}
++                                        />
++                                        <Line
++                                            type="monotone"
++                                            dataKey="sales"
++                                            stroke="#ffffff"
++                                            strokeWidth={3}
++                                            dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
++                                            activeDot={{ r: 6, stroke: '#fff' }}
++                                        />
++                                    </LineChart>
++                                </ResponsiveContainer>
++                            ) : null
++                        }
++                    />
++                </Box>
++
++                <Card>
++                    <Box p={2}>
++                        <Typography variant="h6" fontWeight="bold" gutterBottom>
++                            Top Performing Centers
++                        </Typography>
++                        <Box display="flex" flexDirection="column" gap={2}>
++                            {[1, 2, 3].map((i) => (
++                                <Box key={i} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="background.paper" borderRadius="lg" boxShadow="0rem 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.06)">
++                                    <Box display="flex" alignItems="center" gap={2}>
++                                        <Box
++                                            display="flex"
++                                            alignItems="center"
++                                            justifyContent="center"
++                                            width="2.5rem"
++                                            height="2.5rem"
++                                            borderRadius="50%"
++                                            bgcolor="warning.main"
++                                            color="#ffffff"
++                                            fontWeight="bold"
++                                            boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
++                                        >
++                                            #{i}
++                                        </Box>
++                                        <Box>
++                                            <Typography variant="subtitle2" fontWeight="bold">Downtown Service Hub</Typography>
++                                            <Typography variant="caption" color="text.secondary">New York, NY</Typography>
++                                        </Box>
++                                    </Box>
++                                    <Box textAlign="right">
++                                        <Typography variant="subtitle2" fontWeight="bold">$45,200</Typography>
++                                        <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
++                                            <Box width="70%" height="100%" bgcolor="warning.main" borderRadius="xl" />
++                                        </Box>
++                                    </Box>
++                                </Box>
++                            ))}
++                        </Box>
++                    </Box>
++                </Card>
++            </Grid>
++
++            {/* Right Column: Live Activity */}
++            <Grid size={{ xs: 12, lg: 4 }}>
++                <Card sx={{ height: '100%', mt: { xs: 3, lg: 4 } }}>
++                    <Box p={2}>
++                        <Typography variant="h6" fontWeight="bold" gutterBottom>
++                            Recent Activity
++                        </Typography>
++                        <Box display="flex" flexDirection="column" gap={3} mt={2}>
++                            {[1, 2, 3, 4, 5].map((i) => (
++                                <Box key={i} display="flex" gap={2}>
++                                    <Box display="flex" flexDirection="column" alignItems="center">
++                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="warning.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #ffd59f" />
++                                        {i !== 5 && <Box width="2px" flexGrow={1} bgcolor="grey.200" my={0.5} />}
++                                    </Box>
++                                    <Box pb={i !== 5 ? 2 : 0}>
++                                        <Typography variant="subtitle2" fontWeight="bold">New Job Created</Typography>
++                                        <Typography variant="caption" color="text.secondary" component="div">
++                                            Downtown Branch started a new tire service.
++                                        </Typography>
++                                        <Typography variant="caption" color="text.disabled" fontWeight="medium" mt={0.5} display="block">
++                                            10:42 AM
++                                        </Typography>
++                                    </Box>
++                                </Box>
++                            ))}
++                        </Box>
++                        <Box mt={3}>
++                            <Button fullWidth variant="text" color="primary">
++                                View Full History
++                            </Button>
++                        </Box>
++                    </Box>
++                </Card>
++            </Grid>
++        </Grid>
++    );
++}
+diff --git a/components/dashboard/PerformanceTab.tsx b/components/dashboard/PerformanceTab.tsx
+new file mode 100644
+index 0000000..7c743b7
+--- /dev/null
++++ b/components/dashboard/PerformanceTab.tsx
+@@ -0,0 +1,129 @@
++"use client";
++
++import React from 'react';
++import {
++    Grid,
++    Card,
++    Box,
++    Typography,
++    LinearProgress
++} from '@mui/material';
++import ChartCard from "@/components/dashboard/ChartCard";
++import {
++    BarChart,
++    Bar,
++    XAxis,
++    YAxis,
++    CartesianGrid,
++    Tooltip,
++    ResponsiveContainer
++} from 'recharts';
++
++const performanceData = [
++    { name: 'Mon', revenue: 4000 },
++    { name: 'Tue', revenue: 3000 },
++    { name: 'Wed', revenue: 2000 },
++    { name: 'Thu', revenue: 2780 },
++    { name: 'Fri', revenue: 1890 },
++    { name: 'Sat', revenue: 2390 },
++    { name: 'Sun', revenue: 3490 },
++];
++
++const centerPerformance = [
++    { name: 'Downtown Hub', progress: 80, color: 'primary' },
++    { name: 'North Branch', progress: 65, color: 'info' },
++    { name: 'Westside Station', progress: 45, color: 'warning' },
++    { name: 'East End Garage', progress: 90, color: 'success' },
++];
++
++export default function PerformanceTab() {
++    const [isMounted, setIsMounted] = React.useState(false);
++
++    React.useEffect(() => {
++        setIsMounted(true);
++    }, []);
++
++    return (
++        <Grid container spacing={3}>
++            <Grid size={{ xs: 12, lg: 8 }}>
++                <Box mb={3}>
++                    <ChartCard
++                        title="Revenue Overview"
++                        description={
++                            <Typography variant="button" color="text.secondary" fontWeight="light">
++                                Weekly revenue performance across all centers
++                            </Typography>
++                        }
++                        date="updated just now"
++                        color="info"
++                        chart={
++                            isMounted ? (
++                                <ResponsiveContainer width="100%" height="100%">
++                                    <BarChart
++                                        data={performanceData}
++                                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
++                                    >
++                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
++                                        <XAxis
++                                            dataKey="name"
++                                            fontSize={12}
++                                            tickLine={false}
++                                            axisLine={false}
++                                            tick={{ fill: '#fff', opacity: 0.8 }}
++                                        />
++                                        <YAxis
++                                            fontSize={12}
++                                            tickLine={false}
++                                            axisLine={false}
++                                            tick={{ fill: '#fff', opacity: 0.8 }}
++                                        />
++                                        <Tooltip
++                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
++                                            itemStyle={{ color: '#1e293b' }}
++                                            cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
++                                        />
++                                        <Bar dataKey="revenue" fill="#ffffff" radius={[4, 4, 0, 0]} barSize={20} />
++                                    </BarChart>
++                                </ResponsiveContainer>
++                            ) : null
++                        }
++                    />
++                </Box>
++            </Grid>
++
++            <Grid size={{ xs: 12, lg: 4 }}>
++                <Card sx={{ height: '100%', mt: { xs: 3, lg: 4 }, overflow: 'visible' }}>
++                    <Box p={2}>
++                        <Typography variant="h6" fontWeight="bold" gutterBottom>
++                            Center Utilization
++                        </Typography>
++                        <Box display="flex" flexDirection="column" gap={3} mt={2}>
++                            {centerPerformance.map((center, index) => (
++                                <Box key={index}>
++                                    <Box display="flex" justifyContent="space-between" mb={1}>
++                                        <Typography variant="caption" fontWeight="bold" color="text.primary">
++                                            {center.name}
++                                        </Typography>
++                                        <Typography variant="caption" color="text.secondary">
++                                            {center.progress}%
++                                        </Typography>
++                                    </Box>
++                                    <LinearProgress
++                                        variant="determinate"
++                                        value={center.progress}
++                                        color={center.color as any}
++                                        sx={{
++                                            height: 6,
++                                            borderRadius: 3,
++                                            bgcolor: 'grey.200'
++                                        }}
++                                    />
++                                </Box>
++                            ))}
++                        </Box>
++                    </Box>
++                </Card>
++            </Grid>
++        </Grid>
++    );
++}
+diff --git a/components/dashboard/StatCard.tsx b/components/dashboard/StatCard.tsx
+new file mode 100644
+index 0000000..213d262
+--- /dev/null
++++ b/components/dashboard/StatCard.tsx
+@@ -0,0 +1,100 @@
++"use client";
++
++import React from 'react';
++import Card from '@mui/material/Card';
++import Divider from '@mui/material/Divider';
++import Box from '@mui/material/Box';
++import Typography from '@mui/material/Typography';
++import { useTheme } from '@mui/material/styles';
++
++interface StatCardProps {
++    title: string;
++    count: string | number;
++    percentage?: {
++        color: 'success' | 'danger' | 'warning' | 'info';
++        amount: string;
++        label: string;
++    };
++    icon: React.ReactNode;
++    color?: 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' | 'dark' | 'orange' | 'light';
++}
++
++export default function StatCard({ title, count, percentage, icon, color = 'primary' }: StatCardProps) {
++    const theme = useTheme();
++
++    // Map legacy 'orange' to 'warning' (which is orange in our theme)
++    // or 'primary' if primary is orange. In our theme primary IS orange.
++    const validColor = color === 'orange' ? 'primary' : color;
++
++    // Helper to get gradient
++    const getGradient = (col: string) => {
++        const gradients = (theme.palette as any).gradients;
++        if (gradients && gradients[col]) {
++            return `linear-gradient(195deg, ${gradients[col].main}, ${gradients[col].state})`;
++        }
++        return theme.palette.primary.main;
++    };
++
++    // Helper to get colored shadow
++    const getShadow = (col: string) => {
++        const boxShadows = (theme as any).boxShadows;
++        if (boxShadows && boxShadows.colored && boxShadows.colored[col]) {
++            return boxShadows.colored[col];
++        }
++        return boxShadows ? boxShadows.md : '';
++    };
++
++    return (
++        <Card sx={{ overflow: 'visible' }}>
++            <Box display="flex" justifyContent="space-between" pt={1} px={2}>
++                <Box
++                    sx={{
++                        background: getGradient(validColor),
++                        boxShadow: getShadow(validColor),
++                        color: validColor === 'light' ? 'text.primary' : '#ffffff',
++                        borderRadius: '0.75rem', // xl
++                        display: 'flex',
++                        justifyContent: 'center',
++                        alignItems: 'center',
++                        width: '4rem',
++                        height: '4rem',
++                        marginTop: '-24px',
++                        fontSize: '1.5rem', // Icon size
++                        '& svg': {
++                            width: '24px',
++                            height: '24px',
++                            color: validColor === 'light' ? 'inherit' : '#ffffff'
++                        }
++                    }}
++                >
++                    {icon}
++                </Box>
++                <Box textAlign="right" lineHeight={1.25}>
++                    <Typography variant="button" fontWeight="light" color="text.secondary" textTransform="capitalize">
++                        {title}
++                    </Typography>
++                    <Typography variant="h4" fontWeight="bold" color="text.primary">
++                        {count}
++                    </Typography>
++                </Box>
++            </Box>
++            <Divider sx={{ my: 2 }} />
++            {percentage && (
++                <Box pb={2} px={2}>
++                    <Typography component="p" variant="button" color="text.secondary" display="flex" alignItems="center">
++                        <Typography
++                            component="span"
++                            variant="button"
++                            fontWeight="bold"
++                            color={percentage.color === 'danger' ? 'error.main' : `${percentage.color}.main`}
++                            sx={{ mr: 0.5 }}
++                        >
++                            {percentage.amount}
++                        </Typography>
++                        {percentage.label}
++                    </Typography>
++                </Box>
++            )}
++        </Card>
++    );
++}
+diff --git a/theme/base/borders.ts b/theme/base/borders.ts
+new file mode 100644
+index 0000000..fa32111
+--- /dev/null
++++ b/theme/base/borders.ts
+@@ -0,0 +1,29 @@
++import colors from "./colors";
++import pxToRem from "../functions/pxToRem";
++
++const { grey } = colors;
++
++const borders = {
++    borderColor: grey[300],
++
++    borderWidth: {
++        0: 0,
++        1: pxToRem(1),
++        2: pxToRem(2),
++        3: pxToRem(3),
++        4: pxToRem(4),
++        5: pxToRem(5),
++    },
++
++    borderRadius: {
++        xs: pxToRem(1.6),
++        sm: pxToRem(2),
++        md: pxToRem(6),
++        lg: pxToRem(8),
++        xl: pxToRem(12),
++        xxl: pxToRem(16),
++        section: pxToRem(160),
++    },
++};
++
++export default borders;
+diff --git a/theme/base/boxShadows.ts b/theme/base/boxShadows.ts
+new file mode 100644
+index 0000000..1b95882
+--- /dev/null
++++ b/theme/base/boxShadows.ts
+@@ -0,0 +1,94 @@
++import colors from "./colors";
++import boxShadow from "../functions/boxShadow";
++
++const { black, white, tabs, coloredShadows } = colors;
++
++const boxShadows = {
++    xs: boxShadow([0, 2], [9, -5], black.main, 0.15),
++    sm: boxShadow([0, 5], [10, 0], black.main, 0.12),
++    md: `${boxShadow([0, 4], [6, -1], black.main, 0.1)}, ${boxShadow(
++        [0, 2],
++        [4, -1],
++        black.main,
++        0.06
++    )}`,
++    lg: `${boxShadow([0, 10], [15, -3], black.main, 0.1)}, ${boxShadow(
++        [0, 4],
++        [6, -2],
++        black.main,
++        0.05
++    )}`,
++    xl: `${boxShadow([0, 20], [25, -5], black.main, 0.1)}, ${boxShadow(
++        [0, 10],
++        [10, -5],
++        black.main,
++        0.04
++    )}`,
++    xxl: boxShadow([0, 20], [27, 0], black.main, 0.05),
++    inset: boxShadow([0, 1], [2, 0], black.main, 0.075, "inset"),
++    colored: {
++        primary: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.primary,
++            0.4
++        )}`,
++        secondary: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.secondary,
++            0.4
++        )}`,
++        info: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.info,
++            0.4
++        )}`,
++        success: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.success,
++            0.4
++        )}`,
++        warning: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.warning,
++            0.4
++        )}`,
++        error: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.error,
++            0.4
++        )}`,
++        light: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.light,
++            0.4
++        )}`,
++        dark: `${boxShadow([0, 4], [20, 0], black.main, 0.14)}, ${boxShadow(
++            [0, 7],
++            [10, -5],
++            coloredShadows.dark,
++            0.4
++        )}`,
++    },
++
++    navbarBoxShadow: `${boxShadow([0, 0], [1, 1], white.main, 0.9, "inset")}, ${boxShadow(
++        [0, 20],
++        [27, 0],
++        black.main,
++        0.05
++    )}`,
++    sliderBoxShadow: {
++        thumb: boxShadow([0, 1], [13, 0], black.main, 0.2),
++    },
++    tabsBoxShadow: {
++        indicator: boxShadow([0, 1], [5, 1], tabs.indicator.boxShadow, 1),
++    },
++};
++
++export default boxShadows;
+diff --git a/theme/base/colors.ts b/theme/base/colors.ts
+new file mode 100644
+index 0000000..94883df
+--- /dev/null
++++ b/theme/base/colors.ts
+@@ -0,0 +1,246 @@
++const colors = {
++    background: {
++        default: "#f0f2f5",
++        paper: "#ffffff",
++    },
++
++    text: {
++        main: "#7b809a",
++        focus: "#7b809a",
++        primary: "#344767",
++        secondary: "#7b809a",
++        disabled: "#adb5bd",
++    },
++
++    transparent: {
++        main: "rgba(0,0,0,0)",
++    },
++
++    white: {
++        main: "#ffffff",
++        focus: "#ffffff",
++    },
++
++    black: {
++        light: "#000000",
++        main: "#000000",
++        focus: "#000000",
++    },
++
++    primary: {
++        main: "#fb8c00", // Orange
++        focus: "#fc9d26",
++    },
++
++    secondary: {
++        main: "#7b809a",
++        focus: "#8f93a9",
++    },
++
++    info: {
++        main: "#1A73E8",
++        focus: "#1662C4",
++    },
++
++    success: {
++        main: "#4CAF50",
++        focus: "#67bb6a",
++    },
++
++    warning: {
++        main: "#fb8c00",
++        focus: "#fc9d26",
++    },
++
++    error: {
++        main: "#F44335",
++        focus: "#f65f53",
++    },
++
++    light: {
++        main: "#f0f2f5",
++        focus: "#f0f2f5",
++    },
++
++    dark: {
++        main: "#344767",
++        focus: "#2c3c58",
++    },
++
++    grey: {
++        100: "#f8f9fa",
++        200: "#f0f2f5",
++        300: "#dee2e6",
++        400: "#ced4da",
++        500: "#adb5bd",
++        600: "#6c757d",
++        700: "#495057",
++        800: "#343a40",
++        900: "#212529",
++    },
++
++    gradients: {
++        primary: {
++            main: "#FFA726", // Orange gradient
++            state: "#FB8C00",
++        },
++
++        secondary: {
++            main: "#747b8a",
++            state: "#495361",
++        },
++
++        info: {
++            main: "#49a3f1",
++            state: "#1A73E8",
++        },
++
++        success: {
++            main: "#66BB6A",
++            state: "#43A047",
++        },
++
++        warning: {
++            main: "#FFA726",
++            state: "#FB8C00",
++        },
++
++        error: {
++            main: "#EF5350",
++            state: "#E53935",
++        },
++
++        light: {
++            main: "#EBEFF4",
++            state: "#CED4DA",
++        },
++
++        dark: {
++            main: "#42424a",
++            state: "#191919",
++        },
++    },
++
++    socialMediaColors: {
++        facebook: {
++            main: "#3b5998",
++            dark: "#344e86",
++        },
++
++        twitter: {
++            main: "#55acee",
++            dark: "#3ea1ec",
++        },
++
++        instagram: {
++            main: "#125688",
++            dark: "#0e456d",
++        },
++
++        linkedin: {
++            main: "#0077b5",
++            dark: "#00669c",
++        },
++
++        pinterest: {
++            main: "#cc2127",
++            dark: "#b21d22",
++        },
++
++        youtube: {
++            main: "#e52d27",
++            dark: "#d41f1a",
++        },
++
++        vimeo: {
++            main: "#1ab7ea",
++            dark: "#13a3d2",
++        },
++
++        slack: {
++            main: "#3aaf85",
++            dark: "#329874",
++        },
++
++        dribbble: {
++            main: "#ea4c89",
++            dark: "#e73177",
++        },
++
++        github: {
++            main: "#24292e",
++            dark: "#171a1d",
++        },
++
++        reddit: {
++            main: "#ff4500",
++            dark: "#e03d00",
++        },
++
++        tumblr: {
++            main: "#35465c",
++            dark: "#2a3749",
++        },
++    },
++
++    badgeColors: {
++        primary: {
++            background: "#ffd59f", // Orange badge bg (took from warning)
++            text: "#c87000",
++        },
++
++        secondary: {
++            background: "#d7d9e1",
++            text: "#6c757d",
++        },
++
++        info: {
++            background: "#aecef7",
++            text: "#095bc6",
++        },
++
++        success: {
++            background: "#bce2be",
++            text: "#339537",
++        },
++
++        warning: {
++            background: "#ffd59f",
++            text: "#c87000",
++        },
++
++        error: {
++            background: "#fcd3d0",
++            text: "#f61200",
++        },
++
++        light: {
++            background: "#ffffff",
++            text: "#c7d3de",
++        },
++
++        dark: {
++            background: "#8097bf",
++            text: "#1e2e4a",
++        },
++    },
++
++    coloredShadows: {
++        primary: "#ff9900", // Orange shadow
++        secondary: "#110e0e",
++        info: "#00bbd4",
++        success: "#4caf4f",
++        warning: "#ff9900",
++        error: "#f44336",
++        light: "#adb5bd",
++        dark: "#404040",
++    },
++
++    inputBorderColor: "#d2d6da",
++
++    tabs: {
++        indicator: { boxShadow: "#ddd" },
++    },
++};
++
++export default colors;
+diff --git a/theme/base/typography.ts b/theme/base/typography.ts
+new file mode 100644
+index 0000000..399578d
+--- /dev/null
++++ b/theme/base/typography.ts
+@@ -0,0 +1,175 @@
++import colors from "./colors";
++import pxToRem from "../functions/pxToRem";
++
++const { dark } = colors;
++
++const baseProperties = {
++    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
++    fontWeightLighter: 100,
++    fontWeightLight: 300,
++    fontWeightRegular: 400,
++    fontWeightMedium: 600,
++    fontWeightBold: 700,
++    fontSizeXXS: pxToRem(10.4),
++    fontSizeXS: pxToRem(12),
++    fontSizeSM: pxToRem(14),
++    fontSizeMD: pxToRem(16),
++    fontSizeLG: pxToRem(18),
++    fontSizeXL: pxToRem(20),
++    fontSize2XL: pxToRem(24),
++    fontSize3XL: pxToRem(30),
++};
++
++const baseHeadingProperties = {
++    fontFamily: baseProperties.fontFamily,
++    color: dark.main,
++    fontWeight: baseProperties.fontWeightBold,
++};
++
++const baseDisplayProperties = {
++    fontFamily: baseProperties.fontFamily,
++    color: dark.main,
++    fontWeight: baseProperties.fontWeightLight,
++    lineHeight: 1.2,
++};
++
++const typography = {
++    fontFamily: baseProperties.fontFamily,
++    fontWeightLighter: baseProperties.fontWeightLighter,
++    fontWeightLight: baseProperties.fontWeightLight,
++    fontWeightRegular: baseProperties.fontWeightRegular,
++    fontWeightMedium: baseProperties.fontWeightMedium,
++    fontWeightBold: baseProperties.fontWeightBold,
++
++    h1: {
++        fontSize: pxToRem(48),
++        lineHeight: 1.25,
++        ...baseHeadingProperties,
++    },
++
++    h2: {
++        fontSize: pxToRem(36),
++        lineHeight: 1.3,
++        ...baseHeadingProperties,
++    },
++
++    h3: {
++        fontSize: pxToRem(30),
++        lineHeight: 1.375,
++        ...baseHeadingProperties,
++    },
++
++    h4: {
++        fontSize: pxToRem(24),
++        lineHeight: 1.375,
++        ...baseHeadingProperties,
++    },
++
++    h5: {
++        fontSize: pxToRem(20),
++        lineHeight: 1.375,
++        ...baseHeadingProperties,
++    },
++
++    h6: {
++        fontSize: pxToRem(16),
++        lineHeight: 1.625,
++        ...baseHeadingProperties,
++    },
++
++    subtitle1: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeXL,
++        fontWeight: baseProperties.fontWeightLight,
++        lineHeight: 1.625,
++    },
++
++    subtitle2: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeMD,
++        fontWeight: baseProperties.fontWeightLight,
++        lineHeight: 1.6,
++    },
++
++    body1: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeXL,
++        fontWeight: baseProperties.fontWeightRegular,
++        lineHeight: 1.625,
++    },
++
++    body2: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeMD,
++        fontWeight: baseProperties.fontWeightLight,
++        lineHeight: 1.6,
++    },
++
++    button: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeSM,
++        fontWeight: baseProperties.fontWeightLight,
++        lineHeight: 1.5,
++        textTransform: "uppercase" as const,
++    },
++
++    caption: {
++        fontFamily: baseProperties.fontFamily,
++        fontSize: baseProperties.fontSizeXS,
++        fontWeight: baseProperties.fontWeightLight,
++        lineHeight: 1.25,
++    },
++
++    overline: {
++        fontFamily: baseProperties.fontFamily,
++    },
++
++    d1: {
++        fontSize: pxToRem(80),
++        ...baseDisplayProperties,
++    },
++
++    d2: {
++        fontSize: pxToRem(72),
++        ...baseDisplayProperties,
++    },
++
++    d3: {
++        fontSize: pxToRem(64),
++        ...baseDisplayProperties,
++    },
++
++    d4: {
++        fontSize: pxToRem(56),
++        ...baseDisplayProperties,
++    },
++
++    d5: {
++        fontSize: pxToRem(48),
++        ...baseDisplayProperties,
++    },
++
++    d6: {
++        fontSize: pxToRem(40),
++        ...baseDisplayProperties,
++    },
++
++    size: {
++        xxs: baseProperties.fontSizeXXS,
++        xs: baseProperties.fontSizeXS,
++        sm: baseProperties.fontSizeSM,
++        md: baseProperties.fontSizeMD,
++        lg: baseProperties.fontSizeLG,
++        xl: baseProperties.fontSizeXL,
++        "2xl": baseProperties.fontSize2XL,
++        "3xl": baseProperties.fontSize3XL,
++    },
++
++    lineHeight: {
++        sm: 1.25,
++        md: 1.5,
++        lg: 2,
++    },
++};
++
++export default typography;
+diff --git a/theme/components/card.ts b/theme/components/card.ts
+new file mode 100644
+index 0000000..1a95a94
+--- /dev/null
++++ b/theme/components/card.ts
+@@ -0,0 +1,28 @@
++import colors from "../base/colors";
++import borders from "../base/borders";
++import boxShadows from "../base/boxShadows";
++import rgba from "../functions/rgba";
++
++const { black, white } = colors;
++const { borderWidth, borderRadius } = borders;
++const { md } = boxShadows;
++
++const card = {
++    styleOverrides: {
++        root: {
++            display: "flex",
++            flexDirection: "column",
++            position: "relative",
++            minWidth: 0,
++            wordWrap: "break-word",
++            backgroundColor: white.main,
++            backgroundClip: "border-box",
++            border: `${borderWidth[0]} solid ${rgba(black.main, 0.125)}`,
++            borderRadius: borderRadius.xl,
++            boxShadow: md,
++            overflow: "visible",
++        },
++    },
++} as const;
++
++export default card;
+diff --git a/theme/functions/boxShadow.ts b/theme/functions/boxShadow.ts
+new file mode 100644
+index 0000000..306c509
+--- /dev/null
++++ b/theme/functions/boxShadow.ts
+@@ -0,0 +1,14 @@
++import rgba from "./rgba";
++import pxToRem from "./pxToRem";
++
++function boxShadow(offset: number[] = [], radius: number[] = [], color: string, opacity: number, inset: string = ""): string {
++    const [x, y] = offset;
++    const [blur, spread] = radius;
++
++    return `${inset} ${pxToRem(x)} ${pxToRem(y)} ${pxToRem(blur)} ${pxToRem(spread)} ${rgba(
++        color,
++        opacity
++    )}`;
++}
++
++export default boxShadow;
+diff --git a/theme/functions/hexToRgb.ts b/theme/functions/hexToRgb.ts
+new file mode 100644
+index 0000000..0b07e3b
+--- /dev/null
++++ b/theme/functions/hexToRgb.ts
+@@ -0,0 +1,15 @@
++function hexToRgb(color: string): string {
++    let hex = color.replace("#", "");
++
++    if (hex.length === 3) {
++        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
++    }
++
++    const r = parseInt(hex.substring(0, 2), 16);
++    const g = parseInt(hex.substring(2, 4), 16);
++    const b = parseInt(hex.substring(4, 6), 16);
++
++    return `${r}, ${g}, ${b}`;
++}
++
++export default hexToRgb;
+diff --git a/theme/functions/linearGradient.ts b/theme/functions/linearGradient.ts
+new file mode 100644
+index 0000000..80e9ec9
+--- /dev/null
++++ b/theme/functions/linearGradient.ts
+@@ -0,0 +1,5 @@
++function linearGradient(color: string, colorState: string, angle: number = 195): string {
++    return `linear-gradient(${angle}deg, ${color}, ${colorState})`;
++}
++
++export default linearGradient;
+diff --git a/theme/functions/pxToRem.ts b/theme/functions/pxToRem.ts
+new file mode 100644
+index 0000000..9f2d0f1
+--- /dev/null
++++ b/theme/functions/pxToRem.ts
+@@ -0,0 +1,5 @@
++function pxToRem(number: number, baseNumber: number = 16): string {
++    return `${number / baseNumber}rem`;
++}
++
++export default pxToRem;
+diff --git a/theme/functions/rgba.ts b/theme/functions/rgba.ts
+new file mode 100644
+index 0000000..778e35a
+--- /dev/null
++++ b/theme/functions/rgba.ts
+@@ -0,0 +1,7 @@
++import hexToRgb from "./hexToRgb";
++
++function rgba(color: string, opacity: number): string {
++    return `rgba(${hexToRgb(color)}, ${opacity})`;
++}
++
++export default rgba;
+diff --git a/theme/index.ts b/theme/index.ts
+new file mode 100644
+index 0000000..9ba1d6a
+--- /dev/null
++++ b/theme/index.ts
+@@ -0,0 +1,59 @@
++import { createTheme } from "@mui/material/styles";
++import colors from "./base/colors";
++import typography from "./base/typography";
++import boxShadows from "./base/boxShadows";
++import borders from "./base/borders";
++import card from "./components/card";
++
++import boxShadow from "./functions/boxShadow";
++import hexToRgb from "./functions/hexToRgb";
++import linearGradient from "./functions/linearGradient";
++import pxToRem from "./functions/pxToRem";
++import rgba from "./functions/rgba";
++
++declare module "@mui/material/styles" {
++    interface Theme {
++        boxShadows: any; // Using any for simplicity now
++        borders: any;
++        functions: any;
++    }
++    interface ThemeOptions {
++        boxShadows?: any;
++        borders?: any;
++        functions?: any;
++    }
++}
++
++export default createTheme({
++    palette: { ...(colors as any) },
++    typography: { ...typography },
++    breakpoints: {
++        values: {
++            xs: 0,
++            sm: 576,
++            md: 768,
++            lg: 992,
++            xl: 1200,
++        },
++    },
++    // shadows: ...boxShadows, // Don't override standard shadows with object
++    // We need to map named shadows to the array or just ignore type error for custom shadows?
++    // MUI expects shadows to be an array. Material Dashboard uses custom `boxShadows` object.
++    // We should probably keep `shadows` as default MUI array and add `boxShadows` as custom property.
++    // But `createTheme` allows adding custom properties.
++
++    // Custom properties
++    boxShadows: { ...boxShadows },
++    borders: { ...borders },
++    functions: {
++        boxShadow,
++        hexToRgb,
++        linearGradient,
++        pxToRem,
++        rgba,
++    },
++
++    components: {
++        MuiCard: { ...card },
++    },
++});
+-- 
+2.51.0.windows.1
+

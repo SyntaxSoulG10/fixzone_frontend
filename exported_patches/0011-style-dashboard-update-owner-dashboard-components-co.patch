@@ -1,0 +1,499 @@
+From f7293b8024a788f60d36550acd8e82931965adac Mon Sep 17 00:00:00 2001
+From: Dinithi1625403 <dananjanakadd.23@uom.lk>
+Date: Fri, 2 Jan 2026 12:48:02 +0530
+Subject: [PATCH 11/35] style(dashboard): update owner dashboard components
+ colors to orange theme.
+
+---
+ .../company-owner/analytics/page.tsx          | 39 ++++++++++++-------
+ app/dashboard/company-owner/bookings/page.tsx | 12 +++---
+ app/dashboard/company-owner/centers/page.tsx  |  6 +--
+ app/dashboard/company-owner/page.tsx          | 18 ++++-----
+ app/dashboard/company-owner/profile/page.tsx  | 22 +++++------
+ components/dashboard/OverviewTab.tsx          | 10 ++---
+ components/dashboard/PerformanceTab.tsx       |  2 +-
+ theme/base/colors.ts                          | 28 ++++++-------
+ 8 files changed, 75 insertions(+), 62 deletions(-)
+
+diff --git a/app/dashboard/company-owner/analytics/page.tsx b/app/dashboard/company-owner/analytics/page.tsx
+index 471c8f8..d663693 100644
+--- a/app/dashboard/company-owner/analytics/page.tsx
++++ b/app/dashboard/company-owner/analytics/page.tsx
+@@ -31,7 +31,7 @@ import {
+     Pie,
+     Cell
+ } from 'recharts';
+-import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp } from "react-icons/fi";
++import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
+ import React from 'react';
+ import DonutStatCard from "@/components/dashboard/DonutStatCard";
+ 
+@@ -108,7 +108,20 @@ export default function AnalyticsPage() {
+                             amount: '+3%',
+                             label: 'than last month'
+                         }}
+-                        color="info"
++                        color="primary"
++                    />
++                </Grid>
++                <Grid size={{ xs: 12, md: 4 }}>
++                    <StatCard
++                        title="Pending Jobs"
++                        count="42"
++                        percentage={{
++                            color: 'danger',
++                            amount: '-5%',
++                            label: 'vs. yesterday'
++                        }}
++                        icon={<FiClock />}
++                        color="primary"
+                     />
+                 </Grid>
+                 <Grid size={{ xs: 12, md: 4 }}>
+@@ -143,7 +156,7 @@ export default function AnalyticsPage() {
+                                 </Box>
+                             }
+                             date="updated 4 min ago"
+-                            color="dark"
++                            color="primary"
+                             chart={
+                                 isMounted ? (
+                                     <ResponsiveContainer width="100%" height="100%">
+@@ -192,7 +205,7 @@ export default function AnalyticsPage() {
+                             title="Customer Growth"
+                             description="New vs Active Customers over time"
+                             date="campaign sent 2 days ago"
+-                            color="info"
++                            color="primary"
+                             chart={
+                                 isMounted ? (
+                                     <ResponsiveContainer width="100%" height="100%">
+@@ -237,7 +250,7 @@ export default function AnalyticsPage() {
+                         unit="JOBS"
+                         data={(() => {
+                             const total = serviceTypeData.reduce((acc, curr) => acc + curr.value, 0);
+-                            const referenceColors = ['#e91e63', '#343a40', '#2196f3', '#4caf50', '#ff9800'];
++                            const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
+                             return serviceTypeData.map((item, index) => ({
+                                 name: item.name,
+                                 value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
+@@ -250,13 +263,13 @@ export default function AnalyticsPage() {
+                 {/* Top Centers Table */}
+                 <Grid size={{ xs: 12, md: 6 }}>
+                     <Card sx={{ height: '100%', overflow: 'visible' }}>
+-                        
+-                            
+-                                <Box pt={3} px={3}>
+-    <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
+-</Box>
+-                           
+-                        
++
++
++                        <Box pt={3} px={3}>
++                            <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
++                        </Box>
++
++
+                         <Box p={2}>
+                             <TableContainer>
+                                 <Table>
+@@ -271,7 +284,7 @@ export default function AnalyticsPage() {
+                                         <TableRow>
+                                             <TableCell>
+                                                 <Box display="flex" alignItems="center" gap={2}>
+-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="warning.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
++                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
+                                                     Downtown Branch
+                                                 </Box>
+                                             </TableCell>
+diff --git a/app/dashboard/company-owner/bookings/page.tsx b/app/dashboard/company-owner/bookings/page.tsx
+index 951f9dc..a980818 100644
+--- a/app/dashboard/company-owner/bookings/page.tsx
++++ b/app/dashboard/company-owner/bookings/page.tsx
+@@ -183,7 +183,7 @@ export default function BookingsPage() {
+                             Manage and Track all Service Booking.
+                         </Typography>
+                     </Box>
+-                    <Button variant="contained" color="warning" sx={{ color: '#ffffff', textTransform: 'none', borderRadius: 2 }}>
++                    <Button variant="contained" color="primary" sx={{ color: '#ffffff', textTransform: 'none', borderRadius: 2 }}>
+                         New Booking
+                     </Button>
+                 </Box>
+@@ -222,7 +222,7 @@ export default function BookingsPage() {
+                             <Divider sx={{ my: 1 }} />
+                             <Box display="flex" justifyContent="flex-end" gap={2} mt={1} mr={1}>
+                                 <Button size="small" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>Cancel</Button>
+-                                <Button size="small" variant="contained" color="warning" sx={{ color: 'white', fontWeight: 'bold', px: 3 }}>OK</Button>
++                                <Button size="small" variant="contained" color="primary" sx={{ color: 'white', fontWeight: 'bold', px: 3 }}>OK</Button>
+                             </Box>
+                         </Card>
+                     </Grid>
+@@ -236,7 +236,7 @@ export default function BookingsPage() {
+                                     title="Total Booking"
+                                     count={20}
+                                     icon={<FiCalendar size={24} />}
+-                                    color="dark"
++                                    color="primary"
+                                 />
+                             </Grid>
+                             <Grid size={{ xs: 12, sm: 4 }}>
+@@ -252,7 +252,7 @@ export default function BookingsPage() {
+                                     title="Upcoming"
+                                     count={20}
+                                     icon={<FiArrowUp size={24} />}
+-                                    color="info"
++                                    color="primary"
+                                 />
+                             </Grid>
+                         </Grid>
+@@ -290,9 +290,9 @@ export default function BookingsPage() {
+                         />
+                         <Button
+                             variant="outlined"
+-                            color="warning"
++                            color="primary"
+                             startIcon={<FiFilter />}
+-                            sx={{ borderRadius: 2, px: 3, borderColor: 'warning.main', color: 'warning.main' }}
++                            sx={{ borderRadius: 2, px: 3, borderColor: 'primary.main', color: 'primary.main' }}
+                         >
+                             Filter
+                         </Button>
+diff --git a/app/dashboard/company-owner/centers/page.tsx b/app/dashboard/company-owner/centers/page.tsx
+index cc2fac4..e294d30 100644
+--- a/app/dashboard/company-owner/centers/page.tsx
++++ b/app/dashboard/company-owner/centers/page.tsx
+@@ -219,7 +219,7 @@ export default function MyCentersPage() {
+                                 <Box
+                                     sx={{
+                                         background: center.status === 'Active'
+-                                            ? `linear-gradient(195deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`
++                                            ? `linear-gradient(195deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
+                                             : `linear-gradient(195deg, ${theme.palette.grey[600]}, ${theme.palette.grey[800]})`,
+                                         boxShadow: center.status === 'Active' ? theme.shadows[4] : theme.shadows[2],
+                                         color: '#ffffff',
+@@ -293,7 +293,7 @@ export default function MyCentersPage() {
+                                         <Grid size={4}>
+                                             <Box textAlign="center">
+                                                 <Typography variant="caption" color="text.secondary" display="block">Load</Typography>
+-                                                <Typography variant="body2" fontWeight="bold" color={center.capacity > 80 ? 'warning.main' : 'text.primary'}>
++                                                <Typography variant="body2" fontWeight="bold" color={center.capacity > 80 ? 'primary.main' : 'text.primary'}>
+                                                     {center.capacity}%
+                                                 </Typography>
+                                             </Box>
+@@ -321,7 +321,7 @@ export default function MyCentersPage() {
+                                         <Button
+                                             variant="outlined"
+                                             size="small"
+-                                            color="warning"
++                                            color="primary"
+                                             startIcon={<FiEdit2 />}
+                                             onClick={() => {
+                                                 setFormData({
+diff --git a/app/dashboard/company-owner/page.tsx b/app/dashboard/company-owner/page.tsx
+index 1fd3560..5984d07 100644
+--- a/app/dashboard/company-owner/page.tsx
++++ b/app/dashboard/company-owner/page.tsx
+@@ -56,7 +56,7 @@ export default function CompanyOwnerDashboard() {
+                         </Button>
+                     </Link>
+                     <Link href="/dashboard/company-owner/bookings" style={{ textDecoration: 'none' }}>
+-                        <Button variant="contained" color="warning" sx={{ height: 44, color: '#ffffff !important' }}>
++                        <Button variant="contained" color="primary" sx={{ height: 44, color: '#ffffff !important' }}>
+                             <FiPlus style={{ marginRight: 8 }} /> New Booking
+                         </Button>
+                     </Link>
+@@ -75,7 +75,7 @@ export default function CompanyOwnerDashboard() {
+                             label: 'vs. last month'
+                         }}
+                         icon={<FiDollarSign />}
+-                        color="warning"
++                        color="primary"
+                     />
+                 </Grid>
+                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+@@ -88,7 +88,7 @@ export default function CompanyOwnerDashboard() {
+                             label: 'New branch opened'
+                         }}
+                         icon={<FiBriefcase />}
+-                        color="dark"
++                        color="primary"
+                     />
+                 </Grid>
+                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+@@ -101,7 +101,7 @@ export default function CompanyOwnerDashboard() {
+                             label: 'vs. last month'
+                         }}
+                         icon={<FiUsers />}
+-                        color="dark"
++                        color="primary"
+                     />
+                 </Grid>
+                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+@@ -114,7 +114,7 @@ export default function CompanyOwnerDashboard() {
+                             label: 'vs. yesterday'
+                         }}
+                         icon={<FiClock />}
+-                        color="warning"
++                        color="primary"
+                     />
+                 </Grid>
+             </Grid>
+@@ -143,7 +143,7 @@ export default function CompanyOwnerDashboard() {
+                         title="Service Reports"
+                         icon={<FiFileText size={24} />}
+                         href="/dashboard/company-owner/reports"
+-                        color="warning"
++                        color="primary"
+                     />
+                 </Grid>
+                 <Grid size={{ xs: 12, md: 4 }}>
+@@ -173,7 +173,7 @@ export default function CompanyOwnerDashboard() {
+ 
+ function QuickActionBtn({ title, icon, href, color }: any) {
+     // Determine styles based on color prop logic (replicating original intent with MUI)
+-    const isWarning = color === 'warning';
++    const isPrimary = color === 'primary';
+ 
+     return (
+         <Link href={href} style={{ textDecoration: 'none', width: '100%' }}>
+@@ -184,8 +184,8 @@ function QuickActionBtn({ title, icon, href, color }: any) {
+                 gap: 2,
+                 transition: 'transform 0.2s',
+                 '&:hover': { transform: 'scale(1.02)' },
+-                bgcolor: isWarning ? 'warning.main' : 'background.paper',
+-                color: isWarning ? '#ffffff' : 'text.primary'
++                bgcolor: isPrimary ? 'primary.main' : 'background.paper',
++                color: isPrimary ? '#ffffff' : 'text.primary'
+             }}>
+                 <Box fontSize={24} color="inherit">
+                     {icon}
+diff --git a/app/dashboard/company-owner/profile/page.tsx b/app/dashboard/company-owner/profile/page.tsx
+index 620df6b..460ea25 100644
+--- a/app/dashboard/company-owner/profile/page.tsx
++++ b/app/dashboard/company-owner/profile/page.tsx
+@@ -44,7 +44,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
+                 minHeight="18.75rem"
+                 borderRadius="0.75rem"
+                 sx={{
+-                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FF6B00, #E65100)', // Premium Orange Gradient or Image
++                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)', // Premium Orange Gradient or Image
+                     backgroundSize: "cover",
+                     backgroundPosition: "50%",
+                     overflow: "hidden",
+@@ -96,7 +96,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
+                                         height: 32
+                                     }}
+                                 >
+-                                    <FiCamera size={16} color="#FF6B00" />
++                                    <FiCamera size={16} color="#EA580C" />
+                                 </IconButton>
+                             }
+                         >
+@@ -105,7 +105,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
+                                 alt="profile-image"
+                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                             >
+-                                <FiTool color="#FF6B00" size={32} />
++                                <FiTool color="#EA580C" size={32} />
+                             </Avatar>
+                         </Badge>
+                         <input
+@@ -133,7 +133,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
+                             textColor="inherit"
+                             sx={{
+                                 '& .MuiTabs-indicator': {
+-                                    backgroundColor: '#FF6B00',
++                                    backgroundColor: '#EA580C',
+                                 },
+                                 '& .MuiTab-root': {
+                                     color: 'text.secondary',
+@@ -167,16 +167,16 @@ function PlatformSettings() {
+                     Service Alerts
+                 </Typography>
+                 <Box display="flex" flexDirection="column" mb={3}>
+-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
+-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
+-                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
++                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
++                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
++                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
+                 </Box>
+                 <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
+                     Visibility
+                 </Typography>
+                 <Box display="flex" flexDirection="column">
+-                    <FormControlLabel control={<Switch defaultChecked color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
+-                    <FormControlLabel control={<Switch color="warning" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
++                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
++                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
+                 </Box>
+             </Box>
+         </Card>
+@@ -200,7 +200,7 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing,
+                         </IconButton>
+                     </Box>
+                 ) : (
+-                    <Button variant="text" color="primary" sx={{ color: '#FF6B00' }} onClick={onEdit}>
++                    <Button variant="text" color="primary" sx={{ color: '#EA580C' }} onClick={onEdit}>
+                         <FiEdit2 />
+                     </Button>
+                 )}
+@@ -394,7 +394,7 @@ export default function ProfilePage() {
+                                         <Button
+                                             fullWidth
+                                             variant="contained"
+-                                            sx={{ bgcolor: '#FF6B00', color: '#fff', '&:hover': { bgcolor: '#E65100' } }}
++                                            sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}
+                                             onClick={handleSaveStatus}
+                                         >
+                                             Save Status
+diff --git a/components/dashboard/OverviewTab.tsx b/components/dashboard/OverviewTab.tsx
+index 0553899..7f34fd9 100644
+--- a/components/dashboard/OverviewTab.tsx
++++ b/components/dashboard/OverviewTab.tsx
+@@ -61,7 +61,7 @@ export default function OverviewTab() {
+                             </Box>
+                         }
+                         date="updated 4 min ago"
+-                        color="success" // mapped to success (green)
++                        color="primary"
+                         chart={
+                             isMounted ? (
+                                 <ResponsiveContainer width="100%" height="100%">
+@@ -119,7 +119,7 @@ export default function OverviewTab() {
+                                             width="2.5rem"
+                                             height="2.5rem"
+                                             borderRadius="50%"
+-                                            bgcolor="warning.main"
++                                            bgcolor="primary.main"
+                                             color="#ffffff"
+                                             fontWeight="bold"
+                                             boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+@@ -134,7 +134,7 @@ export default function OverviewTab() {
+                                     <Box textAlign="right">
+                                         <Typography variant="subtitle2" fontWeight="bold">$45,200</Typography>
+                                         <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
+-                                            <Box width="70%" height="100%" bgcolor="warning.main" borderRadius="xl" />
++                                            <Box width="70%" height="100%" bgcolor="primary.main" borderRadius="xl" />
+                                         </Box>
+                                     </Box>
+                                 </Box>
+@@ -146,7 +146,7 @@ export default function OverviewTab() {
+ 
+             {/* Right Column: Live Activity */}
+             <Grid size={{ xs: 12, lg: 4 }}>
+-                <Card sx={{ height: '100%', mt: { xs: 3, lg: 4 } }}>
++                <Card sx={{ height: '100%' }}>
+                     <Box p={2}>
+                         <Typography variant="h6" fontWeight="bold" gutterBottom>
+                             Recent Activity
+@@ -155,7 +155,7 @@ export default function OverviewTab() {
+                             {[1, 2, 3, 4, 5].map((i) => (
+                                 <Box key={i} display="flex" gap={2}>
+                                     <Box display="flex" flexDirection="column" alignItems="center">
+-                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="warning.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #ffd59f" />
++                                        <Box width="0.5rem" height="0.5rem" borderRadius="50%" bgcolor="primary.main" boxShadow="0 0 0 4px #fff, 0 0 0 8px #FED7AA" />
+                                         {i !== 5 && <Box width="2px" flexGrow={1} bgcolor="grey.200" my={0.5} />}
+                                     </Box>
+                                     <Box pb={i !== 5 ? 2 : 0}>
+diff --git a/components/dashboard/PerformanceTab.tsx b/components/dashboard/PerformanceTab.tsx
+index 7c743b7..96027d1 100644
+--- a/components/dashboard/PerformanceTab.tsx
++++ b/components/dashboard/PerformanceTab.tsx
+@@ -55,7 +55,7 @@ export default function PerformanceTab() {
+                             </Typography>
+                         }
+                         date="updated just now"
+-                        color="info"
++                        color="primary"
+                         chart={
+                             isMounted ? (
+                                 <ResponsiveContainer width="100%" height="100%">
+diff --git a/theme/base/colors.ts b/theme/base/colors.ts
+index 94883df..0acfe26 100644
+--- a/theme/base/colors.ts
++++ b/theme/base/colors.ts
+@@ -28,8 +28,8 @@ const colors = {
+     },
+ 
+     primary: {
+-        main: "#fb8c00", // Orange
+-        focus: "#fc9d26",
++        main: "#EA580C",
++        focus: "#FB923C",
+     },
+ 
+     secondary: {
+@@ -48,8 +48,8 @@ const colors = {
+     },
+ 
+     warning: {
+-        main: "#fb8c00",
+-        focus: "#fc9d26",
++        main: "#EA580C",
++        focus: "#FB923C",
+     },
+ 
+     error: {
+@@ -81,8 +81,8 @@ const colors = {
+ 
+     gradients: {
+         primary: {
+-            main: "#FFA726", // Orange gradient
+-            state: "#FB8C00",
++            main: "#FB923C",
++            state: "#EA580C",
+         },
+ 
+         secondary: {
+@@ -101,8 +101,8 @@ const colors = {
+         },
+ 
+         warning: {
+-            main: "#FFA726",
+-            state: "#FB8C00",
++            main: "#FB923C",
++            state: "#EA580C",
+         },
+ 
+         error: {
+@@ -185,8 +185,8 @@ const colors = {
+ 
+     badgeColors: {
+         primary: {
+-            background: "#ffd59f", // Orange badge bg (took from warning)
+-            text: "#c87000",
++            background: "#FED7AA",
++            text: "#EA580C",
+         },
+ 
+         secondary: {
+@@ -205,8 +205,8 @@ const colors = {
+         },
+ 
+         warning: {
+-            background: "#ffd59f",
+-            text: "#c87000",
++            background: "#FED7AA",
++            text: "#EA580C",
+         },
+ 
+         error: {
+@@ -226,11 +226,11 @@ const colors = {
+     },
+ 
+     coloredShadows: {
+-        primary: "#ff9900", // Orange shadow
++        primary: "#EA580C",
+         secondary: "#110e0e",
+         info: "#00bbd4",
+         success: "#4caf4f",
+-        warning: "#ff9900",
++        warning: "#EA580C",
+         error: "#f44336",
+         light: "#adb5bd",
+         dark: "#404040",
+-- 
+2.51.0.windows.1
+
