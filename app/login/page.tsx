@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
 
@@ -35,131 +34,94 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-50">
-            {/* Left: Branding */}
-            <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-900 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
-                <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+        <div
+            className="min-h-screen relative flex justify-center items-center overflow-auto font-sans bg-cover bg-center bg-no-repeat py-10"
+            style={{ backgroundImage: "url('/loginBg.png')" }}
+        >
+            {/* Main Glass Card */}
+            <div className="relative z-10 w-full max-w-3xl mx-4">
+                <div className="bg-white/30 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 md:p-8 transition-all duration-500">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl w-full">
+                        <div className="w-full max-w-md mx-auto animate-fade-in">
+                            <div className="text-center mb-6">
+                                <h1 className="text-2xl font-bold text-[#FF8C42] mb-2">
+                                    Welcome Back
+                                </h1>
+                                <p className="text-gray-500 text-sm">Sign in to your account to continue.</p>
+                            </div>
 
-                <div className="relative z-10">
-                    <Link href="/" className="flex items-center gap-2 mb-8">
-                        <Image 
-                            src="/Logo-Light.png" 
-                            alt="FixZone Logo" 
-                            width={32} 
-                            height={32} 
-                            className="w-8 h-8 object-contain"
-                        />
-                        <span className="text-2xl font-bold">FixZone</span>
-                    </Link>
-                    <h1 className="text-5xl font-bold leading-tight mb-6">
-                        Welcome back to the future of service management.
-                    </h1>
-                    <p className="text-slate-400 text-lg">
-                        Manage your service center with ease and efficiency.
-                    </p>
-                </div>
-
-                <div className="relative z-10 text-sm text-slate-500">
-                    © 2024 FixZone Platform.
-                </div>
-            </div>
-
-            {/* Right: Form */}
-            <div className="flex items-center justify-center p-8 bg-white">
-                <div className="w-full max-w-md space-y-8">
-                    <div className="text-center lg:text-left">
-                        <h2 className="text-3xl font-bold text-slate-900">Sign in to your account</h2>
-                        <p className="mt-2 text-slate-500">
-                            Or <Link href="/signup" className="text-primary hover:text-primary-hover font-medium">create a new account</Link>
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                        <FiMail />
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <FiMail className="text-sm" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="block w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
+                                            placeholder="you@example.com"
+                                        />
                                     </div>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50 focus:bg-white"
-                                        placeholder="you@example.com"
-                                    />
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                        <FiLock />
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <FiLock className="text-sm" />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="block w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
+                                            placeholder="••••••••"
+                                        />
                                     </div>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50 focus:bg-white"
-                                        placeholder="••••••••"
-                                    />
                                 </div>
+
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="remember-me"
+                                            name="remember-me"
+                                            type="checkbox"
+                                            className="h-4 w-4 text-[#FF8C42] focus:ring-[#FF8C42] border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="remember-me" className="ml-2 block text-gray-600">
+                                            Remember me
+                                        </label>
+                                    </div>
+                                    <a href="#" className="font-medium text-[#FF8C42] hover:text-[#F97316]">
+                                        Forgot password?
+                                    </a>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-lg shadow-orange-200 text-white bg-[#FF8C42] hover:bg-[#F97316] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8C42] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm"
+                                >
+                                    {loading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>Sign In <FiArrowRight /></>
+                                    )}
+                                </button>
+                            </form>
+
+                            <div className="mt-6 text-center">
+                                <p className="text-gray-500 text-sm">
+                                    Don't have an account? <Link href="/signup" className="text-[#FF8C42] hover:underline font-bold">Sign up</Link>
+                                </p>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    name="remember-me"
-                                    type="checkbox"
-                                    className="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded"
-                                />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600">
-                                    Remember me
-                                </label>
-                            </div>
 
-                            <div className="text-sm">
-                                <a href="#" className="font-medium text-primary hover:text-primary-hover">
-                                    Forgot password?
-                                </a>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>Sign In <FiArrowRight /></>
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-slate-200" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-slate-500">Demo Credentials</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs text-center text-slate-500">
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                            <span className="font-bold block text-slate-700">Admin</span>admin@fixzone.com
-                        </div>
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                            <span className="font-bold block text-slate-700">Owner</span>owner@fixzone.com
                         </div>
                     </div>
                 </div>

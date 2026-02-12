@@ -358,7 +358,7 @@ export default function ManagersPage() {
                                 name="center"
                                 value={formData.center}
                                 label="Assign Service Center"
-                                // @ts-ignore
+                                // @ts-expect-error
                                 onChange={handleChange}
                             >
                                 {SERVICE_CENTERS.map((center) => (

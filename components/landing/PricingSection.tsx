@@ -58,11 +58,11 @@ const PricingSection = () => {
     ];
 
     return (
-        <section className="py-24 relative overflow-hidden bg-gradient-to-b from-white via-orange-50/50 to-orange-100">
+        <section id="pricing" className="py-20 relative overflow-hidden bg-gradient-to-b from-white via-orange-50/50 to-orange-100">
             <div className="max-w-7xl mx-auto px-6 relative z-10">
 
                 {/* Header */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-6">Pricing & Plans</h2>
 
                     {/* Toggle */}
@@ -70,10 +70,10 @@ const PricingSection = () => {
                         <span className={`text-sm font-medium ${!isYearly ? 'text-slate-900' : 'text-slate-500'}`}>Monthly</span>
                         <button
                             onClick={() => setIsYearly(!isYearly)}
-                            className="relative w-14 h-8 bg-slate-200 rounded-full p-1 transition-colors duration-300 focus:outline-none"
+                            className="relative w-12 h-7 bg-slate-200 rounded-full p-1 transition-colors duration-300 focus:outline-none"
                         >
                             <div
-                                className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isYearly ? 'translate-x-6' : 'translate-x-0'
+                                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isYearly ? 'translate-x-5' : 'translate-x-0'
                                     }`}
                             />
                         </button>
@@ -91,15 +91,15 @@ const PricingSection = () => {
                     {plans.map((plan, index) => (
                         <div
                             key={index}
-                            className={`relative flex flex-col p-8 rounded-2xl transition-all duration-300 ${plan.highlight
-                                    ? 'bg-white shadow-2xl ring-2 ring-orange-500/20 scale-105 z-10'
-                                    : 'bg-white shadow-xl hover:shadow-2xl border border-slate-100'
+                            className={`relative flex flex-col p-6 md:p-8 rounded-2xl transition-all duration-300 ${plan.highlight
+                                ? 'bg-white shadow-2xl ring-2 ring-orange-500/20 scale-105 z-10'
+                                : 'bg-white shadow-xl hover:shadow-2xl border border-slate-100'
                                 }`}
                         >
                             <h3 className="text-orange-500 font-bold text-sm uppercase tracking-wider mb-4">{plan.name}</h3>
 
                             <div className="flex items-baseline mb-2">
-                                <span className="text-5xl font-extrabold text-slate-900">${plan.price}</span>
+                                <span className="text-4xl md:text-5xl font-extrabold text-slate-900">${plan.price}</span>
                                 <span className="text-slate-500 ml-2">{plan.period}</span>
                             </div>
                             <p className="text-slate-400 text-sm mb-8">{plan.description}</p>
@@ -123,7 +123,7 @@ const PricingSection = () => {
                                 ))}
                             </ul>
 
-                            <button className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${plan.buttonStyle}`}>
+                            <button className={`w-full py-3.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${plan.buttonStyle}`}>
                                 Start Free Trial
                                 <FiArrowRight />
                             </button>

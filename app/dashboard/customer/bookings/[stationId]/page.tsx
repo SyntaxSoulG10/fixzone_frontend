@@ -105,10 +105,10 @@ export default function StationDetailPage() {
   const params = useParams() as { stationId: string };
   const station = STATIONS.find((s) => s.id === params.stationId);
 
-  if (!station) return <p className="p-10 text-center text-lg text-red-500">Station not found!</p>;
-
-  const [reviews, setReviews] = useState<Review[]>(station.reviews);
+  const [reviews, setReviews] = useState<Review[]>(station ? station.reviews : []);
   const [newReview, setNewReview] = useState<Review>({ user: "", rating: 0, comment: "" });
+
+  if (!station) return <p className="p-10 text-center text-lg text-red-500">Station not found!</p>;
 
   const handleAddReview = () => {
     if (!newReview.user || !newReview.comment || newReview.rating <= 0) return;

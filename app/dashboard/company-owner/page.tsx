@@ -16,7 +16,6 @@ import {
 import StatCard from "@/components/dashboard/StatCard";
 import OverviewTab from "@/components/dashboard/OverviewTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
-import ActivityTab from "@/components/dashboard/ActivityTab";
 import {
     FiBriefcase,
     FiDollarSign,
@@ -28,6 +27,7 @@ import {
     FiFileText,
     FiCalendar,
     FiArrowRight,
+    FiLayers,
 } from "react-icons/fi";
 
 export default function CompanyOwnerDashboard() {
@@ -51,13 +51,8 @@ export default function CompanyOwnerDashboard() {
                 </Box>
                 <Box display="flex" gap={2}>
                     <Link href="/dashboard/company-owner/centers" style={{ textDecoration: 'none' }}>
-                        <Button variant="outlined" color="secondary" sx={{ height: 44 }}>
-                            Manage Centers
-                        </Button>
-                    </Link>
-                    <Link href="/dashboard/company-owner/bookings" style={{ textDecoration: 'none' }}>
                         <Button variant="contained" color="primary" sx={{ height: 44, color: '#ffffff !important' }}>
-                            <FiPlus style={{ marginRight: 8 }} /> New Booking
+                            Manage Centers
                         </Button>
                     </Link>
                 </Box>
@@ -65,7 +60,7 @@ export default function CompanyOwnerDashboard() {
 
             {/* Quick Stats Row */}
             <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Revenue"
                         count="$124,500"
@@ -78,7 +73,7 @@ export default function CompanyOwnerDashboard() {
                         color="primary"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Active Centers"
                         count="8"
@@ -91,7 +86,7 @@ export default function CompanyOwnerDashboard() {
                         color="primary"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Customers"
                         count="1,240"
@@ -104,19 +99,6 @@ export default function CompanyOwnerDashboard() {
                         color="primary"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard
-                        title="Pending Jobs"
-                        count="42"
-                        percentage={{
-                            color: 'danger',
-                            amount: '-5%',
-                            label: 'vs. yesterday'
-                        }}
-                        icon={<FiClock />}
-                        color="primary"
-                    />
-                </Grid>
             </Grid>
 
             {/* Main Content Area with Tabs */}
@@ -125,14 +107,12 @@ export default function CompanyOwnerDashboard() {
                     <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="primary" indicatorColor="primary">
                         <Tab label="Overview" value="overview" icon={<FiGrid />} iconPosition="start" />
                         <Tab label="Performance" value="performance" icon={<FiBarChart2 />} iconPosition="start" />
-                        <Tab label="Recent Activity" value="activity" icon={<FiClock />} iconPosition="start" />
                     </Tabs>
                 </Box>
 
                 <Box minHeight={400}>
                     {activeTab === 'overview' && <OverviewTab />}
                     {activeTab === 'performance' && <PerformanceTab />}
-                    {activeTab === 'activity' && <ActivityTab />}
                 </Box>
             </Box>
 
@@ -148,17 +128,17 @@ export default function CompanyOwnerDashboard() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn
-                        title="Team Management"
-                        icon={<FiUsers size={24} />}
-                        href="/dashboard/company-owner/profile"
+                        title="Create Service Center"
+                        icon={<FiPlus size={24} />}
+                        href="/dashboard/company-owner/centers"
                         color="default"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn
-                        title="Booking Calendar"
-                        icon={<FiCalendar size={24} />}
-                        href="/dashboard/company-owner/bookings"
+                        title="View Reports"
+                        icon={<FiFileText size={24} />}
+                        href="/dashboard/company-owner/reports"
                         color="default"
                     />
                 </Grid>

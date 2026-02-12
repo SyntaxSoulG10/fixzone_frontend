@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import {
     FiUsers,
     FiBriefcase,
+    FiSettings,
+    FiTruck,
+    FiList,
     FiPieChart,
     FiFileText,
     FiCalendar,
@@ -14,23 +17,26 @@ import {
     FiTool,
     FiDollarSign,
     FiSmile,
-    FiActivity,
+    FiLayers,
+    FiUser,
     FiTag,
-    FiBell
+    FiBell,
+    FiActivity
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
     super_admin: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/super-admin' },
-        { name: 'Service Stations', icon: FiBriefcase, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
-        { name: 'Subscriptions', icon: FiDollarSign, href: '/dashboard/super-admin/subscriptions' },
-        { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
-        { name: 'Global Banners', icon: FiBell, href: '/dashboard/super-admin/banners' },
-        { name: 'System Health', icon: FiActivity, href: '/dashboard/super-admin/system-health' },
+        { name: 'Companies', icon: FiBriefcase, href: '/dashboard/super-admin/companies' },
+        { name: 'Service Centers', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
+        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/super-admin/vehicles' },
+        { name: 'Jobs', icon: FiList, href: '/dashboard/super-admin/jobs' },
+        { name: 'Settings', icon: FiSettings, href: '/dashboard/super-admin/settings' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
+        { name: 'Services', icon: FiLayers, href: '/dashboard/company-owner/services' },
         { name: 'Service Centers', icon: FiBriefcase, href: '/dashboard/company-owner/centers' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/company-owner/analytics' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/company-owner/reports' },
@@ -42,8 +48,10 @@ const ROLE_MENUS: any = {
     service_manager: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/service-manager' },
         { name: 'Bookings', icon: FiCalendar, href: '/dashboard/service-manager/bookings' },
-        { name: 'Mechanics', icon: FiTool, href: '/dashboard/service-manager/mechanics' },
+        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
+        { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
+        { name: 'MyProfile', icon: FiUser, href: '/dashboard/service-manager/profile' },
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
@@ -113,17 +121,7 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                 </nav>
             </div>
 
-            <div className="p-4 border-t border-slate-200">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                        {role.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-medium text-slate-900 truncate capitalize">{role.replace('_', ' ')}</p>
-                        <p className="text-xs text-slate-500 truncate">Tenant: FixZone Inc.</p>
-                    </div>
-                </div>
-            </div>
+
         </aside>
     );
 }
