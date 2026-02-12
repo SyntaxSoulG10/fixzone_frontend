@@ -18,7 +18,10 @@ import {
     FiDollarSign,
     FiSmile,
     FiLayers,
-    FiUser
+    FiUser,
+    FiTag,
+    FiBell,
+    FiActivity
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {

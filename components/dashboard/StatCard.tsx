@@ -9,7 +9,7 @@ import { useTheme } from '@mui/material/styles';
 
 interface StatCardProps {
     title: string;
-    count: string | number;
+    count: React.ReactNode;
     percentage?: {
         color: 'success' | 'danger' | 'warning' | 'info';
         amount: string;
@@ -45,7 +45,15 @@ export default function StatCard({ title, count, percentage, icon, color = 'prim
     };
 
     return (
-        <Card sx={{ overflow: 'visible' }}>
+        <Card sx={{ 
+            overflow: 'visible',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            cursor: 'pointer',
+            '&:hover': {
+                transform: 'translateY(-5px)',
+                boxShadow: (theme) => theme.shadows[8]
+            }
+        }}>
             <Box display="flex" justifyContent="space-between" pt={1} px={2}>
                 <Box
                     sx={{
@@ -73,7 +81,7 @@ export default function StatCard({ title, count, percentage, icon, color = 'prim
                     <Typography variant="button" fontWeight="light" color="text.secondary" textTransform="capitalize">
                         {title}
                     </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="text.primary">
+                    <Typography variant="h4" fontWeight="bold" color="text.primary" sx={{ letterSpacing: -1 }}>
                         {count}
                     </Typography>
                 </Box>
