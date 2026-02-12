@@ -27,12 +27,12 @@ import {
 const ROLE_MENUS: any = {
     super_admin: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/super-admin' },
+        { name: 'Service Stations', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
-        { name: 'Companies', icon: FiBriefcase, href: '/dashboard/super-admin/companies' },
-        { name: 'Service Centers', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
-        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/super-admin/vehicles' },
-        { name: 'Jobs', icon: FiList, href: '/dashboard/super-admin/jobs' },
-        { name: 'Settings', icon: FiSettings, href: '/dashboard/super-admin/settings' },
+        { name: 'Subscriptions', icon: FiBriefcase, href: '/dashboard/super-admin/subscriptions' },
+        { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
+        { name: 'Global Banners', icon: FiBell, href: '/dashboard/super-admin/banners' },
+        { name: 'System Health', icon: FiActivity, href: '/dashboard/super-admin/system-health' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
