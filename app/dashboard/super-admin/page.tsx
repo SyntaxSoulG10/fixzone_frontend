@@ -61,7 +61,7 @@ export default function SuperAdminDashboard() {
                     </div>
                     <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Monthly Revenue</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">$ 89,420</span>
+                        <span className="text-3xl font-bold text-slate-900">Rs 26,826,000</span>
                     </div>
                     <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+15.3% this month</span>
                 </div>
@@ -97,7 +97,7 @@ export default function SuperAdminDashboard() {
                     <div className="flex justify-between items-start mb-12 relative z-10">
                         <div>
                             <p className="text-orange-100 text-sm font-medium mb-1">Total Revenue</p>
-                            <h2 className="text-4xl font-bold font-mono tracking-tight">$89,420.50</h2>
+                            <h2 className="text-4xl font-bold font-mono tracking-tight">Rs 26,826,150</h2>
                         </div>
                         <div className="flex bg-black/10 backdrop-blur-sm rounded-lg p-1 border border-white/10">
                              <button className="px-4 py-1.5 text-xs font-bold bg-white text-orange-600 rounded-md shadow-sm">Weekly</button>
@@ -116,7 +116,7 @@ export default function SuperAdminDashboard() {
                                     >
                                         {/* Tooltip */}
                                         <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl transition-all transform translate-y-2 group-hover/bar:translate-y-0 pointer-events-none whitespace-nowrap z-20">
-                                            ${h * 1240}
+                                            Rs {(h * 372000).toLocaleString()}
                                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                                         </div>
                                     </div>
@@ -138,7 +138,7 @@ export default function SuperAdminDashboard() {
                             </div>
                             <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">Sales</span>
                         </div>
-                        <p className="text-2xl font-black text-slate-800">$12,450</p>
+                        <p className="text-2xl font-black text-slate-800">Rs 3,735,000</p>
                         <p className="text-xs text-slate-500 mt-1 font-medium">Total sales today</p>
                      </div>
 
