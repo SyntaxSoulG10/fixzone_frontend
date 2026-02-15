@@ -132,7 +132,7 @@ export default function OverviewTab() {
                                         </Box>
                                     </Box>
                                     <Box textAlign="right">
-                                        <Typography variant="subtitle2" fontWeight="bold">$45,200</Typography>
+                                        <Typography variant="subtitle2" fontWeight="bold">Rs. 45,200</Typography>
                                         <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
                                             <Box width="70%" height="100%" bgcolor="primary.main" borderRadius="xl" />
                                         </Box>

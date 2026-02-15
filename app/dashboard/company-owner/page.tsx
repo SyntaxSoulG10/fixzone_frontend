@@ -63,7 +63,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="$124,500"
+                        count="Rs. 124,500"
                         percentage={{
                             color: 'success',
                             amount: '+12.5%',

@@ -73,7 +73,7 @@ const RECENT_TRANSACTIONS = [
         id: "TRX-9821",
         customer: "John Doe",
         service: "Premium Detailing Package",
-        amount: "$149.99",
+        amount: "Rs. 149.99",
         date: "Today, 10:42 AM",
         status: "Completed",
         method: "Credit Card"
@@ -82,7 +82,7 @@ const RECENT_TRANSACTIONS = [
         id: "TRX-9822",
         customer: "Sarah Smith",
         service: "Standard Oil Change",
-        amount: "$49.99",
+        amount: "Rs. 49.99",
         date: "Today, 09:15 AM",
         status: "Completed",
         method: "Apple Pay"
@@ -91,7 +91,7 @@ const RECENT_TRANSACTIONS = [
         id: "TRX-9823",
         customer: "Michael Brown",
         service: "Full Diagnostic Scan",
-        amount: "$89.00",
+        amount: "Rs. 89.00",
         date: "Yesterday, 04:30 PM",
         status: "Pending",
         method: "Bank Transfer"
@@ -100,7 +100,7 @@ const RECENT_TRANSACTIONS = [
         id: "TRX-9824",
         customer: "Emily Davis",
         service: "Brake Pad Replacement",
-        amount: "$120.00",
+        amount: "Rs. 120.00",
         date: "Yesterday, 02:15 PM",
         status: "Completed",
         method: "Cash"
@@ -109,7 +109,7 @@ const RECENT_TRANSACTIONS = [
         id: "TRX-9825",
         customer: "David Wilson",
         service: "Standard Oil Change",
-        amount: "$49.99",
+        amount: "Rs. 49.99",
         date: "Yesterday, 11:00 AM",
         status: "Refunded",
         method: "Credit Card"
@@ -186,7 +186,7 @@ export default function FinancePage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        value="$143,000"
+                        value="Rs. 143,000"
                         subtext="+12% from last month"
                         icon={FiDollarSign}
                         color={theme.palette.primary.main}
@@ -204,7 +204,7 @@ export default function FinancePage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Transaction"
-                        value="$450"
+                        value="Rs. 450"
                         subtext="Per job ticket"
                         icon={FiCreditCard}
                         color={theme.palette.primary.main}
@@ -248,12 +248,12 @@ export default function FinancePage() {
                                         tickLine={false}
                                         axisLine={false}
                                         tick={{ fill: '#fff', opacity: 0.8 }}
-                                        tickFormatter={(value: number) => `$${value / 1000}k`}
+                                        tickFormatter={(value: number) => `Rs. ${value / 1000}k`}
                                     />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                         itemStyle={{ color: '#1e293b' }}
-                                        formatter={(value: any) => [`$${value}`, 'Revenue']}
+                                        formatter={(value: any) => [`Rs. ${value}`, 'Revenue']}
                                     />
                                     <Line
                                         type="monotone"
@@ -372,7 +372,7 @@ export default function FinancePage() {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
-                                            tickFormatter={(value: number) => `$${value / 1000}k`}
+                                            tickFormatter={(value: number) => `Rs. ${value / 1000}k`}
                                         />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

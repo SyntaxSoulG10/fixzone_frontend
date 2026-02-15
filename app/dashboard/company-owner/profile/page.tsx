@@ -297,7 +297,7 @@ function BillingTab() {
                     <Box mt={3} p={2} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Typography variant="subtitle2" fontWeight="bold">
-                                $49.00 / month
+                                Rs. 49.00 / month
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
                                 Next payment: Feb 28, 2026
@@ -340,9 +340,9 @@ function BillingTab() {
                     </Box>
                     <Box>
                         {[
-                            { date: "Jan 28, 2026", amount: "$49.00", status: "Paid", invoice: "#INV-2024-001" },
-                            { date: "Dec 28, 2025", amount: "$49.00", status: "Paid", invoice: "#INV-2023-012" },
-                            { date: "Nov 28, 2025", amount: "$49.00", status: "Paid", invoice: "#INV-2023-011" },
+                            { date: "Jan 28, 2026", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2024-001" },
+                            { date: "Dec 28, 2025", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2023-012" },
+                            { date: "Nov 28, 2025", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2023-011" },
                         ].map((item, index) => (
                             <Box key={index} p={2} display="flex" justifyContent="space-between" alignItems="center" borderBottom={index !== 2 ? "1px solid #f1f5f9" : "none"}>
                                 <Box>

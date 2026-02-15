@@ -31,7 +31,7 @@ const TOP_CUSTOMERS = [
         name: "John Doe",
         email: "john.doe@example.com",
         visits: 12,
-        spent: "$4,500",
+        spent: "Rs. 4,500",
         lastVisit: "2 days ago",
         status: "VIP",
         avatar: "" // Placeholder
@@ -41,7 +41,7 @@ const TOP_CUSTOMERS = [
         name: "Sarah Smith",
         email: "sarah.s@example.com",
         visits: 8,
-        spent: "$2,100",
+        spent: "Rs. 2,100",
         lastVisit: "5 days ago",
         status: "Regular",
         avatar: ""
@@ -51,7 +51,7 @@ const TOP_CUSTOMERS = [
         name: "Michael Brown",
         email: "m.brown@test.com",
         visits: 15,
-        spent: "$5,200",
+        spent: "Rs. 5,200",
         lastVisit: "1 week ago",
         status: "VIP",
         avatar: ""
@@ -61,7 +61,7 @@ const TOP_CUSTOMERS = [
         name: "Emily Davis",
         email: "emily.d@example.com",
         visits: 3,
-        spent: "$450",
+        spent: "Rs. 450",
         lastVisit: "2 weeks ago",
         status: "New",
         avatar: ""
@@ -71,7 +71,7 @@ const TOP_CUSTOMERS = [
         name: "David Wilson",
         email: "david.w@example.com",
         visits: 6,
-        spent: "$1,200",
+        spent: "Rs. 1,200",
         lastVisit: "1 month ago",
         status: "Regular",
         avatar: ""
