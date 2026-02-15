@@ -1,0 +1,24 @@
+From 360c9c417fd411f0c6311de1e7b6d7f31c79ab09 Mon Sep 17 00:00:00 2001
+From: Dinithi1625403 <dananjanakadd.23@uom.lk>
+Date: Fri, 2 Jan 2026 15:06:12 +0530
+Subject: [PATCH 18/35] refactor(Owner-dashboard): remove booking tab
+
+---
+ components/sidebar/Sidebar.tsx | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/components/sidebar/Sidebar.tsx b/components/sidebar/Sidebar.tsx
+index cab7f9a..b2ed9a3 100644
+--- a/components/sidebar/Sidebar.tsx
++++ b/components/sidebar/Sidebar.tsx
+@@ -32,7 +32,6 @@ const ROLE_MENUS: any = {
+     company_owner: [
+         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
+         { name: 'Service Centers', icon: FiBriefcase, href: '/dashboard/company-owner/centers' },
+-        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/company-owner/bookings' },
+         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/company-owner/analytics' },
+         { name: 'Reports', icon: FiFileText, href: '/dashboard/company-owner/reports' },
+         { name: 'Managers', icon: FiUsers, href: '/dashboard/company-owner/managers' },
+-- 
+2.51.0.windows.1
+

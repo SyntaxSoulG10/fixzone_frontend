@@ -1,43 +1,35 @@
-import { User, Company, Center, Vehicle, Job } from "@/types";
+import { User } from "@/types";
 
 export const MOCK_USERS: User[] = [
-    { id: 1, name: "Alice Johnson", email: "alice@fixzone.com", role: "Super Admin", status: "Active", lastLogin: "2 mins ago" },
-    { id: 2, name: "Bob Smith", email: "bob@autofix.com", role: "Company Owner", status: "Active", lastLogin: "1 hour ago" },
-    { id: 3, name: "Charlie Brown", email: "charlie@speedyservice.com", role: "Service Manager", status: "Inactive", lastLogin: "3 days ago" },
-    { id: 4, name: "David Wilson", email: "david@gmail.com", role: "Customer", status: "Active", lastLogin: "5 hours ago" },
-    { id: 5, name: "Eve Davis", email: "eve@luxurycars.com", role: "Company Owner", status: "Active", lastLogin: "1 day ago" },
-    { id: 6, name: "Frank Miller", email: "frank@fixit.com", role: "Service Manager", status: "Active", lastLogin: "10 mins ago" },
-    { id: 7, name: "Grace Lee", email: "grace@gmail.com", role: "Customer", status: "Suspended", lastLogin: "1 week ago" },
+    { id: "USR-1206", name: "Kasun Perera", email: "kasun.perera@example.com", role: "Manager", status: "Pending", lastLogin: "5 hours ago", joinedDate: "Oct 5, 2024", activity: "Express service Hub" },
+    { id: "BK-0005", name: "Nimali Silva", email: "nimali.silva@example.com", role: "Customer", status: "Active", lastLogin: "1 day ago", joinedDate: "Sept 11, 2024", activity: "2 Bookings" },
+    { id: "BK-0001", name: "Dilshan Fernando", email: "dilshan.fernando@example.com", role: "Customer", status: "Pending", lastLogin: "10 mins ago", joinedDate: "Aug 2, 2024", activity: "Oil Changing" },
 ];
 
-export const MOCK_COMPANIES: Company[] = [
-    { id: 1, name: "AutoFix Pro", owner: "Bob Smith", domain: "autofix.fixzone.com", plan: "Enterprise", centers: 12, status: "Active" },
-    { id: 2, name: "Speedy Service", owner: "Charlie Brown", domain: "speedy.fixzone.com", plan: "Pro", centers: 5, status: "Active" },
-    { id: 3, name: "Luxury Cars Hub", owner: "Eve Davis", domain: "luxury.fixzone.com", plan: "Basic", centers: 1, status: "Trial" },
-    { id: 4, name: "MotoMenders", owner: "George Harris", domain: "moto.fixzone.com", plan: "Pro", centers: 3, status: "Active" },
-    { id: 5, name: "QuickFix Garage", owner: "Ivy Jones", domain: "quickfix.fixzone.com", plan: "Basic", centers: 1, status: "Suspended" },
+export interface Station {
+    id: string;
+    name: string;
+    owner: string;
+    location: string;
+    ratings: number;
+    bookings: number;
+    revenue: string;
+    plan: 'Basic' | 'Standard' | 'Premium';
+    status: 'Active' | 'Pending' | 'Suspended';
+}
+
+export const MOCK_STATIONS: Station[] = [
+    { id: "SS-001", name: "AutoMiraj", owner: "Mahen Wijesinghe", location: "Colombo 03", ratings: 4.2, bookings: 156, revenue: "Rs. 5,740", plan: "Basic", status: "Pending" },
+    { id: "SS-002", name: "Laugfs Car Care", owner: "Ruwan Alwis", location: "Nugegoda", ratings: 3.8, bookings: 98, revenue: "Rs. 18,600", plan: "Standard", status: "Active" },
+    { id: "SS-003", name: "Hybrid Hub", owner: "Sanjeewa Pushpakumara", location: "Kotte", ratings: 2.9, bookings: 103, revenue: "Rs. 8,320", plan: "Standard", status: "Active" },
+    { id: "SS-004", name: "United Motors", owner: "Amal Gunawardena", location: "Battaramulla", ratings: 4.1, bookings: 225, revenue: "Rs. 12,450", plan: "Basic", status: "Pending" },
+    { id: "SS-005", name: "Toyota Lanka", owner: "Nihal Jayawardena", location: "Wattala", ratings: 3.9, bookings: 451, revenue: "Rs. 18,900", plan: "Premium", status: "Active" },
+    { id: "SS-006", name: "Sterling Aftercare", owner: "Roshan De Silva", location: "Malabe", ratings: 3.1, bookings: 252, revenue: "Rs. 5,890", plan: "Basic", status: "Active" },
 ];
 
-export const MOCK_CENTERS: Center[] = [
-    { id: 1, name: "Downtown Branch", company: "AutoFix Pro", location: "New York, NY", manager: "Mike Ross", status: "Active" },
-    { id: 2, name: "Westside Hub", company: "AutoFix Pro", location: "Los Angeles, CA", manager: "Rachel Zane", status: "Active" },
-    { id: 3, name: "Speedy HQ", company: "Speedy Service", location: "Chicago, IL", manager: "Harvey Specter", status: "Active" },
-    { id: 4, name: "Luxury East", company: "Luxury Cars Hub", location: "Miami, FL", manager: "Louis Litt", status: "Maintenance" },
-    { id: 5, name: "North Garage", company: "MotoMenders", location: "Seattle, WA", manager: "Donna Paulsen", status: "Active" },
-];
-
-export const MOCK_VEHICLES: Vehicle[] = [
-    { id: 1, plate: "ABC-1234", model: "Toyota Camry 2022", owner: "David Wilson", lastService: "Dec 10, 2024", condition: "Good" },
-    { id: 2, plate: "XYZ-9876", model: "Honda Civic 2020", owner: "Grace Lee", lastService: "Nov 22, 2024", condition: "Excellent" },
-    { id: 3, plate: "LMN-4567", model: "Ford F-150 2023", owner: "John Doe", lastService: "Oct 05, 2024", condition: "Fair" },
-    { id: 4, plate: "QWE-5544", model: "Tesla Model 3", owner: "Jane Roe", lastService: "Dec 01, 2024", condition: "Good" },
-    { id: 5, plate: "ZXC-1122", model: "BMW X5 2021", owner: "Mike Tyson", lastService: "Sep 15, 2024", condition: "Poor" },
-];
-
-export const MOCK_JOBS: Job[] = [
-    { id: "JB-001", customer: "David Wilson", vehicle: "Toyota Camry", center: "Downtown Branch", status: "In Progress", amount: "$120.00", date: "Dec 24, 2024" },
-    { id: "JB-002", customer: "Grace Lee", vehicle: "Honda Civic", center: "Westside Hub", status: "Completed", amount: "$350.50", date: "Dec 23, 2024" },
-    { id: "JB-003", customer: "John Doe", vehicle: "Ford F-150", center: "North Garage", status: "Pending", amount: "$0.00", date: "Dec 24, 2024" },
-    { id: "JB-004", customer: "Jane Roe", vehicle: "Tesla Model 3", center: "Downtown Branch", status: "Cancelled", amount: "$0.00", date: "Dec 22, 2024" },
-    { id: "JB-005", customer: "Mike Tyson", vehicle: "BMW X5", center: "Speedy HQ", status: "In Progress", amount: "$850.00", date: "Dec 24, 2024" },
+export const MOCK_SUBSCRIPTIONS = [
+    { id: "SUB-001", stationName: "Mahen Wijesinghe", plan: "Premium", price: "Rs. 199/monthly", startDate: "Jan 15, 2024", nextBilling: "Feb, 15, 2024", status: "Active", autoRenew: true },
+    { id: "SUB-002", stationName: "Ruwan Alwis", plan: "Basic", price: "Rs. 99/monthly", startDate: "Feb 1, 2024", nextBilling: "March, 1, 2024", status: "Active", autoRenew: true },
+    { id: "SUB-003", stationName: "Sanjeewa Pushpakumara", plan: "Basic", price: "Rs. 199/monthly", startDate: "Dec 10, 2023", nextBilling: "Jan, 10, 2024", status: "Active", autoRenew: true },
+    { id: "SUB-004", stationName: "Amal Gunawardena", plan: "Premium", price: "Rs. 49/monthly", startDate: "Nov 9, 2024", nextBilling: "Dec, 9, 2024", status: "Active", autoRenew: false },
 ];

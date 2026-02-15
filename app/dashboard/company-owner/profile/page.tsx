@@ -98,7 +98,6 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                     mx: 3,
                     py: 2,
                     px: 2,
-                    zIndex: 1
                 }}
             >
                 <Grid container spacing={3} alignItems="center">
@@ -123,7 +122,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             }
                         >
                             <Avatar
-                                src={profileImage || ""}
+                                src={profileImage || "/assets/images/bruce-mars.jpg"}
                                 alt="profile-image"
                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
@@ -148,10 +147,13 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6, lg: 5 }} sx={{ ml: "auto" }}>
+                    <Grid size={{ xs: 12, md: 7, lg: 6 }} sx={{ ml: "auto" }}>
                         <Tabs
                             value={tabValue}
                             onChange={onTabChange}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            allowScrollButtonsMobile
                             textColor="inherit"
                             sx={{
                                 '& .MuiTabs-indicator': {
@@ -397,6 +399,8 @@ function BillingTab() {
     );
 }
 
+
+
 export default function ProfilePage() {
     const [tabValue, setTabValue] = useState(0);
     const [isWorkshopOpen, setIsWorkshopOpen] = useState(true);
@@ -523,8 +527,6 @@ export default function ProfilePage() {
         setSnackbarOpen(true);
         handleCloseDeactivateDialog();
     };
-
-
     return (
         <ProfileHeader
             tabValue={tabValue}
@@ -654,6 +656,7 @@ export default function ProfilePage() {
                     </Grid>
                 )}
 
+
                 {/* Tab 2: Billing */}
                 {tabValue === 2 && (
                     <BillingTab />
@@ -739,6 +742,6 @@ export default function ProfilePage() {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-        </ProfileHeader>
+        </ProfileHeader >
     );
 }

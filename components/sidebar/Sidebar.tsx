@@ -17,18 +17,22 @@ import {
     FiTool,
     FiDollarSign,
     FiSmile,
-    FiLayers
+    FiLayers,
+    FiUser,
+    FiTag,
+    FiBell,
+    FiActivity
 } from "react-icons/fi";
 
 const ROLE_MENUS: any = {
     super_admin: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/super-admin' },
+        { name: 'Service Stations', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
-        { name: 'Companies', icon: FiBriefcase, href: '/dashboard/super-admin/companies' },
-        { name: 'Service Centers', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
-        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/super-admin/vehicles' },
-        { name: 'Jobs', icon: FiList, href: '/dashboard/super-admin/jobs' },
-        { name: 'Settings', icon: FiSettings, href: '/dashboard/super-admin/settings' },
+        { name: 'Subscriptions', icon: FiBriefcase, href: '/dashboard/super-admin/subscriptions' },
+        { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
+        { name: 'Global Banners', icon: FiBell, href: '/dashboard/super-admin/banners' },
+        { name: 'System Health', icon: FiActivity, href: '/dashboard/super-admin/system-health' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
@@ -44,15 +48,16 @@ const ROLE_MENUS: any = {
     service_manager: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/service-manager' },
         { name: 'Bookings', icon: FiCalendar, href: '/dashboard/service-manager/bookings' },
-        { name: 'Mechanics', icon: FiTool, href: '/dashboard/service-manager/mechanics' },
+        { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
+        { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
+        { name: 'MyProfile', icon: FiUser, href: '/dashboard/service-manager/profile' },
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
-        { name: 'Bookings', icon: FiCalendar, href: '/dashboard/customer/bookings' },
-        { name: 'Service History', icon: FiClock, href: '/dashboard/customer/history' },
-        { name: 'Notifications', icon: FiList, href: '/dashboard/customer/notifications' },
-        { name: 'Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
+        { name: 'Book Service', icon: FiCalendar, href: '/dashboard/customer/bookings' },
+        { name: 'My bookings', icon: FiClock, href: '/dashboard/customer/history' },
+        { name: 'My Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
     ]
 };
 
