@@ -4,13 +4,13 @@ import { FiBarChart2, FiTrendingUp, FiTrendingDown, FiDollarSign } from "react-i
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const data = [
-    { name: 'Mon', revenue: 4000, bookings: 24 },
-    { name: 'Tue', revenue: 3000, bookings: 18 },
-    { name: 'Wed', revenue: 2000, bookings: 12 },
-    { name: 'Thu', revenue: 2780, bookings: 20 },
-    { name: 'Fri', revenue: 1890, bookings: 15 },
-    { name: 'Sat', revenue: 2390, bookings: 22 },
-    { name: 'Sun', revenue: 3490, bookings: 30 },
+    { name: 'Mon', revenue: 45400, bookings: 8 },
+    { name: 'Tue', revenue: 32000, bookings: 7 },
+    { name: 'Wed', revenue: 52000, bookings: 12 },
+    { name: 'Thu', revenue: 62800, bookings: 12 },
+    { name: 'Fri', revenue: 41900, bookings: 9 },
+    { name: 'Sat', revenue: 82400, bookings: 15 },
+    { name: 'Sun', revenue: 93500, bookings: 18 },
 ];
 
 export default function AnalyticsPage() {
@@ -19,10 +19,10 @@ export default function AnalyticsPage() {
             <h1 className="text-2xl font-bold text-slate-900">Performance Analytics</h1>
 
             {/* Key Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <MetricCard
                     title="Total Revenue"
-                    value="$24,500"
+                    value="Rs 410,000"
                     change="+15%"
                     trend="up"
                     icon={<FiDollarSign />}
@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
                 />
                 <MetricCard
                     title="Total Bookings"
-                    value="142"
+                    value="73"
                     change="+8%"
                     trend="up"
                     icon={<FiBarChart2 />}
@@ -43,19 +43,13 @@ export default function AnalyticsPage() {
                     trend="down"
                     icon={<FiTrendingDown />}
                     color="purple"
-                    goodTrend={true} // Lower time is good
+                    goodTrend={true} // Lo
                 />
-                <MetricCard
-                    title="Customer Satisfaction"
-                    value="4.8/5"
-                    change="+0.2"
-                    trend="up"
-                    icon={<FiTrendingUp />}
-                    color="orange"
-                />
+    
             </div>
 
             {/* Charts Row */}
+```tsx
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Trend (Weekly)</h3>
@@ -64,15 +58,15 @@ export default function AnalyticsPage() {
                             <AreaChart data={data}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} tickFormatter={(val) => `$${val}`} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} tickFormatter={(val) => `Rs ${val}`} />
                                 <Tooltip />
-                                <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                                <Area type="monotone" dataKey="revenue" stroke="#F97316" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -86,25 +80,21 @@ export default function AnalyticsPage() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
-                                <Tooltip cursor={{ fill: '#F1F5F9' }} />
-                                <Bar dataKey="bookings" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={32} />
+                                <Tooltip cursor={{ fill: '#FFF7ED' }} />
+                                <Bar dataKey="bookings" fill="#F97316" radius={[4, 4, 0, 0]} barSize={32} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
             </div>
+```
         </div>
     );
 }
 
 function MetricCard({ title, value, change, trend, icon, color, goodTrend = false }: any) {
     const isPositive = trend === 'up';
-    // If goodTrend is true, then "down" is actually good (green). E.g. service time.
-    // If undefined, default logic applies (up is green).
-
-    // Logic: 
-    // If trending UP: Green usually, unless UP is bad (not handled here simplified).
-    // If trending DOWN: Red usually, unless DOWN is good (goodTrend=true).
+    
 
     let trendColor = "text-green-600";
     if (trend === 'down' && !goodTrend) trendColor = "text-red-600";

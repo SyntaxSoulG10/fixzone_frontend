@@ -9,10 +9,10 @@ export default function ServiceManagerProfile() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [profileData, setProfileData] = useState({
-        name: "Alex Morgan",
+        name: "Suresh Perera",
         role: "Service Manager",
-        phone: "+1 (555) 123-4567",
-        email: "alex.morgan@fixzone.com",
+        phone: "+94 701502004",
+        email: "suresh.pre@gmail.com",
         location: "Main Service Center, NY"
     });
 
@@ -31,7 +31,7 @@ export default function ServiceManagerProfile() {
     const handleSave = () => {
         setProfileData(tempData);
         setIsEditing(false);
-        // Here you would typically make an API call to save the data
+        // API call to save the data
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +82,7 @@ export default function ServiceManagerProfile() {
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Cover Photo Area (Optional) */}
-                <div className="h-32 bg-gradient-to-r from-slate-800 to-slate-900"></div>
+                <div className="h-32 bg-gradient-to-r from-orange-500 to-orange-700"></div>
 
                 <div className="px-8 pb-8">
                     <div className="relative flex justify-between items-end -mt-12 mb-6">
