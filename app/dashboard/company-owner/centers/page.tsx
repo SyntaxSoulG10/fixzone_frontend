@@ -21,7 +21,8 @@ import {
     Chip,
     Snackbar,
     Alert,
-    LinearProgress
+    LinearProgress,
+    SelectChangeEvent
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
@@ -108,7 +109,7 @@ export default function MyCentersPage() {
         setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };
