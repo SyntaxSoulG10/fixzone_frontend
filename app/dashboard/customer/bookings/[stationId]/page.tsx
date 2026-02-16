@@ -119,7 +119,7 @@ export default function StationDetailPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-16 py-10 space-y-12 font-sans text-gray-700">
 
-      {/* Header */}
+      
       <div className="flex items-center gap-4 mb-8">
         <div className="w-24 h-24 relative rounded-xl overflow-hidden shadow-lg flex-shrink-0">
           <Image src={station.image} alt={station.name} width={96} height={96} className="object-cover" />
@@ -131,9 +131,9 @@ export default function StationDetailPage() {
         </div>
       </div>
 
-      {/* Main Section */}
+      
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Column */}
+        
         <div className="flex-1 space-y-6">
           <div className="rounded-2xl overflow-hidden shadow-md h-64">
             <Image src={station.image} alt={station.name} width={600} height={250} className="object-cover w-full h-full" />
@@ -154,7 +154,7 @@ export default function StationDetailPage() {
           </div>
         </div>
 
-        {/* Right Column */}
+        
         <div className="w-full lg:w-96 bg-white rounded-2xl shadow-lg p-6 space-y-5 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Book Your Service</h2>
           <select className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-400 text-gray-700">
@@ -170,7 +170,7 @@ export default function StationDetailPage() {
         </div>
       </div>
 
-      {/* Reviews Section */}
+      
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold text-gray-800">Customer Reviews</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

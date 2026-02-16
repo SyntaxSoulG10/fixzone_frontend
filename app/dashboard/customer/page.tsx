@@ -94,12 +94,12 @@ export default function CustomerDashboard() {
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen space-y-6">
-      {/* Hero */}
+    
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-slate-200">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-              Welcome Back, Alex 👋
+              Welcome Back,Charlie 👋
             </h1>
             <p className="text-slate-600 text-sm md:text-base">
               Your vehicles are ready for the next service!
@@ -114,7 +114,7 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* Stats */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {[
           {
@@ -156,9 +156,9 @@ export default function CustomerDashboard() {
         ))}
       </div>
 
-      {/* Calendar + Booking */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calendar */}
+        
         <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-slate-200">
           <h2 className="text-lg md:text-xl font-bold mb-4 text-slate-900">Schedule Calendar</h2>
 
@@ -190,7 +190,7 @@ export default function CustomerDashboard() {
             })}
           </div>
 
-          {/* Notifications */}
+        
           <div className="mt-6">
             <h3 className="font-bold mb-3 text-slate-900">Messages & Notifications</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -210,7 +210,7 @@ export default function CustomerDashboard() {
           </div>
         </div>
 
-        {/* Booking Details */}
+        
         <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-slate-200">
           <h2 className="text-lg md:text-xl font-bold mb-4 text-slate-900">Booking Details</h2>
 
@@ -247,7 +247,7 @@ export default function CustomerDashboard() {
                   </div>
                 </div>
 
-                {/* Progress Bar */}
+                
                 {b.progress > 0 && b.progress < 100 && (
                   <div className="mt-3">
                     <div className="flex justify-between text-xs mb-2 text-slate-600">
@@ -292,7 +292,6 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* Floating Button */}
       <button className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-orange-600 hover:bg-orange-700 text-white px-6 py-4 rounded-full shadow-lg hover:shadow-xl transition-all font-semibold text-sm md:text-base flex items-center gap-2">
         <span className="text-xl">+</span>
         <span className="hidden sm:inline">Book Service</span>

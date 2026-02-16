@@ -9,7 +9,7 @@ import PageHeader from "@/components/UI/PageHeader";
 export default function CustomerProfilePage() {
   return (
     <div className="max-w-6xl mx-auto pb-10">
-      {/* Top Profile Header Section */}
+      
       <div className="flex items-center gap-8 mb-8">
         <div className="relative">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-sm">
@@ -21,18 +21,18 @@ export default function CustomerProfilePage() {
           </div>
         </div>
         <div className="space-y-1">
-          <h2 className="text-xl font-bold text-slate-800">Emirhan Boruch</h2>
-          <p className="text-slate-500 text-sm font-medium">emirhan@gmail.com</p>
+          <h2 className="text-xl font-bold text-slate-800">Charlie Brown</h2>
+          <p className="text-slate-500 text-sm font-medium">charlie@gmail.com</p>
           <p className="text-slate-500 text-sm font-medium">+94 77 8989455</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* LEFT COLUMN */}
+        
         <div className="space-y-8">
           
-          {/* Payment Method Section */}
+          
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800">Payment Method</h3>
@@ -41,14 +41,14 @@ export default function CustomerProfilePage() {
             <div className="flex gap-4">
               <div className="flex-1 flex items-center justify-between border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-5 bg-red-500 rounded-sm" /> {/* Mastercard Icon Placeholder */}
+                  <div className="w-8 h-5 bg-red-500 rounded-sm" /> 
                   <span className="text-sm font-medium text-slate-600">*********7852</span>
                 </div>
                 <Edit2 size={14} className="text-slate-400 cursor-pointer" />
               </div>
               <div className="flex-1 flex items-center justify-between border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-5 bg-blue-600 rounded-sm" /> {/* Visa Icon Placeholder */}
+                  <div className="w-8 h-5 bg-blue-600 rounded-sm" /> 
                   <span className="text-sm font-medium text-slate-600">*********5248</span>
                 </div>
                 <Edit2 size={14} className="text-slate-400 cursor-pointer" />
@@ -56,7 +56,7 @@ export default function CustomerProfilePage() {
             </div>
           </section>
 
-          {/* Personal Information Form */}
+          
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
             <h3 className="font-bold text-slate-800 mb-6">Personal Information</h3>
             <div className="space-y-5">
@@ -85,10 +85,10 @@ export default function CustomerProfilePage() {
           </section>
         </div>
 
-        {/* RIGHT COLUMN */}
+        
         <div className="space-y-8">
           
-          {/* Platform Settings */}
+          
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
             <h3 className="font-bold text-orange-500 mb-6">Platform Settings</h3>
             
@@ -121,11 +121,11 @@ export default function CustomerProfilePage() {
             </div>
           </section>
 
-          {/* My Vehicles Section */}
+          
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h3 className="font-bold text-slate-800 mb-6">My Vehicles</h3>
             <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* Vehicle Card 1 */}
+              
               <div className="border border-slate-100 rounded-xl overflow-hidden group hover:border-orange-100 transition-all">
                 <div className="h-24 bg-slate-100 relative">
                   <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200" alt="Car" className="w-full h-full object-cover" />
@@ -135,7 +135,7 @@ export default function CustomerProfilePage() {
                   <p className="text-[10px] text-slate-500">PW 8976</p>
                 </div>
               </div>
-              {/* Vehicle Card 2 */}
+              
               <div className="border border-slate-100 rounded-xl overflow-hidden">
                 <div className="h-24 bg-slate-100 relative">
                   <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200" alt="Car" className="w-full h-full object-cover" />

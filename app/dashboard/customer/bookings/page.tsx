@@ -132,14 +132,12 @@ export default function BookServicePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="bg-white rounded-2xl p-6 md:p-8 border-2 border-slate-200 shadow-sm">
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-slate-900">Book a Service</h1>
         <p className="text-slate-600 mb-6 text-sm md:text-base">
           Choose from our network of trusted service stations near you
         </p>
         
-        {/* Search Bar */}
         <div className="relative max-w-2xl">
           <input
             type="text"
@@ -151,7 +149,6 @@ export default function BookServicePage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
           <div className="flex items-center gap-3">
@@ -192,7 +189,6 @@ export default function BookServicePage() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -249,14 +245,12 @@ export default function BookServicePage() {
         </div>
       </div>
 
-      {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-600">
           Showing <span className="font-bold text-slate-900">{filteredStations.length}</span> service stations
         </p>
       </div>
 
-      {/* Service Stations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
@@ -265,7 +259,6 @@ export default function BookServicePage() {
                 key={station.id}
                 className="group bg-white rounded-2xl border-2 border-slate-200 shadow-sm hover:border-orange-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
               >
-                {/* Image */}
                 <div className="relative overflow-hidden h-48">
                   <Image
                     src={station.image}
@@ -275,10 +268,10 @@ export default function BookServicePage() {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
 
-                  {/* Gradient Overlay */}
+          
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
-                  {/* Favorite Button */}
+                
                   <button
                     onClick={() => toggleFavorite(station.id)}
                     className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:scale-110 transition-transform"
@@ -292,7 +285,7 @@ export default function BookServicePage() {
                     />
                   </button>
 
-                  {/* Open Status */}
+        
                   <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
                     station.openStatus === "Open Now"
                       ? "bg-green-500/90 text-white"
@@ -301,7 +294,7 @@ export default function BookServicePage() {
                     {station.openStatus}
                   </div>
 
-                  {/* Rating Badge */}
+                  
                   <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
                     <FiStar className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                     <span className="text-sm font-bold text-slate-900">{station.rating}</span>
@@ -309,7 +302,7 @@ export default function BookServicePage() {
                   </div>
                 </div>
 
-                {/* Content */}
+              
                 <div className="p-5 flex flex-col h-full">
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-orange-600 transition-colors">
@@ -325,7 +318,7 @@ export default function BookServicePage() {
                       </div>
                     </div>
 
-                    {/* Services Tags */}
+                    
                     <div className="flex flex-wrap gap-2 mb-4">
                       {station.services.slice(0, 2).map((service, idx) => (
                         <span
@@ -343,7 +336,7 @@ export default function BookServicePage() {
                     </div>
                   </div>
 
-                  {/* Action Button */}
+                  
                   <Link href={`/dashboard/customer/bookings/${station.id}`}>
                     <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all shadow-md hover:shadow-lg group">
                       <span>View Details</span>
@@ -352,13 +345,13 @@ export default function BookServicePage() {
                   </Link>
                 </div>
 
-                {/* Hover Bottom Accent */}
+                
                 <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
               </div>
             ))}
       </div>
 
-      {/* Empty State */}
+      
       {!loading && filteredStations.length === 0 && (
         <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">

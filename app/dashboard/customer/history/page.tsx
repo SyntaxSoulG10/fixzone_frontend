@@ -27,7 +27,7 @@ const DUMMY_BOOKINGS = {
       time: "10:00 am",
       status: "in-progress",
       progress: 60,
-      cost: "$150.00",
+      cost: "Rs.1500.00",
       serviceDetails: ["Oil Change", "Brake Inspection", "Tire Rotation"]
     }
   ],
@@ -41,7 +41,7 @@ const DUMMY_BOOKINGS = {
       date: "28/12/2025",
       time: "10:00 am",
       status: "confirmed",
-      cost: "$150.00",
+      cost: "Rs.2000.00",
       serviceDetails: ["Full Inspection", "Oil Change"]
     }
   ],
@@ -55,7 +55,7 @@ const DUMMY_BOOKINGS = {
       date: "15/11/2024",
       time: "10:00 am",
       status: "completed",
-      cost: "$150.00",
+      cost: "Rs.1000.00",
       rating: 5,
       serviceDetails: ["Brake Replacement", "Oil Change"]
     },
@@ -68,7 +68,7 @@ const DUMMY_BOOKINGS = {
       date: "02/10/2024",
       time: "2:00 pm",
       status: "completed",
-      cost: "$95.00",
+      cost: "Rs.5000.00",
       rating: 4,
       serviceDetails: ["Quick Service", "Tire Check"]
     }
@@ -103,7 +103,6 @@ export default function MyBookingsPage() {
   const renderBookingCard = (booking: any, type: string) => {
     return (
       <div key={booking.id} className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-orange-300 hover:shadow-lg transition-all">
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -119,8 +118,6 @@ export default function MyBookingsPage() {
           </div>
           {getStatusBadge(booking.status)}
         </div>
-
-        {/* Booking Details Grid */}
         <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-xl">
           <div>
             <p className="text-xs text-slate-500 mb-1 font-medium">Vehicle</p>
@@ -145,8 +142,6 @@ export default function MyBookingsPage() {
             </p>
           </div>
         </div>
-
-        {/* Service Details */}
         <div className="mb-4">
           <p className="text-xs text-slate-500 mb-2 font-medium">Services Included:</p>
           <div className="flex flex-wrap gap-2">
@@ -157,8 +152,6 @@ export default function MyBookingsPage() {
             ))}
           </div>
         </div>
-
-        {/* Progress Bar (for current bookings) */}
         {type === 'current' && booking.progress !== undefined && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs mb-2">
@@ -173,8 +166,6 @@ export default function MyBookingsPage() {
             </div>
           </div>
         )}
-
-        {/* Rating (for past bookings) */}
         {type === 'past' && booking.rating && (
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xs text-slate-500 font-medium">Your Rating:</span>
@@ -193,8 +184,6 @@ export default function MyBookingsPage() {
             </div>
           </div>
         )}
-
-        {/* Footer Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-200">
           <div className="text-lg font-bold text-slate-900">{booking.cost}</div>
           
@@ -249,7 +238,7 @@ export default function MyBookingsPage() {
         description="View and manage all your service appointments"
       />
 
-      {/* Tabs */}
+    
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
         <div className="flex gap-2">
           {tabs.map((tab) => (
@@ -277,7 +266,6 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {/* Bookings List */}
       <div className="space-y-4">
         {currentBookings.length > 0 ? (
           currentBookings.map((booking) => renderBookingCard(booking, activeTab))
