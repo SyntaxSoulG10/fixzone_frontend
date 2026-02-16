@@ -5,16 +5,42 @@ import Link from "next/link";
 import { MOCK_SUBSCRIPTIONS } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
+import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp, FiX, FiExternalLink } from "react-icons/fi";
 import { Subscription } from "@/types";
 import Button from "@/components/UI/Button";
+
+interface BillingRecord {
+    id: string;
+    date: string;
+    amount: string;
+    status: 'Paid' | 'Failed' | 'Pending';
+    method: string;
+}
+
+const MOCK_BILLING_HISTORY: Record<string, BillingRecord[]> = {
+    "SUB-001": [
+        { id: "INV-2024-001", date: "Jan 15, 2024", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
+        { id: "INV-2023-012", date: "Dec 15, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
+        { id: "INV-2023-011", date: "Nov 15, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
+    ],
+    "SUB-002": [
+        { id: "INV-2024-002", date: "Feb 01, 2024", amount: "Rs. 9,900", status: "Paid", method: "MasterCard **** 8888" },
+        { id: "INV-2024-001", date: "Jan 01, 2024", amount: "Rs. 9,900", status: "Paid", method: "MasterCard **** 8888" },
+    ],
+    "SUB-003": [
+        { id: "INV-2024-001", date: "Dec 10, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 1111" },
+    ]
+};
 
 export default function SubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState(
         MOCK_SUBSCRIPTIONS.slice(0, 3).map((sub, idx) =>
             idx === 1 ? { ...sub, autoRenew: false } : sub
         )
-    ); // Keep only 3 sample data, second one auto-renew off
+    );
+
+    const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
     const handleCancelPlan = (id: string) => {
         setSubscriptions(prev => prev.map(sub =>
@@ -30,6 +56,11 @@ export default function SubscriptionsPage() {
 
     const handleNotify = (id: string) => {
         alert(`Notification sent to subscriber ${id}`);
+    };
+
+    const openBillingHistory = (sub: Subscription) => {
+        setSelectedSub(sub);
+        setIsHistoryModalOpen(true);
     };
 
     const columns = [
@@ -121,7 +152,6 @@ export default function SubscriptionsPage() {
             header: "Actions",
             accessor: (row: Subscription) => (
                 <div className="flex items-center gap-2 h-full">
-                    {/* Notify User */}
                     <button
                         onClick={() => handleNotify(row.id)}
                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 bg-slate-50"
@@ -130,7 +160,6 @@ export default function SubscriptionsPage() {
                         <FiBell className="w-4 h-4" />
                     </button>
 
-                    {/* Cancel/Activate Plan */}
                     {row.status === 'Active' ? (
                         <button
                             onClick={() => handleCancelPlan(row.id)}
@@ -149,14 +178,53 @@ export default function SubscriptionsPage() {
                         </button>
                     )}
 
-                    {/* Billing History */}
                     <button
+                        onClick={() => openBillingHistory(row)}
                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200 bg-slate-50"
                         title="See Billing History"
                     >
                         <FiFileText className="w-4 h-4" />
                     </button>
                 </div>
+            ),
+            cellClassName: "align-middle text-center"
+        }
+    ];
+
+    const billingColumns = [
+        {
+            header: "Invoice ID",
+            accessor: (row: BillingRecord) => <span className="font-mono text-xs font-bold text-slate-700">{row.id}</span>,
+            cellClassName: "align-middle"
+        },
+        {
+            header: "Date",
+            accessor: (row: BillingRecord) => <span className="text-slate-600">{row.date}</span>,
+            cellClassName: "align-middle"
+        },
+        {
+            header: "Amount",
+            accessor: (row: BillingRecord) => <span className="font-bold text-slate-900">{row.amount}</span>,
+            cellClassName: "align-middle"
+        },
+        {
+            header: "Status",
+            accessor: (row: BillingRecord) => (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${row.status === 'Paid' ? 'bg-green-50 text-green-700 border-green-100' :
+                        row.status === 'Failed' ? 'bg-red-50 text-red-700 border-red-100' :
+                            'bg-orange-50 text-orange-700 border-orange-100'
+                    }`}>
+                    {row.status}
+                </span>
+            ),
+            cellClassName: "align-middle text-center"
+        },
+        {
+            header: "Action",
+            accessor: (row: BillingRecord) => (
+                <button className="text-slate-400 hover:text-orange-500 transition-colors p-1" title="Download Invoice">
+                    <FiDownload className="w-4 h-4" />
+                </button>
             ),
             cellClassName: "align-middle text-center"
         }
@@ -169,7 +237,6 @@ export default function SubscriptionsPage() {
                 <p className="text-slate-500 mt-1">Track current subscribers and billing history.</p>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StatCard
                     title="Active Subscriptions"
@@ -185,9 +252,7 @@ export default function SubscriptionsPage() {
                 />
             </div>
 
-            {/* Table Section */}
             <div className="space-y-4">
-                {/* Controls */}
                 <div className="flex flex-col md:flex-row justify-between gap-4 items-end md:items-center">
                     <div className="w-full md:w-auto flex-1 flex gap-2">
                         <button className="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:shadow-sm hover:border-orange-300 transition-all bg-white hover:-translate-y-0.5">
@@ -224,6 +289,74 @@ export default function SubscriptionsPage() {
                     />
                 </div>
             </div>
+
+            {/* Billing History Modal */}
+            {isHistoryModalOpen && selectedSub && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <FiFileText className="text-2xl" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">Billing History</h3>
+                                    <p className="text-sm text-slate-500">{selectedSub.stationName} • {selectedSub.plan} Plan</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsHistoryModalOpen(false)}
+                                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+                            >
+                                <FiX className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="mb-6 grid grid-cols-3 gap-4">
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</p>
+                                    <p className="text-sm font-bold text-green-600 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                        Active
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
+                                    <p className="text-sm font-bold text-slate-800">Rs. 59,700</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Last Payment</p>
+                                    <p className="text-sm font-bold text-slate-800">Jan 15, 2024</p>
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <Table
+                                    columns={billingColumns}
+                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || []}
+                                    keyField="id"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <p className="text-xs text-slate-400 italic">Showing last 12 months record.</p>
+                            <div className="flex gap-3">
+                                <button className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-all">
+                                    Export CSV
+                                </button>
+                                <button
+                                    onClick={() => setIsHistoryModalOpen(false)}
+                                    className="px-6 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all shadow-md"
+                                >
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
