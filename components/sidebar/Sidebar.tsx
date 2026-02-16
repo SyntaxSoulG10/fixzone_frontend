@@ -85,13 +85,13 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
         }
     }, [pathname]);
 
-    if (!role) return <div className={`w-64 bg-white border-r border-slate-200 h-screen hidden md:block ${!isOpen && 'hidden'}`}></div>;
+    if (!role) return <div className={`w-64 bg-white border-r border-slate-200 h-screen block ${!isOpen && 'hidden'}`}></div>;
 
     const menuItems = ROLE_MENUS[role] || ROLE_MENUS['customer'];
 
     return (
         <aside
-            className={`w-64 bg-white border-r border-slate-200 h-screen hidden md:flex flex-col fixed left-0 top-0 pt-20 z-30 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-64'
+            className={`w-64 bg-white border-r border-slate-200 h-screen flex flex-col fixed left-0 top-0 pt-20 z-30 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-64'
                 }`}
         >
             <div className="flex-1 overflow-y-auto py-4">
