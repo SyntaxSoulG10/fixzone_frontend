@@ -16,6 +16,7 @@ import {
     TextField,
     MenuItem,
     Select,
+    SelectChangeEvent,
     FormControl,
     InputLabel,
     Chip,
@@ -108,7 +109,7 @@ export default function MyCentersPage() {
         setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };
