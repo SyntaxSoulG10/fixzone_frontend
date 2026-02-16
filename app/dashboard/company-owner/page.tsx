@@ -132,9 +132,9 @@ export default function CompanyOwnerDashboard() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn
-                        title="View Reports"
-                        icon={<FiFileText size={24} />}
-                        href="/dashboard/company-owner/reports"
+                        title="Manage Services"
+                        icon={<FiLayers size={24} />}
+                        href="/dashboard/company-owner/services"
                         color="default"
                     />
                 </Grid>
