@@ -155,20 +155,6 @@ export default function MyBookingsPage() {
             ))}
           </div>
         </div>
-        {type === 'current' && booking.progress !== undefined && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-slate-600 font-medium">Service Progress</span>
-              <span className="text-orange-600 font-bold">{booking.progress}%</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full transition-all duration-500"
-                style={{ width: `${booking.progress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
         {type === 'past' && booking.rating && (
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xs text-slate-500 font-medium">Your Rating:</span>
@@ -191,19 +177,6 @@ export default function MyBookingsPage() {
           <div className="text-lg font-bold text-slate-900">{booking.cost}</div>
           
           <div className="flex gap-2">
-            {type === 'current' && (
-              <>
-                <Link href={`/dashboard/customer/history/track/${booking.id}`}>
-                  <Button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors">
-                    Track Status
-                  </Button>
-                </Link>
-                <Button className="px-4 py-2 text-sm border-2 border-slate-300 hover:border-slate-400 text-slate-700 rounded-lg font-semibold transition-colors">
-                  Contact
-                </Button>
-              </>
-            )}
-            
             {type === 'upcoming' && (
               <>
                 <Button className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2">

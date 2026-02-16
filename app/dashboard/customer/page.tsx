@@ -116,43 +116,31 @@ export default function CustomerDashboard() {
       </div>
 
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
         {[
           {
             title: "Next Service",
             value: "Dec 28",
-            icon: <FiCalendar className="text-blue-500 text-2xl" />,
+            icon: <FiCalendar className="text-blue-500 text-3xl" />,
             bg: "bg-blue-50",
-          },
-          {
-            title: "Loyalty Points",
-            value: "1,250",
-            icon: <FiAward className="text-yellow-500 text-2xl" />,
-            bg: "bg-yellow-50",
-          },
-          {
-            title: "Vehicle Status",
-            value: "Healthy",
-            icon: <FiCheckCircle className="text-green-500 text-2xl" />,
-            bg: "bg-green-50",
           },
           {
             title: "Completed Services",
             value: "8",
-            icon: <FiTrendingUp className="text-purple-500 text-2xl" />,
+            icon: <FiTrendingUp className="text-purple-500 text-3xl" />,
             bg: "bg-purple-50",
           },
         ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5 border-2 border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center`}>
+          <div key={i} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 md:p-8 border-2 border-slate-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-14 h-14 ${stat.bg} rounded-xl flex items-center justify-center`}>
                 {stat.icon}
               </div>
             </div>
-            <p className="text-xs uppercase text-slate-500 font-semibold mb-1">
+            <p className="text-xs uppercase text-slate-500 font-semibold mb-2">
               {stat.title}
             </p>
-            <p className="font-bold text-xl md:text-2xl text-slate-900">{stat.value}</p>
+            <p className="font-bold text-2xl md:text-3xl text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -247,22 +235,6 @@ export default function CustomerDashboard() {
                     <span>{b.time}</span>
                   </div>
                 </div>
-
-                
-                {b.progress > 0 && b.progress < 100 && (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs mb-2 text-slate-600">
-                      <span>Progress</span>
-                      <span className="font-semibold">{b.progress}%</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-orange-500 rounded-full transition-all duration-500"
-                        style={{ width: `${b.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
