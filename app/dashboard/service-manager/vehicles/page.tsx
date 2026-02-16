@@ -5,8 +5,23 @@ import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
 import { FiPlus, FiMoreVertical, FiClock, FiUser, FiTool, FiX } from "react-icons/fi";
 
-// Mock data for 5 lanes (3 filled, 2 empty)
-const SERVICE_LANES = [
+// Type for a lane
+interface LaneVehicle {
+    ID: string;
+    model: string;
+    owner: string;
+    repairStatus: string;
+    action: string;
+}
+
+interface Lane {
+    id: number;
+    status: "filled" | "empty";
+    vehicle?: LaneVehicle;
+}
+
+// Initial mock data for lanes
+const INITIAL_LANES: Lane[] = [
     {
         id: 1,
         status: "filled",
@@ -30,14 +45,25 @@ const SERVICE_LANES = [
             action: "Engine Repair"
         }
     },
-
     { id: 4, status: "empty" },
     { id: 5, status: "empty" },
 ];
 
 export default function ServiceLaneManagePage() {
+    const [lanes, setLanes] = useState<Lane[]>(INITIAL_LANES);
     const [openLaneId, setOpenLaneId] = useState<number | null>(null);
     const [bookingId, setBookingId] = useState("");
+
+    // Add a new empty lane with the next lane number
+    const handleAddLane = () => {
+        const nextId = lanes.length > 0 ? Math.max(...lanes.map(l => l.id)) + 1 : 1;
+        setLanes([...lanes, { id: nextId, status: "empty" }]);
+    };
+
+    // Remove an empty lane
+    const handleRemoveLane = (laneId: number) => {
+        setLanes(lanes.filter(l => l.id !== laneId));
+    };
 
     return (
         <div>
@@ -47,20 +73,31 @@ export default function ServiceLaneManagePage() {
             />
 
             <div className="flex justify-end mb-6">
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2" onClick={handleAddLane}>
                     <FiPlus /> Add Lane
                 </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                {SERVICE_LANES.map((lane) => (
+                {lanes.map((lane) => (
                     <div
                         key={lane.id}
-                        className={`rounded-xl border shadow-sm flex flex-col h-full transition-all ${lane.status === 'filled'
+                        className={`relative rounded-xl border shadow-sm flex flex-col h-full transition-all ${lane.status === 'filled'
                             ? 'bg-white border-slate-200'
                             : 'bg-slate-50 border-dashed border-slate-300'
                             }`}
                     >
+                        {/* Remove button for empty lanes only */}
+                        {lane.status === 'empty' && (
+                            <button
+                                onClick={() => handleRemoveLane(lane.id)}
+                                className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-700 transition-colors shadow-sm"
+                                title="Remove lane"
+                            >
+                                <FiX size={14} />
+                            </button>
+                        )}
+
                         {/* Lane Header */}
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
                             <h3 className="font-semibold text-slate-700">Lane {lane.id}</h3>

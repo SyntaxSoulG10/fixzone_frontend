@@ -13,7 +13,7 @@ export default function ServiceManagerProfile() {
         role: "Service Manager",
         phone: "+94 701502004",
         email: "suresh.pre@gmail.com",
-        location: "Main Service Center, NY"
+        location: "Main Service Center, Downtown Branch"
     });
 
     const [tempData, setTempData] = useState(profileData);

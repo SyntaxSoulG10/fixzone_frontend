@@ -49,7 +49,6 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Charts Row */}
-```tsx
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Trend (Weekly)</h3>
@@ -87,7 +86,6 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             </div>
-```
         </div>
     );
 }
