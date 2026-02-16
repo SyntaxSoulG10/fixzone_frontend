@@ -5,12 +5,12 @@ import Link from "next/link";
 import { MOCK_SUBSCRIPTIONS } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiActivity, FiClock, FiDollarSign, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiAlertTriangle, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
+import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
 import { Subscription } from "@/types";
 import Button from "@/components/UI/Button";
 
 export default function SubscriptionsPage() {
-    const [subscriptions, setSubscriptions] = useState(MOCK_SUBSCRIPTIONS);
+    const [subscriptions, setSubscriptions] = useState(MOCK_SUBSCRIPTIONS.slice(0, 3)); // Keep only 3 sample data
 
     const handleCancelPlan = (id: string) => {
         setSubscriptions(prev => prev.map(sub =>
@@ -46,7 +46,8 @@ export default function SubscriptionsPage() {
                         <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id.substring(0, 8)}</div>
                     </div>
                 </div>
-            )
+            ),
+            cellClassName: "align-middle"
         },
         {
             header: "Billing Cycle",
@@ -60,11 +61,13 @@ export default function SubscriptionsPage() {
                         <span>Monthly billing</span>
                     </div>
                 </div>
-            )
+            ),
+            cellClassName: "align-middle text-center"
         },
         {
             header: "Revenue",
-            accessor: (row: Subscription) => <span className="font-bold text-slate-800 text-sm tracking-tight">{row.price}</span>
+            accessor: (row: Subscription) => <span className="font-bold text-slate-800 text-sm tracking-tight">{row.price}</span>,
+            cellClassName: "align-middle text-center"
         },
         {
             header: "Next Invoice",
@@ -76,7 +79,8 @@ export default function SubscriptionsPage() {
                     </div>
                     <div className="text-slate-400 pl-4">Started {row.startDate}</div>
                 </div>
-            )
+            ),
+            cellClassName: "align-middle"
         },
         {
             header: "Status",
@@ -89,7 +93,8 @@ export default function SubscriptionsPage() {
                         {row.status}
                     </span>
                 </div>
-            )
+            ),
+            cellClassName: "align-middle text-center"
         },
         {
             header: "Auto-Renew",
@@ -105,7 +110,8 @@ export default function SubscriptionsPage() {
                             <span>Off</span>
                         </div>}
                 </div>
-            )
+            ),
+            cellClassName: "align-middle text-center"
         },
         {
             header: "Actions",
@@ -118,14 +124,6 @@ export default function SubscriptionsPage() {
                         title="Notify User"
                     >
                         <FiBell className="w-4 h-4" />
-                    </button>
-
-                    {/* Report User */}
-                    <button
-                        className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all border border-transparent hover:border-purple-100 bg-slate-50"
-                        title="Report User"
-                    >
-                        <FiAlertTriangle className="w-4 h-4" />
                     </button>
 
                     {/* Cancel/Activate Plan */}
@@ -155,7 +153,8 @@ export default function SubscriptionsPage() {
                         <FiFileText className="w-4 h-4" />
                     </button>
                 </div>
-            )
+            ),
+            cellClassName: "align-middle text-center"
         }
     ];
 
