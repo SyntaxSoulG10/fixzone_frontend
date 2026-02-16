@@ -16,10 +16,11 @@ import {
 import { FiDownload, FiFileText } from "react-icons/fi";
 
 const DUMMY_REPORTS = [
-    { id: 1, name: "December Revenue Report", date: "Dec 24, 2024", type: "Financial", size: "1.2 MB" },
-    { id: 2, name: "Q4 Performance Summary", date: "Dec 20, 2024", type: "Analytics", size: "4.5 MB" },
-    { id: 3, name: "Customer Satisfaction Survey", date: "Dec 15, 2024", type: "Feedback", size: "850 KB" },
-    { id: 4, name: "Staff Attendance Report", date: "Dec 01, 2024", type: "HR", size: "500 KB" },
+    { id: 1, name: "January 2026 Revenue Report", date: "Feb 01, 2026", type: "Financial", size: "1.2 MB" },
+    { id: 2, name: "Q4 2025 Performance Summary", date: "Jan 15, 2026", type: "Analytics", size: "4.5 MB" },
+    { id: 3, name: "Colombo Branch Audit Report", date: "Jan 10, 2026", type: "Audit", size: "2.1 MB" },
+    { id: 4, name: "Customer Satisfaction Survey (Jan)", date: "Feb 05, 2026", type: "Feedback", size: "850 KB" },
+    { id: 5, name: "Staff Attendance Report", date: "Feb 01, 2026", type: "HR", size: "500 KB" },
 ];
 
 export default function ReportsPage() {

@@ -6,13 +6,12 @@ import Button from "@/components/UI/Button";
 import Card from "@/components/UI/Card";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
 
-// Mock data type
 interface ServicePackage {
     id: string;
     name: string;
     description: string;
     price: number;
-    duration: number; // in minutes
+    duration: number;
     features: string[];
     isActive: boolean;
 }
@@ -22,7 +21,7 @@ const MOCK_PACKAGES: ServicePackage[] = [
         id: "1",
         name: "Standard Oil Change",
         description: "Complete oil change service including filter replacement and fluid top-up.",
-        price: 49.99,
+        price: 15000.00,
         duration: 45,
         features: ["Oil filter replacement", "Up to 5 quarts of oil", "Fluid top-up", "Visual inspection"],
         isActive: true,
@@ -31,7 +30,7 @@ const MOCK_PACKAGES: ServicePackage[] = [
         id: "2",
         name: "Full Diagnostic Scan",
         description: "Comprehensive vehicle diagnostic scan to identify engine and system issues.",
-        price: 89.00,
+        price: 8500.00,
         duration: 60,
         features: ["Engine check", "Transmission check", "Brake system scan", "Detailed report"],
         isActive: true,
@@ -40,7 +39,7 @@ const MOCK_PACKAGES: ServicePackage[] = [
         id: "3",
         name: "Premium Detailing",
         description: "Interior and exterior detailing service for a showroom finish.",
-        price: 149.99,
+        price: 25000.00,
         duration: 180,
         features: ["Exterior wash & wax", "Interior vacuum & shampoo", "Leather conditioning", "Window cleaning"],
         isActive: true,
@@ -49,7 +48,7 @@ const MOCK_PACKAGES: ServicePackage[] = [
         id: "4",
         name: "Brake Pad Replacement",
         description: "Professional brake pad replacement for front or rear axle.",
-        price: 120.00,
+        price: 18500.00,
         duration: 90,
         features: ["Ceramic brake pads", "Rotor inspection", "Brake fluid check", "Test drive"],
         isActive: false,
@@ -61,7 +60,6 @@ export default function ServicesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    // Form State
     const [currentPackage, setCurrentPackage] = useState<ServicePackage>({
         id: "",
         name: "",
@@ -72,7 +70,6 @@ export default function ServicesPage() {
         isActive: true
     });
 
-    // Feature input helper
     const [featuresInput, setFeaturesInput] = useState("");
 
     const handleOpenCreate = () => {
@@ -104,7 +101,7 @@ export default function ServicesPage() {
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Process features from textarea (split by new line)
+
         const processedFeatures = featuresInput
             .split("\n")
             .map(f => f.trim())
@@ -151,7 +148,6 @@ export default function ServicesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {packages.map((pkg) => (
                     <div key={pkg.id} className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                        {/* Action Buttons (visible on hover) */}
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <button
                                 onClick={() => handleOpenEdit(pkg)}
@@ -218,7 +214,6 @@ export default function ServicesPage() {
                     </div>
                 ))}
 
-                {/* Create New Card Button */}
                 <button
                     onClick={handleOpenCreate}
                     className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-xl hover:border-primary/50 hover:bg-slate-50 transition-all group min-h-[400px]"
@@ -230,7 +225,6 @@ export default function ServicesPage() {
                 </button>
             </div>
 
-            {/* Modal Overlay */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">

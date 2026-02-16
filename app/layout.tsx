@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google"; // Use Roboto as per Material Dashboard
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 

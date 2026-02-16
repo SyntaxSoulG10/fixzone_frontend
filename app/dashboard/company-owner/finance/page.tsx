@@ -23,6 +23,7 @@ import {
     Chip,
     Avatar
 } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
 import {
     FiTrendingUp,
@@ -49,12 +50,12 @@ import {
 import ChartCard from "@/components/dashboard/ChartCard";
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
-// Data Mock
+
 const REVENUE_DATA = [
-    { name: 'Downtown', revenue: 45000 },
-    { name: 'Westside', revenue: 32000 },
-    { name: 'North', revenue: 28000 },
-    { name: 'East', revenue: 15000 },
+    { name: 'Colombo', revenue: 450000 },
+    { name: 'Kandy', revenue: 320000 },
+    { name: 'Galle', revenue: 280000 },
+    { name: 'Negombo', revenue: 150000 },
 ];
 
 const GROWTH_DATA = [
@@ -71,48 +72,133 @@ const GROWTH_DATA = [
 const RECENT_TRANSACTIONS = [
     {
         id: "TRX-9821",
-        customer: "John Doe",
+        customer: "Amal Perera",
         service: "Premium Detailing Package",
-        amount: "Rs. 149.99",
+        amount: "Rs. 14,999",
         date: "Today, 10:42 AM",
         status: "Completed",
         method: "Credit Card"
     },
     {
         id: "TRX-9822",
-        customer: "Sarah Smith",
+        customer: "Dilini Jayasuriya",
         service: "Standard Oil Change",
-        amount: "Rs. 49.99",
+        amount: "Rs. 4,999",
         date: "Today, 09:15 AM",
         status: "Completed",
-        method: "Apple Pay"
+        method: "Online Transfer"
     },
     {
         id: "TRX-9823",
-        customer: "Michael Brown",
+        customer: "Mohamed Riaz",
         service: "Full Diagnostic Scan",
-        amount: "Rs. 89.00",
+        amount: "Rs. 8,900",
         date: "Yesterday, 04:30 PM",
         status: "Pending",
         method: "Bank Transfer"
     },
     {
         id: "TRX-9824",
-        customer: "Emily Davis",
+        customer: "Kavindi Silva",
         service: "Brake Pad Replacement",
-        amount: "Rs. 120.00",
+        amount: "Rs. 12,000",
         date: "Yesterday, 02:15 PM",
         status: "Completed",
         method: "Cash"
     },
     {
         id: "TRX-9825",
-        customer: "David Wilson",
+        customer: "Nuwan Pradeep",
         service: "Standard Oil Change",
-        amount: "Rs. 49.99",
+        amount: "Rs. 4,999",
         date: "Yesterday, 11:00 AM",
         status: "Refunded",
         method: "Credit Card"
+    }
+];
+
+const columns: GridColDef[] = [
+    {
+        field: 'id',
+        headerName: 'Transaction ID',
+        flex: 1,
+        minWidth: 120,
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                {params.value}
+            </Typography>
+        )
+    },
+    {
+        field: 'customer',
+        headerName: 'Customer',
+        flex: 1.5,
+        minWidth: 200,
+        renderCell: (params: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" gap={1} height="100%">
+                <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
+                    {params.value.charAt(0)}
+                </Avatar>
+                <Typography variant="body2" fontWeight="medium">
+                    {params.value}
+                </Typography>
+            </Box>
+        )
+    },
+    {
+        field: 'service',
+        headerName: 'Service Package',
+        flex: 1.5,
+        minWidth: 200,
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography variant="body2" color="text.secondary">
+                {params.value}
+            </Typography>
+        )
+    },
+    {
+        field: 'date',
+        headerName: 'Date',
+        flex: 1,
+        minWidth: 150,
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography variant="body2" color="text.secondary">
+                {params.value}
+            </Typography>
+        )
+    },
+    {
+        field: 'amount',
+        headerName: 'Amount',
+        flex: 1,
+        minWidth: 120,
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography variant="body2" fontWeight="bold" color="text.primary">
+                {params.value}
+            </Typography>
+        )
+    },
+    {
+        field: 'status',
+        headerName: 'Status',
+        flex: 1,
+        minWidth: 120,
+        headerAlign: 'center',
+        align: 'center',
+        renderCell: (params: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" justifyContent="center" width="100%" height="100%">
+                <Chip
+                    label={params.value}
+                    size="small"
+                    color={
+                        params.value === 'Completed' ? 'success' :
+                            params.value === 'Pending' ? 'warning' : 'error'
+                    }
+                    variant="outlined"
+                    sx={{ fontWeight: 'bold', height: 24 }}
+                />
+            </Box>
+        )
     }
 ];
 
@@ -156,7 +242,6 @@ export default function FinancePage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={6}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -181,7 +266,6 @@ export default function FinancePage() {
                 </Stack>
             </Box>
 
-            {/* Top Stats */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
@@ -212,7 +296,6 @@ export default function FinancePage() {
                 </Grid>
             </Grid>
 
-            {/* Charts Section */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <ChartCard
@@ -269,7 +352,6 @@ export default function FinancePage() {
                     />
                 </Grid>
 
-                {/* Revenue by Center Bar Chart */}
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <Box mt={4}>
                         <Card sx={{ p: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
@@ -279,80 +361,46 @@ export default function FinancePage() {
                                 </Typography>
                                 <Button size="small" variant="text">View All</Button>
                             </Box>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Transaction ID</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Customer</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Service Package</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Date</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }}>Amount</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 'bold', fontSize: '0.75rem' }} align="center">Status</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {RECENT_TRANSACTIONS.map((trx) => (
-                                            <TableRow key={trx.id} hover>
-                                                <TableCell>
-                                                    <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                                                        {trx.id}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Box display="flex" alignItems="center" gap={1}>
-                                                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
-                                                            {trx.customer.charAt(0)}
-                                                        </Avatar>
-                                                        <Typography variant="body2" fontWeight="medium">
-                                                            {trx.customer}
-                                                        </Typography>
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {trx.service}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {trx.date}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Typography variant="body2" fontWeight="bold" color="text.primary">
-                                                        {trx.amount}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell align="center">
-                                                    <Chip
-                                                        label={trx.status}
-                                                        size="small"
-                                                        color={
-                                                            trx.status === 'Completed' ? 'success' :
-                                                                trx.status === 'Pending' ? 'warning' : 'error'
-                                                        }
-                                                        variant="outlined"
-                                                        sx={{ fontWeight: 'bold', height: 24 }}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                            <Box sx={{ height: 400, width: '100%' }}>
+                                <DataGrid
+                                    rows={RECENT_TRANSACTIONS}
+                                    columns={columns}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: {
+                                                pageSize: 5,
+                                            },
+                                        },
+                                    }}
+                                    pageSizeOptions={[5]}
+                                    disableRowSelectionOnClick
+                                    sx={{
+                                        border: 0,
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            backgroundColor: '#f8fafc',
+                                            borderBottom: '1px solid #e2e8f0',
+                                            color: 'text.secondary',
+                                            fontWeight: 'bold',
+                                            textTransform: 'uppercase',
+                                            fontSize: '0.75rem'
+                                        },
+                                        '& .MuiDataGrid-cell': {
+                                            borderBottom: '1px solid #f1f5f9'
+                                        }
+                                    }}
+                                />
+                            </Box>
                         </Card>
                     </Box>
                 </Grid>
 
-                {/* Revenue by Center Bar Chart */}
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <Box mt={4}>
                         <ChartCard
                             title="Center Performance"
                             description="Revenue comparison across all branches"
                             date="campaign sent 2 days ago"
-                            color="warning" // Using warning (orange) to vary slightly but stay in brand
+                            color="warning"
                             chart={
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart

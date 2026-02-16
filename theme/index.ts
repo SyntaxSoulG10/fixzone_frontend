@@ -13,7 +13,7 @@ import rgba from "./functions/rgba";
 
 declare module "@mui/material/styles" {
     interface Theme {
-        boxShadows: any; // Using any for simplicity now
+        boxShadows: any;
         borders: any;
         functions: any;
     }
@@ -36,13 +36,6 @@ export default createTheme({
             xl: 1200,
         },
     },
-    // shadows: ...boxShadows, // Don't override standard shadows with object
-    // We need to map named shadows to the array or just ignore type error for custom shadows?
-    // MUI expects shadows to be an array. Material Dashboard uses custom `boxShadows` object.
-    // We should probably keep `shadows` as default MUI array and add `boxShadows` as custom property.
-    // But `createTheme` allows adding custom properties.
-
-    // Custom properties
     boxShadows: { ...boxShadows },
     borders: { ...borders },
     functions: {
