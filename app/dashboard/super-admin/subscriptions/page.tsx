@@ -10,7 +10,11 @@ import { Subscription } from "@/types";
 import Button from "@/components/UI/Button";
 
 export default function SubscriptionsPage() {
-    const [subscriptions, setSubscriptions] = useState(MOCK_SUBSCRIPTIONS.slice(0, 3)); // Keep only 3 sample data
+    const [subscriptions, setSubscriptions] = useState(
+        MOCK_SUBSCRIPTIONS.slice(0, 3).map((sub, idx) =>
+            idx === 1 ? { ...sub, autoRenew: false } : sub
+        )
+    ); // Keep only 3 sample data, second one auto-renew off
 
     const handleCancelPlan = (id: string) => {
         setSubscriptions(prev => prev.map(sub =>
