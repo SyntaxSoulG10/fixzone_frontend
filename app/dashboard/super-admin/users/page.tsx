@@ -12,6 +12,7 @@ interface Notification {
     id: string;
     userId: string;
     userName: string;
+    title: string;
     message: string;
     createdAt: string;
 }
@@ -23,6 +24,7 @@ export default function UsersPage() {
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
 
     const handleSuspendUser = (userId: string) => {
@@ -41,6 +43,7 @@ export default function UsersPage() {
 
     const openNotificationModal = (user: User) => {
         setSelectedUser(user);
+        setTitle("");
         setMessage("");
         setIsNotificationModalOpen(true);
     };
@@ -54,6 +57,7 @@ export default function UsersPage() {
             id: `notif-${Date.now()}`,
             userId: String(selectedUser.id),
             userName: selectedUser.name,
+            title: title,
             message: message,
             createdAt: new Date().toLocaleString()
         };
@@ -256,7 +260,7 @@ export default function UsersPage() {
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-800">Send Notification</h3>
-                                <p className="text-sm text-slate-500">To: {selectedUser.name}</p>
+                                <p className="text-sm text-slate-500">To: {selectedUser.name} ({selectedUser.email})</p>
                             </div>
                             <button
                                 onClick={() => setIsNotificationModalOpen(false)}
@@ -267,6 +271,17 @@ export default function UsersPage() {
                         </div>
 
                         <form onSubmit={handleSendNotification} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Title</label>
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
+                                    placeholder="e.g., Account Update"
+                                    required
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Message</label>
                                 <textarea
