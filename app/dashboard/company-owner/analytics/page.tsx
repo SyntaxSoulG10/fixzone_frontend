@@ -6,14 +6,9 @@ import {
     Box,
     Typography,
     Divider,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Icon
+    Icon,
 } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import ChartCard from "@/components/dashboard/ChartCard";
 import {
@@ -60,6 +55,43 @@ const serviceTypeData = [
     { name: 'Tire Service', value: 300 },
     { name: 'Engine Repair', value: 300 },
     { name: 'Car Wash', value: 200 },
+];
+
+const TOP_CENTERS = [
+    { id: 1, name: "Colombo Main Branch", initial: "C", color: "primary.main", jobs: 450, revenue: 452000 },
+    { id: 2, name: "Kandy Service Center", initial: "K", color: "info.main", jobs: 320, revenue: 321000 },
+    { id: 3, name: "Galle Southern Hub", initial: "G", color: "success.main", jobs: 180, revenue: 184000 }
+];
+
+const columns: GridColDef[] = [
+    {
+        field: 'name',
+        headerName: 'Center Name',
+        flex: 2,
+        renderCell: (params: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" gap={2} height="100%">
+                <Box width={32} height={32} borderRadius="50%" bgcolor={params.row.color} display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">
+                    {params.row.initial}
+                </Box>
+                {params.value}
+            </Box>
+        )
+    },
+    {
+        field: 'jobs',
+        headerName: 'Jobs',
+        flex: 1,
+    },
+    {
+        field: 'revenue',
+        headerName: 'Revenue',
+        flex: 1,
+        headerAlign: 'right',
+        align: 'right',
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography fontWeight="bold">Rs. {params.value.toLocaleString()}</Typography>
+        )
+    }
 ];
 
 const PIE_COLORS = ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0'];
@@ -265,50 +297,34 @@ export default function AnalyticsPage() {
                         </Box>
 
 
-                        <Box p={2}>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead sx={{ display: 'table-header-group' }}>
-                                        <TableRow>
-                                            <TableCell>Center Name</TableCell>
-                                            <TableCell>Jobs</TableCell>
-                                            <TableCell align="right">Revenue</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">C</Box>
-                                                    Colombo Main Branch
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>450</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 452,000</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">K</Box>
-                                                    Kandy Service Center
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>320</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 321,000</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">G</Box>
-                                                    Galle Southern Hub
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>180</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 184,000</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                        <Box sx={{ height: 400, width: '100%' }}>
+                            <DataGrid
+                                rows={TOP_CENTERS}
+                                columns={columns}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: {
+                                            pageSize: 5,
+                                        },
+                                    },
+                                }}
+                                pageSizeOptions={[5]}
+                                disableRowSelectionOnClick
+                                sx={{
+                                    border: 0,
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        backgroundColor: '#f8fafc',
+                                        borderBottom: '1px solid #e2e8f0',
+                                        color: 'text.secondary',
+                                        fontWeight: 'bold',
+                                        textTransform: 'uppercase',
+                                        fontSize: '0.75rem'
+                                    },
+                                    '& .MuiDataGrid-cell': {
+                                        borderBottom: '1px solid #f1f5f9'
+                                    }
+                                }}
+                            />
                         </Box>
                     </Card>
                 </Grid>
