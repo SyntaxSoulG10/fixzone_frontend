@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   FiCalendar,
   FiCheckCircle,
@@ -292,10 +293,12 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      <button className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-orange-600 hover:bg-orange-700 text-white px-6 py-4 rounded-full shadow-lg hover:shadow-xl transition-all font-semibold text-sm md:text-base flex items-center gap-2">
-        <span className="text-xl">+</span>
-        <span className="hidden sm:inline">Book Service</span>
-      </button>
+      <Link href="/dashboard/customer/bookings">
+        <button className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-orange-600 hover:bg-orange-700 text-white px-6 py-4 rounded-full shadow-lg hover:shadow-xl transition-all font-semibold text-sm md:text-base flex items-center gap-2">
+          <span className="text-xl">+</span>
+          <span className="hidden sm:inline">Book Service</span>
+        </button>
+      </Link>
     </div>
   );
 }

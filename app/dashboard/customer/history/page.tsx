@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
 import { 
@@ -48,6 +49,7 @@ const DUMMY_BOOKINGS = {
   past: [
     {
       id: 3,
+      stationId: "abc-1",
       service: "ABC Service Station",
       address: "Shop 24, Service street",
       vehicle: "Honda Civic 2020",
@@ -61,6 +63,7 @@ const DUMMY_BOOKINGS = {
     },
     {
       id: 4,
+      stationId: "kml-1",
       service: "KML Service Center",
       address: "Downtown Plaza",
       vehicle: "Honda Civic 2020",
@@ -190,9 +193,11 @@ export default function MyBookingsPage() {
           <div className="flex gap-2">
             {type === 'current' && (
               <>
-                <Button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors">
-                  Track Status
-                </Button>
+                <Link href={`/dashboard/customer/history/track/${booking.id}`}>
+                  <Button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors">
+                    Track Status
+                  </Button>
+                </Link>
                 <Button className="px-4 py-2 text-sm border-2 border-slate-300 hover:border-slate-400 text-slate-700 rounded-lg font-semibold transition-colors">
                   Contact
                 </Button>
@@ -218,9 +223,11 @@ export default function MyBookingsPage() {
                   <FiDownload className="w-4 h-4" />
                   Invoice
                 </Button>
-                <Button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors">
-                  Book Again
-                </Button>
+                <Link href={`/dashboard/customer/bookings/${(booking as { stationId?: string }).stationId ?? "abc-1"}`}>
+                  <Button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors">
+                    Book Again
+                  </Button>
+                </Link>
               </>
             )}
           </div>

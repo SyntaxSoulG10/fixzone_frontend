@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Edit2, Plus, Moon, Bell, ChevronDown, Eye, CreditCard } from "lucide-react";
 import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
 
 export default function CustomerProfilePage() {
+  const [notificationsOn, setNotificationsOn] = useState(true);
+
   return (
     <div className="max-w-6xl mx-auto pb-10">
       
@@ -95,11 +97,22 @@ export default function CustomerProfilePage() {
             <div className="space-y-6">
               <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account</div>
               
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-5 bg-slate-200 rounded-full relative cursor-pointer">
-                  <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full shadow-sm" />
-                </div>
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-slate-500">Notification</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notificationsOn}
+                  onClick={() => setNotificationsOn((prev) => !prev)}
+                  className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${notificationsOn ? "bg-orange-500" : "bg-slate-200"}`}
+                >
+                  <div
+                    className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${notificationsOn ? "left-6" : "left-1"}`}
+                  />
+                </button>
+                <span className="text-sm font-medium text-slate-600 min-w-[4rem]">
+                  {notificationsOn ? "On" : "Off"}
+                </span>
               </div>
 
               <div>
