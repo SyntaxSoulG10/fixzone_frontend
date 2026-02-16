@@ -12,9 +12,7 @@ interface Notification {
     id: string;
     userId: string;
     userName: string;
-    title: string;
     message: string;
-    type: 'info' | 'warning' | 'success';
     createdAt: string;
 }
 
@@ -25,12 +23,7 @@ export default function UsersPage() {
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
-    const [notificationForm, setNotificationForm] = useState({
-        title: "",
-        message: "",
-        type: 'info' as 'info' | 'warning' | 'success'
-    });
+    const [message, setMessage] = useState("");
 
     const handleSuspendUser = (userId: string) => {
         setUsers(prev => prev.map(user =>
@@ -46,48 +39,27 @@ export default function UsersPage() {
         showNotificationToast(`User ${userId} has been activated`);
     };
 
-    const openNotificationModal = (user: User, notification?: Notification) => {
+    const openNotificationModal = (user: User) => {
         setSelectedUser(user);
-        if (notification) {
-            setEditingNotification(notification);
-            setNotificationForm({
-                title: notification.title,
-                message: notification.message,
-                type: notification.type
-            });
-        } else {
-            setEditingNotification(null);
-            setNotificationForm({
-                title: "",
-                message: "",
-                type: 'info'
-            });
-        }
+        setMessage("");
         setIsNotificationModalOpen(true);
     };
 
     const handleSendNotification = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedUser) return;
+        if (!selectedUser || !message.trim()) return;
 
         const notification: Notification = {
-            id: editingNotification ? editingNotification.id : `notif-${Date.now()}`,
+            id: `notif-${Date.now()}`,
             userId: String(selectedUser.id),
             userName: selectedUser.name,
-            title: notificationForm.title,
-            message: notificationForm.message,
-            type: notificationForm.type,
+            message: message,
             createdAt: new Date().toLocaleString()
         };
 
-        if (editingNotification) {
-            setNotifications(prev => prev.map(n => n.id === editingNotification.id ? notification : n));
-            showNotificationToast(`Notification updated for ${selectedUser.name}`);
-        } else {
-            setNotifications(prev => [...prev, notification]);
-            showNotificationToast(`Notification sent to ${selectedUser.name}`);
-        }
+        setNotifications(prev => [...prev, notification]);
+        showNotificationToast(`Notification sent to ${selectedUser.name}`);
 
         setIsNotificationModalOpen(false);
     };
@@ -280,13 +252,11 @@ export default function UsersPage() {
             {/* Notification Modal */}
             {isNotificationModalOpen && selectedUser && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">
-                                    {editingNotification ? "Edit Notification" : "Send Notification"}
-                                </h3>
-                                <p className="text-sm text-slate-500">To: {selectedUser.name} ({selectedUser.email})</p>
+                                <h3 className="text-xl font-bold text-slate-800">Send Notification</h3>
+                                <p className="text-sm text-slate-500">To: {selectedUser.name}</p>
                             </div>
                             <button
                                 onClick={() => setIsNotificationModalOpen(false)}
@@ -296,66 +266,15 @@ export default function UsersPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSendNotification} className="p-6 space-y-6">
-                            {/* Notification Type */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Notification Type</label>
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNotificationForm(prev => ({ ...prev, type: 'info' }))}
-                                        className={`flex-1 px-4 py-2.5 rounded-lg border-2 font-semibold text-sm transition-all ${notificationForm.type === 'info'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        Info
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNotificationForm(prev => ({ ...prev, type: 'warning' }))}
-                                        className={`flex-1 px-4 py-2.5 rounded-lg border-2 font-semibold text-sm transition-all ${notificationForm.type === 'warning'
-                                            ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        Warning
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNotificationForm(prev => ({ ...prev, type: 'success' }))}
-                                        className={`flex-1 px-4 py-2.5 rounded-lg border-2 font-semibold text-sm transition-all ${notificationForm.type === 'success'
-                                            ? 'border-green-500 bg-green-50 text-green-700'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        Success
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Title */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Title</label>
-                                <input
-                                    type="text"
-                                    value={notificationForm.title}
-                                    onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
-                                    placeholder="e.g., Account Update Required"
-                                    required
-                                />
-                            </div>
-
-                            {/* Message */}
+                        <form onSubmit={handleSendNotification} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Message</label>
                                 <textarea
-                                    value={notificationForm.message}
-                                    onChange={(e) => setNotificationForm(prev => ({ ...prev, message: e.target.value }))}
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
                                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all resize-none"
                                     rows={4}
-                                    placeholder="Enter your notification message here..."
+                                    placeholder="Type your message..."
                                     required
                                 />
                             </div>
@@ -371,10 +290,10 @@ export default function UsersPage() {
                             </button>
                             <button
                                 onClick={handleSendNotification}
-                                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                className="px-6 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                             >
                                 <FiSend className="w-4 h-4" />
-                                {editingNotification ? "Update Notification" : "Send Notification"}
+                                Send
                             </button>
                         </div>
                     </div>

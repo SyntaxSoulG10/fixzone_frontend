@@ -28,9 +28,9 @@ const SUMMARY_METRICS = [
 ];
 
 const TOP_STATIONS = [
-    { name: "Colombo Central Hub", revenue: "Rs 4.2M", rating: "4.9 ★" },
-    { name: "Kandy Express Service", revenue: "Rs 3.8M", rating: "4.8 ★" },
-    { name: "Galle Motors", revenue: "Rs 3.1M", rating: "4.7 ★" },
+    { name: "Colombo Central Hub", revenue: "Rs 4.2M" },
+    { name: "Kandy Express Service", revenue: "Rs 3.8M" },
+    { name: "Galle Motors", revenue: "Rs 3.1M" },
 ];
 
 export default function SuperAdminDashboard() {
@@ -99,8 +99,8 @@ export default function SuperAdminDashboard() {
 
         autoTable(doc, {
             startY: yPos + 10,
-            head: [['Station Name', 'Revenue', 'Rating']],
-            body: TOP_STATIONS.map(s => [s.name, s.revenue, s.rating]),
+            head: [['Station Name', 'Revenue']],
+            body: TOP_STATIONS.map(s => [s.name, s.revenue]),
             theme: 'grid',
             headStyles: { fillColor: [234, 88, 12], textColor: 255 }, // Orange header
             styles: { fontSize: 10, cellPadding: 5 },
@@ -300,7 +300,6 @@ export default function SuperAdminDashboard() {
                                             <tr>
                                                 <th className="px-4 py-3 font-medium">Station Name</th>
                                                 <th className="px-4 py-3 font-medium">Revenue</th>
-                                                <th className="px-4 py-3 font-medium">Rating</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -308,7 +307,6 @@ export default function SuperAdminDashboard() {
                                                 <tr key={i}>
                                                     <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
                                                     <td className="px-4 py-3 text-slate-600">{station.revenue}</td>
-                                                    <td className="px-4 py-3 text-green-600 font-bold">{station.rating}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -328,8 +326,8 @@ export default function SuperAdminDashboard() {
                                 onClick={handleDownload}
                                 disabled={isDownloading || showSuccess}
                                 className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm flex items-center gap-2 transition-all ${isDownloading ? 'bg-slate-400 cursor-not-allowed' :
-                                        showSuccess ? 'bg-green-500 hover:bg-green-600' :
-                                            'bg-orange-600 hover:bg-orange-700 hover:shadow-md'
+                                    showSuccess ? 'bg-green-500 hover:bg-green-600' :
+                                        'bg-orange-600 hover:bg-orange-700 hover:shadow-md'
                                     }`}
                             >
                                 {isDownloading ? (
