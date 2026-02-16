@@ -39,7 +39,6 @@ export default function CompanyOwnerDashboard() {
 
     return (
         <Box pb={3}>
-            {/* Header Section */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'start' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -58,12 +57,11 @@ export default function CompanyOwnerDashboard() {
                 </Box>
             </Box>
 
-            {/* Quick Stats Row */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="Rs. 124,500"
+                        count="Rs. 1,245,000"
                         percentage={{
                             color: 'success',
                             amount: '+12.5%',
@@ -76,7 +74,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Active Centers"
-                        count="8"
+                        count="5"
                         percentage={{
                             color: 'success',
                             amount: '+1',
@@ -89,7 +87,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Customers"
-                        count="1,240"
+                        count="3,450"
                         percentage={{
                             color: 'success',
                             amount: '+8.2%',
@@ -101,7 +99,6 @@ export default function CompanyOwnerDashboard() {
                 </Grid>
             </Grid>
 
-            {/* Main Content Area with Tabs */}
             <Box mb={4}>
                 <Box borderBottom={1} borderColor="divider" mb={3}>
                     <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="primary" indicatorColor="primary">
@@ -116,7 +113,6 @@ export default function CompanyOwnerDashboard() {
                 </Box>
             </Box>
 
-            {/* Quick Actions Footer */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn
@@ -147,12 +143,7 @@ export default function CompanyOwnerDashboard() {
     );
 }
 
-// --- Sub Components ---
-// QuickActionBtn remains local or moved?
-// Keeping QuickActionBtn local as it's small/specific
-
 function QuickActionBtn({ title, icon, href, color }: any) {
-    // Determine styles based on color prop logic (replicating original intent with MUI)
     const isPrimary = color === 'primary';
 
     return (

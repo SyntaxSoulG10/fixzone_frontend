@@ -16,23 +16,19 @@ import {
     TextField,
     MenuItem,
     Select,
+    SelectChangeEvent,
     FormControl,
     InputLabel,
     Chip,
     Snackbar,
     Alert,
     Avatar,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Paper,
     InputAdornment,
     Checkbox,
     FormControlLabel
 } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
 import {
@@ -48,34 +44,34 @@ import {
     FiCheckCircle
 } from "react-icons/fi";
 
-// Mock Data
+
 const INITIAL_MANAGERS = [
     {
         id: 1,
-        name: "Alice Johnson",
-        center: "Downtown Branch",
-        email: "alice@example.com",
-        phone: "+1 (555) 101-2020",
+        name: "Anil Perera",
+        center: "Colombo Main Branch",
+        email: "anil.p@fixzone.lk",
+        phone: "+94 77 123 4567",
         status: "Active",
         avatar: "",
         lastLogin: "2 hours ago"
     },
     {
         id: 2,
-        name: "Bob Williams",
-        center: "Westside Hub",
-        email: "bob@example.com",
-        phone: "+1 (555) 303-4040",
+        name: "Sunil Gunawardena",
+        center: "Kandy Service Center",
+        email: "sunil.g@fixzone.lk",
+        phone: "+94 71 234 5678",
         status: "Active",
         avatar: "",
         lastLogin: "1 day ago"
     },
     {
         id: 3,
-        name: "Charlie Brown",
-        center: "North Branch",
-        email: "charlie@example.com",
-        phone: "+1 (555) 505-6060",
+        name: "Nimali Dias",
+        center: "Galle Southern Hub",
+        email: "nimali.d@fixzone.lk",
+        phone: "+94 76 345 6789",
         status: "Inactive",
         avatar: "",
         lastLogin: "Never"
@@ -83,10 +79,11 @@ const INITIAL_MANAGERS = [
 ];
 
 const SERVICE_CENTERS = [
-    "Downtown Branch",
-    "Westside Hub",
-    "North Branch",
-    "East End Garage"
+    "Colombo Main Branch",
+    "Kandy Service Center",
+    "Galle Southern Hub",
+    "Negombo City Point",
+    "Kurunegala Express"
 ];
 
 export default function ManagersPage() {
@@ -94,19 +91,16 @@ export default function ManagersPage() {
     const [managers, setManagers] = useState(INITIAL_MANAGERS);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Feedback State
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
         message: '',
         severity: 'success'
     });
 
-    // Dialog State
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
-    // Form State
     const [formData, setFormData] = useState({
         name: "",
         center: "",
@@ -151,7 +145,6 @@ export default function ManagersPage() {
             const newId = Math.max(...managers.map(m => m.id), 0) + 1;
             setManagers(prev => [...prev, { id: newId, ...formData, avatar: "", lastLogin: "Never" }]);
             if (formData.sendInvite) {
-                // Simulate sending email
                 console.log(`Sending invitation email to ${formData.email}`);
                 setSnackbar({ open: true, message: 'Manager added & invitation sent!', severity: 'success' });
             } else {
@@ -161,10 +154,15 @@ export default function ManagersPage() {
         setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<{ name?: string; value: unknown }>) => {
-        const target = e.target as HTMLInputElement;
-        const { name, value, checked, type } = target;
-        setFormData(prev => ({ ...prev, [name as string]: type === 'checkbox' ? checked : value }));
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<{ name?: string; value: unknown }> | SelectChangeEvent<string>) => {
+        const { name, value } = e.target;
+
+        let newValue = value;
+        if ('checked' in e.target && (e.target as HTMLInputElement).type === 'checkbox') {
+            newValue = (e.target as HTMLInputElement).checked;
+        }
+
+        setFormData(prev => ({ ...prev, [name as string]: newValue }));
     };
 
     const handleToggleStatus = (id: number, currentStatus: string) => {
@@ -189,9 +187,115 @@ export default function ManagersPage() {
         m.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const columns: GridColDef[] = [
+        {
+            field: 'name',
+            headerName: 'Name',
+            flex: 2,
+            minWidth: 250,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" gap={2} height="100%">
+                    <Avatar sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
+                        {params.row.name.charAt(0)}
+                    </Avatar>
+                    <Box>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            {params.row.name}
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                            <FiBriefcase size={12} color={theme.palette.text.secondary} />
+                            <Typography variant="caption" color="text.secondary">
+                                Manager
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+            )
+        },
+        {
+            field: 'center',
+            headerName: 'Assigned Center',
+            flex: 1.5,
+            minWidth: 200,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" flexDirection="column" justifyContent="center" height="100%">
+                    <Typography variant="body2" fontWeight="medium">{params.value}</Typography>
+                    <Typography variant="caption" color="text.secondary">Active Assignment</Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'email',
+            headerName: 'Access Info',
+            flex: 1.5,
+            minWidth: 250,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" flexDirection="column" justifyContent="center" height="100%" gap={0.5}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <FiMail size={14} color={theme.palette.text.secondary} />
+                        <Typography variant="caption">{params.value}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <FiLock size={14} color={theme.palette.text.secondary} />
+                        <Typography variant="caption">Last login: {params.row.lastLogin}</Typography>
+                    </Box>
+                </Box>
+            )
+        },
+        {
+            field: 'status',
+            headerName: 'Status',
+            flex: 1,
+            minWidth: 120,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    <Chip
+                        label={params.value}
+                        size="small"
+                        sx={{
+                            ...getStatusChipColor(params.value),
+                            fontWeight: 'bold',
+                            borderRadius: '6px'
+                        }}
+                    />
+                </Box>
+            )
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            flex: 1.5,
+            minWidth: 250,
+            headerAlign: 'right',
+            align: 'right',
+            sortable: false,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" justifyContent="flex-end" gap={1} height="100%" alignItems="center">
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleOpenEdit(params.row)}
+                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                    >
+                        Edit Access
+                    </Button>
+                    <Button
+                        size="small"
+                        color={params.row.status === 'Active' ? 'error' : 'success'}
+                        onClick={() => handleToggleStatus(params.row.id, params.row.status)}
+                        startIcon={params.row.status === 'Active' ? <FiPower /> : <FiCheckCircle />}
+                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                    >
+                        {params.row.status === 'Active' ? 'Disable' : 'Activate'}
+                    </Button>
+                </Box>
+            )
+        }
+    ];
+
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -212,7 +316,6 @@ export default function ManagersPage() {
                 </Button>
             </Box>
 
-            {/* Content */}
             <Card sx={{ boxShadow: theme.shadows[1], borderRadius: 3, overflow: 'hidden' }}>
                 <Box p={2} borderBottom={1} borderColor="divider" display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
                     <Typography variant="h6" fontWeight="bold">
@@ -233,102 +336,37 @@ export default function ManagersPage() {
                         sx={{ minWidth: 250 }}
                     />
                 </Box>
-                <TableContainer>
-                    <Table>
-                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Assigned Center</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Access Info</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary', textAlign: 'right' }}>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {filteredManagers.map((manager) => (
-                                <TableRow key={manager.id} hover>
-                                    <TableCell>
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                            <Avatar sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
-                                                {manager.name.charAt(0)}
-                                            </Avatar>
-                                            <Box>
-                                                <Typography variant="subtitle2" fontWeight="bold">
-                                                    {manager.name}
-                                                </Typography>
-                                                <Box display="flex" alignItems="center" gap={0.5}>
-                                                    <FiBriefcase size={12} color={theme.palette.text.secondary} />
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Manager
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" fontWeight="medium">{manager.center}</Typography>
-                                        <Typography variant="caption" color="text.secondary">Active Assignment</Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box display="flex" flexDirection="column" gap={0.5}>
-                                            <Box display="flex" alignItems="center" gap={1}>
-                                                <FiMail size={14} color={theme.palette.text.secondary} />
-                                                <Typography variant="caption">{manager.email}</Typography>
-                                            </Box>
-                                            <Box display="flex" alignItems="center" gap={1}>
-                                                <FiLock size={14} color={theme.palette.text.secondary} />
-                                                <Typography variant="caption">Last login: {manager.lastLogin}</Typography>
-                                            </Box>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={manager.status}
-                                            size="small"
-                                            sx={{
-                                                ...getStatusChipColor(manager.status),
-                                                fontWeight: 'bold',
-                                                borderRadius: '6px'
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <Box display="flex" justifyContent="flex-end" gap={1}>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="primary"
-                                                onClick={() => handleOpenEdit(manager)}
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                            >
-                                                Edit Access
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                color={manager.status === 'Active' ? 'error' : 'success'}
-                                                onClick={() => handleToggleStatus(manager.id, manager.status)}
-                                                startIcon={manager.status === 'Active' ? <FiPower /> : <FiCheckCircle />}
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                            >
-                                                {manager.status === 'Active' ? 'Disable' : 'Activate'}
-                                            </Button>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {filteredManagers.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                                        <Typography color="text.secondary">No managers found matching your search.</Typography>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                <Box sx={{ height: 600, width: '100%' }}>
+                    <DataGrid
+                        rows={filteredManagers}
+                        columns={columns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: {
+                                    pageSize: 5,
+                                },
+                            },
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        disableRowSelectionOnClick
+                        rowHeight={80}
+                        sx={{
+                            border: 0,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                                borderBottom: '1px solid #e2e8f0',
+                                color: 'text.secondary',
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase',
+                                fontSize: '0.75rem'
+                            },
+                            '& .MuiDataGrid-cell': {
+                                borderBottom: '1px solid #f1f5f9'
+                            }
+                        }}
+                    />
+                </Box>
             </Card>
-
-            {/* Add/Edit Dialog */}
             <Dialog
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
@@ -358,7 +396,6 @@ export default function ManagersPage() {
                                 name="center"
                                 value={formData.center}
                                 label="Assign Service Center"
-                                // @ts-expect-error
                                 onChange={handleChange}
                             >
                                 {SERVICE_CENTERS.map((center) => (
@@ -420,7 +457,6 @@ export default function ManagersPage() {
                                     name="status"
                                     value={formData.status}
                                     label="Account Status"
-                                    // @ts-ignore
                                     onChange={handleChange}
                                 >
                                     <MenuItem value="Active">Active (Access Enabled)</MenuItem>
@@ -442,8 +478,6 @@ export default function ManagersPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

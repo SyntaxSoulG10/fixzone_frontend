@@ -6,14 +6,9 @@ import {
     Box,
     Typography,
     Divider,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Icon
+    Icon,
 } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import ChartCard from "@/components/dashboard/ChartCard";
 import {
@@ -35,15 +30,15 @@ import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp, FiClock } from "react-ic
 import React from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
-// Mock Data
+
 const revenueData = [
-    { name: 'Jan', revenue: 4000 },
-    { name: 'Feb', revenue: 3000 },
-    { name: 'Mar', revenue: 5000 },
-    { name: 'Apr', revenue: 2780 },
-    { name: 'May', revenue: 6890 },
-    { name: 'Jun', revenue: 2390 },
-    { name: 'Jul', revenue: 3490 },
+    { name: 'Jan', revenue: 400000 },
+    { name: 'Feb', revenue: 300000 },
+    { name: 'Mar', revenue: 500000 },
+    { name: 'Apr', revenue: 278000 },
+    { name: 'May', revenue: 689000 },
+    { name: 'Jun', revenue: 239000 },
+    { name: 'Jul', revenue: 349000 },
 ];
 
 const customerGrowthData = [
@@ -62,6 +57,43 @@ const serviceTypeData = [
     { name: 'Car Wash', value: 200 },
 ];
 
+const TOP_CENTERS = [
+    { id: 1, name: "Colombo Main Branch", initial: "C", color: "primary.main", jobs: 450, revenue: 452000 },
+    { id: 2, name: "Kandy Service Center", initial: "K", color: "info.main", jobs: 320, revenue: 321000 },
+    { id: 3, name: "Galle Southern Hub", initial: "G", color: "success.main", jobs: 180, revenue: 184000 }
+];
+
+const columns: GridColDef[] = [
+    {
+        field: 'name',
+        headerName: 'Center Name',
+        flex: 2,
+        renderCell: (params: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" gap={2} height="100%">
+                <Box width={32} height={32} borderRadius="50%" bgcolor={params.row.color} display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">
+                    {params.row.initial}
+                </Box>
+                {params.value}
+            </Box>
+        )
+    },
+    {
+        field: 'jobs',
+        headerName: 'Jobs',
+        flex: 1,
+    },
+    {
+        field: 'revenue',
+        headerName: 'Revenue',
+        flex: 1,
+        headerAlign: 'right',
+        align: 'right',
+        renderCell: (params: GridRenderCellParams) => (
+            <Typography fontWeight="bold">Rs. {params.value.toLocaleString()}</Typography>
+        )
+    }
+];
+
 const PIE_COLORS = ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0'];
 
 export default function AnalyticsPage() {
@@ -73,7 +105,6 @@ export default function AnalyticsPage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box mb={4}>
                 <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
                     Business Analytics
@@ -83,12 +114,11 @@ export default function AnalyticsPage() {
                 </Typography>
             </Box>
 
-            {/* Summary Cards */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="Rs. 124,500"
+                        count="Rs. 1,245,000"
                         icon={<FiDollarSign />}
                         percentage={{
                             color: 'success',
@@ -127,7 +157,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Job Value"
-                        count="Rs. 103.40"
+                        count="Rs. 10,340"
                         icon={<FiArrowUp />}
                         percentage={{
                             color: 'danger',
@@ -139,7 +169,6 @@ export default function AnalyticsPage() {
                 </Grid>
             </Grid>
 
-            {/* Charts Section */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Box mb={3}>
@@ -242,7 +271,6 @@ export default function AnalyticsPage() {
                     </Box>
                 </Grid>
 
-                {/* Services Pie Chart */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <DonutStatCard
                         title="Services Breakdown"
@@ -253,14 +281,13 @@ export default function AnalyticsPage() {
                             const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
                             return serviceTypeData.map((item, index) => ({
                                 name: item.name,
-                                value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
+                                value: Math.round((item.value / total) * 100),
                                 color: referenceColors[index % referenceColors.length]
                             }));
                         })()}
                     />
                 </Grid>
 
-                {/* Top Centers Table */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', overflow: 'visible' }}>
 
@@ -270,50 +297,34 @@ export default function AnalyticsPage() {
                         </Box>
 
 
-                        <Box p={2}>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead sx={{ display: 'table-header-group' }}>
-                                        <TableRow>
-                                            <TableCell>Center Name</TableCell>
-                                            <TableCell>Jobs</TableCell>
-                                            <TableCell align="right">Revenue</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
-                                                    Downtown Branch
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>450</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 45,200</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">W</Box>
-                                                    Westside Hub
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>320</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 32,100</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">N</Box>
-                                                    North Garage
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>180</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 18,400</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                        <Box sx={{ height: 400, width: '100%' }}>
+                            <DataGrid
+                                rows={TOP_CENTERS}
+                                columns={columns}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: {
+                                            pageSize: 5,
+                                        },
+                                    },
+                                }}
+                                pageSizeOptions={[5]}
+                                disableRowSelectionOnClick
+                                sx={{
+                                    border: 0,
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        backgroundColor: '#f8fafc',
+                                        borderBottom: '1px solid #e2e8f0',
+                                        color: 'text.secondary',
+                                        fontWeight: 'bold',
+                                        textTransform: 'uppercase',
+                                        fontSize: '0.75rem'
+                                    },
+                                    '& .MuiDataGrid-cell': {
+                                        borderBottom: '1px solid #f1f5f9'
+                                    }
+                                }}
+                            />
                         </Box>
                     </Card>
                 </Grid>

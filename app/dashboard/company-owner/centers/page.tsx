@@ -36,29 +36,29 @@ import {
     FiPower
 } from "react-icons/fi";
 
-// Mock Initial Data
+
 const INITIAL_CENTERS = [
     {
         id: 1,
-        name: "Downtown Branch",
-        location: "123 Main St, New York, NY",
-        manager: "John Doe",
-        phone: "+1 (555) 123-4567",
+        name: "Colombo Main Branch",
+        location: "12, Galle Road, Colombo 03",
+        manager: "Anil Perera",
+        phone: "+94 11 234 5678",
         revenue: "45200",
         status: "Active",
         mechanics: 12,
-        capacity: 85 // % full
+        capacity: 85
     },
     {
         id: 2,
-        name: "Westside Hub",
-        location: "456 West Ave, New York, NY",
-        manager: "Jane Smith",
-        phone: "+1 (555) 987-6543",
+        name: "Kandy Service Center",
+        location: "45, Peradeniya Road, Kandy",
+        manager: "Sunil Gunawardena",
+        phone: "+94 81 223 4567",
         revenue: "32100",
         status: "Active",
         mechanics: 8,
-        capacity: 45 // % full
+        capacity: 45
     },
 ];
 
@@ -66,19 +66,16 @@ export default function MyCentersPage() {
     const theme = useTheme();
     const [centers, setCenters] = useState(INITIAL_CENTERS);
 
-    // Feedback State
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
         message: '',
         severity: 'success'
     });
 
-    // Dialog State
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
-    // Form State
     const [formData, setFormData] = useState({
         name: "",
         location: "",
@@ -89,8 +86,6 @@ export default function MyCentersPage() {
         capacity: 0
     });
 
-    // --- CRUD Operations ---
-
     const handleOpenAdd = () => {
         setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
         setIsEditMode(false);
@@ -99,7 +94,6 @@ export default function MyCentersPage() {
 
     const handleSave = () => {
         if (isEditMode && selectedId !== null) {
-            // Update existing
             setCenters(prev => prev.map(c =>
                 c.id === selectedId
                     ? { ...c, ...formData }
@@ -107,7 +101,6 @@ export default function MyCentersPage() {
             ));
             setSnackbar({ open: true, message: 'Center updated successfully', severity: 'success' });
         } else {
-            // Create new
             const newId = Math.max(...centers.map(c => c.id), 0) + 1;
             setCenters(prev => [...prev, { id: newId, revenue: "0", ...formData }]);
             setSnackbar({ open: true, message: 'New center added successfully!', severity: 'success' });
@@ -140,8 +133,8 @@ export default function MyCentersPage() {
                 };
             case 'Maintenance':
                 return {
-                    bgcolor: '#FFF7ED', // Lighter orange background
-                    color: '#EA580C',   // Brand Primary Orange instead of brown
+                    bgcolor: '#FFF7ED',
+                    color: '#EA580C',
                     border: '1px solid #FFF7ED'
                 };
             case 'Inactive':
@@ -161,7 +154,6 @@ export default function MyCentersPage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={6}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -230,7 +222,6 @@ export default function MyCentersPage() {
                                 borderRadius: '0.75rem',
                                 boxShadow: theme.shadows[1]
                             }}>
-                                {/* Floating Header Icon - Orange Gradient */}
                                 <Box
                                     sx={{
                                         background: center.status === 'Active'
@@ -291,7 +282,7 @@ export default function MyCentersPage() {
 
                                     <Divider sx={{ my: 2 }} />
 
-                                    {/* Mini Stats */}
+                                    <Divider sx={{ my: 2 }} />
                                     <Grid container spacing={2} alignItems="center" mb={2}>
                                         <Grid size={4}>
                                             <Box textAlign="center">
@@ -321,7 +312,7 @@ export default function MyCentersPage() {
 
                                     <Divider sx={{ my: 2 }} />
 
-                                    {/* Actions Bottom */}
+                                    <Divider sx={{ my: 2 }} />
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
                                         <Button
                                             size="small"
@@ -361,8 +352,6 @@ export default function MyCentersPage() {
                         </Grid>
                     )))}
             </Grid>
-
-            {/* Add/Edit Dialog */}
             <Dialog
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
@@ -421,7 +410,6 @@ export default function MyCentersPage() {
                                         name="status"
                                         value={formData.status}
                                         label="Status"
-                                        // @ts-expect-error
                                         onChange={handleChange}
                                     >
                                         <MenuItem value="Active">Active</MenuItem>
@@ -472,8 +460,6 @@ export default function MyCentersPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}
@@ -484,6 +470,6 @@ export default function MyCentersPage() {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-        </Box>
+        </Box >
     );
 }
