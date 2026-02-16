@@ -14,7 +14,7 @@ const Footer = () => {
                     <div className="col-span-2 lg:col-span-2 space-y-6">
                         <div className="flex items-center gap-2">
                             {/* Using standard img tag as per previous patterns */}
-                            <img src="/logo-dark.png" alt="FixZone Logo" className="h-10 w-auto" />
+                            <img src="/Logo-Dark.png" alt="FixZone Logo" className="h-10 w-auto" />
                         </div>
                         <p className="text-sm leading-relaxed max-w-sm">
                             With lots of unique blocks, you can easily build a page without coding. Build your next landing page.
