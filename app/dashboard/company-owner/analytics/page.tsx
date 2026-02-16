@@ -35,15 +35,15 @@ import { FiDollarSign, FiUsers, FiBriefcase, FiArrowUp, FiClock } from "react-ic
 import React from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
-// Mock Data
+
 const revenueData = [
-    { name: 'Jan', revenue: 4000 },
-    { name: 'Feb', revenue: 3000 },
-    { name: 'Mar', revenue: 5000 },
-    { name: 'Apr', revenue: 2780 },
-    { name: 'May', revenue: 6890 },
-    { name: 'Jun', revenue: 2390 },
-    { name: 'Jul', revenue: 3490 },
+    { name: 'Jan', revenue: 400000 },
+    { name: 'Feb', revenue: 300000 },
+    { name: 'Mar', revenue: 500000 },
+    { name: 'Apr', revenue: 278000 },
+    { name: 'May', revenue: 689000 },
+    { name: 'Jun', revenue: 239000 },
+    { name: 'Jul', revenue: 349000 },
 ];
 
 const customerGrowthData = [
@@ -73,7 +73,6 @@ export default function AnalyticsPage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box mb={4}>
                 <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
                     Business Analytics
@@ -83,12 +82,11 @@ export default function AnalyticsPage() {
                 </Typography>
             </Box>
 
-            {/* Summary Cards */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="Rs. 124,500"
+                        count="Rs. 1,245,000"
                         icon={<FiDollarSign />}
                         percentage={{
                             color: 'success',
@@ -127,7 +125,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Job Value"
-                        count="Rs. 103.40"
+                        count="Rs. 10,340"
                         icon={<FiArrowUp />}
                         percentage={{
                             color: 'danger',
@@ -139,7 +137,6 @@ export default function AnalyticsPage() {
                 </Grid>
             </Grid>
 
-            {/* Charts Section */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Box mb={3}>
@@ -242,7 +239,6 @@ export default function AnalyticsPage() {
                     </Box>
                 </Grid>
 
-                {/* Services Pie Chart */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <DonutStatCard
                         title="Services Breakdown"
@@ -253,14 +249,13 @@ export default function AnalyticsPage() {
                             const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
                             return serviceTypeData.map((item, index) => ({
                                 name: item.name,
-                                value: Math.round((item.value / total) * 100), // Use % for display to match screenshot
+                                value: Math.round((item.value / total) * 100),
                                 color: referenceColors[index % referenceColors.length]
                             }));
                         })()}
                     />
                 </Grid>
 
-                {/* Top Centers Table */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', overflow: 'visible' }}>
 
@@ -284,32 +279,32 @@ export default function AnalyticsPage() {
                                         <TableRow>
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">D</Box>
-                                                    Downtown Branch
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="primary.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">C</Box>
+                                                    Colombo Main Branch
                                                 </Box>
                                             </TableCell>
                                             <TableCell>450</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 45,200</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 452,000</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">W</Box>
-                                                    Westside Hub
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="info.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">K</Box>
+                                                    Kandy Service Center
                                                 </Box>
                                             </TableCell>
                                             <TableCell>320</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 32,100</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 321,000</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
-                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">N</Box>
-                                                    North Garage
+                                                    <Box width={32} height={32} borderRadius="50%" bgcolor="success.main" display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">G</Box>
+                                                    Galle Southern Hub
                                                 </Box>
                                             </TableCell>
                                             <TableCell>180</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 18,400</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rs. 184,000</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>

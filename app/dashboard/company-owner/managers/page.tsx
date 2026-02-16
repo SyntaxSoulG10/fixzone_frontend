@@ -48,34 +48,34 @@ import {
     FiCheckCircle
 } from "react-icons/fi";
 
-// Mock Data
+
 const INITIAL_MANAGERS = [
     {
         id: 1,
-        name: "Alice Johnson",
-        center: "Downtown Branch",
-        email: "alice@example.com",
-        phone: "+1 (555) 101-2020",
+        name: "Anil Perera",
+        center: "Colombo Main Branch",
+        email: "anil.p@fixzone.lk",
+        phone: "+94 77 123 4567",
         status: "Active",
         avatar: "",
         lastLogin: "2 hours ago"
     },
     {
         id: 2,
-        name: "Bob Williams",
-        center: "Westside Hub",
-        email: "bob@example.com",
-        phone: "+1 (555) 303-4040",
+        name: "Sunil Gunawardena",
+        center: "Kandy Service Center",
+        email: "sunil.g@fixzone.lk",
+        phone: "+94 71 234 5678",
         status: "Active",
         avatar: "",
         lastLogin: "1 day ago"
     },
     {
         id: 3,
-        name: "Charlie Brown",
-        center: "North Branch",
-        email: "charlie@example.com",
-        phone: "+1 (555) 505-6060",
+        name: "Nimali Dias",
+        center: "Galle Southern Hub",
+        email: "nimali.d@fixzone.lk",
+        phone: "+94 76 345 6789",
         status: "Inactive",
         avatar: "",
         lastLogin: "Never"
@@ -83,10 +83,11 @@ const INITIAL_MANAGERS = [
 ];
 
 const SERVICE_CENTERS = [
-    "Downtown Branch",
-    "Westside Hub",
-    "North Branch",
-    "East End Garage"
+    "Colombo Main Branch",
+    "Kandy Service Center",
+    "Galle Southern Hub",
+    "Negombo City Point",
+    "Kurunegala Express"
 ];
 
 export default function ManagersPage() {
@@ -94,19 +95,16 @@ export default function ManagersPage() {
     const [managers, setManagers] = useState(INITIAL_MANAGERS);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Feedback State
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
         message: '',
         severity: 'success'
     });
 
-    // Dialog State
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
-    // Form State
     const [formData, setFormData] = useState({
         name: "",
         center: "",
@@ -151,7 +149,6 @@ export default function ManagersPage() {
             const newId = Math.max(...managers.map(m => m.id), 0) + 1;
             setManagers(prev => [...prev, { id: newId, ...formData, avatar: "", lastLogin: "Never" }]);
             if (formData.sendInvite) {
-                // Simulate sending email
                 console.log(`Sending invitation email to ${formData.email}`);
                 setSnackbar({ open: true, message: 'Manager added & invitation sent!', severity: 'success' });
             } else {
@@ -191,7 +188,6 @@ export default function ManagersPage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -212,7 +208,6 @@ export default function ManagersPage() {
                 </Button>
             </Box>
 
-            {/* Content */}
             <Card sx={{ boxShadow: theme.shadows[1], borderRadius: 3, overflow: 'hidden' }}>
                 <Box p={2} borderBottom={1} borderColor="divider" display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
                     <Typography variant="h6" fontWeight="bold">
@@ -327,8 +322,6 @@ export default function ManagersPage() {
                     </Table>
                 </TableContainer>
             </Card>
-
-            {/* Add/Edit Dialog */}
             <Dialog
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
@@ -358,7 +351,6 @@ export default function ManagersPage() {
                                 name="center"
                                 value={formData.center}
                                 label="Assign Service Center"
-                                // @ts-expect-error
                                 onChange={handleChange}
                             >
                                 {SERVICE_CENTERS.map((center) => (
@@ -420,7 +412,6 @@ export default function ManagersPage() {
                                     name="status"
                                     value={formData.status}
                                     label="Account Status"
-                                    // @ts-ignore
                                     onChange={handleChange}
                                 >
                                     <MenuItem value="Active">Active (Access Enabled)</MenuItem>
@@ -442,8 +433,6 @@ export default function ManagersPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

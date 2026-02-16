@@ -44,8 +44,6 @@ import {
     FiDownload
 } from "react-icons/fi";
 
-// --- Components ---
-
 function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: any) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
@@ -65,13 +63,12 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                 minHeight="18.75rem"
                 borderRadius="0.75rem"
                 sx={{
-                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)', // Premium Orange Gradient or Image
+                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)',
                     backgroundSize: "cover",
                     backgroundPosition: "50%",
                     overflow: "hidden",
                 }}
             >
-                {/* Banner Edit Button */}
                 <Box position="absolute" top={20} right={20}>
                     <Button
                         variant="contained"
@@ -297,7 +294,7 @@ function BillingTab() {
                     <Box mt={3} p={2} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Typography variant="subtitle2" fontWeight="bold">
-                                Rs. 49.00 / month
+                                Rs. 15,000.00 / month
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
                                 Next payment: Feb 28, 2026
@@ -340,9 +337,9 @@ function BillingTab() {
                     </Box>
                     <Box>
                         {[
-                            { date: "Jan 28, 2026", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2024-001" },
-                            { date: "Dec 28, 2025", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2023-012" },
-                            { date: "Nov 28, 2025", amount: "Rs. 49.00", status: "Paid", invoice: "#INV-2023-011" },
+                            { date: "Jan 28, 2026", amount: "Rs. 15,000.00", status: "Paid", invoice: "#INV-2024-001" },
+                            { date: "Dec 28, 2025", amount: "Rs. 15,000.00", status: "Paid", invoice: "#INV-2023-012" },
+                            { date: "Nov 28, 2025", amount: "Rs. 15,000.00", status: "Paid", invoice: "#INV-2023-011" },
                         ].map((item, index) => (
                             <Box key={index} p={2} display="flex" justifyContent="space-between" alignItems="center" borderBottom={index !== 2 ? "1px solid #f1f5f9" : "none"}>
                                 <Box>
@@ -407,21 +404,17 @@ export default function ProfilePage() {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
 
-    // Image State
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
 
-    // Profile Data State
     const [isEditing, setIsEditing] = useState(false);
-    // Explicitly order keys for mapping
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
-        "Company Name": "TechServe Solutions L.L.C.",
-        "Registration": "REG-8829103",
-        "Mobile": "+1 (555) 123-4567",
-        "Email": "support@techserve.com",
-        "Location": "New York, USA",
+        "Company Name": "FixZone Lanka (Pvt) Ltd.",
+        "Registration": "PV 12345",
+        "Mobile": "+94 11 234 5678",
+        "Email": "support@fixzone.lk",
+        "Location": "Colombo, Sri Lanka",
     });
-    // Backup for cancel
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -473,21 +466,17 @@ export default function ProfilePage() {
         }
     };
 
-    // Dialog States
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [openDeactivateDialog, setOpenDeactivateDialog] = useState(false);
 
-    // Password Form State
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
     });
 
-    // Deactivate Input State
     const [deactivateInput, setDeactivateInput] = useState("");
 
-    // Handlers
     const handleOpenPasswordDialog = () => setOpenPasswordDialog(true);
     const handleClosePasswordDialog = () => {
         setOpenPasswordDialog(false);
@@ -503,8 +492,8 @@ export default function ProfilePage() {
             setSnackbarMessage("New passwords do not match.");
             setSnackbarOpen(true);
             return;
+            return;
         }
-        // Simulate API call
         setSnackbarMessage("Password changed successfully.");
         setSnackbarOpen(true);
         handleClosePasswordDialog();
@@ -522,7 +511,6 @@ export default function ProfilePage() {
             setSnackbarOpen(true);
             return;
         }
-        // Simulate API call
         setSnackbarMessage("Account deactivation initiated.");
         setSnackbarOpen(true);
         handleCloseDeactivateDialog();
@@ -537,14 +525,13 @@ export default function ProfilePage() {
             onProfileImageChange={handleProfileImageChange}
         >
             <Box mt={5} mb={3}>
-                {/* Tab 0: Overview */}
                 {tabValue === 0 && (
                     <Grid container spacing={1}>
                         <Grid size={{ xs: 12, md: 7, xl: 8 }} sx={{ display: "flex" }}>
                             <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
                             <ProfileInfoCard
                                 title="Company Details"
-                                description="TechServe Solutions is a premier multi-brand vehicle service center specializing in diagnostics and express repairs. We are committed to transparency and speed."
+                                description="FixZone Lanka is a premier multi-brand vehicle service center specializing in diagnostics and express repairs. We are committed to transparency and speed."
                                 info={profileData}
                                 social={[
                                     { icon: <FiFacebook />, color: "primary" },
@@ -591,7 +578,7 @@ export default function ProfilePage() {
                                         fullWidth
                                         size="small"
                                         label="Emergency Hotline"
-                                        defaultValue="+1 (555) 999-0000"
+                                        defaultValue="+94 77 999 0000"
                                     />
                                     <Box pt={2}>
                                         <Button
@@ -609,7 +596,6 @@ export default function ProfilePage() {
                     </Grid>
                 )}
 
-                {/* Tab 1: Account (Settings) */}
                 {tabValue === 1 && (
                     <Grid container spacing={1}>
                         <Grid size={{ xs: 12, md: 6 }}>
@@ -657,13 +643,11 @@ export default function ProfilePage() {
                 )}
 
 
-                {/* Tab 2: Billing */}
                 {tabValue === 2 && (
                     <BillingTab />
                 )}
             </Box>
 
-            {/* Change Password Dialog */}
             <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} fullWidth maxWidth="sm">
                 <DialogTitle>Change Password</DialogTitle>
                 <DialogContent>
@@ -700,7 +684,6 @@ export default function ProfilePage() {
                 </DialogActions>
             </Dialog>
 
-            {/* Deactivate Dialog */}
             <Dialog open={openDeactivateDialog} onClose={handleCloseDeactivateDialog} fullWidth maxWidth="sm">
                 <DialogTitle sx={{ color: 'error.main' }}>Deactivate Account</DialogTitle>
                 <DialogContent>

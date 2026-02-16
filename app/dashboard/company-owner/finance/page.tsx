@@ -49,12 +49,12 @@ import {
 import ChartCard from "@/components/dashboard/ChartCard";
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
-// Data Mock
+
 const REVENUE_DATA = [
-    { name: 'Downtown', revenue: 45000 },
-    { name: 'Westside', revenue: 32000 },
-    { name: 'North', revenue: 28000 },
-    { name: 'East', revenue: 15000 },
+    { name: 'Colombo', revenue: 450000 },
+    { name: 'Kandy', revenue: 320000 },
+    { name: 'Galle', revenue: 280000 },
+    { name: 'Negombo', revenue: 150000 },
 ];
 
 const GROWTH_DATA = [
@@ -71,45 +71,45 @@ const GROWTH_DATA = [
 const RECENT_TRANSACTIONS = [
     {
         id: "TRX-9821",
-        customer: "John Doe",
+        customer: "Amal Perera",
         service: "Premium Detailing Package",
-        amount: "Rs. 149.99",
+        amount: "Rs. 14,999",
         date: "Today, 10:42 AM",
         status: "Completed",
         method: "Credit Card"
     },
     {
         id: "TRX-9822",
-        customer: "Sarah Smith",
+        customer: "Dilini Jayasuriya",
         service: "Standard Oil Change",
-        amount: "Rs. 49.99",
+        amount: "Rs. 4,999",
         date: "Today, 09:15 AM",
         status: "Completed",
-        method: "Apple Pay"
+        method: "Online Transfer"
     },
     {
         id: "TRX-9823",
-        customer: "Michael Brown",
+        customer: "Mohamed Riaz",
         service: "Full Diagnostic Scan",
-        amount: "Rs. 89.00",
+        amount: "Rs. 8,900",
         date: "Yesterday, 04:30 PM",
         status: "Pending",
         method: "Bank Transfer"
     },
     {
         id: "TRX-9824",
-        customer: "Emily Davis",
+        customer: "Kavindi Silva",
         service: "Brake Pad Replacement",
-        amount: "Rs. 120.00",
+        amount: "Rs. 12,000",
         date: "Yesterday, 02:15 PM",
         status: "Completed",
         method: "Cash"
     },
     {
         id: "TRX-9825",
-        customer: "David Wilson",
+        customer: "Nuwan Pradeep",
         service: "Standard Oil Change",
-        amount: "Rs. 49.99",
+        amount: "Rs. 4,999",
         date: "Yesterday, 11:00 AM",
         status: "Refunded",
         method: "Credit Card"
@@ -156,7 +156,6 @@ export default function FinancePage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={6}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -181,7 +180,6 @@ export default function FinancePage() {
                 </Stack>
             </Box>
 
-            {/* Top Stats */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
@@ -212,7 +210,6 @@ export default function FinancePage() {
                 </Grid>
             </Grid>
 
-            {/* Charts Section */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <ChartCard
@@ -269,7 +266,6 @@ export default function FinancePage() {
                     />
                 </Grid>
 
-                {/* Revenue by Center Bar Chart */}
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <Box mt={4}>
                         <Card sx={{ p: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
@@ -345,14 +341,13 @@ export default function FinancePage() {
                     </Box>
                 </Grid>
 
-                {/* Revenue by Center Bar Chart */}
                 <Grid size={{ xs: 12, lg: 12 }}>
                     <Box mt={4}>
                         <ChartCard
                             title="Center Performance"
                             description="Revenue comparison across all branches"
                             date="campaign sent 2 days ago"
-                            color="warning" // Using warning (orange) to vary slightly but stay in brand
+                            color="warning"
                             chart={
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart

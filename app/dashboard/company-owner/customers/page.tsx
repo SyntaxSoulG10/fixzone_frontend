@@ -37,13 +37,67 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const dummyCustomers: Customer[] = [
+        {
+            id: 1,
+            name: "Kasun Perera",
+            email: "kasun.perera@example.com",
+            visits: 12,
+            totalSpent: 15600,
+            lastVisit: "2023-10-25T10:00:00Z",
+            status: "VIP",
+            avatarUrl: "https://i.pravatar.cc/150?u=1",
+        },
+        {
+            id: 2,
+            name: "Nimali Silva",
+            email: "nimali.silva@example.com",
+            visits: 5,
+            totalSpent: 3500,
+            lastVisit: "2023-11-01T14:30:00Z",
+            status: "Active",
+            avatarUrl: "https://i.pravatar.cc/150?u=2",
+        },
+        {
+            id: 3,
+            name: "Ruwan Fernando",
+            email: "ruwan.f@example.com",
+            visits: 8,
+            totalSpent: 8900,
+            lastVisit: "2023-10-15T09:15:00Z",
+            status: "Active",
+            avatarUrl: "https://i.pravatar.cc/150?u=3",
+        },
+        {
+            id: 4,
+            name: "Dilshan Bandara",
+            email: "dilshan.b@example.com",
+            visits: 1,
+            totalSpent: 450,
+            lastVisit: "2023-11-05T16:20:00Z",
+            status: "New",
+            avatarUrl: "https://i.pravatar.cc/150?u=4",
+        },
+        {
+            id: 5,
+            name: "Chamari Atapattu",
+            email: "chamari.a@example.com",
+            visits: 20,
+            totalSpent: 25000,
+            lastVisit: "2023-10-28T11:45:00Z",
+            status: "VIP",
+            avatarUrl: "https://i.pravatar.cc/150?u=5",
+        }
+    ];
+
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
                 const response = await axios.get("http://localhost:8080/api/customers");
                 setCustomers(response.data);
             } catch (error) {
-                console.error("Error fetching customers:", error);
+                console.error("Error fetching customers, using dummy data:", error);
+                setCustomers(dummyCustomers);
             } finally {
                 setLoading(false);
             }
@@ -163,7 +217,6 @@ export default function CustomersPage() {
 
     return (
         <Box pb={3}>
-            {/* Header */}
             <Box mb={6}>
                 <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
                     Customers
@@ -173,9 +226,8 @@ export default function CustomersPage() {
                 </Typography>
             </Box>
 
-            {/* Stats Section */}
             <Grid container spacing={3} mb={6}>
-                <Grid sx={{xs:12, md:4}}>
+                <Grid sx={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Customers"
                         count={totalCustomers.toString()}
@@ -188,7 +240,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{xs:12, md:4}}>
+                <Grid sx={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="New This Month"
                         count="48"
@@ -201,7 +253,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{xs:12, md:4}}>
+                <Grid sx={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Repeat Customers"
                         count={`${repeatRate}%`}
@@ -216,7 +268,6 @@ export default function CustomersPage() {
                 </Grid>
             </Grid>
 
-            {/* Top Customers Section */}
             <Card sx={{ p: 3, borderRadius: 3, boxShadow: theme.shadows[2], height: 600, width: '100%' }}>
                 <Box mb={3} display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
