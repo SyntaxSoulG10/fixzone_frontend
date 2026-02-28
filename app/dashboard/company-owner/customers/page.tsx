@@ -93,10 +93,25 @@ export default function CustomersPage() {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get("http://localhost:8080/api/customers");
-                setCustomers(response.data);
+                // Using 127.0.0.1 for more stable local connection
+                const response = await axios.get("http://127.0.0.1:8081/api/customers");
+
+                // Map backend DTO to frontend interface
+                // Using optional chaining and defaults to prevent crashes
+                const mappedCustomers = (response.data || []).map((c: any) => ({
+                    id: c.userId,
+                    name: c.fullName || "Unknown Customer",
+                    email: c.email || "N/A",
+                    visits: c.visits || 0,
+                    totalSpent: c.totalSpent || 0,
+                    lastVisit: c.lastLoginAt,
+                    status: c.status || "New",
+                    avatarUrl: c.avatarUrl || `https://i.pravatar.cc/150?u=${c.userId}`,
+                }));
+                setCustomers(mappedCustomers);
             } catch (error) {
-                console.error("Error fetching customers, using dummy data:", error);
+                console.error("Error fetching customers:", error);
+                // Fallback to dummy data if server is unreachable
                 setCustomers(dummyCustomers);
             } finally {
                 setLoading(false);
