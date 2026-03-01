@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Grid,
     Card,
@@ -43,53 +43,87 @@ import {
     FiLock,
     FiCheckCircle
 } from "react-icons/fi";
+import axios from "axios";
+import { formatDistanceToNow } from "date-fns";
 
+const API_BASE_URL = "http://127.0.0.1:8081/api/managers";
 
-const INITIAL_MANAGERS = [
-    {
-        id: 1,
-        name: "Anil Perera",
-        center: "Colombo Main Branch",
-        email: "anil.p@fixzone.lk",
-        phone: "+94 77 123 4567",
-        status: "Active",
-        avatar: "",
-        lastLogin: "2 hours ago"
-    },
-    {
-        id: 2,
-        name: "Sunil Gunawardena",
-        center: "Kandy Service Center",
-        email: "sunil.g@fixzone.lk",
-        phone: "+94 71 234 5678",
-        status: "Active",
-        avatar: "",
-        lastLogin: "1 day ago"
-    },
-    {
-        id: 3,
-        name: "Nimali Dias",
-        center: "Galle Southern Hub",
-        email: "nimali.d@fixzone.lk",
-        phone: "+94 76 345 6789",
-        status: "Inactive",
-        avatar: "",
-        lastLogin: "Never"
-    }
-];
+const CENTER_MAPPING: Record<string, string> = {
+    "c0000000-0000-0000-0000-000000000001": "Colombo Main Branch",
+    "c0000000-0000-0000-0000-000000000002": "Kandy Service Center"
+};
 
-const SERVICE_CENTERS = [
-    "Colombo Main Branch",
-    "Kandy Service Center",
-    "Galle Southern Hub",
-    "Negombo City Point",
-    "Kurunegala Express"
-];
+const CENTER_REVERSE_MAPPING: Record<string, string> = {
+    "Colombo Main Branch": "c0000000-0000-0000-0000-000000000001",
+    "Kandy Service Center": "c0000000-0000-0000-0000-000000000002"
+};
+
+interface Manager {
+    id: string;
+    name: string;
+    center: string;
+    email: string;
+    phone: string;
+    status: string;
+    avatar: string;
+    lastLogin: string;
+    managerCode: string;
+}
 
 export default function ManagersPage() {
     const theme = useTheme();
-    const [managers, setManagers] = useState(INITIAL_MANAGERS);
+    const [managers, setManagers] = useState<Manager[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+
+    const fetchManagers = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get(API_BASE_URL);
+            const mappedManagers = (response.data || []).map((m: any) => ({
+                id: m.userId,
+                name: m.fullName || "Unknown Manager",
+                email: m.email || "",
+                phone: m.phone || "",
+                center: CENTER_MAPPING[m.managedCenterId] || "Unassigned",
+                status: m.emailVerified ? "Active" : "Inactive",
+                avatar: "",
+                lastLogin: m.lastLoginAt ? formatDistanceToNow(new Date(m.lastLoginAt), { addSuffix: true }) : "Never",
+                managerCode: m.managerCode || ""
+            }));
+            setManagers(mappedManagers);
+        } catch (error) {
+            console.error("Error fetching managers:", error);
+            setSnackbar({ open: true, message: 'Failed to load managers. Please try again.', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchManagers();
+    }, []);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount).replace('₹', 'Rs. ');
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "N/A";
+        try {
+            return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+
+
+
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -97,31 +131,39 @@ export default function ManagersPage() {
         severity: 'success'
     });
 
+
+
+
+
+
+
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: "",
         center: "",
         email: "",
         phone: "",
+        managerCode: "",
         status: "Active",
         sendInvite: true
     });
 
     const handleOpenAdd = () => {
-        setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
+        setFormData({ name: "", center: "", email: "", phone: "", managerCode: "", status: "Active", sendInvite: true });
         setIsEditMode(false);
         setOpenDialog(true);
     };
 
-    const handleOpenEdit = (manager: any) => {
+    const handleOpenEdit = (manager: Manager) => {
         setFormData({
             name: manager.name,
             center: manager.center,
             email: manager.email,
             phone: manager.phone,
+            managerCode: manager.managerCode,
             status: manager.status,
             sendInvite: false
         });
@@ -130,28 +172,38 @@ export default function ManagersPage() {
         setOpenDialog(true);
     };
 
-    const handleSave = () => {
-        if (!formData.name || !formData.center) {
+    const handleSave = async () => {
+        if (!formData.name || !formData.center || !formData.managerCode) {
             setSnackbar({ open: true, message: 'Please fill in all required fields.', severity: 'error' });
             return;
         }
 
-        if (isEditMode && selectedId !== null) {
-            setManagers(prev => prev.map(m =>
-                m.id === selectedId ? { ...m, ...formData, lastLogin: m.lastLogin } : m
-            ));
-            setSnackbar({ open: true, message: 'Manager updated successfully', severity: 'success' });
-        } else {
-            const newId = Math.max(...managers.map(m => m.id), 0) + 1;
-            setManagers(prev => [...prev, { id: newId, ...formData, avatar: "", lastLogin: "Never" }]);
-            if (formData.sendInvite) {
-                console.log(`Sending invitation email to ${formData.email}`);
-                setSnackbar({ open: true, message: 'Manager added & invitation sent!', severity: 'success' });
+        const managerDTO = {
+            userId: isEditMode ? selectedId : undefined,
+            fullName: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            managerCode: formData.managerCode,
+            managedCenterId: CENTER_REVERSE_MAPPING[formData.center],
+            role: "MANAGER",
+            emailVerified: formData.status === "Active",
+            passwordHash: "pass123" // Default password for new managers
+        };
+
+        try {
+            if (isEditMode && selectedId !== null) {
+                await axios.put(`${API_BASE_URL}/${selectedId}`, managerDTO);
+                setSnackbar({ open: true, message: 'Manager updated successfully', severity: 'success' });
             } else {
+                await axios.post(API_BASE_URL, managerDTO);
                 setSnackbar({ open: true, message: 'Manager added successfully', severity: 'success' });
             }
+            fetchManagers();
+            setOpenDialog(false);
+        } catch (error) {
+            console.error("Error saving manager:", error);
+            setSnackbar({ open: true, message: 'Error saving manager account.', severity: 'error' });
         }
-        setOpenDialog(false);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<{ name?: string; value: unknown }> | SelectChangeEvent<string>) => {
@@ -165,14 +217,35 @@ export default function ManagersPage() {
         setFormData(prev => ({ ...prev, [name as string]: newValue }));
     };
 
-    const handleToggleStatus = (id: number, currentStatus: string) => {
+    const handleToggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-        setManagers(prev => prev.map(m => m.id === id ? { ...m, status: newStatus } : m));
-        setSnackbar({
-            open: true,
-            message: `Account access ${newStatus === 'Active' ? 'enabled' : 'disabled'}`,
-            severity: 'success'
-        });
+        try {
+            // Find the manager to get its full data
+            const manager = managers.find(m => m.id === id);
+            if (!manager) return;
+
+            const managerDTO = {
+                userId: manager.id,
+                fullName: manager.name,
+                email: manager.email,
+                phone: manager.phone,
+                managerCode: manager.managerCode,
+                managedCenterId: CENTER_REVERSE_MAPPING[manager.center],
+                role: "MANAGER",
+                emailVerified: newStatus === 'Active'
+            };
+
+            await axios.put(`${API_BASE_URL}/${id}`, managerDTO);
+            setSnackbar({
+                open: true,
+                message: `Account access ${newStatus === 'Active' ? 'enabled' : 'disabled'}`,
+                severity: 'success'
+            });
+            fetchManagers();
+        } catch (error) {
+            console.error("Error toggling status:", error);
+            setSnackbar({ open: true, message: 'Failed to update status.', severity: 'error' });
+        }
     };
 
     const getStatusChipColor = (status: string) => {
@@ -190,12 +263,12 @@ export default function ManagersPage() {
     const columns: GridColDef[] = [
         {
             field: 'name',
-            headerName: 'Name',
+            headerName: 'Manager',
             flex: 2,
             minWidth: 250,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" gap={2} height="100%">
-                    <Avatar sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
+                    <Avatar src={params.row.avatar} sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
                         {params.row.name.charAt(0)}
                     </Avatar>
                     <Box>
@@ -398,11 +471,20 @@ export default function ManagersPage() {
                                 label="Assign Service Center"
                                 onChange={handleChange}
                             >
-                                {SERVICE_CENTERS.map((center) => (
+                                {Object.values(CENTER_MAPPING).map((center) => (
                                     <MenuItem key={center} value={center}>{center}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
+                        <TextField
+                            label="Manager Code"
+                            name="managerCode"
+                            value={formData.managerCode}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="outlined"
+                            required
+                        />
                         <TextField
                             label="Email Address (Login ID)"
                             name="email"
