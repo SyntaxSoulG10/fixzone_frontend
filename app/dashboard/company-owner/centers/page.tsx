@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Grid,
     Card,
@@ -22,8 +22,11 @@ import {
     Snackbar,
     Alert,
     LinearProgress,
-    SelectChangeEvent
+    SelectChangeEvent,
+    InputAdornment,
+    Paper
 } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
 import {
@@ -34,38 +37,49 @@ import {
     FiTrash2,
     FiLayout,
     FiUser,
-    FiPower
+    FiPower,
+    FiSearch,
+    FiActivity
 } from "react-icons/fi";
+import axios from "axios";
 
-
-const INITIAL_CENTERS = [
-    {
-        id: 1,
-        name: "Colombo Main Branch",
-        location: "12, Galle Road, Colombo 03",
-        manager: "Anil Perera",
-        phone: "+94 11 234 5678",
-        revenue: "45200",
-        status: "Active",
-        mechanics: 12,
-        capacity: 85
-    },
-    {
-        id: 2,
-        name: "Kandy Service Center",
-        location: "45, Peradeniya Road, Kandy",
-        manager: "Sunil Gunawardena",
-        phone: "+94 81 223 4567",
-        revenue: "32100",
-        status: "Active",
-        mechanics: 8,
-        capacity: 45
-    },
-];
+const API_BASE_URL = "http://127.0.0.1:8081/api/service-centers";
 
 export default function MyCentersPage() {
     const theme = useTheme();
-    const [centers, setCenters] = useState(INITIAL_CENTERS);
+    const [centers, setCenters] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    useEffect(() => {
+        fetchCenters();
+    }, []);
+
+    const fetchCenters = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get(API_BASE_URL);
+            const data = response.data;
+            // Map backend DTO to frontend structure
+            const mappedData = (data || []).map((center: any) => ({
+                id: center.centerId,
+                name: center.name,
+                location: center.address,
+                manager: center.managerName || "N/A",
+                phone: center.contactPhone,
+                revenue: center.revenue ? center.revenue : 0,
+                status: center.isActive ? "Active" : "Inactive",
+                mechanics: center.mechanicsCount || 0,
+                capacity: center.currentCapacity || 0
+            }));
+            setCenters(mappedData);
+        } catch (error) {
+            console.error("Error fetching centers:", error);
+            setSnackbar({ open: true, message: 'Failed to fetch centers from backend', severity: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -75,7 +89,7 @@ export default function MyCentersPage() {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -93,20 +107,37 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
-    const handleSave = () => {
-        if (isEditMode && selectedId !== null) {
-            setCenters(prev => prev.map(c =>
-                c.id === selectedId
-                    ? { ...c, ...formData }
-                    : c
-            ));
-            setSnackbar({ open: true, message: 'Center updated successfully', severity: 'success' });
-        } else {
-            const newId = Math.max(...centers.map(c => c.id), 0) + 1;
-            setCenters(prev => [...prev, { id: newId, revenue: "0", ...formData }]);
-            setSnackbar({ open: true, message: 'New center added successfully!', severity: 'success' });
+    const handleSave = async () => {
+        const payload = {
+            name: formData.name,
+            address: formData.location,
+            contactPhone: formData.phone,
+            managerName: formData.manager,
+            isActive: formData.status === 'Active',
+            mechanicsCount: formData.mechanics,
+            currentCapacity: formData.capacity,
+            // Owner ID should be retrieved from auth context, for now we assume it's set or handled by backend
+            ownerId: "00000000-0000-0000-0000-000000010011" // Placeholder
+        };
+
+        try {
+            if (isEditMode && selectedId) {
+                await axios.put(`${API_BASE_URL}/${selectedId}`, payload);
+            } else {
+                await axios.post(API_BASE_URL, payload);
+            }
+
+            fetchCenters(); // Refresh the list
+            setSnackbar({
+                open: true,
+                message: `Center ${isEditMode ? 'updated' : 'added'} successfully`,
+                severity: 'success'
+            });
+            setOpenDialog(false);
+        } catch (error) {
+            console.error("Error saving center:", error);
+            setSnackbar({ open: true, message: 'Failed to save center to backend', severity: 'error' });
         }
-        setOpenDialog(false);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
@@ -114,245 +145,277 @@ export default function MyCentersPage() {
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };
 
-    const handleToggleStatus = (id: number, currentStatus: string) => {
+    const handleToggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-        setCenters(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-        setSnackbar({
-            open: true,
-            message: `Center ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
-            severity: 'success'
-        });
-    };
+        const centerToUpdate = centers.find(c => c.id === id);
 
-    const getCenterStatusStyles = (status: string) => {
-        switch (status) {
-            case 'Active':
-                return {
-                    bgcolor: '#E6F4EA',
-                    color: '#1E8E3E',
-                    border: '1px solid #E6F4EA'
-                };
-            case 'Maintenance':
-                return {
-                    bgcolor: '#FFF7ED',
-                    color: '#EA580C',
-                    border: '1px solid #FFF7ED'
-                };
-            case 'Inactive':
-                return {
-                    bgcolor: '#FCE8E6',
-                    color: '#C5221F',
-                    border: '1px solid #FCE8E6'
-                };
-            default:
-                return {
-                    bgcolor: alpha(theme.palette.grey[500], 0.1),
-                    color: 'text.secondary',
-                    border: `1px solid ${alpha(theme.palette.grey[500], 0.1)}`
-                };
+        const payload = {
+            centerId: id,
+            name: centerToUpdate.name,
+            address: centerToUpdate.location,
+            contactPhone: centerToUpdate.phone,
+            managerName: centerToUpdate.manager,
+            isActive: newStatus === 'Active',
+            mechanicsCount: centerToUpdate.mechanics,
+            currentCapacity: centerToUpdate.capacity,
+            ownerId: "00000000-0000-0000-0000-000000010011" // Keep owner ID
+        };
+
+        try {
+            await axios.put(`${API_BASE_URL}/${id}`, payload);
+            fetchCenters(); // Refresh the list
+            setSnackbar({
+                open: true,
+                message: `Center ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
+                severity: 'success'
+            });
+        } catch (error) {
+            console.error("Error updating status:", error);
+            setSnackbar({ open: true, message: 'Failed to update status in backend', severity: 'error' });
         }
     };
 
+    const filteredCenters = centers.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.manager.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const getStatusChipColor = (status: string) => {
+        switch (status) {
+            case 'Active':
+                return { bgcolor: '#E6F4EA', color: '#1E8E3E' };
+            case 'Inactive':
+                return { bgcolor: '#FCE8E6', color: '#C5221F' };
+            default:
+                return { bgcolor: alpha(theme.palette.grey[500], 0.1), color: 'text.secondary' };
+        }
+    };
+
+    const columns: GridColDef[] = [
+        {
+            field: 'name',
+            headerName: 'Service Center',
+            flex: 2,
+            minWidth: 250,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" gap={2} height="100%">
+                    <Box
+                        sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            fontWeight: 'bold',
+                            fontSize: '1rem'
+                        }}
+                    >
+                        {params.row.name.charAt(0)}
+                    </Box>
+                    <Box>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            {params.row.name}
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                            <FiMapPin size={12} color={theme.palette.text.secondary} />
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                                {params.row.location}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+            )
+        },
+        {
+            field: 'manager',
+            headerName: 'Manager',
+            flex: 1.2,
+            minWidth: 150,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" gap={1} height="100%">
+                    <FiUser size={14} color={theme.palette.text.secondary} />
+                    <Typography variant="body2">{params.value}</Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'phone',
+            headerName: 'Contact',
+            flex: 1.2,
+            minWidth: 150,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" gap={1} height="100%">
+                    <FiPhone size={14} color={theme.palette.text.secondary} />
+                    <Typography variant="body2">{params.value}</Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'revenue',
+            headerName: 'Revenue',
+            flex: 1,
+            minWidth: 120,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    <Typography variant="body2" fontWeight="bold" color="success.main">
+                        Rs. {parseInt(params.value).toLocaleString()}
+                    </Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'mechanics',
+            headerName: 'Team',
+            flex: 0.8,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                    <Typography variant="body2" fontWeight="medium">{params.value}</Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'status',
+            headerName: 'Status',
+            flex: 1,
+            minWidth: 120,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    <Chip
+                        label={params.value}
+                        size="small"
+                        sx={{
+                            ...getStatusChipColor(params.value),
+                            fontWeight: 'bold',
+                            borderRadius: '6px'
+                        }}
+                    />
+                </Box>
+            )
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            flex: 1.5,
+            minWidth: 200,
+            headerAlign: 'right',
+            align: 'right',
+            sortable: false,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" justifyContent="flex-end" gap={1} height="100%" alignItems="center">
+                    <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => {
+                            setFormData({
+                                name: params.row.name,
+                                location: params.row.location,
+                                manager: params.row.manager,
+                                phone: params.row.phone,
+                                status: params.row.status,
+                                mechanics: params.row.mechanics,
+                                capacity: params.row.capacity
+                            });
+                            setSelectedId(params.row.id);
+                            setIsEditMode(true);
+                            setOpenDialog(true);
+                        }}
+                    >
+                        <FiEdit2 size={16} />
+                    </IconButton>
+                    <IconButton
+                        size="small"
+                        color={params.row.status === 'Active' ? 'error' : 'success'}
+                        onClick={() => handleToggleStatus(params.row.id, params.row.status)}
+                    >
+                        <FiPower size={16} />
+                    </IconButton>
+                </Box>
+            )
+        }
+    ];
+
     return (
         <Box pb={3}>
-            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={6}>
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
-                        My Service Centers
+                        Service Centers
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Manage your branches and locations.
+                        Manage your branch locations and oversee operational data.
                     </Typography>
                 </Box>
                 <Button
                     variant="contained"
                     color="primary"
-                    sx={{ color: '#ffffff', px: 3, py: 1.2, borderRadius: 2, textTransform: 'none', fontSize: '1rem' }}
+                    sx={{ color: '#ffffff', px: 3, py: 1.2, borderRadius: 2, textTransform: 'none', fontSize: '1rem', boxShadow: theme.shadows[3] }}
                     onClick={handleOpenAdd}
                     startIcon={<FiPlus />}
                 >
-                    New Branch
+                    New Center
                 </Button>
             </Box>
 
-            <Grid container spacing={3}>
-                {centers.length === 0 ? (
-                    <Grid size={{ xs: 12 }}>
-                        <Box
-                            textAlign="center"
-                            py={8}
-                            bgcolor="background.paper"
-                            borderRadius={3}
-                            border="1px dashed"
-                            borderColor="divider"
-                            sx={{ opacity: 0.8 }}
-                        >
-                            <Box
-                                width={80}
-                                height={80}
-                                borderRadius="50%"
-                                bgcolor={alpha(theme.palette.primary.main, 0.08)}
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                mx="auto"
-                                mb={3}
-                                color="primary.main"
-                            >
-                                <FiLayout size={40} />
-                            </Box>
-                            <Typography variant="h6" color="text.primary" gutterBottom fontWeight="bold">
-                                No Service Centers Found
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary" mb={4} maxWidth={400} mx="auto">
-                                You haven&apos;t added any service centers yet. Get started by adding your first location to track performance.
-                            </Typography>
-                            <Button variant="outlined" startIcon={<FiPlus />} onClick={handleOpenAdd}>
-                                Add First Center
-                            </Button>
-                        </Box>
-                    </Grid>
-                ) : (
-                    centers.map((center) => (
-                        <Grid key={center.id} size={{ xs: 12, md: 6, lg: 4 }}>
-                            <Card sx={{
-                                height: '100%',
-                                position: 'relative',
-                                overflow: 'visible',
-                                mt: 4,
-                                borderRadius: '0.75rem',
-                                boxShadow: theme.shadows[1]
-                            }}>
-                                <Box
-                                    sx={{
-                                        background: center.status === 'Active'
-                                            ? `linear-gradient(195deg, #FB923C, #EA580C)`
-                                            : `linear-gradient(195deg, ${theme.palette.grey[600]}, ${theme.palette.grey[800]})`,
-                                        boxShadow: center.status === 'Active' ? theme.shadows[4] : theme.shadows[2],
-                                        color: '#ffffff',
-                                        borderRadius: '0.75rem',
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        width: '4rem',
-                                        height: '4rem',
-                                        position: 'absolute',
-                                        top: '-24px',
-                                        left: '24px',
-                                        fontSize: '1.5rem',
-                                        fontWeight: 'bold',
-                                        zIndex: 1
-                                    }}
-                                >
-                                    {center.name.charAt(0)}
-                                </Box>
+            <Card sx={{ boxShadow: theme.shadows[1], borderRadius: 3, overflow: 'hidden' }}>
+                <Box p={2} borderBottom={1} borderColor="divider" display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                    <Typography variant="h6" fontWeight="bold">
+                        Center List
+                    </Typography>
+                    <TextField
+                        size="small"
+                        placeholder="Search centers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <FiSearch color={theme.palette.text.secondary} />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ minWidth: 250 }}
+                    />
+                </Box>
+                <Box sx={{ height: 600, width: '100%' }}>
+                    {isLoading && <LinearProgress sx={{ width: '100%', position: 'absolute' }} />}
+                    <DataGrid
+                        rows={filteredCenters}
+                        columns={columns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: {
+                                    pageSize: 10,
+                                },
+                            },
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        disableRowSelectionOnClick
+                        rowHeight={70}
+                        sx={{
+                            border: 0,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                                borderBottom: '1px solid #e2e8f0',
+                                color: 'text.secondary',
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase',
+                                fontSize: '0.75rem'
+                            },
+                            '& .MuiDataGrid-cell': {
+                                borderBottom: '1px solid #f1f5f9'
+                            }
+                        }}
+                    />
+                </Box>
+            </Card>
 
-                                <Box p={3} pt={4}>
-                                    <Box display="flex" justifyContent="flex-end" mb={1}>
-                                        <Chip
-                                            label={center.status}
-                                            size="small"
-                                            sx={{
-                                                ...getCenterStatusStyles(center.status),
-                                                height: 24,
-                                                fontSize: '0.75rem',
-                                                fontWeight: 800,
-                                                borderRadius: '6px'
-                                            }}
-                                        />
-                                    </Box>
-
-                                    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mt: 1 }}>
-                                        {center.name}
-                                    </Typography>
-
-                                    <Box display="flex" flexDirection="column" gap={1} mb={3}>
-                                        <Box display="flex" alignItems="center" gap={1.5} color="text.secondary">
-                                            <FiMapPin size={16} style={{ opacity: 0.7 }} />
-                                            <Typography variant="body2" noWrap sx={{ opacity: 0.9 }}>{center.location}</Typography>
-                                        </Box>
-                                        <Box display="flex" alignItems="center" gap={1.5} color="text.secondary">
-                                            <FiUser size={16} style={{ opacity: 0.7 }} />
-                                            <Typography variant="body2" noWrap sx={{ opacity: 0.9 }}>{center.manager}</Typography>
-                                        </Box>
-                                        <Box display="flex" alignItems="center" gap={1.5} color="text.secondary">
-                                            <FiPhone size={16} style={{ opacity: 0.7 }} />
-                                            <Typography variant="body2" sx={{ opacity: 0.9 }}>{center.phone}</Typography>
-                                        </Box>
-                                    </Box>
-
-                                    <Divider sx={{ my: 2 }} />
-
-                                    <Divider sx={{ my: 2 }} />
-                                    <Grid container spacing={2} alignItems="center" mb={2}>
-                                        <Grid size={4}>
-                                            <Box textAlign="center">
-                                                <Typography variant="caption" color="text.secondary" display="block">Revenue</Typography>
-                                                <Typography variant="body2" fontWeight="bold" color="success.main">
-                                                    Rs. {parseInt(center.revenue).toLocaleString()}
-                                                </Typography>
-                                            </Box>
-                                        </Grid>
-                                        <Grid size={4}>
-                                            <Box textAlign="center" borderLeft={1} borderRight={1} borderColor="divider">
-                                                <Typography variant="caption" color="text.secondary" display="block">Team</Typography>
-                                                <Typography variant="body2" fontWeight="bold">
-                                                    {center.mechanics}
-                                                </Typography>
-                                            </Box>
-                                        </Grid>
-                                        <Grid size={4}>
-                                            <Box textAlign="center">
-                                                <Typography variant="caption" color="text.secondary" display="block">Load</Typography>
-                                                <Typography variant="body2" fontWeight="bold" color={center.capacity > 80 ? 'primary.main' : 'text.primary'}>
-                                                    {center.capacity}%
-                                                </Typography>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-
-                                    <Divider sx={{ my: 2 }} />
-
-                                    <Divider sx={{ my: 2 }} />
-                                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                                        <Button
-                                            size="small"
-                                            color={center.status === 'Active' ? 'error' : 'success'}
-                                            startIcon={<FiPower />}
-                                            onClick={() => handleToggleStatus(center.id, center.status)}
-                                            sx={{ textTransform: 'none', fontWeight: 600 }}
-                                        >
-                                            {center.status === 'Active' ? 'Disable' : 'Enable'}
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            color="primary"
-                                            startIcon={<FiEdit2 />}
-                                            onClick={() => {
-                                                setFormData({
-                                                    name: center.name,
-                                                    location: center.location,
-                                                    manager: center.manager,
-                                                    phone: center.phone,
-                                                    status: center.status,
-                                                    mechanics: center.mechanics,
-                                                    capacity: center.capacity
-                                                });
-                                                setSelectedId(center.id);
-                                                setIsEditMode(true);
-                                                setOpenDialog(true);
-                                            }}
-                                            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5, color: '#fff', boxShadow: theme.shadows[2] }}
-                                        >
-                                            Edit
-                                        </Button>
-                                    </Box>
-                                </Box>
-                            </Card>
-                        </Grid>
-                    )))}
-            </Grid>
             <Dialog
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
@@ -415,7 +478,6 @@ export default function MyCentersPage() {
                                     >
                                         <MenuItem value="Active">Active</MenuItem>
                                         <MenuItem value="Inactive">Inactive</MenuItem>
-                                        <MenuItem value="Maintenance">Maintenance</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -461,6 +523,7 @@ export default function MyCentersPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}
@@ -471,6 +534,6 @@ export default function MyCentersPage() {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-        </Box >
+        </Box>
     );
 }
