@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
-import Card from "@/components/UI/Card";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
+import axios from "axios";
+
+const API_BASE_URL = "http://127.0.0.1:8081/api/service-packages";
+const CENTERS_API_URL = "http://127.0.0.1:8081/api/service-centers";
 
 interface ServicePackage {
     id: string;
+    centerId: string;
     name: string;
+    type?: string;
     description: string;
     price: number;
     duration: number;
@@ -16,65 +21,74 @@ interface ServicePackage {
     isActive: boolean;
 }
 
-const MOCK_PACKAGES: ServicePackage[] = [
-    {
-        id: "1",
-        name: "Standard Oil Change",
-        description: "Complete oil change service including filter replacement and fluid top-up.",
-        price: 15000.00,
-        duration: 45,
-        features: ["Oil filter replacement", "Up to 5 quarts of oil", "Fluid top-up", "Visual inspection"],
-        isActive: true,
-    },
-    {
-        id: "2",
-        name: "Full Diagnostic Scan",
-        description: "Comprehensive vehicle diagnostic scan to identify engine and system issues.",
-        price: 8500.00,
-        duration: 60,
-        features: ["Engine check", "Transmission check", "Brake system scan", "Detailed report"],
-        isActive: true,
-    },
-    {
-        id: "3",
-        name: "Premium Detailing",
-        description: "Interior and exterior detailing service for a showroom finish.",
-        price: 25000.00,
-        duration: 180,
-        features: ["Exterior wash & wax", "Interior vacuum & shampoo", "Leather conditioning", "Window cleaning"],
-        isActive: true,
-    },
-    {
-        id: "4",
-        name: "Brake Pad Replacement",
-        description: "Professional brake pad replacement for front or rear axle.",
-        price: 18500.00,
-        duration: 90,
-        features: ["Ceramic brake pads", "Rotor inspection", "Brake fluid check", "Test drive"],
-        isActive: false,
-    },
-];
-
 export default function ServicesPage() {
-    const [packages, setPackages] = useState<ServicePackage[]>(MOCK_PACKAGES);
+    const [packages, setPackages] = useState<ServicePackage[]>([]);
+    const [centers, setCenters] = useState<{ id: string, name: string }[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
     const [currentPackage, setCurrentPackage] = useState<ServicePackage>({
         id: "",
+        centerId: "",
         name: "",
         description: "",
         price: 0,
         duration: 30,
-        features: [""],
+        features: [],
         isActive: true
     });
 
     const [featuresInput, setFeaturesInput] = useState("");
 
+    useEffect(() => {
+        fetchPackages();
+        fetchCenters();
+    }, []);
+
+    const fetchPackages = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get(API_BASE_URL);
+            const mappedData = response.data.map((pkg: any) => ({
+                id: pkg.packageId,
+                centerId: pkg.centerId,
+                name: pkg.name,
+                type: pkg.type,
+                description: pkg.description,
+                price: pkg.basePrice,
+                duration: pkg.estimatedDurationMins,
+                features: pkg.type ? pkg.type.split(",").filter((f: string) => f.length > 0) : [],
+                isActive: pkg.isActive
+            }));
+            setPackages(mappedData);
+        } catch (error) {
+            console.error("Error fetching service packages:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchCenters = async () => {
+        try {
+            const response = await axios.get(CENTERS_API_URL);
+            const mappedCenters = response.data.map((center: any) => ({
+                id: center.centerId,
+                name: center.name
+            }));
+            setCenters(mappedCenters);
+            if (mappedCenters.length > 0) {
+                setCurrentPackage(prev => ({ ...prev, centerId: mappedCenters[0].id }));
+            }
+        } catch (error) {
+            console.error("Error fetching centers:", error);
+        }
+    };
+
     const handleOpenCreate = () => {
         setCurrentPackage({
             id: "",
+            centerId: centers.length > 0 ? centers[0].id : "",
             name: "",
             description: "",
             price: 0,
@@ -98,9 +112,8 @@ export default function ServicesPage() {
         setIsModalOpen(false);
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-
 
         const processedFeatures = featuresInput
             .split("\n")
@@ -108,27 +121,39 @@ export default function ServicesPage() {
             .filter(f => f.length > 0);
 
         const packageData = {
-            ...currentPackage,
-            features: processedFeatures,
-            price: Number(currentPackage.price),
-            duration: Number(currentPackage.duration)
+            packageId: isEditing ? currentPackage.id : undefined,
+            centerId: currentPackage.centerId,
+            name: currentPackage.name,
+            type: processedFeatures.join(","),
+            description: currentPackage.description,
+            basePrice: Number(currentPackage.price),
+            estimatedDurationMins: Number(currentPackage.duration),
+            isActive: currentPackage.isActive
         };
 
-        if (isEditing) {
-            setPackages(packages.map(p => p.id === packageData.id ? packageData : p));
-        } else {
-            const newPackage = {
-                ...packageData,
-                id: Math.random().toString(36).substr(2, 9)
-            };
-            setPackages([...packages, newPackage]);
+        try {
+            if (isEditing) {
+                await axios.put(`${API_BASE_URL}/${currentPackage.id}`, packageData);
+            } else {
+                await axios.post(API_BASE_URL, packageData);
+            }
+            fetchPackages();
+            handleCloseModal();
+        } catch (error) {
+            console.error("Error saving service package:", error);
+            alert("Failed to save service package.");
         }
-        handleCloseModal();
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this service package?")) {
-            setPackages(packages.filter(p => p.id !== id));
+            try {
+                await axios.delete(`${API_BASE_URL}/${id}`);
+                fetchPackages();
+            } catch (error) {
+                console.error("Error deleting service package:", error);
+                alert("Failed to delete service package.");
+            }
         }
     };
 
@@ -146,88 +171,104 @@ export default function ServicesPage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {packages.map((pkg) => (
-                    <div key={pkg.id} className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <button
-                                onClick={() => handleOpenEdit(pkg)}
-                                className="p-2 bg-white text-slate-600 rounded-full shadow-sm hover:text-primary hover:bg-slate-50 border border-slate-100 transition-colors"
-                                title="Edit"
-                            >
-                                <FiEdit2 size={16} />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(pkg.id)}
-                                className="p-2 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-100 transition-colors"
-                                title="Delete"
-                            >
-                                <FiTrash2 size={16} />
-                            </button>
-                        </div>
+                {isLoading ? (
+                    <div className="col-span-full py-20 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-slate-500">Loading service packages...</p>
+                    </div>
+                ) : packages.length === 0 ? (
+                    <div className="col-span-full py-20 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                        <p className="text-slate-500 mb-4">No service packages found in database.</p>
+                        <Button onClick={handleOpenCreate} variant="secondary">
+                            <FiPlus className="mr-2 h-4 w-4" />
+                            Create First Package
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        {packages.map((pkg) => (
+                            <div key={pkg.id} className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <button
+                                        onClick={() => handleOpenEdit(pkg)}
+                                        className="p-2 bg-white text-slate-600 rounded-full shadow-sm hover:text-primary hover:bg-slate-50 border border-slate-100 transition-colors"
+                                        title="Edit"
+                                    >
+                                        <FiEdit2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(pkg.id)}
+                                        className="p-2 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-100 transition-colors"
+                                        title="Delete"
+                                    >
+                                        <FiTrash2 size={16} />
+                                    </button>
+                                </div>
 
-                        <div className="p-6 flex-1">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-full">
-                                    <div className="flex justify-between w-full">
-                                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
-                                            {pkg.name}
-                                        </h3>
+                                <div className="p-6 flex-1">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-full">
+                                            <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
+                                                {pkg.name}
+                                            </h3>
+
+                                            <div className="flex items-center gap-3 mt-2">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {pkg.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                                <div className="flex items-center text-xs text-slate-500">
+                                                    <FiClock className="mr-1" size={12} />
+                                                    {pkg.duration} mins
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'
-                                            }`}>
-                                            {pkg.isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                        <div className="flex items-center text-xs text-slate-500">
-                                            <FiClock className="mr-1" size={12} />
-                                            {pkg.duration} mins
-                                        </div>
+                                    <p className="text-slate-600 text-sm mb-6 line-clamp-2 h-10">
+                                        {pkg.description}
+                                    </p>
+
+                                    <div className="flex items-baseline mb-6">
+                                        <span className="text-3xl font-bold text-slate-900 tracking-tight">Rs. {Number(pkg.price).toFixed(2)}</span>
+                                        <span className="text-slate-500 ml-1 text-sm font-medium">/ service</span>
+                                    </div>
+
+                                    <div className="space-y-3 pt-6 border-t border-slate-100">
+                                        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Features</h4>
+                                        <ul className="space-y-2">
+                                            {pkg.features.slice(0, 3).map((feature, idx) => (
+                                                <li key={idx} className="flex items-start text-sm text-slate-600">
+                                                    <FiCheck className="mr-2 mt-0.5 text-primary flex-shrink-0" size={14} />
+                                                    <span className="line-clamp-1">{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {pkg.features.length > 3 && (
+                                            <p className="text-xs text-slate-400 pl-6">+ {pkg.features.length - 3} more</p>
+                                        )}
+                                        {pkg.features.length === 0 && (
+                                            <p className="text-xs text-slate-400 italic">No features listed</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-
-                            <p className="text-slate-600 text-sm mb-6 line-clamp-2 h-10">
-                                {pkg.description}
-                            </p>
-
-                            <div className="flex items-baseline mb-6">
-                                <span className="text-3xl font-bold text-slate-900 tracking-tight">Rs. {pkg.price.toFixed(2)}</span>
-                                <span className="text-slate-500 ml-1 text-sm font-medium">/ service</span>
+                        ))}
+                        <button
+                            onClick={handleOpenCreate}
+                            className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-xl hover:border-primary/50 hover:bg-slate-50 transition-all group min-h-[400px]"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                                <FiPlus className="text-slate-400 group-hover:text-primary" size={24} />
                             </div>
-
-                            <div className="space-y-3 pt-6 border-t border-slate-100">
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Features</h4>
-                                <ul className="space-y-2">
-                                    {pkg.features.slice(0, 3).map((feature, idx) => (
-                                        <li key={idx} className="flex items-start text-sm text-slate-600">
-                                            <FiCheck className="mr-2 mt-0.5 text-primary flex-shrink-0" size={14} />
-                                            <span className="line-clamp-1">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                {pkg.features.length > 3 && (
-                                    <p className="text-xs text-slate-400 pl-6">+ {pkg.features.length - 3} more</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                <button
-                    onClick={handleOpenCreate}
-                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-xl hover:border-primary/50 hover:bg-slate-50 transition-all group min-h-[400px]"
-                >
-                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                        <FiPlus className="text-slate-400 group-hover:text-primary" size={24} />
-                    </div>
-                    <span className="font-medium text-slate-600 group-hover:text-primary">Create New Package</span>
-                </button>
+                            <span className="font-medium text-slate-600 group-hover:text-primary">Create New Package</span>
+                        </button>
+                    </>
+                )}
             </div>
 
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                             <h2 className="text-xl font-bold text-slate-900">
                                 {isEditing ? `Edit ${currentPackage.name}` : "Create New Package"}
@@ -242,18 +283,33 @@ export default function ServicesPage() {
 
                         <form onSubmit={handleSave} className="p-6 space-y-6">
                             <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Service Center</label>
+                                    <select
+                                        required
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
+                                        value={currentPackage.centerId}
+                                        onChange={e => setCurrentPackage({ ...currentPackage, centerId: e.target.value })}
+                                    >
+                                        <option value="" disabled>Select a center</option>
+                                        {centers.map(center => (
+                                            <option key={center.id} value={center.id}>{center.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Package Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                        placeholder="e.g. Gold Service"
+                                        value={currentPackage.name}
+                                        onChange={e => setCurrentPackage({ ...currentPackage, name: e.target.value })}
+                                    />
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-sm font-medium text-slate-700">Package Name</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            placeholder="e.g. Gold Service"
-                                            value={currentPackage.name}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, name: e.target.value })}
-                                        />
-                                    </div>
                                     <div className="space-y-1">
                                         <label className="text-sm font-medium text-slate-700">Price (Rs.)</label>
                                         <input
@@ -265,6 +321,19 @@ export default function ServicesPage() {
                                             placeholder="0.00"
                                             value={currentPackage.price}
                                             onChange={e => setCurrentPackage({ ...currentPackage, price: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-slate-700">Estimated Duration (mins)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="5"
+                                            step="5"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            placeholder="30"
+                                            value={currentPackage.duration}
+                                            onChange={e => setCurrentPackage({ ...currentPackage, duration: parseInt(e.target.value) })}
                                         />
                                     </div>
                                 </div>
@@ -281,42 +350,29 @@ export default function ServicesPage() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-sm font-medium text-slate-700">Estimated Duration (mins)</label>
-                                        <input
-                                            type="number"
-                                            required
-                                            min="5"
-                                            step="5"
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            placeholder="30"
-                                            value={currentPackage.duration}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, duration: parseInt(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-sm font-medium text-slate-700">Status</label>
-                                        <div className="flex items-center space-x-4 pt-2">
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    className="text-primary focus:ring-primary"
-                                                    checked={currentPackage.isActive}
-                                                    onChange={() => setCurrentPackage({ ...currentPackage, isActive: true })}
-                                                />
-                                                <span className="text-sm text-slate-600">Active</span>
-                                            </label>
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    className="text-primary focus:ring-primary"
-                                                    checked={!currentPackage.isActive}
-                                                    onChange={() => setCurrentPackage({ ...currentPackage, isActive: false })}
-                                                />
-                                                <span className="text-sm text-slate-600">Inactive</span>
-                                            </label>
-                                        </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Status</label>
+                                    <div className="flex items-center space-x-4 pt-2">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="status"
+                                                className="text-primary focus:ring-primary"
+                                                checked={currentPackage.isActive}
+                                                onChange={() => setCurrentPackage({ ...currentPackage, isActive: true })}
+                                            />
+                                            <span className="text-sm text-slate-600">Active</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="status"
+                                                className="text-primary focus:ring-primary"
+                                                checked={!currentPackage.isActive}
+                                                onChange={() => setCurrentPackage({ ...currentPackage, isActive: false })}
+                                            />
+                                            <span className="text-sm text-slate-600">Inactive</span>
+                                        </label>
                                     </div>
                                 </div>
 
