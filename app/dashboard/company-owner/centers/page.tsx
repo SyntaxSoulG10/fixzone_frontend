@@ -257,7 +257,7 @@ export default function MyCentersPage() {
             {/* Cards Grid */}
             <Grid container spacing={4}>
                 {filteredCenters.map((center) => (
-                    <Grid item xs={12} sm={6} lg={4} key={center.id}>
+                    <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
                         <Card
                             sx={{
                                 position: 'relative',
@@ -344,7 +344,7 @@ export default function MyCentersPage() {
 
                                 {/* Metrics Section */}
                                 <Grid container spacing={2}>
-                                    <Grid item xs={4}>
+                                    <Grid size={{ xs: 4 }}>
                                         <Typography variant="caption" color="#a0aec0" display="block" align="center" sx={{ fontWeight: '600', mb: 0.5 }}>
                                             Revenue
                                         </Typography>
@@ -353,7 +353,7 @@ export default function MyCentersPage() {
                                         </Typography>
                                     </Grid>
                                     <Box sx={{ width: '1px', height: '30px', bgcolor: '#f1f5f9', alignSelf: 'center' }} />
-                                    <Grid item xs={3.5}>
+                                    <Grid size={{ xs: 3.5 }}>
                                         <Typography variant="caption" color="#a0aec0" display="block" align="center" sx={{ fontWeight: '600', mb: 0.5 }}>
                                             Team
                                         </Typography>
@@ -362,7 +362,7 @@ export default function MyCentersPage() {
                                         </Typography>
                                     </Grid>
                                     <Box sx={{ width: '1px', height: '30px', bgcolor: '#f1f5f9', alignSelf: 'center' }} />
-                                    <Grid item xs={3.5}>
+                                    <Grid size={{ xs: 3.5 }}>
                                         <Typography variant="caption" color="#a0aec0" display="block" align="center" sx={{ fontWeight: '600', mb: 0.5 }}>
                                             Load
                                         </Typography>
@@ -470,7 +470,7 @@ export default function MyCentersPage() {
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                         />
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     label="Phone Number"
                                     name="phone"
@@ -481,7 +481,7 @@ export default function MyCentersPage() {
                                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <FormControl fullWidth>
                                     <InputLabel>Status</InputLabel>
                                     <Select
@@ -501,7 +501,7 @@ export default function MyCentersPage() {
                         <Divider sx={{ my: 1 }}><Typography variant="caption" color="#a0aec0" fontWeight="600">OPERATIONAL DETAILS</Typography></Divider>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     label="Mechanics Count"
                                     name="mechanics"
@@ -513,7 +513,7 @@ export default function MyCentersPage() {
                                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     label="Current Capacity (%)"
                                     name="capacity"
