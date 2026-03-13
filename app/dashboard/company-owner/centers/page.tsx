@@ -17,14 +17,14 @@ import {
     TextField,
     MenuItem,
     Select,
+    SelectChangeEvent,
     FormControl,
     InputLabel,
     Chip,
     Snackbar,
-    Alert,
     LinearProgress,
-    SelectChangeEvent,
-    CircularProgress
+    CircularProgress,
+    Alert
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
@@ -139,7 +139,7 @@ export default function MyCentersPage() {
         setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };

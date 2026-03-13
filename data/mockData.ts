@@ -16,6 +16,8 @@ export interface Station {
     revenue: string;
     plan: 'Basic' | 'Standard' | 'Premium';
     status: 'Active' | 'Pending' | 'Suspended';
+    lastActionBy?: string;
+    lastActionTime?: string;
 }
 
 export const MOCK_STATIONS: Station[] = [
