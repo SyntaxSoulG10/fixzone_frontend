@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
     Grid,
     Card,
@@ -26,7 +27,8 @@ import {
     Paper,
     InputAdornment,
     Checkbox,
-    FormControlLabel
+    FormControlLabel,
+    CircularProgress
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
@@ -88,8 +90,48 @@ const SERVICE_CENTERS = [
 
 export default function ManagersPage() {
     const theme = useTheme();
-    const [managers, setManagers] = useState(INITIAL_MANAGERS);
+    const [managers, setManagers] = useState<any[]>([]);
+    const [centersList, setCentersList] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [managersRes, centersRes] = await Promise.all([
+                    axios.get("http://localhost:8081/api/managers"),
+                    axios.get("http://localhost:8081/api/service-centers")
+                ]);
+
+                const centersMap = centersRes.data.reduce((acc: any, center: any) => {
+                    acc[center.centerId] = center.name;
+                    return acc;
+                }, {});
+
+                setCentersList(centersRes.data.map((c: any) => c.name));
+
+                const mappedManagers = managersRes.data.map((m: any) => ({
+                    id: m.userId,
+                    name: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    center: centersMap[m.managedCenterId] || "Unassigned",
+                    status: m.emailVerified ? "Active" : "Active", // Assuming active for now
+                    lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+                    avatar: ""
+                }));
+
+                setManagers(mappedManagers);
+            } catch (error) {
+                console.error("Error fetching managers:", error);
+                setManagers(INITIAL_MANAGERS);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -293,6 +335,14 @@ export default function ManagersPage() {
             )
         }
     ];
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box pb={3}>

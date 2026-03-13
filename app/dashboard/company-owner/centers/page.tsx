@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
     Grid,
     Card,
@@ -22,7 +23,8 @@ import {
     Snackbar,
     Alert,
     LinearProgress,
-    SelectChangeEvent
+    SelectChangeEvent,
+    CircularProgress
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
@@ -65,7 +67,35 @@ const INITIAL_CENTERS = [
 
 export default function MyCentersPage() {
     const theme = useTheme();
-    const [centers, setCenters] = useState(INITIAL_CENTERS);
+    const [centers, setCenters] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCenters = async () => {
+            try {
+                const response = await axios.get("http://localhost:8081/api/service-centers");
+                const mappedCenters = response.data.map((center: any) => ({
+                    id: center.centerId,
+                    name: center.name,
+                    location: center.address,
+                    manager: "Search...", // This would require another API call or DTO change
+                    phone: center.contactPhone,
+                    revenue: "0", // Placeholder
+                    status: center.isActive ? "Active" : "Inactive",
+                    mechanics: 5, // Placeholder
+                    capacity: 0 // Placeholder
+                }));
+                setCenters(mappedCenters);
+            } catch (error) {
+                console.error("Error fetching centers:", error);
+                setCenters(INITIAL_CENTERS);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCenters();
+    }, []);
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -152,6 +182,14 @@ export default function MyCentersPage() {
                 };
         }
     };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box pb={3}>
