@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
 import {
     Grid,
     Card,
@@ -18,14 +16,16 @@ import {
     TextField,
     MenuItem,
     Select,
-    SelectChangeEvent,
     FormControl,
     InputLabel,
     Chip,
     Snackbar,
+    Alert,
     LinearProgress,
-    CircularProgress,
-    Alert
+    SelectChangeEvent,
+    InputAdornment,
+    Paper,
+    Avatar
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material";
@@ -81,35 +81,6 @@ export default function MyCentersPage() {
             setIsLoading(false);
         }
     };
-    const [centers, setCenters] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchCenters = async () => {
-            try {
-                const response = await axios.get("http://localhost:8081/api/service-centers");
-                const mappedCenters = response.data.map((center: any) => ({
-                    id: center.centerId,
-                    name: center.name,
-                    location: center.address,
-                    manager: "Search...", // This would require another API call or DTO change
-                    phone: center.contactPhone,
-                    revenue: "0", // Placeholder
-                    status: center.isActive ? "Active" : "Inactive",
-                    mechanics: 5, // Placeholder
-                    capacity: 0 // Placeholder
-                }));
-                setCenters(mappedCenters);
-            } catch (error) {
-                console.error("Error fetching centers:", error);
-                setCenters(INITIAL_CENTERS);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCenters();
-    }, []);
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -137,23 +108,40 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
-    const handleSave = () => {
-        if (isEditMode && selectedId !== null) {
-            setCenters(prev => prev.map(c =>
-                c.id === selectedId
-                    ? { ...c, ...formData }
-                    : c
-            ));
-            setSnackbar({ open: true, message: 'Center updated successfully', severity: 'success' });
-        } else {
-            const newId = Math.max(...centers.map(c => c.id), 0) + 1;
-            setCenters(prev => [...prev, { id: newId, revenue: "0", ...formData }]);
-            setSnackbar({ open: true, message: 'New center added successfully!', severity: 'success' });
+    const handleSave = async () => {
+        const payload = {
+            name: formData.name,
+            address: formData.location,
+            contactPhone: formData.phone,
+            managerName: formData.manager,
+            isActive: formData.status === 'Active',
+            mechanicsCount: formData.mechanics,
+            currentCapacity: formData.capacity,
+            // Owner ID should be retrieved from auth context, for now we assume it's set or handled by backend
+            ownerId: "00000000-0000-0000-0000-000000010011" // Placeholder
+        };
+
+        try {
+            if (isEditMode && selectedId) {
+                await axios.put(`${API_BASE_URL}/${selectedId}`, payload);
+            } else {
+                await axios.post(API_BASE_URL, payload);
+            }
+
+            fetchCenters(); // Refresh the list
+            setSnackbar({
+                open: true,
+                message: `Center ${isEditMode ? 'updated' : 'added'} successfully`,
+                severity: 'success'
+            });
+            setOpenDialog(false);
+        } catch (error) {
+            console.error("Error saving center:", error);
+            setSnackbar({ open: true, message: 'Failed to save center to backend', severity: 'error' });
         }
-        setOpenDialog(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name as string]: value }));
     };
@@ -193,50 +181,6 @@ export default function MyCentersPage() {
         c.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.manager.toLowerCase().includes(searchTerm.toLowerCase())
     );
-        setCenters(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-        setSnackbar({
-            open: true,
-            message: `Center ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
-            severity: 'success'
-        });
-    };
-
-    const getCenterStatusStyles = (status: string) => {
-        switch (status) {
-            case 'Active':
-                return {
-                    bgcolor: '#E6F4EA',
-                    color: '#1E8E3E',
-                    border: '1px solid #E6F4EA'
-                };
-            case 'Maintenance':
-                return {
-                    bgcolor: '#FFF7ED',
-                    color: '#EA580C',
-                    border: '1px solid #FFF7ED'
-                };
-            case 'Inactive':
-                return {
-                    bgcolor: '#FCE8E6',
-                    color: '#C5221F',
-                    border: '1px solid #FCE8E6'
-                };
-            default:
-                return {
-                    bgcolor: alpha(theme.palette.grey[500], 0.1),
-                    color: 'text.secondary',
-                    border: `1px solid ${alpha(theme.palette.grey[500], 0.1)}`
-                };
-        }
-    };
-
-    if (loading) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-                <CircularProgress />
-            </Box>
-        );
-    }
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
