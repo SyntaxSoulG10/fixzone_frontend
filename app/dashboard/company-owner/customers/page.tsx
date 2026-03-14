@@ -106,7 +106,8 @@ export default function CustomersPage() {
                 }));
                 setCustomers(mappedCustomers);
             } catch (error) {
-                console.error("Error fetching customers, using dummy data:", error);
+                console.error("Error fetching customers:", error);
+                // Fallback to dummy data if server is unreachable
                 setCustomers(dummyCustomers);
             } finally {
                 setLoading(false);
