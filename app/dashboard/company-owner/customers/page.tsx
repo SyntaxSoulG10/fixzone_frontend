@@ -93,10 +93,21 @@ export default function CustomersPage() {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get("http://localhost:8080/api/customers");
-                setCustomers(response.data);
+                const response = await axios.get("http://localhost:8081/api/customers");
+                const mappedCustomers = response.data.map((customer: any) => ({
+                    ...customer,
+                    id: customer.userId || customer.id, // Ensure we have an 'id' for DataGrid
+                    name: customer.fullName || customer.name,
+                    visits: customer.visits || 0,
+                    totalSpent: customer.totalSpent || 0,
+                    lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                    status: customer.status || "Active",
+                    avatarUrl: customer.avatarUrl || `https://i.pravatar.cc/150?u=${customer.userId || customer.id}`
+                }));
+                setCustomers(mappedCustomers);
             } catch (error) {
-                console.error("Error fetching customers, using dummy data:", error);
+                console.error("Error fetching customers:", error);
+                // Fallback to dummy data if server is unreachable
                 setCustomers(dummyCustomers);
             } finally {
                 setLoading(false);

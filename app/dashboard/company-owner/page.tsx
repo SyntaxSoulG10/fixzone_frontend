@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import Link from "next/link";
 import {
     Grid,
@@ -10,7 +11,8 @@ import {
     Tabs,
     Tab,
     Card,
-    Icon
+    Icon,
+    CircularProgress
 } from "@mui/material";
 
 import StatCard from "@/components/dashboard/StatCard";
@@ -32,6 +34,35 @@ import {
 
 export default function CompanyOwnerDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
+    const [stats, setStats] = useState({
+        totalRevenue: 1245000,
+        activeCenters: 0,
+        totalCustomers: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const [centersRes, customersRes] = await Promise.all([
+                    axios.get("http://localhost:8081/api/service-centers"),
+                    axios.get("http://localhost:8081/api/customers")
+                ]);
+
+                setStats(prev => ({
+                    ...prev,
+                    activeCenters: centersRes.data.filter((c: any) => c.isActive).length,
+                    totalCustomers: customersRes.data.length
+                }));
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
         setActiveTab(newValue);
@@ -61,7 +92,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count="Rs. 1,245,000"
+                        count={`Rs. ${stats.totalRevenue.toLocaleString()}`}
                         percentage={{
                             color: 'success',
                             amount: '+12.5%',
@@ -74,7 +105,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Active Centers"
-                        count="5"
+                        count={stats.activeCenters.toString()}
                         percentage={{
                             color: 'success',
                             amount: '+1',
@@ -87,7 +118,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Customers"
-                        count="3,450"
+                        count={stats.totalCustomers.toString()}
                         percentage={{
                             color: 'success',
                             amount: '+8.2%',
