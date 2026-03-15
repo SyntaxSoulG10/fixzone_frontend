@@ -5,13 +5,44 @@ import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell } from "react-icons/fi";
 import Button from "@/components/UI/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function ServiceStationsPage() {
-    const [stations, setStations] = useState<Station[]>(MOCK_STATIONS.slice(0, 4)); // Keep only first 4
+    const [stations, setStations] = useState<Station[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+    const fetchStations = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get("http://localhost:8080/api/admin/service-centers");
+            const transformed = response.data.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                owner: s.owner ? s.owner.name : 'Unknown Owner',
+                location: `${s.city || ''}, ${s.district || ''}`,
+                bookings: 0, // Not available in simple backend entity yet
+                revenue: "Rs 0", // Not available in simple backend entity yet
+                status: s.status === 'APPROVED' ? 'Active' : s.status === 'PENDING' ? 'Pending' : 'Suspended',
+                plan: s.type || 'Standard',
+                lastActionBy: s.lastActionBy,
+                lastActionTime: s.lastActionTime
+            }));
+            setStations(transformed);
+        } catch (error) {
+            console.error("Error fetching stations:", error);
+            setStations(MOCK_STATIONS.slice(0, 4));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStations();
+    }, []);
 
     const pendingRequests = stations.filter(s => s.status === 'Pending').length;
 
@@ -21,28 +52,42 @@ export default function ServiceStationsPage() {
         (s.location ? s.location.toLowerCase() : "").includes(searchQuery.toLowerCase())
     );
 
-    const handleApprove = (id: string | number, adminName: string = "Super Admin") => {
-        setStations(prev => prev.map(station =>
-            station.id === id ? {
-                ...station,
-                status: 'Active',
-                lastActionBy: adminName,
-                lastActionTime: new Date().toLocaleString()
-            } : station
-        ));
-        setIsReviewModalOpen(false);
+    const handleApprove = async (id: string | number) => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/approve`);
+            fetchStations();
+            setIsReviewModalOpen(false);
+        } catch (error) {
+            console.error("Error approving station:", error);
+        }
     };
 
-    const handleReject = (id: string | number, adminName: string = "Super Admin") => {
-        setStations(prev => prev.map(station =>
-            station.id === id ? {
-                ...station,
-                status: 'Suspended',
-                lastActionBy: adminName,
-                lastActionTime: new Date().toLocaleString()
-            } : station
-        ));
-        setIsReviewModalOpen(false);
+    const handleReject = async (id: string | number, reason: string = "Registration criteria not met") => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/reject?reason=${encodeURIComponent(reason)}`);
+            fetchStations();
+            setIsReviewModalOpen(false);
+        } catch (error) {
+            console.error("Error rejecting station:", error);
+        }
+    };
+
+    const handleSuspend = async (id: string | number) => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/status?status=SUSPENDED`);
+            fetchStations();
+        } catch (error) {
+            console.error("Error suspending station:", error);
+        }
+    };
+
+    const handleReactivate = async (id: string | number) => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/status?status=APPROVED`);
+            fetchStations();
+        } catch (error) {
+            console.error("Error reactivating station:", error);
+        }
     };
 
     const openReviewModal = (station: Station) => {
@@ -174,7 +219,7 @@ export default function ServiceStationsPage() {
                     )}
                     {row.status === 'Active' && (
                         <button
-                            onClick={() => handleReject(row.id)}
+                            onClick={() => handleSuspend(row.id)}
                             className="h-8 px-3 flex items-center justify-center gap-2 text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg transition-all text-xs font-bold shadow-sm"
                         >
                             <FiSlash className="w-3.5 h-3.5" />
@@ -183,7 +228,7 @@ export default function ServiceStationsPage() {
                     )}
                     {row.status === 'Suspended' && (
                         <button
-                            onClick={() => handleApprove(row.id)}
+                            onClick={() => handleReactivate(row.id)}
                             className="h-8 px-3 flex items-center justify-center gap-2 text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg transition-all text-xs font-bold shadow-sm"
                         >
                             <FiCheckCircle className="w-3.5 h-3.5" />

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { MOCK_USERS } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
@@ -18,7 +19,8 @@ interface Notification {
 }
 
 export default function UsersPage() {
-    const [users, setUsers] = useState(MOCK_USERS);
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState("");
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -27,18 +29,59 @@ export default function UsersPage() {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
 
-    const handleSuspendUser = (userId: string) => {
-        setUsers(prev => prev.map(user =>
-            user.id === userId ? { ...user, status: 'Pending' as const } : user
-        ));
-        showNotificationToast(`User ${userId} has been suspended`);
+    const mapRole = (backendRole: string): User['role'] => {
+        switch (backendRole) {
+            case 'ROLE_SUPER_ADMIN': return 'Super Admin';
+            case 'ROLE_COMPANY_OWNER': return 'Company Owner';
+            case 'ROLE_SERVICE_MANAGER': return 'Service Manager';
+            case 'ROLE_CUSTOMER': return 'Customer';
+            default: return backendRole as any;
+        }
     };
 
-    const handleActivateUser = (userId: string) => {
-        setUsers(prev => prev.map(user =>
-            user.id === userId ? { ...user, status: 'Active' as const } : user
-        ));
-        showNotificationToast(`User ${userId} has been activated`);
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get("http://localhost:8080/api/admin/users");
+            const transformedUsers = response.data.map((u: any) => ({
+                ...u,
+                role: mapRole(u.role),
+                joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A',
+                activity: 'Joined ' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'recently')
+            }));
+            setUsers(transformedUsers);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            setUsers(MOCK_USERS as any);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const handleSuspendUser = async (userId: string | number) => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/users/${userId}/status?status=Suspended`);
+            showNotificationToast(`User ${userId} has been suspended`);
+            fetchUsers();
+        } catch (error) {
+            console.error("Error suspending user:", error);
+            showNotificationToast("Failed to suspend user");
+        }
+    };
+
+    const handleActivateUser = async (userId: string | number) => {
+        try {
+            await axios.post(`http://localhost:8080/api/admin/users/${userId}/status?status=Active`);
+            showNotificationToast(`User ${userId} has been activated`);
+            fetchUsers();
+        } catch (error) {
+            console.error("Error activating user:", error);
+            showNotificationToast("Failed to activate user");
+        }
     };
 
     const openNotificationModal = (user: User) => {
@@ -111,8 +154,10 @@ export default function UsersPage() {
                 let icon = <FiUser />;
                 let color = "bg-slate-100 text-slate-600 border-slate-200";
 
-                if (row.role === 'Manager') { icon = <FiBriefcase />; color = "bg-purple-50 text-purple-700 border-purple-200"; }
+                if (row.role === 'Service Manager') { icon = <FiBriefcase />; color = "bg-purple-50 text-purple-700 border-purple-200"; }
                 if (row.role === 'Owner') { icon = <FiShield />; color = "bg-indigo-50 text-indigo-700 border-indigo-200"; }
+                if (row.role === 'Company Owner') { icon = <FiShield />; color = "bg-indigo-50 text-indigo-700 border-indigo-200"; }
+                if (row.role === 'Super Admin') { icon = <FiShield />; color = "bg-red-50 text-red-700 border-red-200"; }
                 if (row.role === 'Customer') { icon = <FiUser />; color = "bg-blue-50 text-blue-700 border-blue-200"; }
                 if (row.role === 'Mechanic') { icon = <FiTool />; color = "bg-orange-50 text-orange-700 border-orange-200"; }
 
@@ -205,13 +250,13 @@ export default function UsersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StatCard
                     title="Total Users"
-                    count="12,847"
+                    count={users.length.toString()}
                     icon={<FiUser />}
                     color="primary"
                 />
                 <StatCard
                     title="Active Now"
-                    count="843"
+                    count={users.filter(u => u.status === 'Active').length.toString()}
                     icon={<FiUserCheck />}
                     color="success"
                 />
