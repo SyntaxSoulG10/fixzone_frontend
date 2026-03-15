@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiSearch, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -38,6 +39,24 @@ export default function SuperAdminDashboard() {
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalServiceCenters: 0,
+        pendingRegistrations: 0
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get("http://localhost:8080/api/admin/stats");
+                setStats(response.data);
+            } catch (error) {
+                console.error("Error fetching admin stats:", error);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const currentData = DATA[view];
 
     const generatePDF = () => {
@@ -170,9 +189,9 @@ export default function SuperAdminDashboard() {
                     </div>
                     <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Service Stations</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">248</span>
+                        <span className="text-3xl font-bold text-slate-900">{stats.totalServiceCenters}</span>
                     </div>
-                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+8.2% this month</span>
+                    <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">{stats.pendingRegistrations} pending review</span>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
@@ -190,11 +209,11 @@ export default function SuperAdminDashboard() {
                     <div className="w-12 h-12 bg-orange-50 group-hover:bg-orange-600 transition-colors duration-300 rounded-full flex items-center justify-center text-orange-600 group-hover:text-white mb-3">
                         <FiUserCheck className="text-xl" />
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Active Subscriptions</h3>
+                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Total Platform Users</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">234</span>
+                        <span className="text-3xl font-bold text-slate-900">{stats.totalUsers}</span>
                     </div>
-                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+5.7% this month</span>
+                    <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">Across all roles</span>
                 </div>
             </div>
 
