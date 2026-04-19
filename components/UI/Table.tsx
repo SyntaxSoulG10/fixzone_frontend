@@ -29,8 +29,8 @@ export default function Table({ columns, data, keyField = 'id', emptyMessage = '
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                     {data.length > 0 ? (
-                        data.map((row) => (
-                            <tr key={row[keyField]} className="hover:bg-slate-50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                        data.map((row, index) => (
+                            <tr key={row[keyField] || `row-${index}`} className="hover:bg-slate-50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                                 {columns.map((col, idx) => (
                                     <td key={idx} className={`px-6 py-4 ${col.cellClassName || ''}`}>
                                         {col.accessor(row)}
@@ -39,7 +39,7 @@ export default function Table({ columns, data, keyField = 'id', emptyMessage = '
                             </tr>
                         ))
                     ) : (
-                        <tr>
+                        <tr key="empty-row">
                             <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500">
                                 {emptyMessage}
                             </td>

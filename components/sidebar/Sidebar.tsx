@@ -27,7 +27,7 @@ import {
 const ROLE_MENUS: any = {
     super_admin: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/super-admin' },
-        { name: 'Service Stations', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
+        { name: 'Service Centers', icon: FiTool, href: '/dashboard/super-admin/service-centers' },
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
         { name: 'Subscriptions', icon: FiBriefcase, href: '/dashboard/super-admin/subscriptions' },
         { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
