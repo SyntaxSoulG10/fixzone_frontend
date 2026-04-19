@@ -74,9 +74,12 @@ const STATIONS = [
   // ... other stations can be added here
 ];
 
+import { useBooking } from "@/context/BookingContext";
+
 export default function StationDetailPage() {
   const params = useParams() as { stationId: string };
   const station = STATIONS.find((s) => s.id === params.stationId) || STATIONS[0];
+  const { setBookingData } = useBooking();
 
   // --- State Management ---
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -85,10 +88,29 @@ export default function StationDetailPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [specialRequest, setSpecialRequest] = useState("");
 
+  // --- Helpers ---
+  const selectedVehicle = useMemo(() => {
+    return VEHICLES.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId]);
+
   // --- Validation ---
   const isValid = useMemo(() => {
     return !!(selectedPackage && selectedDate && selectedTime && selectedVehicleId);
   }, [selectedPackage, selectedDate, selectedTime, selectedVehicleId]);
+
+  // Handle proceed to summary
+  const handleProceed = () => {
+    if (isValid) {
+      setBookingData({
+        station,
+        selectedPackage,
+        selectedDate,
+        selectedTime,
+        selectedVehicle,
+        specialRequest,
+      });
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -150,6 +172,7 @@ export default function StationDetailPage() {
               isValid={isValid}
               specialRequest={specialRequest}
               onSpecialRequestChange={setSpecialRequest}
+              onProceed={handleProceed}
             />
 
           </div>

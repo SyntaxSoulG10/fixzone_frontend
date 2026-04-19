@@ -8,13 +8,15 @@ interface BookingSummaryProps {
   isValid: boolean;
   onSpecialRequestChange: (text: string) => void;
   specialRequest: string;
+  onProceed?: () => void;
 }
 
-export default function BookingSummary({ totalPrice, isValid, onSpecialRequestChange, specialRequest }: BookingSummaryProps) {
+export default function BookingSummary({ totalPrice, isValid, onSpecialRequestChange, specialRequest, onProceed }: BookingSummaryProps) {
   const router = useRouter();
 
   const handleProceed = () => {
     if (isValid) {
+      if (onProceed) onProceed();
       router.push("/dashboard/customer/checkout");
     }
   };
