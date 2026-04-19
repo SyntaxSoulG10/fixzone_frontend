@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   description: "Modern multi-tenant platform for vehicle service centers.",
 };
 
+import { BookingProvider } from "@/context/BookingContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,7 +26,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={roboto.className}>
         <ThemeRegistry>
-          {children}
+          <BookingProvider>
+            {children}
+          </BookingProvider>
         </ThemeRegistry>
       </body>
     </html>
