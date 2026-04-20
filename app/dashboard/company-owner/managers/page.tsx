@@ -56,6 +56,7 @@ interface ManagerAPIResponse {
     managedCenterId: number;
     emailVerified: boolean;
     lastLoginAt: string;
+    profilePictureUrl: string;
 }
 
 // Interface for strictly typing center responses
@@ -153,7 +154,7 @@ export default function ManagersPage() {
                     center: centersMap[m.managedCenterId] || "Unassigned",
                     status: m.emailVerified ? "Active" : "Active",
                     lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                    avatar: ""
+                    avatar: m.profilePictureUrl || ""
                 }));
 
                 setManagers(computedManagers);
@@ -274,8 +275,8 @@ export default function ManagersPage() {
             minWidth: 250,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" gap={2} height="100%">
-                    <Avatar sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
-                        {params.row.name.charAt(0)}
+                    <Avatar src={params.row.avatar} sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
+                        {!params.row.avatar ? params.row.name.charAt(0) : ""}
                     </Avatar>
                     <Box>
                         <Typography variant="subtitle2" fontWeight="bold">

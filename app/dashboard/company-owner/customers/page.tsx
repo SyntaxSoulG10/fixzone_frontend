@@ -19,8 +19,24 @@ import {
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";    
 import { formatDistanceToNow } from "date-fns";
+// Interface representation for the structure originating directly from the Backend API
+interface CustomerDTO {
+    userId?: number;
+    id?: number;
+    fullName?: string;
+    name?: string;
+    email: string;
+    visits?: number;
+    totalSpent?: number;
+    lastLoginAt?: string;
+    createdAt?: string;
+    status?: string;
+    profilePictureUrl?: string;
+}
 
+// Client-side View Model mapped safely for rendering
 interface Customer {
     id: number;
     name: string;
@@ -93,16 +109,17 @@ export default function CustomersPage() {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get("http://localhost:8081/api/customers");
-                const mappedCustomers = response.data.map((customer: any) => ({
-                    ...customer,
-                    id: customer.userId || customer.id, // Ensure we have an 'id' for DataGrid
-                    name: customer.fullName || customer.name,
-                    visits: customer.visits || 0,
-                    totalSpent: customer.totalSpent || 0,
+                const response = await axios.get<CustomerDTO[]>(APP_CONFIG.api.customers);
+                //const response = await axios.get<ServiceCenterDTO[]>(APP_CONFIG.api.serviceCenters);
+                const mappedCustomers: Customer[] = response.data.map((customer: CustomerDTO) => ({
+                    id: customer.userId ?? customer.id ?? 0,
+                    name: customer.fullName ?? customer.name ?? "Unknown Customer",
+                    email: customer.email,
+                    visits: customer.visits ?? 0,
+                    totalSpent: customer.totalSpent ?? 0,
                     lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-                    status: customer.status || "Active",
-                    avatarUrl: customer.avatarUrl || `https://i.pravatar.cc/150?u=${customer.userId || customer.id}`
+                    status: customer.status ?? "Active",
+                    avatarUrl: customer.profilePictureUrl || ""
                 }));
                 setCustomers(mappedCustomers);
             } catch (error) {

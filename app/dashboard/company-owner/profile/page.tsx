@@ -132,11 +132,11 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             }
                         >
                             <Avatar
-                                src={profileImage || "/assets/images/bruce-mars.jpg"}
+                                src={profileImage || ""}
                                 alt="profile-image"
                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
-                                <FiTool color="#EA580C" size={32} />
+                                {!profileImage && <FiTool color="#EA580C" size={32} />}
                             </Avatar>
                         </Badge>
                         <input
