@@ -11,6 +11,8 @@ export interface AnalyticsData {
     pendingJobsChange: string;
     avgJobValue: number;
     avgJobValueChange: string;
+    onlineRevenue: number;
+    handCollectionRevenue: number;
     updatedAt: string;
     revenueOverview: { name: string; revenue: number }[];
     customerGrowth: { name: string; newCustomers: number; activeCustomers: number }[];

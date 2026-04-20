@@ -270,11 +270,15 @@ export default function FinancePage() {
         // 1. Calculate Full Revenue from PAID Invoices
         const totalFullRevenue = filteredInvoices.reduce((sum: number, inv: any) => sum + (Number(inv.total || inv.totalAmount) || 0), 0);
         
-        // 2. Calculate Online Revenue from Completed Payment Records
-        const totalOnlineRevenue = filteredPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+        // 2. Calculate Online Revenue (CARD or ONLINE methods)
+        const totalOnlineRevenue = filteredPayments
+            .filter((p: any) => p.method === 'CARD' || p.method === 'ONLINE')
+            .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
         
-        // 3. Cash Revenue (Service Balance)
-        const totalCashRevenue = totalFullRevenue - totalOnlineRevenue;
+        // 3. Calculate Hand Collection Revenue (CASH method)
+        const totalHandCollectionRevenue = filteredPayments
+            .filter((p: any) => p.method === 'CASH')
+            .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
         // Revenue by Center
         const revenueByCenterMap = new Map();
@@ -306,7 +310,14 @@ export default function FinancePage() {
             const monthOnline = filteredPayments
                 .filter((p: any) => {
                     const payDate = new Date(p.createdAt);
-                    return payDate.getMonth() === monthIdx && payDate.getFullYear() === year;
+                    return (p.method === 'CARD' || p.method === 'ONLINE') && payDate.getMonth() === monthIdx && payDate.getFullYear() === year;
+                })
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+            const monthCash = filteredPayments
+                .filter((p: any) => {
+                    const payDate = new Date(p.createdAt);
+                    return p.method === 'CASH' && payDate.getMonth() === monthIdx && payDate.getFullYear() === year;
                 })
                 .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
@@ -314,7 +325,7 @@ export default function FinancePage() {
                 month: months[monthIdx], 
                 amount: monthTotal,
                 online: monthOnline,
-                cash: monthTotal - monthOnline
+                cash: monthCash
             });
         }
 
@@ -339,7 +350,7 @@ export default function FinancePage() {
         setFinanceData({
             totalRevenue: totalFullRevenue,
             onlineRevenue: totalOnlineRevenue,
-            cashRevenue: totalCashRevenue,
+            cashRevenue: totalHandCollectionRevenue,
             monthlyGrowth: 21.4,
             avgTransaction: filteredInvoices.length > 0 ? totalFullRevenue / filteredInvoices.length : 0,
             revenueByCenter: revenueByCenter.length > 0 ? revenueByCenter : [{ name: 'No Data', revenue: 0 }],

@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
             )}
 
             <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
                         count={`Rs. ${data?.totalRevenue.toLocaleString() || '0'}`}
@@ -116,7 +116,36 @@ export default function AnalyticsPage() {
                         color="success"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Online Revenue"
+                        count={`Rs. ${data?.onlineRevenue.toLocaleString() || '0'}`}
+                        icon={<FiDollarSign />}
+                        percentage={{
+                            color: 'success',
+                            amount: 'Digital',
+                            label: 'via Platform'
+                        }}
+                        color="primary"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Hand Collection"
+                        count={`Rs. ${data?.handCollectionRevenue.toLocaleString() || '0'}`}
+                        icon={<FiDollarSign />}
+                        percentage={{
+                            color: 'warning',
+                            amount: 'Cash',
+                            label: 'In-person'
+                        }}
+                        color="warning"
+                    />
+                </Grid>
+            </Grid>
+
+            <Grid container spacing={3} mb={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Jobs"
                         count={data?.totalJobs.toString() || '0'}
@@ -129,7 +158,7 @@ export default function AnalyticsPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Pending Jobs"
                         count={data?.pendingJobs.toString() || '0'}
@@ -142,7 +171,7 @@ export default function AnalyticsPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Job Value"
                         count={`Rs. ${data?.avgJobValue.toLocaleString() || '0'}`}
