@@ -15,7 +15,17 @@ import {
 } from "@mui/material";
 import { FiDownload, FiFileText } from "react-icons/fi";
 
-const DUMMY_REPORTS = [
+// Defining the shape of a report record clearly for maintainable access inside the list component
+interface ReportItem {
+    id: number;
+    name: string;
+    date: string;
+    type: string;
+    size: string;
+}
+
+// Static dataset for reports. In production, this would be swapped with a fetch from an internal reporting API endpoint.
+const DUMMY_REPORTS: ReportItem[] = [
     { id: 1, name: "January 2026 Revenue Report", date: "Feb 01, 2026", type: "Financial", size: "1.2 MB" },
     { id: 2, name: "Q4 2025 Performance Summary", date: "Jan 15, 2026", type: "Analytics", size: "4.5 MB" },
     { id: 3, name: "Colombo Branch Audit Report", date: "Jan 10, 2026", type: "Audit", size: "2.1 MB" },

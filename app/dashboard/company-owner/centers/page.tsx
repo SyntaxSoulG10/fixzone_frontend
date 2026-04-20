@@ -27,8 +27,7 @@ import {
     Paper,
     Avatar
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { alpha } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import {
     FiMapPin,
     FiPhone,
@@ -42,16 +41,47 @@ import {
     FiActivity
 } from "react-icons/fi";
 import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";
 
-const API_BASE_URL = "http://127.0.0.1:8081/api/service-centers";
 const PRIMARY_ORANGE = "#f3651c";
+
+// Define strict typing for backend DTO representation
+interface ServiceCenterDTO {
+    centerId: string;
+    name: string;
+    address: string;
+    managerName?: string;
+    contactPhone: string;
+    revenue?: number;
+    isActive: boolean;
+    mechanicsCount?: number;
+    currentCapacity?: number;
+}
+
+// Define strict typing for frontend view representation
+interface ServiceCenterView {
+    id: string;
+    name: string;
+    location: string;
+    manager: string;
+    phone: string;
+    revenue: number;
+    status: "Active" | "Inactive";
+    mechanics: number;
+    capacity: number;
+}
 
 export default function MyCentersPage() {
     const theme = useTheme();
-    const [centers, setCenters] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
+    
+    // We enforce the view type to ensure the UI has all required fields at compile-time instead of dealing with any[]
+    const [centersList, setCentersList] = useState<ServiceCenterView[]>([]);
+    
+    // UI states
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [searchTerm, setSearchTerm] = useState<string>("");
 
+    // We use a separate useEffect to fetch the data on component creation
     useEffect(() => {
         fetchCenters();
     }, []);
@@ -59,10 +89,12 @@ export default function MyCentersPage() {
     const fetchCenters = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get(API_BASE_URL);
-            const data = response.data;
-            // Map backend DTO to frontend structure
-            const mappedData = (data || []).map((center: any) => ({
+            // We use the centralized APP_CONFIG to keep API connections maintainable
+            const response = await axios.get<ServiceCenterDTO[]>(APP_CONFIG.api.serviceCenters);
+            
+            // We immediately map the DTO from the backend into our specific view interface.
+            // This isolates the UI logic from potential API changes.
+            const mappedData: ServiceCenterView[] = (response.data || []).map((center) => ({
                 id: center.centerId,
                 name: center.name,
                 location: center.address,
@@ -73,7 +105,7 @@ export default function MyCentersPage() {
                 mechanics: center.mechanicsCount || 0,
                 capacity: center.currentCapacity || 0
             }));
-            setCenters(mappedData);
+            setCentersList(mappedData);
         } catch (error) {
             console.error("Error fetching centers:", error);
             setSnackbar({ open: true, message: 'Failed to fetch centers from backend', severity: 'error' });
@@ -109,7 +141,8 @@ export default function MyCentersPage() {
     };
 
     const handleSave = async () => {
-        const payload = {
+        // Construct the DTO expected by the backend to create/update
+        const serviceCenterPayload = {
             name: formData.name,
             address: formData.location,
             contactPhone: formData.phone,
@@ -117,18 +150,19 @@ export default function MyCentersPage() {
             isActive: formData.status === 'Active',
             mechanicsCount: formData.mechanics,
             currentCapacity: formData.capacity,
-            // Owner ID should be retrieved from auth context, for now we assume it's set or handled by backend
-            ownerId: "00000000-0000-0000-0000-000000010011" // Placeholder
+            // Owner ID must be injected correctly to prevent orphans in the DB.
+            ownerId: APP_CONFIG.placeholders.ownerId
         };
 
         try {
             if (isEditMode && selectedId) {
-                await axios.put(`${API_BASE_URL}/${selectedId}`, payload);
+                await axios.put(`${APP_CONFIG.api.serviceCenters}/${selectedId}`, serviceCenterPayload);
             } else {
-                await axios.post(API_BASE_URL, payload);
+                await axios.post(APP_CONFIG.api.serviceCenters, serviceCenterPayload);
             }
 
-            fetchCenters(); // Refresh the list
+            // By re-fetching centers, we ensure the UI is synchronized with the new DB state
+            fetchCenters(); 
             setSnackbar({
                 open: true,
                 message: `Center ${isEditMode ? 'updated' : 'added'} successfully`,
@@ -148,9 +182,12 @@ export default function MyCentersPage() {
 
     const handleToggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-        const centerToUpdate = centers.find(c => c.id === id);
+        const centerToUpdate = centersList.find(c => c.id === id);
 
-        const payload = {
+        if (!centerToUpdate) return;
+
+        // Changing state directly impacts the downstream models, so we pass down the full object.
+        const serviceCenterPayload = {
             centerId: id,
             name: centerToUpdate.name,
             address: centerToUpdate.location,
@@ -159,12 +196,13 @@ export default function MyCentersPage() {
             isActive: newStatus === 'Active',
             mechanicsCount: centerToUpdate.mechanics,
             currentCapacity: centerToUpdate.capacity,
-            ownerId: "00000000-0000-0000-0000-000000010011" // Keep owner ID
+            ownerId: APP_CONFIG.placeholders.ownerId // Consistent extraction of hardcoded values
         };
 
         try {
-            await axios.put(`${API_BASE_URL}/${id}`, payload);
-            fetchCenters(); // Refresh the list
+            // We push the updated entity back to the backend.
+            await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, serviceCenterPayload);
+            fetchCenters(); 
             setSnackbar({
                 open: true,
                 message: `Center ${newStatus === 'Active' ? 'enabled' : 'disabled'} successfully`,
@@ -176,7 +214,8 @@ export default function MyCentersPage() {
         }
     };
 
-    const filteredCenters = centers.filter(c =>
+    // Filter results locally so the user doesn't wait for API round-trips when searching
+    const filteredCenters = centersList.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.manager.toLowerCase().includes(searchTerm.toLowerCase())
@@ -349,7 +388,7 @@ export default function MyCentersPage() {
                                             Revenue
                                         </Typography>
                                         <Typography variant="body2" color="#1e8e3e" align="center" sx={{ fontWeight: '800' }}>
-                                            Rs.{parseInt(center.revenue).toLocaleString()}
+                                            Rs.{Math.floor(center.revenue).toLocaleString()}
                                         </Typography>
                                     </Grid>
                                     <Box sx={{ width: '1px', height: '30px', bgcolor: '#f1f5f9', alignSelf: 'center' }} />
