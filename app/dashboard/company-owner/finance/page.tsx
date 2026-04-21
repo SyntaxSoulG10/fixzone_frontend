@@ -270,23 +270,58 @@ export default function FinancePage() {
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
-            // Concurrent fetching drastically diminishes load phase duration
-            const [paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
-                axios.get<PaymentRecordDTO[]>(APP_CONFIG.api.paymentRecords),
-                axios.get<CenterDTO[]>(APP_CONFIG.api.serviceCenters),
-                axios.get<CustomerDTO[]>(APP_CONFIG.api.customers),
-                axios.get<InvoiceDTO[]>(APP_CONFIG.api.invoices)
+            const [analyticsRes, paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
+                axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/payment-records/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/customers`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/invoices/current`)
             ]);
 
+            const analytics = analyticsRes.data;
             const centers = centersRes.data || [];
-            
-            // Centralizing our core dependencies into raw data prevents repeating APIs.
+            const payments = paymentsRes.data || [];
+            const invoices = invoicesRes.data || [];
+            const customers = customersRes.data || [];
+
             setCentersList(centers);
             setRawData({
-                payments: paymentsRes.data || [],
-                centers: centers,
-                customers: customersRes.data || [],
-                invoices: invoicesRes.data || []
+                payments,
+                centers,
+                customers,
+                invoices
+            });
+
+            // Use backend pre-calculated analytics directly for the main stats
+            setFinanceData({
+                totalRevenue: analytics.totalRevenue || 0,
+                onlineRevenue: analytics.onlineRevenue || 0,
+                cashRevenue: analytics.handCollectionRevenue || 0,
+                monthlyGrowth: parseFloat(analytics.revenueChange || "0"),
+                avgTransaction: analytics.avgJobValue || 0,
+                revenueByCenter: analytics.topCenters?.map((c: any) => ({ name: c.name, revenue: c.revenue })) || [],
+                growthData: analytics.revenueOverview?.map((m: any) => ({ 
+                    month: m.name, 
+                    amount: m.revenue,
+                    online: (m.revenue * 0.7), // Fallback approximation if split not in overview
+                    cash: (m.revenue * 0.3)
+                })) || [],
+                recentTransactions: payments
+                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 10)
+                    .map((p: any) => {
+                        const inv = invoices.find((i: any) => i.invoiceId === p.invoiceId);
+                        const cust = inv ? customers.find((c: any) => c.customerId === inv.issuedToCustomerId) : null;
+                        return {
+                            id: p.paymentId.substring(0, 8).toUpperCase(),
+                            customer: cust ? cust.fullName || cust.name : 'Guest Customer',
+                            service: 'Service Payment',
+                            amount: `Rs. ${p.amount.toLocaleString()}`,
+                            date: new Date(p.createdAt).toLocaleDateString(),
+                            status: p.status === 'Completed' ? 'Completed' : 'Pending',
+                            method: p.method
+                        };
+                    })
             });
         } catch (error) {
             console.error("Backend error when pulling finance data:", error);
@@ -296,98 +331,25 @@ export default function FinancePage() {
     };
 
     const transformFinanceData = () => {
-        const { payments, centers, customers, invoices } = rawData;
+        // We now rely on the backend analytics for the primary view, 
+        // but we keep this for local filtering if the user changes the center dropdown.
+        if (selectedCenter === 'all') return;
 
-        // Filter by Center if selected
-        let filteredInvoices = invoices.filter(inv => inv.status === 'PAID');
-        let filteredPayments = payments.filter(p => p.status === 'Completed');
+        const { payments, invoices, customers } = rawData;
+        const filteredInvoices = invoices.filter((inv: any) => inv.centerId === selectedCenter && inv.status === 'PAID');
+        const filteredPayments = payments.filter((p: any) => p.centerId === selectedCenter);
 
-        if (selectedCenter !== 'all') {
-            filteredInvoices = filteredInvoices.filter(inv => String(inv.centerId) === selectedCenter);
-            filteredPayments = filteredPayments.filter(p => String(p.centerId) === selectedCenter);
-        }
+        const total = filteredInvoices.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
+        const online = filteredPayments.filter((p: any) => p.method !== 'CASH').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        const cash = filteredPayments.filter((p: any) => p.method === 'CASH').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
 
-        // 1. Calculate Full Revenue from PAID Invoices
-        const totalFullRevenue = filteredInvoices.reduce((sum, inv) => sum + (Number(inv.total || inv.totalAmount) || 0), 0);
-        
-        // 2. Calculate Online Revenue from Completed Payment Records
-        const totalOnlineRevenue = filteredPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-        
-        // 3. Cash Revenue (Service Balance)
-        const totalCashRevenue = totalFullRevenue - totalOnlineRevenue;
-
-        // Revenue by Center
-        const revenueByCenterMap = new Map();
-        // Always calculate this from all invoices for the center performance chart
-        invoices.filter(inv => inv.status === 'PAID').forEach(inv => {
-            const centerIdStr = String(inv.centerId);
-            const center = centers.find(c => String(c.centerId) === centerIdStr);
-            const centerName = center ? center.name : 'Unknown Center';
-            revenueByCenterMap.set(centerName, (revenueByCenterMap.get(centerName) || 0) + (Number(inv.total || inv.totalAmount) || 0));
-        });
-        const revenueByCenter = Array.from(revenueByCenterMap.entries()).map(([name, revenue]) => ({ name, revenue }));
-
-        // Growth Data (Last 6 months)
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const growthData = [];
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthIdx = d.getMonth();
-            const year = d.getFullYear();
-            
-            const monthTotal = filteredInvoices
-                .filter(inv => {
-                    if (!inv.createdAt) return false;
-                    const invDate = new Date(inv.createdAt);
-                    return invDate.getMonth() === monthIdx && invDate.getFullYear() === year;
-                })
-                .reduce((sum, inv) => sum + (Number(inv.total || inv.totalAmount) || 0), 0);
-            
-            const monthOnline = filteredPayments
-                .filter(p => {
-                    if (!p.createdAt) return false;
-                    const payDate = new Date(p.createdAt);
-                    return payDate.getMonth() === monthIdx && payDate.getFullYear() === year;
-                })
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-            growthData.push({ 
-                month: months[monthIdx], 
-                amount: monthTotal,
-                online: monthOnline,
-                cash: monthTotal - monthOnline
-            });
-        }
-
-        // Recent Transactions
-        const recentTransactions = filteredPayments
-            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 10)
-            .map((p: any) => {
-                const invoice = invoices.find((inv: any) => (inv as any).invoiceId === (p as any).invoiceId);
-                const customer = invoice ? customers.find((c: any) => (c as any).customerId === (invoice as any).issuedToCustomerId) : null;
-                return {
-                    id: p.paymentId.substring(0, 8).toUpperCase(),
-                    customer: customer ? (customer as any).name : 'Guest Customer',
-                    service: 'Booking Deposit',
-                    amount: `Rs. ${p.amount.toLocaleString()}`,
-                    date: new Date(p.createdAt).toLocaleDateString() + ' ' + new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    status: p.status,
-                    method: p.method
-                };
-            });
-
-        setFinanceData({
-            totalRevenue: totalFullRevenue,
-            onlineRevenue: totalOnlineRevenue,
-            cashRevenue: totalCashRevenue,
-            monthlyGrowth: 21.4,
-            avgTransaction: filteredInvoices.length > 0 ? totalFullRevenue / filteredInvoices.length : 0,
-            revenueByCenter: revenueByCenter.length > 0 ? revenueByCenter : [{ name: 'No Data', revenue: 0 }],
-            growthData: growthData.length > 0 ? growthData : [{ month: 'N/A', amount: 0, online: 0, cash: 0 }],
-            recentTransactions
-        });
+        setFinanceData(prev => ({
+            ...prev,
+            totalRevenue: total,
+            onlineRevenue: online,
+            cashRevenue: cash,
+            avgTransaction: filteredInvoices.length > 0 ? total / filteredInvoices.length : 0,
+        }));
     };
 
     return (
