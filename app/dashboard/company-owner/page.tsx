@@ -86,7 +86,7 @@ export default function CompanyOwnerDashboard() {
             try {
                 const [serviceCentersResponse, customersResponse, analyticsResponse, ownerResponse] = await Promise.all([
                     axios.get<ServiceCenterData[]>(APP_CONFIG.api.serviceCenters + "/current"),
-                    axios.get<CustomerData[]>(APP_CONFIG.api.customers),
+                    axios.get<CustomerData[]>(APP_CONFIG.api.customers + "/current"),
                     axios.get<AnalyticsData>(APP_CONFIG.api.analytics + "/current"),
                     axios.get<any>(APP_CONFIG.api.owners + "/current")
                 ]);

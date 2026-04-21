@@ -82,8 +82,8 @@ const INITIAL_MANAGERS = [
     {
         id: 1,
         name: "Anil Perera",
-        center: "Colombo Main Branch",
-        email: "anil.p@fixzone.lk",
+        center: "Ranasinghe Motors - Colombo",
+        email: "anil.p@ranasinghe.lk",
         phone: "+94 77 123 4567",
         status: "Active",
         avatar: "",
@@ -92,31 +92,20 @@ const INITIAL_MANAGERS = [
     {
         id: 2,
         name: "Sunil Gunawardena",
-        center: "Kandy Service Center",
-        email: "sunil.g@fixzone.lk",
+        center: "Ranasinghe Motors - Kandy",
+        email: "sunil.g@ranasinghe.lk",
         phone: "+94 71 234 5678",
         status: "Active",
         avatar: "",
         lastLogin: "1 day ago"
-    },
-    {
-        id: 3,
-        name: "Nimali Dias",
-        center: "Galle Southern Hub",
-        email: "nimali.d@fixzone.lk",
-        phone: "+94 76 345 6789",
-        status: "Inactive",
-        avatar: "",
-        lastLogin: "Never"
     }
 ];
 
 const SERVICE_CENTERS = [
-    "Colombo Main Branch",
-    "Kandy Service Center",
-    "Galle Southern Hub",
-    "Negombo City Point",
-    "Kurunegala Express"
+    "Ranasinghe Motors - Colombo",
+    "Ranasinghe Motors - Kandy",
+    "Ranasinghe Motors - Galle",
+    "Ranasinghe Motors - Negombo"
 ];
 
 export default function ManagersPage() {
@@ -133,12 +122,12 @@ export default function ManagersPage() {
             try {
                 // Batch requests to parallelize API loading, significantly enhancing speed
                 const [managersRes, centersRes] = await Promise.all([
-                    axios.get<ManagerAPIResponse[]>(APP_CONFIG.api.managers),
-                    axios.get<CenterAPIResponse[]>(APP_CONFIG.api.serviceCenters)
+                    axios.get<ManagerAPIResponse[]>(APP_CONFIG.api.managers + "/current"),
+                    axios.get<CenterAPIResponse[]>(APP_CONFIG.api.serviceCenters + "/current")
                 ]);
 
                 // Create a fast lookup map rather than looping on every manager
-                const centersMap = centersRes.data.reduce((accumulationMap: { [key: number]: string }, center) => {
+                const centersMap = centersRes.data.reduce((accumulationMap: { [key: number]: string | any }, center) => {
                     accumulationMap[center.centerId] = center.name;
                     return accumulationMap;
                 }, {});

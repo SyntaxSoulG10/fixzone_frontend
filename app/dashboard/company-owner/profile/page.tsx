@@ -43,6 +43,9 @@ import {
     FiCheck,
     FiDownload
 } from "react-icons/fi";
+import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";
+import { useEffect } from "react";
 
 
 // Define strict prop representations to allow predictable component usage
@@ -150,7 +153,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                     <Grid>
                         <Box height="100%" mt={0.5} lineHeight={1}>
                             <Typography variant="h5" fontWeight="medium">
-                                TechServe Solutions
+                                Ranasinghe Motors
                             </Typography>
                             <Typography variant="button" color="text.secondary" fontWeight="regular">
                                 Authorized Service Provider
@@ -436,13 +439,44 @@ export default function ProfilePage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
-        "Company Name": "FixZone Lanka (Pvt) Ltd.",
-        "Registration": "PV 12345",
-        "Mobile": "+94 11 234 5678",
-        "Email": "support@fixzone.lk",
+        "Company Name": "Ranasinghe Motors",
+        "Registration": "FIX/OWN/001",
+        "Mobile": "+94 77 123 4567",
+        "Email": "info@ranasinghemotors.lk",
         "Location": "Colombo, Sri Lanka",
     });
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
+
+    useEffect(() => {
+        const fetchOwnerProfile = async () => {
+            try {
+                const response = await axios.get(APP_CONFIG.api.owners + "/current");
+                const owner = response.data;
+                if (owner) {
+                    setProfileData({
+                        "Company Name": owner.companyName || "Ranasinghe Motors",
+                        "Registration": owner.ownerCode || "FIX/OWN/001",
+                        "Mobile": owner.companyNumber || owner.phone || "+94 77 123 4567",
+                        "Email": owner.companyEmail || owner.email || "info@ranasinghemotors.lk",
+                        "Location": "Sri Lanka",
+                    });
+                    setOriginalProfileData({
+                        "Company Name": owner.companyName || "Ranasinghe Motors",
+                        "Registration": owner.ownerCode || "FIX/OWN/001",
+                        "Mobile": owner.companyNumber || owner.phone || "+94 77 123 4567",
+                        "Email": owner.companyEmail || owner.email || "info@ranasinghemotors.lk",
+                        "Location": "Sri Lanka",
+                    });
+                    if (owner.profilePictureUrl) {
+                        setProfileImage(owner.profilePictureUrl);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch owner profile:", error);
+            }
+        };
+        fetchOwnerProfile();
+    }, []);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -558,7 +592,7 @@ export default function ProfilePage() {
                             <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
                             <ProfileInfoCard
                                 title="Company Details"
-                                description="FixZone Lanka is a premier multi-brand vehicle service center specializing in diagnostics and express repairs. We are committed to transparency and speed."
+                                description="Ranasinghe Motors is a premium automotive service provider dedicated to professional vehicle maintenance and repair solutions. We prioritize customer trust and technical excellence."
                                 info={profileData}
                                 social={[
                                     { icon: <FiFacebook />, color: "primary" },

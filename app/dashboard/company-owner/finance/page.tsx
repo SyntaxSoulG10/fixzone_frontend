@@ -274,7 +274,7 @@ export default function FinancePage() {
                 axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`),
                 axios.get(`${APP_CONFIG.api.baseUrl}/payment-records/current`),
                 axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`),
-                axios.get(`${APP_CONFIG.api.baseUrl}/customers`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/customers/current`),
                 axios.get(`${APP_CONFIG.api.baseUrl}/invoices/current`)
             ]);
 

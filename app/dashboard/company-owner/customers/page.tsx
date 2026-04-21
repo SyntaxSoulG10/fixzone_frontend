@@ -14,7 +14,14 @@ import { useTheme } from "@mui/material/styles";
 import {
     FiUsers,
     FiUserPlus,
-    FiRefreshCw
+    FiRefreshCw,
+    FiSearch,
+    FiDownload,
+    FiFilter,
+    FiUser,
+    FiMoreVertical,
+    FiMail,
+    FiPhone
 } from "react-icons/fi";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -109,7 +116,7 @@ export default function CustomersPage() {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get<CustomerDTO[]>(APP_CONFIG.api.customers);
+                const response = await axios.get<CustomerDTO[]>(APP_CONFIG.api.customers + "/current");
                 //const response = await axios.get<ServiceCenterDTO[]>(APP_CONFIG.api.serviceCenters);
                 const mappedCustomers: Customer[] = response.data.map((customer: CustomerDTO) => ({
                     id: customer.userId ?? customer.id ?? 0,
