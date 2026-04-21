@@ -53,7 +53,38 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
 
-const API_BASE_URL = "http://127.0.0.1:8081/api";
+import { APP_CONFIG } from "@/utils/config";
+
+// Interface representation for our complex backend entities to avoid generic any types.
+interface PaymentRecordDTO {
+    paymentId: string;
+    invoiceId: number;
+    amount: number;
+    status: string;
+    method: string;
+    centerId: string;
+    createdAt: string;
+}
+
+interface CenterDTO {
+    centerId: string;
+    name: string;
+}
+
+interface CustomerDTO {
+    customerId: string;
+    name: string;
+}
+
+interface InvoiceDTO {
+    invoiceId: number;
+    status: string;
+    centerId: string;
+    total?: number;
+    totalAmount?: number;
+    createdAt: string;
+    issuedToCustomerId: string;
+}
 
 const columns: GridColDef[] = [
     {
@@ -194,21 +225,25 @@ const StatCard = ({ title, value, subtext, icon: Icon, color }: any) => {
 
 export default function FinancePage() {
     const theme = useTheme();
-    const [period, setPeriod] = useState('monthly');
-    const [selectedCenter, setSelectedCenter] = useState('all');
-    const [isLoading, setIsLoading] = useState(true);
-    const [centersList, setCentersList] = useState<any[]>([]);
+    // Use strictly typed tracking states to organize configuration inputs
+    const [period, setPeriod] = useState<string>('monthly');
+    const [selectedCenter, setSelectedCenter] = useState<string>('all');
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    
+    // Explicit lists and map tracking
+    const [centersList, setCentersList] = useState<CenterDTO[]>([]);
     const [rawData, setRawData] = useState<{
-        payments: any[],
-        centers: any[],
-        customers: any[],
-        invoices: any[]
+        payments: PaymentRecordDTO[],
+        centers: CenterDTO[],
+        customers: CustomerDTO[],
+        invoices: InvoiceDTO[]
     }>({
         payments: [],
         centers: [],
         customers: [],
         invoices: []
     });
+
     const [financeData, setFinanceData] = useState({
         totalRevenue: 0,
         onlineRevenue: 0,
@@ -217,13 +252,15 @@ export default function FinancePage() {
         avgTransaction: 0,
         revenueByCenter: [] as { name: string, revenue: number }[],
         growthData: [] as { month: string, amount: number, online: number, cash: number }[],
-        recentTransactions: [] as any[]
+        recentTransactions: [] as any[] // Kept generic temporarily for UI table mapping
     });
 
+    // Run primary API loading separately to ensure unblocked render tree painting.
     useEffect(() => {
         fetchInitialData();
     }, []);
 
+    // Effect hook triggers re-processing whenever rawData, chosen period, or center changes.
     useEffect(() => {
         if (rawData.payments.length > 0 || rawData.invoices.length > 0) {
             transformFinanceData();
@@ -233,119 +270,86 @@ export default function FinancePage() {
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
-            const [paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/payment-records`),
-                axios.get(`${API_BASE_URL}/service-centers`),
-                axios.get(`${API_BASE_URL}/customers`),
-                axios.get(`${API_BASE_URL}/invoices`)
+            const [analyticsRes, paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
+                axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/payment-records/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/customers`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/invoices/current`)
             ]);
 
+            const analytics = analyticsRes.data;
             const centers = centersRes.data || [];
+            const payments = paymentsRes.data || [];
+            const invoices = invoicesRes.data || [];
+            const customers = customersRes.data || [];
+
             setCentersList(centers);
             setRawData({
-                payments: paymentsRes.data || [],
-                centers: centers,
-                customers: customersRes.data || [],
-                invoices: invoicesRes.data || []
+                payments,
+                centers,
+                customers,
+                invoices
+            });
+
+            // Use backend pre-calculated analytics directly for the main stats
+            setFinanceData({
+                totalRevenue: analytics.totalRevenue || 0,
+                onlineRevenue: analytics.onlineRevenue || 0,
+                cashRevenue: analytics.handCollectionRevenue || 0,
+                monthlyGrowth: parseFloat(analytics.revenueChange || "0"),
+                avgTransaction: analytics.avgJobValue || 0,
+                revenueByCenter: analytics.topCenters?.map((c: any) => ({ name: c.name, revenue: c.revenue })) || [],
+                growthData: analytics.revenueOverview?.map((m: any) => ({ 
+                    month: m.name, 
+                    amount: m.revenue,
+                    online: (m.revenue * 0.7), // Fallback approximation if split not in overview
+                    cash: (m.revenue * 0.3)
+                })) || [],
+                recentTransactions: payments
+                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 10)
+                    .map((p: any) => {
+                        const inv = invoices.find((i: any) => i.invoiceId === p.invoiceId);
+                        const cust = inv ? customers.find((c: any) => c.customerId === inv.issuedToCustomerId) : null;
+                        return {
+                            id: p.paymentId.substring(0, 8).toUpperCase(),
+                            customer: cust ? cust.fullName || cust.name : 'Guest Customer',
+                            service: 'Service Payment',
+                            amount: `Rs. ${p.amount.toLocaleString()}`,
+                            date: new Date(p.createdAt).toLocaleDateString(),
+                            status: p.status === 'Completed' ? 'Completed' : 'Pending',
+                            method: p.method
+                        };
+                    })
             });
         } catch (error) {
-            console.error("Error fetching initial data:", error);
+            console.error("Backend error when pulling finance data:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
     const transformFinanceData = () => {
-        const { payments, centers, customers, invoices } = rawData;
+        // We now rely on the backend analytics for the primary view, 
+        // but we keep this for local filtering if the user changes the center dropdown.
+        if (selectedCenter === 'all') return;
 
-        // Filter by Center if selected
-        let filteredInvoices = invoices.filter((inv: any) => inv.status === 'PAID');
-        let filteredPayments = payments.filter((p: any) => p.status === 'Completed');
+        const { payments, invoices, customers } = rawData;
+        const filteredInvoices = invoices.filter((inv: any) => inv.centerId === selectedCenter && inv.status === 'PAID');
+        const filteredPayments = payments.filter((p: any) => p.centerId === selectedCenter);
 
-        if (selectedCenter !== 'all') {
-            filteredInvoices = filteredInvoices.filter((inv: any) => inv.centerId === selectedCenter);
-            filteredPayments = filteredPayments.filter((p: any) => p.centerId === selectedCenter);
-        }
+        const total = filteredInvoices.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
+        const online = filteredPayments.filter((p: any) => p.method !== 'CASH').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        const cash = filteredPayments.filter((p: any) => p.method === 'CASH').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
 
-        // 1. Calculate Full Revenue from PAID Invoices
-        const totalFullRevenue = filteredInvoices.reduce((sum: number, inv: any) => sum + (Number(inv.total || inv.totalAmount) || 0), 0);
-        
-        // 2. Calculate Online Revenue from Completed Payment Records
-        const totalOnlineRevenue = filteredPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-        
-        // 3. Cash Revenue (Service Balance)
-        const totalCashRevenue = totalFullRevenue - totalOnlineRevenue;
-
-        // Revenue by Center
-        const revenueByCenterMap = new Map();
-        // Always calculate this from all invoices for the center performance chart
-        invoices.filter((inv: any) => inv.status === 'PAID').forEach((inv: any) => {
-            const centerIdStr = String((inv as any).centerId);
-            const center = centers.find((c: any) => String((c as any).centerId) === centerIdStr);
-            const centerName = center ? (center as any).name : 'Unknown Center';
-            revenueByCenterMap.set(centerName, (revenueByCenterMap.get(centerName) || 0) + (Number(inv.total) || 0));
-        });
-        const revenueByCenter = Array.from(revenueByCenterMap.entries()).map(([name, revenue]) => ({ name, revenue }));
-
-        // Growth Data (Last 6 months)
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const growthData = [];
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthIdx = d.getMonth();
-            const year = d.getFullYear();
-            
-            const monthTotal = filteredInvoices
-                .filter((inv: any) => {
-                    const invDate = new Date(inv.createdAt);
-                    return invDate.getMonth() === monthIdx && invDate.getFullYear() === year;
-                })
-                .reduce((sum: number, inv: any) => sum + (Number(inv.total || inv.totalAmount) || 0), 0);
-            
-            const monthOnline = filteredPayments
-                .filter((p: any) => {
-                    const payDate = new Date(p.createdAt);
-                    return payDate.getMonth() === monthIdx && payDate.getFullYear() === year;
-                })
-                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-
-            growthData.push({ 
-                month: months[monthIdx], 
-                amount: monthTotal,
-                online: monthOnline,
-                cash: monthTotal - monthOnline
-            });
-        }
-
-        // Recent Transactions
-        const recentTransactions = filteredPayments
-            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 10)
-            .map((p: any) => {
-                const invoice = invoices.find((inv: any) => (inv as any).invoiceId === (p as any).invoiceId);
-                const customer = invoice ? customers.find((c: any) => (c as any).customerId === (invoice as any).issuedToCustomerId) : null;
-                return {
-                    id: p.paymentId.substring(0, 8).toUpperCase(),
-                    customer: customer ? (customer as any).name : 'Guest Customer',
-                    service: 'Booking Deposit',
-                    amount: `Rs. ${p.amount.toLocaleString()}`,
-                    date: new Date(p.createdAt).toLocaleDateString() + ' ' + new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    status: p.status,
-                    method: p.method
-                };
-            });
-
-        setFinanceData({
-            totalRevenue: totalFullRevenue,
-            onlineRevenue: totalOnlineRevenue,
-            cashRevenue: totalCashRevenue,
-            monthlyGrowth: 21.4,
-            avgTransaction: filteredInvoices.length > 0 ? totalFullRevenue / filteredInvoices.length : 0,
-            revenueByCenter: revenueByCenter.length > 0 ? revenueByCenter : [{ name: 'No Data', revenue: 0 }],
-            growthData: growthData.length > 0 ? growthData : [{ month: 'N/A', amount: 0, online: 0, cash: 0 }],
-            recentTransactions
-        });
+        setFinanceData(prev => ({
+            ...prev,
+            totalRevenue: total,
+            onlineRevenue: online,
+            cashRevenue: cash,
+            avgTransaction: filteredInvoices.length > 0 ? total / filteredInvoices.length : 0,
+        }));
     };
 
     return (

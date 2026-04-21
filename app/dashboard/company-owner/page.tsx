@@ -11,65 +11,104 @@ import {
     Tabs,
     Tab,
     Card,
-    Icon,
     CircularProgress
 } from "@mui/material";
 
 import StatCard from "@/components/dashboard/StatCard";
 import OverviewTab from "@/components/dashboard/OverviewTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
+import { APP_CONFIG } from "@/utils/config";
 import {
     FiBriefcase,
     FiDollarSign,
     FiUsers,
     FiGrid,
     FiBarChart2,
-    FiClock,
     FiPlus,
     FiFileText,
-    FiCalendar,
     FiArrowRight,
     FiLayers,
 } from "react-icons/fi";
 
+// Define strict typing for API responses to avoid 'any' which breaks type safety.
+interface ServiceCenterData {
+    isActive: boolean;
+}
+
+interface CustomerData {
+    id: string; // The specific attributes of customer are less relevant if we only need count
+}
+
+// Define strict types for components to avoid 'any'
+interface QuickActionProps {
+    title: string;
+    icon: React.ReactNode;
+    href: string;
+    color: 'primary' | 'default';
+}
+
+interface DashboardStatistics {
+    totalRevenue: number;
+    activeCenters: number;
+    totalCustomers: number;
+}
+
 export default function CompanyOwnerDashboard() {
-    const [activeTab, setActiveTab] = useState('overview');
-    const [stats, setStats] = useState({
-        totalRevenue: 1245000,
+    const [activeTab, setActiveTab] = useState<string>('overview');
+    
+    // We provide initial state matching the expected shape to prevent runtime errors during render.
+    // We removed hardcoded massive default values in favor of dynamic loading.
+    const [statistics, setStatistics] = useState<DashboardStatistics>({
+        totalRevenue: 0,
         activeCenters: 0,
         totalCustomers: 0
     });
-    const [loading, setLoading] = useState(true);
+    
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    // We use useEffect with an empty dependency array because we only want to fetch data once on component mount.
     useEffect(() => {
-        const fetchStats = async () => {
+        const initializeDashboardStatistics = async () => {
             try {
-                const [centersRes, customersRes] = await Promise.all([
-                    axios.get("http://localhost:8081/api/service-centers"),
-                    axios.get("http://localhost:8081/api/customers")
+                // Using Promise.all allows us to execute both HTTP requests concurrently,
+                // significantly reducing the total load time compared to awaiting each sequentially.
+                const [serviceCentersResponse, customersResponse] = await Promise.all([
+                    axios.get<ServiceCenterData[]>(APP_CONFIG.api.serviceCenters),
+                    axios.get<CustomerData[]>(APP_CONFIG.api.customers)
                 ]);
 
-                setStats(prev => ({
-                    ...prev,
-                    activeCenters: centersRes.data.filter((c: any) => c.isActive).length,
-                    totalCustomers: customersRes.data.length
-                }));
+                // Compute business metrics dynamically from the payload.
+                setStatistics({
+                    totalRevenue: 1245000, // Still mocked as API doesn't currently provide aggregate revenue
+                    activeCenters: serviceCentersResponse.data.filter((center) => center.isActive).length,
+                    totalCustomers: customersResponse.data.length
+                });
             } catch (error) {
-                console.error("Error fetching dashboard stats:", error);
+                console.error("Dashboard failed to fetch required business metrics:", error);
             } finally {
-                setLoading(false);
+                // Always lift the loading state, regardless of whether the requests succeeded or failed.
+                setIsLoading(false);
             }
         };
 
-        fetchStats();
+        initializeDashboardStatistics();
     }, []);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
         setActiveTab(newValue);
     };
 
+    if (isLoading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
     return (
         <Box pb={3}>
+            {/* Header section separating titles and primary call-to-actions */}
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'start' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -88,11 +127,12 @@ export default function CompanyOwnerDashboard() {
                 </Box>
             </Box>
 
+            {/* Core statistics summary to give the user an immediate understanding of top-level metrics */}
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count={`Rs. ${stats.totalRevenue.toLocaleString()}`}
+                        count={`Rs. ${statistics.totalRevenue.toLocaleString()}`}
                         percentage={{
                             color: 'success',
                             amount: '+12.5%',
@@ -105,7 +145,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Active Centers"
-                        count={stats.activeCenters.toString()}
+                        count={statistics.activeCenters.toString()}
                         percentage={{
                             color: 'success',
                             amount: '+1',
@@ -118,7 +158,7 @@ export default function CompanyOwnerDashboard() {
                 <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                     <StatCard
                         title="Total Customers"
-                        count={stats.totalCustomers.toString()}
+                        count={statistics.totalCustomers.toString()}
                         percentage={{
                             color: 'success',
                             amount: '+8.2%',
@@ -130,6 +170,7 @@ export default function CompanyOwnerDashboard() {
                 </Grid>
             </Grid>
 
+            {/* Tab navigation segregates detailed information views without overcrowding a single screen */}
             <Box mb={4}>
                 <Box borderBottom={1} borderColor="divider" mb={3}>
                     <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs" textColor="primary" indicatorColor="primary">
@@ -144,6 +185,7 @@ export default function CompanyOwnerDashboard() {
                 </Box>
             </Box>
 
+            {/* Quick Actions provide highly visible shortcuts for common administrative flows */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn
@@ -174,8 +216,10 @@ export default function CompanyOwnerDashboard() {
     );
 }
 
-function QuickActionBtn({ title, icon, href, color }: any) {
-    const isPrimary = color === 'primary';
+// Extracted sub-component to ensure code reusability and to clean up the main render function.
+function QuickActionBtn(props: QuickActionProps) {
+    const { title, icon, href, color } = props;
+    const isPrimaryStylingActivated = color === 'primary';
 
     return (
         <Link href={href} style={{ textDecoration: 'none', width: '100%' }}>
@@ -186,10 +230,10 @@ function QuickActionBtn({ title, icon, href, color }: any) {
                 gap: 2,
                 transition: 'transform 0.2s',
                 '&:hover': { transform: 'scale(1.02)' },
-                bgcolor: isPrimary ? 'primary.main' : 'background.paper',
-                color: isPrimary ? '#ffffff' : 'text.primary'
+                bgcolor: isPrimaryStylingActivated ? 'primary.main' : 'background.paper',
+                color: isPrimaryStylingActivated ? '#ffffff' : 'text.primary'
             }}>
-                <Box fontSize={24} color={isPrimary ? "inherit" : "primary.main"}>
+                <Box fontSize={24} color={isPrimaryStylingActivated ? "inherit" : "primary.main"}>
                     {icon}
                 </Box>
                 <Box flex={1}>

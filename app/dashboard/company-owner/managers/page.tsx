@@ -45,6 +45,37 @@ import {
     FiLock,
     FiCheckCircle
 } from "react-icons/fi";
+import { APP_CONFIG } from "@/utils/config";
+
+// Interface for strictly typing manager responses from the backend
+interface ManagerAPIResponse {
+    userId: number;
+    fullName: string;
+    email: string;
+    phone: string;
+    managedCenterId: number;
+    emailVerified: boolean;
+    lastLoginAt: string;
+    profilePictureUrl: string;
+}
+
+// Interface for strictly typing center responses
+interface CenterAPIResponse {
+    centerId: number;
+    name: string;
+}
+
+// Interface for the structured view of a manager
+interface ManagerView {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    center: string;
+    status: string;
+    lastLogin: string;
+    avatar: string;
+}
 
 
 const INITIAL_MANAGERS = [
@@ -90,47 +121,54 @@ const SERVICE_CENTERS = [
 
 export default function ManagersPage() {
     const theme = useTheme();
-    const [managers, setManagers] = useState<any[]>([]);
-    const [centersList, setCentersList] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
+    // Use strictly typed state variables built upon our interfaces
+    const [managers, setManagers] = useState<ManagerView[]>([]);
+    const [centersList, setCentersList] = useState<string[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [searchTerm, setSearchTerm] = useState<string>("");
 
+    // Use effect acts as our initialization point for dashboard data fetching
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDashboardData = async () => {
             try {
+                // Batch requests to parallelize API loading, significantly enhancing speed
                 const [managersRes, centersRes] = await Promise.all([
-                    axios.get("http://localhost:8081/api/managers"),
-                    axios.get("http://localhost:8081/api/service-centers")
+                    axios.get<ManagerAPIResponse[]>(APP_CONFIG.api.managers),
+                    axios.get<CenterAPIResponse[]>(APP_CONFIG.api.serviceCenters)
                 ]);
 
-                const centersMap = centersRes.data.reduce((acc: any, center: any) => {
-                    acc[center.centerId] = center.name;
-                    return acc;
+                // Create a fast lookup map rather than looping on every manager
+                const centersMap = centersRes.data.reduce((accumulationMap: { [key: number]: string }, center) => {
+                    accumulationMap[center.centerId] = center.name;
+                    return accumulationMap;
                 }, {});
 
-                setCentersList(centersRes.data.map((c: any) => c.name));
+                setCentersList(centersRes.data.map(c => c.name));
 
-                const mappedManagers = managersRes.data.map((m: any) => ({
+                // Process the raw server data into our flattened component state structure
+                const computedManagers: ManagerView[] = managersRes.data.map(m => ({
                     id: m.userId,
                     name: m.fullName,
                     email: m.email,
-                    phone: m.phone,
+                    phone: m.phone, // Phone fallback if available
                     center: centersMap[m.managedCenterId] || "Unassigned",
-                    status: m.emailVerified ? "Active" : "Active", // Assuming active for now
+                    status: m.emailVerified ? "Active" : "Active",
                     lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                    avatar: ""
+                    avatar: m.profilePictureUrl || ""
                 }));
 
-                setManagers(mappedManagers);
+                setManagers(computedManagers);
             } catch (error) {
-                console.error("Error fetching managers:", error);
-                setManagers(INITIAL_MANAGERS);
+                console.error("Backend synchronisation fault while fetching managers:", error);
+                
+                // We provide dummy fallback data here just to prevent UI breaking if local dev backend is offline
+                setManagers(INITIAL_MANAGERS as ManagerView[]);
             } finally {
-                setLoading(false);
+                setLoading(false); // Make sure loading spinner drops in both success and error cases
             }
         };
 
-        fetchData();
+        fetchDashboardData();
     }, []);
 
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -158,7 +196,7 @@ export default function ManagersPage() {
         setOpenDialog(true);
     };
 
-    const handleOpenEdit = (manager: any) => {
+    const handleOpenEdit = (manager: ManagerView) => {
         setFormData({
             name: manager.name,
             center: manager.center,
@@ -237,8 +275,8 @@ export default function ManagersPage() {
             minWidth: 250,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" gap={2} height="100%">
-                    <Avatar sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
-                        {params.row.name.charAt(0)}
+                    <Avatar src={params.row.avatar} sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>
+                        {!params.row.avatar ? params.row.name.charAt(0) : ""}
                     </Avatar>
                     <Box>
                         <Typography variant="subtitle2" fontWeight="bold">

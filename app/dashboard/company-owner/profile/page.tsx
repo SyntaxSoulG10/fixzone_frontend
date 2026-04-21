@@ -44,7 +44,20 @@ import {
     FiDownload
 } from "react-icons/fi";
 
-function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: any) {
+
+// Define strict prop representations to allow predictable component usage
+interface ProfileHeaderProps {
+    tabValue: number;
+    onTabChange: (event: React.SyntheticEvent, newValue: number) => void;
+    children: React.ReactNode;
+    bannerImage: string | null;
+    onBannerChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    profileImage: string | null;
+    onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+// Extracted Header Component helps cleanly separate profile manipulation logic from content sections
+function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,11 +132,11 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                             }
                         >
                             <Avatar
-                                src={profileImage || "/assets/images/bruce-mars.jpg"}
+                                src={profileImage || ""}
                                 alt="profile-image"
                                 sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
-                                <FiTool color="#EA580C" size={32} />
+                                {!profileImage && <FiTool color="#EA580C" size={32} />}
                             </Avatar>
                         </Badge>
                         <input
@@ -205,7 +218,21 @@ function PlatformSettings() {
     );
 }
 
-function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: any) {
+// Define the shape of our InfoCard to prevent props errors and unstructured passing
+interface ProfileInfoCardProps {
+    title: string;
+    description: string;
+    info: { [key: string]: string };
+    social: { icon: React.ReactNode, color: "primary" | "info" | "warning" | "success" | "error" | "default" }[];
+    onEdit: () => void;
+    isEditing: boolean;
+    onSave: () => void;
+    onCancel: () => void;
+    onChange: (field: string, value: string) => void;
+}
+
+// Extracted card abstraction to maintain standard padding and separation from container logic.
+function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
     return (
         <Card sx={{ height: "100%", boxShadow: 'none' }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" pt={2} px={2}>
