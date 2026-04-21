@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -15,6 +15,8 @@ import {
 } from "react-icons/fi";
 import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
+import { getServiceCenters } from "@/lib/api";
+import type { ServiceCenter } from "@/types/service-center";
 
 type Station = {
   id: string;
@@ -31,11 +33,11 @@ type Station = {
 
 const STATIONS: Station[] = [
   { 
-    id: "abc-1", 
-    name: "ABC Service Center", 
-    rating: 4.5, 
+    id: "c0000000-0000-0000-0000-000000000001", 
+    name: "Taylor Express Maintenance", 
+    rating: 4.8, 
     reviews: 234,
-    location: "Colombo", 
+    location: "New York", 
     distance: "2.5 km",
     image: "/garages/garage01.jpg",
     priceRange: "$$",
@@ -111,11 +113,34 @@ export default function BookServicePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [centers, setCenters] = useState<ServiceCenter[]>([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
+    getServiceCenters()
+      .then((data) => {
+        setCenters(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load service centers", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
+
+  const stations: Station[] =
+    centers.length > 0
+      ? centers.map((center) => ({
+          id: center.centerId,
+          name: center.name,
+          rating: center.rating ?? 0,
+          reviews: 0,
+          location: center.address ?? "Unknown",
+          distance: "",
+          image: "/garages/garage01.jpg",
+          priceRange: "$$",
+          services: center.supportedVehicleBrands ?? [],
+          openStatus: center.isActive ? "Open Now" : "Closed",
+        }))
+      : STATIONS;
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
@@ -123,7 +148,7 @@ export default function BookServicePage() {
     );
   };
 
-  const filteredStations = STATIONS.filter(
+  const filteredStations = stations.filter(
     (s) =>
       s.rating >= minRating &&
       (location === "All" || s.location === location) &&

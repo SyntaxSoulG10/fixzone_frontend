@@ -1,25 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiCalendar, FiClock, FiCreditCard, FiInfo, FiChevronRight } from "react-icons/fi";
-import { MdOutlineQrCodeScanner } from "react-icons/md";
+import { FiArrowLeft, FiCalendar, FiClock, FiInfo, FiChevronRight, FiPackage, FiTruck } from "react-icons/fi";
 import Image from "next/image";
 import { useState } from "react";
 import { useBooking } from "@/context/BookingContext";
 import { format } from "date-fns";
 import Button from "@/components/UI/Button";
+import { executeStripePayment } from "@/lib/api";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { bookingData } = useBooking();
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "qr">("card");
-  const [isBooked, setIsBooked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fallback data if context is empty (for dev/direct access)
   const pkg = bookingData.selectedPackage;
   const vehicle = bookingData.selectedVehicle;
   const date = bookingData.selectedDate;
   const time = bookingData.selectedTime;
+  const paymentId = bookingData.paymentId;
 
   if (!pkg || !vehicle) {
     return (
@@ -32,39 +32,56 @@ export default function CheckoutPage() {
     );
   }
 
-  const bookingPrice = pkg.price;
-  const discount = 0;
-  const bookingCharge = bookingPrice * 0.1;
+  const bookingCharge = pkg.price * 0.1;
 
-  const handlePay = () => {
-    alert("Booked!");
-    setIsBooked(true);
+  const handlePay = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!paymentId) {
+        throw new Error("Booking session expired. Please go back and try again.");
+      }
+
+      const stripeUrl = await executeStripePayment(paymentId);
+
+      if (stripeUrl && stripeUrl.startsWith("http")) {
+        window.location.href = stripeUrl;
+      } else {
+        throw new Error("Invalid payment URL received from server.");
+      }
+    } catch (err: any) {
+      console.error("Stripe payment error:", err);
+      setError(err.message || "Failed to initiate payment. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Back Button & Title */}
       <div className="flex items-center gap-4 mb-8">
-        <button 
+        <button
           onClick={() => router.back()}
           className="p-2 hover:bg-slate-100 rounded-full transition-colors"
         >
           <FiArrowLeft className="w-6 h-6 text-slate-800" />
         </button>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Initial Payment</h1>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Confirm & Pay</h1>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Side: Summary Cards */}
+        {/* Left Side: Summary Details */}
         <div className="flex-1 space-y-6">
-          
+
           {/* Vehicle Banner */}
           <div className="relative rounded-3xl overflow-hidden shadow-sm h-64 md:h-80 group">
-            <Image 
-              src={vehicle.image} 
-              alt={vehicle.brand} 
-              fill 
-              className="object-cover transition-transform duration-700 group-hover:scale-105" 
+            <Image
+              src={vehicle.image}
+              alt={vehicle.brand}
+              fill
+              sizes="(max-width: 768px) 100vw, 60vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-8 left-8 text-white">
@@ -75,10 +92,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Date & Time Chips */}
+          {/* Booking Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-6 shadow-sm">
-              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+            {/* Date */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-5 shadow-sm">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <FiCalendar className="w-6 h-6 text-orange-500" />
               </div>
               <div>
@@ -87,8 +105,9 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-6 shadow-sm">
-              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+            {/* Time */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-5 shadow-sm">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <FiClock className="w-6 h-6 text-orange-500" />
               </div>
               <div>
@@ -96,124 +115,106 @@ export default function CheckoutPage() {
                 <p className="font-bold text-slate-900">{time || "Not selected"}</p>
               </div>
             </div>
-          </div>
 
-          {/* Price Breakdown */}
-          <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-8">
-              <div className="w-6 h-6 flex items-center justify-center">
-                <FiInfo className="text-slate-400" />
+            {/* Package */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-5 shadow-sm">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <FiPackage className="w-6 h-6 text-orange-500" />
               </div>
-              <h3 className="font-bold text-slate-800">Price Breakdown</h3>
-            </div>
-
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between items-center text-slate-600">
-                <span className="font-medium">Booking Price</span>
-                <span className="font-bold text-slate-900 font-mono">Rs {bookingPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-600">
-                <span className="font-medium">Discount</span>
-                <span className="font-bold text-green-500 font-mono">Rs {discount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-
-            <div className="bg-orange-50/50 rounded-3xl p-6 border border-orange-100 flex items-center justify-between">
               <div>
-                <p className="text-orange-600 font-black text-sm">Booking Charge (10%)</p>
-                <p className="text-[10px] text-orange-400 font-bold">Pay now to confirm slot</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Service Package</p>
+                <p className="font-bold text-slate-900">{pkg.name}</p>
               </div>
-              <div className="text-right">
-                <span className="text-3xl font-black text-orange-600 font-mono tracking-tight">
-                  Rs {bookingCharge.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
+            </div>
+
+            {/* Vehicle */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 flex items-center gap-5 shadow-sm">
+              <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <FiTruck className="w-6 h-6 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Vehicle</p>
+                <p className="font-bold text-slate-900">{vehicle.brand} {vehicle.model}</p>
               </div>
             </div>
           </div>
 
           {/* Note */}
           <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex gap-4">
-            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-              <FiInfo className="text-red-500" />
-            </div>
+            <FiInfo className="text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs font-bold text-red-600 leading-relaxed">
-              Note: Remaining balance will be collected at Service Center after service completion.
+              Note: Remaining balance will be collected at the Service Center after service completion.
             </p>
           </div>
         </div>
 
-        {/* Right Side: Payment Methods */}
-        <div className="w-full lg:w-[420px]">
-          <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm h-full flex flex-col justify-between">
-            <div>
-              <h3 className="text-xl font-black text-slate-900 mb-8 tracking-tight">Payment Method</h3>
-              
-              <div className="space-y-4 mb-12">
-                <div 
-                  onClick={() => setPaymentMethod("card")}
-                  className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === "card" ? "border-orange-500 bg-white" : "border-slate-50 bg-slate-50/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                      paymentMethod === "card" ? "bg-orange-100" : "bg-white border border-slate-100 shadow-sm"
-                    }`}>
-                      <FiCreditCard className={`w-6 h-6 ${paymentMethod === "card" ? "text-orange-600" : "text-slate-400"}`} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Credit / Debit Card</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">VISA, MASTER, AMEX</p>
-                    </div>
-                  </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    paymentMethod === "card" ? "border-orange-500 shadow-lg shadow-orange-100" : "border-slate-200"
-                  }`}>
-                    {paymentMethod === "card" && <div className="w-3 h-3 bg-orange-500 rounded-full" />}
-                  </div>
-                </div>
+        {/* Right Side: Price & Pay */}
+        <div className="w-full lg:w-[380px]">
+          <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm flex flex-col gap-8 sticky top-8">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Order Summary</h3>
 
-                <div 
-                  onClick={() => setPaymentMethod("qr")}
-                  className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === "qr" ? "border-orange-500 bg-white" : "border-slate-50 bg-slate-50/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                      paymentMethod === "qr" ? "bg-orange-100" : "bg-white border border-slate-100 shadow-sm"
-                    }`}>
-                      <MdOutlineQrCodeScanner className={`w-6 h-6 ${paymentMethod === "qr" ? "text-orange-600" : "text-slate-400"}`} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Lanka QR Pay</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Pay using any local bank app</p>
-                    </div>
+            {/* Price Breakdown */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-medium">Service Price</span>
+                <span className="font-bold text-slate-900 font-mono">
+                  Rs {pkg.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-medium">Discount</span>
+                <span className="font-bold text-green-500 font-mono">Rs 0.00</span>
+              </div>
+              <div className="border-t border-slate-100 pt-4">
+                <div className="bg-orange-50/80 rounded-3xl p-5 border border-orange-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-600 font-black text-sm">Booking Charge (10%)</p>
+                    <p className="text-[10px] text-orange-400 font-bold">Pay now to confirm slot</p>
                   </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    paymentMethod === "qr" ? "border-orange-500 shadow-lg shadow-orange-100" : "border-slate-200"
-                  }`}>
-                    {paymentMethod === "qr" && <div className="w-3 h-3 bg-orange-500 rounded-full" />}
-                  </div>
+                  <span className="text-2xl font-black text-orange-600 font-mono tracking-tight">
+                    Rs {bookingCharge.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
             </div>
 
+            {/* Pay Button */}
             <div>
-              <Button 
+              <Button
                 onClick={handlePay}
-                disabled={isBooked}
-                className={`w-full h-16 rounded-2xl text-lg font-black transition-all duration-500 flex items-center justify-center gap-3 active:scale-95 shadow-xl ${
-                  isBooked 
-                  ? "bg-green-500 hover:bg-green-600 shadow-green-200 text-white" 
-                  : "bg-orange-500 hover:bg-orange-600 shadow-orange-200 text-white"
-                }`}
+                disabled={loading}
+                className={`w-full h-16 rounded-2xl text-lg font-black transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl
+                  ${loading
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                    : "bg-orange-500 hover:bg-orange-600 shadow-orange-200 text-white"
+                  }`}
               >
-                {isBooked ? "Booked Successfully" : "Pay Booking Charge"}
-                {!isBooked && <FiChevronRight className="w-5 h-5" />}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Pay Booking Charge
+                    <FiChevronRight className="w-5 h-5" />
+                  </>
+                )}
               </Button>
-              <p className="mt-4 text-[10px] text-center text-slate-400 px-8 leading-relaxed font-medium">
-                By clicking pay, you agree to our <span className="text-slate-600 font-bold border-b border-slate-200">terms and conditions</span> for online bookings.
+
+              {error && (
+                <div className="mt-4 bg-red-50 border border-red-100 rounded-2xl p-4">
+                  <p className="text-xs text-center text-red-600 font-bold leading-relaxed">{error}</p>
+                </div>
+              )}
+
+              <p className="mt-4 text-[10px] text-center text-slate-400 px-6 leading-relaxed font-medium">
+                By clicking pay, you agree to our{" "}
+                <span className="text-slate-600 font-bold border-b border-slate-200">terms and conditions</span>{" "}
+                for online bookings. You will be redirected to Stripe.
               </p>
             </div>
           </div>
