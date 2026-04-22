@@ -317,8 +317,11 @@ export default function ServicesPage() {
                                             step="0.01"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="0.00"
-                                            value={currentPackage.price}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, price: parseFloat(e.target.value) })}
+                                            value={isNaN(currentPackage.price) ? "" : currentPackage.price}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, price: val });
+                                            }}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -330,8 +333,11 @@ export default function ServicesPage() {
                                             step="5"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="30"
-                                            value={currentPackage.duration}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, duration: parseInt(e.target.value) })}
+                                            value={isNaN(currentPackage.duration) ? "" : currentPackage.duration}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, duration: val });
+                                            }}
                                         />
                                     </div>
                                 </div>

@@ -93,7 +93,7 @@ export default function CompanyOwnerDashboard() {
 
                 const analyticsData = analyticsResponse.data;
                 setAnalytics(analyticsData);
-                setCompanyName(ownerResponse.data.companyName || "Ranasinghe Motors");
+                setCompanyName(ownerResponse.data.companyName || "Company Dashboard");
 
                 setStatistics({
                     totalRevenue: analyticsData.totalRevenue || 0,
@@ -101,7 +101,7 @@ export default function CompanyOwnerDashboard() {
                     totalCustomers: customersResponse.data.length,
                     revenueChange: analyticsData.revenueChange || "+0%",
                     jobsChange: analyticsData.jobsChange || "+0%",
-                    customersChange: "+8.2%" 
+                    customersChange: analyticsData.jobsChange || "+0%" // Using jobsChange as fallback if customer change isn't modeled
                 });
             } catch (error) {
                 console.error("Dashboard failed to fetch required business metrics:", error);
@@ -167,8 +167,8 @@ export default function CompanyOwnerDashboard() {
                         count={statistics.activeCenters.toString()}
                         percentage={{
                             color: 'success',
-                            amount: '+1',
-                            label: 'New branch opened'
+                            amount: '',
+                            label: 'Total registered locations'
                         }}
                         icon={<FiBriefcase />}
                         color="primary"

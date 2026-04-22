@@ -57,10 +57,11 @@ interface ProfileHeaderProps {
     onBannerChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     profileImage: string | null;
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    companyName: string;
 }
 
 // Extracted Header Component helps cleanly separate profile manipulation logic from content sections
-function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: ProfileHeaderProps) {
+function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange, companyName }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,7 +154,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                     <Grid>
                         <Box height="100%" mt={0.5} lineHeight={1}>
                             <Typography variant="h5" fontWeight="medium">
-                                Ranasinghe Motors
+                                {companyName}
                             </Typography>
                             <Typography variant="button" color="text.secondary" fontWeight="regular">
                                 Authorized Service Provider
@@ -454,17 +455,17 @@ export default function ProfilePage() {
                 const owner = response.data;
                 if (owner) {
                     setProfileData({
-                        "Company Name": owner.companyName || "Ranasinghe Motors",
-                        "Registration": owner.ownerCode || "FIX/OWN/001",
-                        "Mobile": owner.companyNumber || owner.phone || "+94 77 123 4567",
-                        "Email": owner.companyEmail || owner.email || "info@ranasinghemotors.lk",
+                        "Company Name": owner.companyName || "N/A",
+                        "Registration": owner.ownerCode || "N/A",
+                        "Mobile": owner.companyNumber || owner.phone || "N/A",
+                        "Email": owner.companyEmail || owner.email || "N/A",
                         "Location": "Sri Lanka",
                     });
                     setOriginalProfileData({
-                        "Company Name": owner.companyName || "Ranasinghe Motors",
-                        "Registration": owner.ownerCode || "FIX/OWN/001",
-                        "Mobile": owner.companyNumber || owner.phone || "+94 77 123 4567",
-                        "Email": owner.companyEmail || owner.email || "info@ranasinghemotors.lk",
+                        "Company Name": owner.companyName || "N/A",
+                        "Registration": owner.ownerCode || "N/A",
+                        "Mobile": owner.companyNumber || owner.phone || "N/A",
+                        "Email": owner.companyEmail || owner.email || "N/A",
                         "Location": "Sri Lanka",
                     });
                     if (owner.profilePictureUrl) {
@@ -584,6 +585,7 @@ export default function ProfilePage() {
             onBannerChange={handleBannerChange}
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
+            companyName={profileData["Company Name"]}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
@@ -592,7 +594,7 @@ export default function ProfilePage() {
                             <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
                             <ProfileInfoCard
                                 title="Company Details"
-                                description="Ranasinghe Motors is a premium automotive service provider dedicated to professional vehicle maintenance and repair solutions. We prioritize customer trust and technical excellence."
+                                description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence in every repair.`}
                                 info={profileData}
                                 social={[
                                     { icon: <FiFacebook />, color: "primary" },

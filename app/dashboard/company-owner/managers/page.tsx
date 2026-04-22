@@ -78,35 +78,7 @@ interface ManagerView {
 }
 
 
-const INITIAL_MANAGERS = [
-    {
-        id: 1,
-        name: "Anil Perera",
-        center: "Ranasinghe Motors - Colombo",
-        email: "anil.p@ranasinghe.lk",
-        phone: "+94 77 123 4567",
-        status: "Active",
-        avatar: "",
-        lastLogin: "2 hours ago"
-    },
-    {
-        id: 2,
-        name: "Sunil Gunawardena",
-        center: "Ranasinghe Motors - Kandy",
-        email: "sunil.g@ranasinghe.lk",
-        phone: "+94 71 234 5678",
-        status: "Active",
-        avatar: "",
-        lastLogin: "1 day ago"
-    }
-];
 
-const SERVICE_CENTERS = [
-    "Ranasinghe Motors - Colombo",
-    "Ranasinghe Motors - Kandy",
-    "Ranasinghe Motors - Galle",
-    "Ranasinghe Motors - Negombo"
-];
 
 export default function ManagersPage() {
     const theme = useTheme();
@@ -143,15 +115,12 @@ export default function ManagersPage() {
                     center: centersMap[m.managedCenterId] || "Unassigned",
                     status: m.emailVerified ? "Active" : "Active",
                     lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                    avatar: m.profilePictureUrl || ""
+                    avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName)}&background=random&color=fff`
                 }));
 
                 setManagers(computedManagers);
             } catch (error) {
-                console.error("Backend synchronisation fault while fetching managers:", error);
-                
-                // We provide dummy fallback data here just to prevent UI breaking if local dev backend is offline
-                setManagers(INITIAL_MANAGERS as ManagerView[]);
+                setManagers([]);
             } finally {
                 setLoading(false); // Make sure loading spinner drops in both success and error cases
             }
@@ -475,7 +444,7 @@ export default function ManagersPage() {
                                 label="Assign Service Center"
                                 onChange={handleChange}
                             >
-                                {SERVICE_CENTERS.map((center) => (
+                                {centersList.map((center) => (
                                     <MenuItem key={center} value={center}>{center}</MenuItem>
                                 ))}
                             </Select>
