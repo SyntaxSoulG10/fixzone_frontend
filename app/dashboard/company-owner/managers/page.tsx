@@ -49,29 +49,31 @@ import { APP_CONFIG } from "@/utils/config";
 
 // Interface for strictly typing manager responses from the backend
 interface ManagerAPIResponse {
-    userId: number;
+    userId: string; // Changed to string for UUID
     fullName: string;
     email: string;
     phone: string;
-    managedCenterId: number;
+    managedCenterId: string; // Changed to string for UUID
     emailVerified: boolean;
+    status: string;
     lastLoginAt: string;
     profilePictureUrl: string;
 }
 
 // Interface for strictly typing center responses
 interface CenterAPIResponse {
-    centerId: number;
+    centerId: string; // Changed to string for UUID
     name: string;
 }
 
 // Interface for the structured view of a manager
 interface ManagerView {
-    id: number;
+    id: string; // Changed to string for UUID
     name: string;
     email: string;
     phone: string;
     center: string;
+    centerId: string; // Keep track of the ID for updates
     status: string;
     lastLogin: string;
     avatar: string;
@@ -88,44 +90,51 @@ export default function ManagersPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState<string>("");
 
+    const [centersOriginal, setCentersOriginal] = useState<CenterAPIResponse[]>([]);
+
     // Use effect acts as our initialization point for dashboard data fetching
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            // Batch requests to parallelize API loading, significantly enhancing speed
+            const [managersRes, centersRes] = await Promise.all([
+                axios.get<ManagerAPIResponse[]>(APP_CONFIG.api.managers + "/current"),
+                axios.get<CenterAPIResponse[]>(APP_CONFIG.api.serviceCenters + "/current")
+            ]);
+
+            setCentersOriginal(centersRes.data);
+            
+            // Create a fast lookup map rather than looping on every manager
+            const centersMap = centersRes.data.reduce((accumulationMap: { [key: string]: string }, center) => {
+                accumulationMap[center.centerId] = center.name;
+                return accumulationMap;
+            }, {});
+
+            setCentersList(centersRes.data.map(c => c.name));
+
+            // Process the raw server data into our flattened component state structure
+            const computedManagers: ManagerView[] = managersRes.data.map(m => ({
+                id: m.userId,
+                name: m.fullName,
+                email: m.email,
+                phone: m.phone,
+                center: centersMap[m.managedCenterId] || "Unassigned",
+                centerId: m.managedCenterId,
+                status: m.status || "Active",
+                lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+                avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName)}&background=random&color=fff`
+            }));
+
+            setManagers(computedManagers);
+        } catch (error) {
+            console.error("Failed to fetch dashboard data", error);
+            setManagers([]);
+        } finally {
+            setLoading(false); // Make sure loading spinner drops in both success and error cases
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                // Batch requests to parallelize API loading, significantly enhancing speed
-                const [managersRes, centersRes] = await Promise.all([
-                    axios.get<ManagerAPIResponse[]>(APP_CONFIG.api.managers + "/current"),
-                    axios.get<CenterAPIResponse[]>(APP_CONFIG.api.serviceCenters + "/current")
-                ]);
-
-                // Create a fast lookup map rather than looping on every manager
-                const centersMap = centersRes.data.reduce((accumulationMap: { [key: number]: string | any }, center) => {
-                    accumulationMap[center.centerId] = center.name;
-                    return accumulationMap;
-                }, {});
-
-                setCentersList(centersRes.data.map(c => c.name));
-
-                // Process the raw server data into our flattened component state structure
-                const computedManagers: ManagerView[] = managersRes.data.map(m => ({
-                    id: m.userId,
-                    name: m.fullName,
-                    email: m.email,
-                    phone: m.phone, // Phone fallback if available
-                    center: centersMap[m.managedCenterId] || "Unassigned",
-                    status: m.emailVerified ? "Active" : "Active",
-                    lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                    avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName)}&background=random&color=fff`
-                }));
-
-                setManagers(computedManagers);
-            } catch (error) {
-                setManagers([]);
-            } finally {
-                setLoading(false); // Make sure loading spinner drops in both success and error cases
-            }
-        };
-
         fetchDashboardData();
     }, []);
 
@@ -137,11 +146,11 @@ export default function ManagersPage() {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: "",
-        center: "",
+        center: "", // This is the center name from selection
         email: "",
         phone: "",
         status: "Active",
@@ -168,28 +177,43 @@ export default function ManagersPage() {
         setOpenDialog(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name || !formData.center) {
             setSnackbar({ open: true, message: 'Please fill in all required fields.', severity: 'error' });
             return;
         }
 
-        if (isEditMode && selectedId !== null) {
-            setManagers(prev => prev.map(m =>
-                m.id === selectedId ? { ...m, ...formData, lastLogin: m.lastLogin } : m
-            ));
-            setSnackbar({ open: true, message: 'Manager updated successfully', severity: 'success' });
-        } else {
-            const newId = Math.max(...managers.map(m => m.id), 0) + 1;
-            setManagers(prev => [...prev, { id: newId, ...formData, avatar: "", lastLogin: "Never" }]);
-            if (formData.sendInvite) {
-                console.log(`Sending invitation email to ${formData.email}`);
-                setSnackbar({ open: true, message: 'Manager added & invitation sent!', severity: 'success' });
-            } else {
-                setSnackbar({ open: true, message: 'Manager added successfully', severity: 'success' });
-            }
+        // Find the center ID from the selected name
+        const selectedCenter = centersOriginal.find(c => c.name === formData.center);
+        if (!selectedCenter) {
+            setSnackbar({ open: true, message: 'Invalid service center selected.', severity: 'error' });
+            return;
         }
-        setOpenDialog(false);
+
+        const payload = {
+            fullName: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            managedCenterId: selectedCenter.centerId,
+            status: formData.status,
+            passwordHash: "temporary-password", // In a real app, this would be handled via invite flow
+            sendInvite: formData.sendInvite
+        };
+
+        try {
+            if (isEditMode && selectedId !== null) {
+                await axios.put(`${APP_CONFIG.api.managers}/${selectedId}`, payload);
+                setSnackbar({ open: true, message: 'Manager updated successfully', severity: 'success' });
+            } else {
+                await axios.post(APP_CONFIG.api.managers, payload);
+                setSnackbar({ open: true, message: 'Manager created successfully', severity: 'success' });
+            }
+            setOpenDialog(false);
+            fetchDashboardData(); // Refresh list
+        } catch (error) {
+            console.error("Operation failed", error);
+            setSnackbar({ open: true, message: 'Failed to save manager. Please try again.', severity: 'error' });
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<{ name?: string; value: unknown }> | SelectChangeEvent<string>) => {
@@ -203,14 +227,31 @@ export default function ManagersPage() {
         setFormData(prev => ({ ...prev, [name as string]: newValue }));
     };
 
-    const handleToggleStatus = (id: number, currentStatus: string) => {
+    const handleToggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-        setManagers(prev => prev.map(m => m.id === id ? { ...m, status: newStatus } : m));
-        setSnackbar({
-            open: true,
-            message: `Account access ${newStatus === 'Active' ? 'enabled' : 'disabled'}`,
-            severity: 'success'
-        });
+        try {
+            await axios.put(`${APP_CONFIG.api.managers}/${id}`, { status: newStatus });
+            setSnackbar({
+                open: true,
+                message: `Account access ${newStatus === 'Active' ? 'enabled' : 'disabled'}`,
+                severity: 'success'
+            });
+            fetchDashboardData();
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Failed to update status.', severity: 'error' });
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this manager?")) {
+            try {
+                await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
+                setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
+                fetchDashboardData();
+            } catch (error) {
+                setSnackbar({ open: true, message: 'Failed to delete manager.', severity: 'error' });
+            }
+        }
     };
 
     const getStatusChipColor = (status: string) => {
@@ -220,9 +261,9 @@ export default function ManagersPage() {
     };
 
     const filteredManagers = managers.filter(m =>
-        m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.center.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.email.toLowerCase().includes(searchTerm.toLowerCase())
+        m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.center?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const columns: GridColDef[] = [
@@ -316,17 +357,24 @@ export default function ManagersPage() {
                         onClick={() => handleOpenEdit(params.row)}
                         sx={{ textTransform: 'none', borderRadius: 2 }}
                     >
-                        Edit Access
+                        Edit
                     </Button>
                     <Button
                         size="small"
-                        color={params.row.status === 'Active' ? 'error' : 'success'}
+                        color={params.row.status === 'Active' ? 'warning' : 'success'}
                         onClick={() => handleToggleStatus(params.row.id, params.row.status)}
-                        startIcon={params.row.status === 'Active' ? <FiPower /> : <FiCheckCircle />}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                        sx={{ textTransform: 'none', borderRadius: 2, minWidth: 80 }}
                     >
-                        {params.row.status === 'Active' ? 'Disable' : 'Activate'}
+                        {params.row.status === 'Active' ? 'Deactivate' : 'Activate'}
                     </Button>
+                    <IconButton 
+                        size="small" 
+                        color="error" 
+                        onClick={() => handleDelete(params.row.id)}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        <FiTrash2 />
+                    </IconButton>
                 </Box>
             )
         }
