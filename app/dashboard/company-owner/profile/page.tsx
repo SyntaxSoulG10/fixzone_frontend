@@ -12,9 +12,6 @@ import {
     Tabs,
     Icon,
     Divider,
-    Switch,
-    FormGroup,
-    FormControlLabel,
     TextField,
     IconButton,
     Snackbar,
@@ -35,7 +32,6 @@ import {
     FiTwitter,
     FiInstagram,
     FiTool,
-    FiActivity,
     FiSave,
     FiX,
     FiCamera,
@@ -190,35 +186,6 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                 {children}
             </Card>
         </Box>
-    );
-}
-
-function PlatformSettings() {
-    return (
-        <Card sx={{ boxShadow: 'none', height: '100%' }}>
-            <Box p={2}>
-                <Typography variant="h6" fontWeight="medium" textTransform="capitalize">
-                    Platform Settings
-                </Typography>
-            </Box>
-            <Box pt={1} pb={2} px={2} lineHeight={1.25}>
-                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
-                    Service Alerts
-                </Typography>
-                <Box display="flex" flexDirection="column" mb={3}>
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
-                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
-                </Box>
-                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
-                    Customer Settings
-                </Typography>
-                <Box display="flex" flexDirection="column">
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
-                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
-                </Box>
-            </Box>
-        </Card>
     );
 }
 
@@ -431,7 +398,6 @@ function BillingTab() {
 
 export default function ProfilePage() {
     const [tabValue, setTabValue] = useState(0);
-    const [isWorkshopOpen, setIsWorkshopOpen] = useState(true);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
 
@@ -501,11 +467,6 @@ export default function ProfilePage() {
 
     const handleProfileChange = (field: string, value: string) => {
         setProfileData(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleSaveStatus = () => {
-        setSnackbarMessage("Workshop status and capacity saved!");
-        setSnackbarOpen(true);
     };
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -589,82 +550,32 @@ export default function ProfilePage() {
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
-                    <Grid container spacing={1}>
-                        <Grid size={{ xs: 12, md: 7, xl: 8 }} sx={{ display: "flex" }}>
-                            <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
-                            <ProfileInfoCard
-                                title="Company Details"
-                                description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence in every repair.`}
-                                info={profileData}
-                                social={[
-                                    { icon: <FiFacebook />, color: "primary" },
-                                    { icon: <FiTwitter />, color: "info" },
-                                    { icon: <FiInstagram />, color: "warning" },
-                                ]}
-                                isEditing={isEditing}
-                                onEdit={handleEdit}
-                                onSave={handleSaveProfile}
-                                onCancel={handleCancel}
-                                onChange={handleProfileChange}
-                            />
-                            <Divider orientation="vertical" sx={{ mx: 0 }} />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 5, xl: 4 }}>
-                            <Box pl={3} pr={2} height="100%">
-                                <Typography variant="h6" fontWeight="medium" textTransform="capitalize" mb={2}>
-                                    Workshop Status
-                                </Typography>
-                                <Box component={Card} variant="outlined" p={3} sx={{ borderColor: 'grey.300' }}>
-                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            <FiActivity color={isWorkshopOpen ? "#4caf50" : "#f44336"} />
-                                            <Typography variant="button" fontWeight="bold" color={isWorkshopOpen ? "success.main" : "error.main"}>
-                                                {isWorkshopOpen ? "Currently Open" : "Closed"}
-                                            </Typography>
-                                        </Box>
-                                        <Switch
-                                            checked={isWorkshopOpen}
-                                            onChange={(e) => setIsWorkshopOpen(e.target.checked)}
-                                            color="success"
-                                        />
-                                    </Box>
-
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        label="Daily Capacity Limit"
-                                        defaultValue="25"
-                                        type="number"
-                                        sx={{ mb: 2 }}
-                                    />
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        label="Emergency Hotline"
-                                        defaultValue="+94 77 999 0000"
-                                    />
-                                    <Box pt={2}>
-                                        <Button
-                                            fullWidth
-                                            variant="contained"
-                                            sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}
-                                            onClick={handleSaveStatus}
-                                        >
-                                            Save Status
-                                        </Button>
-                                    </Box>
-                                </Box>
+                    <Grid container spacing={1} justifyContent="center">
+                        <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
+                            <Box sx={{ width: "100%" }}>
+                                <ProfileInfoCard
+                                    title="Company Details"
+                                    description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence in every repair.`}
+                                    info={profileData}
+                                    social={[
+                                        { icon: <FiFacebook />, color: "primary" },
+                                        { icon: <FiTwitter />, color: "info" },
+                                        { icon: <FiInstagram />, color: "warning" },
+                                    ]}
+                                    isEditing={isEditing}
+                                    onEdit={handleEdit}
+                                    onSave={handleSaveProfile}
+                                    onCancel={handleCancel}
+                                    onChange={handleProfileChange}
+                                />
                             </Box>
                         </Grid>
                     </Grid>
                 )}
 
                 {tabValue === 1 && (
-                    <Grid container spacing={1}>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <PlatformSettings />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid container spacing={1} justifyContent="center">
+                        <Grid size={{ xs: 12, md: 8, xl: 6 }}>
                             <Card sx={{ boxShadow: 'none', height: '100%' }}>
                                 <Box p={2}>
                                     <Typography variant="h6" fontWeight="medium">
