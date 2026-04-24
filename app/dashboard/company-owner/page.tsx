@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import APP_CONFIG from "@/config";
 import {
     Grid,
     Box,
@@ -45,8 +46,8 @@ export default function CompanyOwnerDashboard() {
         const fetchStats = async () => {
             try {
                 const [centersRes, customersRes] = await Promise.all([
-                    axios.get("http://localhost:8081/api/service-centers"),
-                    axios.get("http://localhost:8081/api/customers")
+                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/service-centers`),
+                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/customers`)
                 ]);
 
                 setStats(prev => ({

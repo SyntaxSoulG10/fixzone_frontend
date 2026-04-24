@@ -5,9 +5,10 @@ import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
 import axios from "axios";
+import APP_CONFIG from "@/config";
 
-const API_BASE_URL = "http://127.0.0.1:8081/api/service-packages";
-const CENTERS_API_URL = "http://127.0.0.1:8081/api/service-centers";
+const API_BASE_URL = `${APP_CONFIG.API_BASE_URL}/api/service-packages`;
+const CENTERS_API_URL = `${APP_CONFIG.API_BASE_URL}/api/service-centers`;
 
 interface ServicePackage {
     id: string;

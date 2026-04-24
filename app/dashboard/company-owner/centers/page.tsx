@@ -42,8 +42,9 @@ import {
     FiActivity
 } from "react-icons/fi";
 import axios from "axios";
+import APP_CONFIG from "@/config";
 
-const API_BASE_URL = "http://127.0.0.1:8081/api/service-centers";
+const API_BASE_URL = `${APP_CONFIG.API_BASE_URL}/api/service-centers`;
 const PRIMARY_ORANGE = "#f3651c";
 
 export default function MyCentersPage() {

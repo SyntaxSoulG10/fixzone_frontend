@@ -7,6 +7,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import { FiUsers, FiMail, FiShield, FiUserCheck, FiFilter, FiUserX, FiBell, FiUser, FiPlus, FiX, FiSearch, FiCheckCircle, FiAlertCircle, FiRefreshCw } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { toast } from "react-toastify";
+import APP_CONFIG from "@/config";
 
 interface UserRecord {
     id: string;
@@ -50,7 +51,7 @@ export default function UsersPage() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await axios.get("http://localhost:8080/api/admin/users");
+            const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/users`);
             const transformed = response.data.map((u: any) => ({
                 id: u.userId,
                 name: u.fullName || 'Unknown User',
@@ -90,7 +91,7 @@ export default function UsersPage() {
             // Optimistic update
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: action } : u));
             
-            await axios.post(`http://localhost:8080/api/admin/users/${userId}/status?status=${action}`);
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/users/${userId}/status?status=${action}`);
             toast.success(`Account for ${confirmModal.userName} is now ${action}`);
         } catch (error) {
             toast.error("Action failed. Reverting changes.");

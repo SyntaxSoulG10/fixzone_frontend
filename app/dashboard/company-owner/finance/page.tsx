@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import APP_CONFIG from "@/config";
 import {
     Grid,
     Card,
@@ -53,7 +54,7 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 
 
-const API_BASE_URL = "http://127.0.0.1:8081/api";
+const API_BASE_URL = `${APP_CONFIG.API_BASE_URL}/api`;
 
 const columns: GridColDef[] = [
     {

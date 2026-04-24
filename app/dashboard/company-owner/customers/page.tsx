@@ -20,6 +20,7 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
+import APP_CONFIG from "@/config";
 
 interface Customer {
     id: number;
@@ -93,7 +94,7 @@ export default function CustomersPage() {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get("http://localhost:8081/api/customers");
+                const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/customers`);
                 const mappedCustomers = response.data.map((customer: any) => ({
                     ...customer,
                     id: customer.userId || customer.id, // Ensure we have an 'id' for DataGrid
