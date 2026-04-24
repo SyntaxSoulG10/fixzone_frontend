@@ -10,28 +10,41 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError("");
 
-        // MOCK LOGIN LOGIC
-        // In a real app, this would hit an API.
-        setTimeout(() => {
-            let role = "customer";
-            if (email.includes("admin")) role = "super_admin";
-            else if (email.includes("owner")) role = "company_owner";
-            else if (email.includes("manager")) role = "service_manager";
+        try {
+            const response = await fetch("http://localhost:8081/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-            // Save to localStorage (Simulating session)
-            localStorage.setItem("userRole", role);
-            localStorage.setItem("tenantId", "tenant-123");
-            localStorage.setItem("customerId", "00000000-0000-0000-0000-000000000001");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || "Invalid credentials or server error");
+            }
 
-            // Redirect based on role
-            router.push(`/dashboard/${role.replace('_', '-')}`);
+            const data = await response.json();
+            
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+            } else if (typeof data === 'string') {
+                localStorage.setItem("token", data);
+            }
+
+            router.push("/dashboard/service-manager");
+            
+        } catch (err: any) {
+            setError(err.message || "Failed to connect to the server.");
             setLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -50,6 +63,12 @@ export default function LoginPage() {
                                 </h1>
                                 <p className="text-gray-500 text-sm">Sign in to your account to continue.</p>
                             </div>
+
+                            {error && (
+                                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                    {error}
+                                </div>
+                            )}
 
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div>
