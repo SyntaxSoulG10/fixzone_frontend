@@ -405,6 +405,8 @@ export default function ProfilePage() {
     const [profileImage, setProfileImage] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [fullOwnerData, setFullOwnerData] = useState<any>(null);
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
         "Company Name": "Ranasinghe Motors",
         "Registration": "FIX/OWN/001",
@@ -420,6 +422,8 @@ export default function ProfilePage() {
                 const response = await axios.get(APP_CONFIG.api.owners + "/current");
                 const owner = response.data;
                 if (owner) {
+                    setUserId(owner.userId);
+                    setFullOwnerData(owner);
                     setProfileData({
                         "Company Name": owner.companyName || "N/A",
                         "Registration": owner.ownerCode || "N/A",
@@ -436,6 +440,9 @@ export default function ProfilePage() {
                     });
                     if (owner.profilePictureUrl) {
                         setProfileImage(owner.profilePictureUrl);
+                    }
+                    if (owner.bannerImageUrl) {
+                        setBannerImage(owner.bannerImageUrl);
                     }
                 }
             } catch (error) {
@@ -459,10 +466,29 @@ export default function ProfilePage() {
         setIsEditing(false);
     };
 
-    const handleSaveProfile = () => {
-        setIsEditing(false);
-        setSnackbarMessage("Profile details updated successfully!");
-        setSnackbarOpen(true);
+    const handleSaveProfile = async () => {
+        if (!userId || !fullOwnerData) return;
+
+        try {
+            const updatedOwner = {
+                ...fullOwnerData,
+                companyName: profileData["Company Name"],
+                companyNumber: profileData["Mobile"],
+                companyEmail: profileData["Email"],
+                profilePictureUrl: profileImage,
+                bannerImageUrl: bannerImage
+            };
+
+            await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
+            setIsEditing(false);
+            setSnackbarMessage("Profile details updated successfully!");
+            setSnackbarOpen(true);
+            setFullOwnerData(updatedOwner);
+        } catch (error) {
+            console.error("Failed to save profile:", error);
+            setSnackbarMessage("Failed to save profile changes.");
+            setSnackbarOpen(true);
+        }
     };
 
     const handleProfileChange = (field: string, value: string) => {
@@ -472,20 +498,50 @@ export default function ProfilePage() {
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setBannerImage(imageUrl);
-            setSnackbarMessage("Cover image updated!");
-            setSnackbarOpen(true);
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                setBannerImage(base64String);
+                
+                // Persistence - Save immediately when image is selected
+                if (userId && fullOwnerData) {
+                    try {
+                        const updatedData = { ...fullOwnerData, bannerImageUrl: base64String };
+                        await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedData);
+                        setSnackbarMessage("Cover image updated and saved!");
+                        setSnackbarOpen(true);
+                        setFullOwnerData(updatedData);
+                    } catch (error) {
+                        console.error("Failed to save banner:", error);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
     };
 
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setProfileImage(imageUrl);
-            setSnackbarMessage("Profile picture updated!");
-            setSnackbarOpen(true);
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                setProfileImage(base64String);
+                
+                // Persistence - Save immediately when image is selected
+                if (userId && fullOwnerData) {
+                    try {
+                        const updatedData = { ...fullOwnerData, profilePictureUrl: base64String };
+                        await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedData);
+                        setSnackbarMessage("Profile picture updated and saved!");
+                        setSnackbarOpen(true);
+                        setFullOwnerData(updatedData);
+                    } catch (error) {
+                        console.error("Failed to save profile picture:", error);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
     };
 
