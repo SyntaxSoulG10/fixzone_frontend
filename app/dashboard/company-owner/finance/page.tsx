@@ -204,6 +204,8 @@ export default function FinancePage() {
             {/* REVENUE GROWTH CHART */}
             <ChartCard
                 title="Revenue Overview"
+                description="Monthly revenue growth tracking across all payment methods"
+                date="Last updated just now"
                 color="primary"
                 chart={
                     <ResponsiveContainer width="100%" height="100%">
@@ -233,6 +235,8 @@ export default function FinancePage() {
             <Box mt={4}>
                 <ChartCard
                     title="Center Performance"
+                    description="Revenue comparison across all active service center branches"
+                    date="Real-time performance data"
                     color="warning"
                     chart={
                         <ResponsiveContainer width="100%" height="100%">
