@@ -90,7 +90,8 @@ export default function MyCentersPage() {
         setIsLoading(true);
         try {
             // We use the centralized APP_CONFIG to keep API connections maintainable
-            const response = await axios.get<ServiceCenterDTO[]>(APP_CONFIG.api.serviceCenters);
+            // Adding /current to scope the data to the hardcoded Ranasinghe Motors (FIX001) owner
+            const response = await axios.get<ServiceCenterDTO[]>(APP_CONFIG.api.serviceCenters + "/current");
             
             // We immediately map the DTO from the backend into our specific view interface.
             // This isolates the UI logic from potential API changes.

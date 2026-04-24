@@ -51,47 +51,66 @@ interface DashboardStatistics {
     totalRevenue: number;
     activeCenters: number;
     totalCustomers: number;
+    revenueChange: string;
+    jobsChange: string;
+    customersChange: string;
+}
+
+interface AnalyticsData {
+    totalRevenue: number;
+    revenueChange: string;
+    totalJobs: number;
+    jobsChange: string;
+    topCenters: any[];
+    revenueOverview: any[];
 }
 
 export default function CompanyOwnerDashboard() {
     const [activeTab, setActiveTab] = useState<string>('overview');
     
-    // We provide initial state matching the expected shape to prevent runtime errors during render.
-    // We removed hardcoded massive default values in favor of dynamic loading.
     const [statistics, setStatistics] = useState<DashboardStatistics>({
         totalRevenue: 0,
         activeCenters: 0,
-        totalCustomers: 0
+        totalCustomers: 0,
+        revenueChange: "+0%",
+        jobsChange: "+0%",
+        customersChange: "+0%"
     });
-    
+
+    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+    const [companyName, setCompanyName] = useState<string>("Company Dashboard");
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // We use useEffect with an empty dependency array because we only want to fetch data once on component mount.
     useEffect(() => {
-        const initializeDashboardStatistics = async () => {
+        const initializeDashboardData = async () => {
             try {
-                // Using Promise.all allows us to execute both HTTP requests concurrently,
-                // significantly reducing the total load time compared to awaiting each sequentially.
-                const [serviceCentersResponse, customersResponse] = await Promise.all([
-                    axios.get<ServiceCenterData[]>(APP_CONFIG.api.serviceCenters),
-                    axios.get<CustomerData[]>(APP_CONFIG.api.customers)
+                const [serviceCentersResponse, customersResponse, analyticsResponse, ownerResponse] = await Promise.all([
+                    axios.get<ServiceCenterData[]>(APP_CONFIG.api.serviceCenters + "/current"),
+                    axios.get<CustomerData[]>(APP_CONFIG.api.customers + "/current"),
+                    axios.get<AnalyticsData>(APP_CONFIG.api.analytics + "/current"),
+                    axios.get<any>(APP_CONFIG.api.owners + "/current")
                 ]);
 
-                // Compute business metrics dynamically from the payload.
+                const analyticsData = analyticsResponse.data;
+                setAnalytics(analyticsData);
+                setCompanyName(ownerResponse.data.companyName || "Company Dashboard");
+
                 setStatistics({
-                    totalRevenue: 1245000, // Still mocked as API doesn't currently provide aggregate revenue
+                    totalRevenue: analyticsData.totalRevenue || 0,
                     activeCenters: serviceCentersResponse.data.filter((center) => center.isActive).length,
-                    totalCustomers: customersResponse.data.length
+                    totalCustomers: customersResponse.data.length,
+                    revenueChange: analyticsData.revenueChange || "+0%",
+                    jobsChange: analyticsData.jobsChange || "+0%",
+                    customersChange: analyticsData.jobsChange || "+0%" // Using jobsChange as fallback if customer change isn't modeled
                 });
             } catch (error) {
                 console.error("Dashboard failed to fetch required business metrics:", error);
             } finally {
-                // Always lift the loading state, regardless of whether the requests succeeded or failed.
                 setIsLoading(false);
             }
         };
 
-        initializeDashboardStatistics();
+        initializeDashboardData();
     }, []);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -112,7 +131,7 @@ export default function CompanyOwnerDashboard() {
             <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'start' }} gap={3} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
-                        Company Dashboard
+                        {companyName} Dashboard
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
                         Welcome back! Manage your service centers and track performance.
@@ -134,8 +153,8 @@ export default function CompanyOwnerDashboard() {
                         title="Total Revenue"
                         count={`Rs. ${statistics.totalRevenue.toLocaleString()}`}
                         percentage={{
-                            color: 'success',
-                            amount: '+12.5%',
+                            color: statistics.revenueChange.startsWith('+') ? 'success' : 'danger',
+                            amount: statistics.revenueChange,
                             label: 'vs. last month'
                         }}
                         icon={<FiDollarSign />}
@@ -148,8 +167,8 @@ export default function CompanyOwnerDashboard() {
                         count={statistics.activeCenters.toString()}
                         percentage={{
                             color: 'success',
-                            amount: '+1',
-                            label: 'New branch opened'
+                            amount: '',
+                            label: 'Total registered locations'
                         }}
                         icon={<FiBriefcase />}
                         color="primary"
@@ -161,7 +180,7 @@ export default function CompanyOwnerDashboard() {
                         count={statistics.totalCustomers.toString()}
                         percentage={{
                             color: 'success',
-                            amount: '+8.2%',
+                            amount: statistics.customersChange,
                             label: 'vs. last month'
                         }}
                         icon={<FiUsers />}
@@ -180,8 +199,8 @@ export default function CompanyOwnerDashboard() {
                 </Box>
 
                 <Box minHeight={400}>
-                    {activeTab === 'overview' && <OverviewTab />}
-                    {activeTab === 'performance' && <PerformanceTab />}
+                    {activeTab === 'overview' && <OverviewTab data={analytics} />}
+                    {activeTab === 'performance' && <PerformanceTab data={analytics} />}
                 </Box>
             </Box>
 

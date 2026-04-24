@@ -12,9 +12,6 @@ import {
     Tabs,
     Icon,
     Divider,
-    Switch,
-    FormGroup,
-    FormControlLabel,
     TextField,
     IconButton,
     Snackbar,
@@ -35,7 +32,6 @@ import {
     FiTwitter,
     FiInstagram,
     FiTool,
-    FiActivity,
     FiSave,
     FiX,
     FiCamera,
@@ -43,6 +39,9 @@ import {
     FiCheck,
     FiDownload
 } from "react-icons/fi";
+import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";
+import { useEffect } from "react";
 
 
 // Define strict prop representations to allow predictable component usage
@@ -54,10 +53,11 @@ interface ProfileHeaderProps {
     onBannerChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     profileImage: string | null;
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    companyName: string;
 }
 
 // Extracted Header Component helps cleanly separate profile manipulation logic from content sections
-function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange }: ProfileHeaderProps) {
+function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerChange, profileImage, onProfileImageChange, companyName }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
 
@@ -150,7 +150,7 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                     <Grid>
                         <Box height="100%" mt={0.5} lineHeight={1}>
                             <Typography variant="h5" fontWeight="medium">
-                                TechServe Solutions
+                                {companyName}
                             </Typography>
                             <Typography variant="button" color="text.secondary" fontWeight="regular">
                                 Authorized Service Provider
@@ -186,35 +186,6 @@ function ProfileHeader({ tabValue, onTabChange, children, bannerImage, onBannerC
                 {children}
             </Card>
         </Box>
-    );
-}
-
-function PlatformSettings() {
-    return (
-        <Card sx={{ boxShadow: 'none', height: '100%' }}>
-            <Box p={2}>
-                <Typography variant="h6" fontWeight="medium" textTransform="capitalize">
-                    Platform Settings
-                </Typography>
-            </Box>
-            <Box pt={1} pb={2} px={2} lineHeight={1.25}>
-                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
-                    Service Alerts
-                </Typography>
-                <Box display="flex" flexDirection="column" mb={3}>
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Email on new booking</Typography>} />
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">SMS on urgent requests</Typography>} />
-                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Weekly performance digest</Typography>} />
-                </Box>
-                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
-                    Customer Settings
-                </Typography>
-                <Box display="flex" flexDirection="column">
-                    <FormControlLabel control={<Switch defaultChecked color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Visible to local customers</Typography>} />
-                    <FormControlLabel control={<Switch color="primary" />} label={<Typography variant="button" color="text.secondary" fontWeight="regular">Auto-approve standard services</Typography>} />
-                </Box>
-            </Box>
-        </Card>
     );
 }
 
@@ -427,7 +398,6 @@ function BillingTab() {
 
 export default function ProfilePage() {
     const [tabValue, setTabValue] = useState(0);
-    const [isWorkshopOpen, setIsWorkshopOpen] = useState(true);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
 
@@ -435,14 +405,52 @@ export default function ProfilePage() {
     const [profileImage, setProfileImage] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [fullOwnerData, setFullOwnerData] = useState<any>(null);
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
-        "Company Name": "FixZone Lanka (Pvt) Ltd.",
-        "Registration": "PV 12345",
-        "Mobile": "+94 11 234 5678",
-        "Email": "support@fixzone.lk",
+        "Company Name": "Ranasinghe Motors",
+        "Registration": "FIX/OWN/001",
+        "Mobile": "+94 77 123 4567",
+        "Email": "info@ranasinghemotors.lk",
         "Location": "Colombo, Sri Lanka",
     });
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
+
+    useEffect(() => {
+        const fetchOwnerProfile = async () => {
+            try {
+                const response = await axios.get(APP_CONFIG.api.owners + "/current");
+                const owner = response.data;
+                if (owner) {
+                    setUserId(owner.userId);
+                    setFullOwnerData(owner);
+                    setProfileData({
+                        "Company Name": owner.companyName || "N/A",
+                        "Registration": owner.ownerCode || "N/A",
+                        "Mobile": owner.companyNumber || owner.phone || "N/A",
+                        "Email": owner.companyEmail || owner.email || "N/A",
+                        "Location": "Sri Lanka",
+                    });
+                    setOriginalProfileData({
+                        "Company Name": owner.companyName || "N/A",
+                        "Registration": owner.ownerCode || "N/A",
+                        "Mobile": owner.companyNumber || owner.phone || "N/A",
+                        "Email": owner.companyEmail || owner.email || "N/A",
+                        "Location": "Sri Lanka",
+                    });
+                    if (owner.profilePictureUrl) {
+                        setProfileImage(owner.profilePictureUrl);
+                    }
+                    if (owner.bannerImageUrl) {
+                        setBannerImage(owner.bannerImageUrl);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch owner profile:", error);
+            }
+        };
+        fetchOwnerProfile();
+    }, []);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -458,38 +466,82 @@ export default function ProfilePage() {
         setIsEditing(false);
     };
 
-    const handleSaveProfile = () => {
-        setIsEditing(false);
-        setSnackbarMessage("Profile details updated successfully!");
-        setSnackbarOpen(true);
+    const handleSaveProfile = async () => {
+        if (!userId || !fullOwnerData) return;
+
+        try {
+            const updatedOwner = {
+                ...fullOwnerData,
+                companyName: profileData["Company Name"],
+                companyNumber: profileData["Mobile"],
+                companyEmail: profileData["Email"],
+                profilePictureUrl: profileImage,
+                bannerImageUrl: bannerImage
+            };
+
+            await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
+            setIsEditing(false);
+            setSnackbarMessage("Profile details updated successfully!");
+            setSnackbarOpen(true);
+            setFullOwnerData(updatedOwner);
+        } catch (error) {
+            console.error("Failed to save profile:", error);
+            setSnackbarMessage("Failed to save profile changes.");
+            setSnackbarOpen(true);
+        }
     };
 
     const handleProfileChange = (field: string, value: string) => {
         setProfileData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSaveStatus = () => {
-        setSnackbarMessage("Workshop status and capacity saved!");
-        setSnackbarOpen(true);
-    };
-
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setBannerImage(imageUrl);
-            setSnackbarMessage("Cover image updated!");
-            setSnackbarOpen(true);
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                setBannerImage(base64String);
+                
+                // Persistence - Save immediately when image is selected
+                if (userId && fullOwnerData) {
+                    try {
+                        const updatedData = { ...fullOwnerData, bannerImageUrl: base64String };
+                        await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedData);
+                        setSnackbarMessage("Cover image updated and saved!");
+                        setSnackbarOpen(true);
+                        setFullOwnerData(updatedData);
+                    } catch (error) {
+                        console.error("Failed to save banner:", error);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
     };
 
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const imageUrl = URL.createObjectURL(file);
-            setProfileImage(imageUrl);
-            setSnackbarMessage("Profile picture updated!");
-            setSnackbarOpen(true);
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                setProfileImage(base64String);
+                
+                // Persistence - Save immediately when image is selected
+                if (userId && fullOwnerData) {
+                    try {
+                        const updatedData = { ...fullOwnerData, profilePictureUrl: base64String };
+                        await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedData);
+                        setSnackbarMessage("Profile picture updated and saved!");
+                        setSnackbarOpen(true);
+                        setFullOwnerData(updatedData);
+                    } catch (error) {
+                        console.error("Failed to save profile picture:", error);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -550,85 +602,36 @@ export default function ProfilePage() {
             onBannerChange={handleBannerChange}
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
+            companyName={profileData["Company Name"]}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
-                    <Grid container spacing={1}>
-                        <Grid size={{ xs: 12, md: 7, xl: 8 }} sx={{ display: "flex" }}>
-                            <Divider orientation="vertical" sx={{ ml: -2, mr: 1 }} />
-                            <ProfileInfoCard
-                                title="Company Details"
-                                description="FixZone Lanka is a premier multi-brand vehicle service center specializing in diagnostics and express repairs. We are committed to transparency and speed."
-                                info={profileData}
-                                social={[
-                                    { icon: <FiFacebook />, color: "primary" },
-                                    { icon: <FiTwitter />, color: "info" },
-                                    { icon: <FiInstagram />, color: "warning" },
-                                ]}
-                                isEditing={isEditing}
-                                onEdit={handleEdit}
-                                onSave={handleSaveProfile}
-                                onCancel={handleCancel}
-                                onChange={handleProfileChange}
-                            />
-                            <Divider orientation="vertical" sx={{ mx: 0 }} />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 5, xl: 4 }}>
-                            <Box pl={3} pr={2} height="100%">
-                                <Typography variant="h6" fontWeight="medium" textTransform="capitalize" mb={2}>
-                                    Workshop Status
-                                </Typography>
-                                <Box component={Card} variant="outlined" p={3} sx={{ borderColor: 'grey.300' }}>
-                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            <FiActivity color={isWorkshopOpen ? "#4caf50" : "#f44336"} />
-                                            <Typography variant="button" fontWeight="bold" color={isWorkshopOpen ? "success.main" : "error.main"}>
-                                                {isWorkshopOpen ? "Currently Open" : "Closed"}
-                                            </Typography>
-                                        </Box>
-                                        <Switch
-                                            checked={isWorkshopOpen}
-                                            onChange={(e) => setIsWorkshopOpen(e.target.checked)}
-                                            color="success"
-                                        />
-                                    </Box>
-
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        label="Daily Capacity Limit"
-                                        defaultValue="25"
-                                        type="number"
-                                        sx={{ mb: 2 }}
-                                    />
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        label="Emergency Hotline"
-                                        defaultValue="+94 77 999 0000"
-                                    />
-                                    <Box pt={2}>
-                                        <Button
-                                            fullWidth
-                                            variant="contained"
-                                            sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}
-                                            onClick={handleSaveStatus}
-                                        >
-                                            Save Status
-                                        </Button>
-                                    </Box>
-                                </Box>
+                    <Grid container spacing={1} justifyContent="center">
+                        <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
+                            <Box sx={{ width: "100%" }}>
+                                <ProfileInfoCard
+                                    title="Company Details"
+                                    description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence in every repair.`}
+                                    info={profileData}
+                                    social={[
+                                        { icon: <FiFacebook />, color: "primary" },
+                                        { icon: <FiTwitter />, color: "info" },
+                                        { icon: <FiInstagram />, color: "warning" },
+                                    ]}
+                                    isEditing={isEditing}
+                                    onEdit={handleEdit}
+                                    onSave={handleSaveProfile}
+                                    onCancel={handleCancel}
+                                    onChange={handleProfileChange}
+                                />
                             </Box>
                         </Grid>
                     </Grid>
                 )}
 
                 {tabValue === 1 && (
-                    <Grid container spacing={1}>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <PlatformSettings />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid container spacing={1} justifyContent="center">
+                        <Grid size={{ xs: 12, md: 8, xl: 6 }}>
                             <Card sx={{ boxShadow: 'none', height: '100%' }}>
                                 <Box p={2}>
                                     <Typography variant="h6" fontWeight="medium">

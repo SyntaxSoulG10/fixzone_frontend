@@ -7,6 +7,13 @@ import {
     Typography,
     Divider,
     LinearProgress,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Stack,
+    TextField,
+    Button
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -27,6 +34,8 @@ import { FiDollarSign, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
 import React, { useState, useEffect } from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 import { getCompanyAnalytics, AnalyticsData } from "@/services/analyticsService";
+import { APP_CONFIG } from "@/utils/config";
+import axios from "axios";
 
 
 const columns: GridColDef[] = [
@@ -64,17 +73,45 @@ export default function AnalyticsPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [data, setData] = useState<AnalyticsData | null>(null);
+    
+    // Filter states
+    const [selectedCenter, setSelectedCenter] = useState<string>('all');
+    const [period, setPeriod] = useState<string>('monthly');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+    const [centersList, setCentersList] = useState<{centerId: string, name: string}[]>([]);
 
     useEffect(() => {
         setIsMounted(true);
-        fetchAnalytics();
+        fetchInitialData();
     }, []);
+
+    useEffect(() => {
+        if (isMounted) {
+            fetchAnalytics();
+        }
+    }, [isMounted, selectedCenter, period, startDate, endDate]);
+
+    const fetchInitialData = async () => {
+        try {
+            const centersRes = await axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`);
+            setCentersList(centersRes.data || []);
+        } catch (error) {
+            console.error("Failed to fetch centers:", error);
+        }
+    };
 
     const fetchAnalytics = async () => {
         setIsLoading(true);
         try {
+            const params = {
+                centerId: selectedCenter !== 'all' ? selectedCenter : undefined,
+                startDate: startDate || undefined,
+                endDate: endDate || undefined,
+                period: period
+            };
             // Using a default company code for now, this could come from auth/session
-            const analyticsData = await getCompanyAnalytics("FIX001");
+            const analyticsData = await getCompanyAnalytics("FIX001", params);
             setData(analyticsData);
         } catch (error) {
             console.error("Failed to fetch analytics:", error);
@@ -94,6 +131,65 @@ export default function AnalyticsPage() {
                 <Typography variant="body1" color="text.secondary">
                     Deep dive into your company performance metrics.
                 </Typography>
+            </Box>
+
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="flex-end" alignItems={{ md: 'center' }} gap={2} mb={4}>
+                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap gap={2}>
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel id="center-select-label">All Centers</InputLabel>
+                        <Select
+                            labelId="center-select-label"
+                            label="All Centers"
+                            value={selectedCenter}
+                            onChange={(e) => setSelectedCenter(e.target.value)}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            <MenuItem value="all">All Service Centers</MenuItem>
+                            {centersList.map((center) => (
+                                <MenuItem key={center.centerId} value={center.centerId}>
+                                    {center.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <Select
+                            value={period}
+                            onChange={(e) => setPeriod(e.target.value)}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            <MenuItem value="daily">Daily</MenuItem>
+                            <MenuItem value="monthly">Monthly</MenuItem>
+                            <MenuItem value="yearly">Yearly</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <TextField
+                        type="date"
+                        size="small"
+                        label="Start Date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ borderRadius: 2, minWidth: 150 }}
+                    />
+                    <TextField
+                        type="date"
+                        size="small"
+                        label="End Date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ borderRadius: 2, minWidth: 150 }}
+                    />
+                    <Button 
+                        variant="outlined" 
+                        size="small" 
+                        onClick={() => { setStartDate(''); setEndDate(''); setSelectedCenter('all'); setPeriod('monthly'); }}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Reset
+                    </Button>
+                </Stack>
             </Box>
 
             {isLoading && (
@@ -246,8 +342,8 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Box mb={3}>
                         <ChartCard
-                            title="Customer Growth"
-                            description="New vs Active Customers over time"
+                            title="Customer Activity"
+                            description="Active Customers over time"
                             date="last 6 months"
                             color="primary"
                             chart={
@@ -275,7 +371,6 @@ export default function AnalyticsPage() {
                                             itemStyle={{ color: '#1e293b' }}
                                         />
                                         <Legend wrapperStyle={{ color: '#fff' }} />
-                                        <Bar dataKey="newCustomers" name="New" fill="#ffffff" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                         <Bar dataKey="activeCustomers" name="Active" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>

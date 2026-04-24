@@ -5,9 +5,7 @@ import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
 import axios from "axios";
-
-const API_BASE_URL = "http://127.0.0.1:8081/api/service-packages";
-const CENTERS_API_URL = "http://127.0.0.1:8081/api/service-centers";
+import { APP_CONFIG } from "@/utils/config";
 
 interface ServicePackage {
     id: string;
@@ -49,8 +47,8 @@ export default function ServicesPage() {
     const fetchPackages = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get(API_BASE_URL);
-            const mappedData = response.data.map((pkg: any) => ({
+            const response = await axios.get(APP_CONFIG.api.baseUrl + "/service-packages/current");
+            const mappedData = (response.data || []).map((pkg: any) => ({
                 id: pkg.packageId,
                 centerId: pkg.centerId,
                 name: pkg.name,
@@ -71,8 +69,8 @@ export default function ServicesPage() {
 
     const fetchCenters = async () => {
         try {
-            const response = await axios.get(CENTERS_API_URL);
-            const mappedCenters = response.data.map((center: any) => ({
+            const response = await axios.get(APP_CONFIG.api.serviceCenters + "/current");
+            const mappedCenters = (response.data || []).map((center: any) => ({
                 id: center.centerId,
                 name: center.name
             }));
@@ -133,9 +131,9 @@ export default function ServicesPage() {
 
         try {
             if (isEditing) {
-                await axios.put(`${API_BASE_URL}/${currentPackage.id}`, packageData);
+                await axios.put(`${APP_CONFIG.api.baseUrl}/service-packages/${currentPackage.id}`, packageData);
             } else {
-                await axios.post(API_BASE_URL, packageData);
+                await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
             }
             fetchPackages();
             handleCloseModal();
@@ -148,7 +146,7 @@ export default function ServicesPage() {
     const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this service package?")) {
             try {
-                await axios.delete(`${API_BASE_URL}/${id}`);
+                await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
                 fetchPackages();
             } catch (error) {
                 console.error("Error deleting service package:", error);
@@ -319,8 +317,11 @@ export default function ServicesPage() {
                                             step="0.01"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="0.00"
-                                            value={currentPackage.price}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, price: parseFloat(e.target.value) })}
+                                            value={isNaN(currentPackage.price) ? "" : currentPackage.price}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, price: val });
+                                            }}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -332,8 +333,11 @@ export default function ServicesPage() {
                                             step="5"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="30"
-                                            value={currentPackage.duration}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, duration: parseInt(e.target.value) })}
+                                            value={isNaN(currentPackage.duration) ? "" : currentPackage.duration}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, duration: val });
+                                            }}
                                         />
                                     </div>
                                 </div>

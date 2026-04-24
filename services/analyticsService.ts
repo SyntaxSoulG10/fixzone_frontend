@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8081/api";
+import { APP_CONFIG } from "@/utils/config";
+
+const API_BASE_URL = APP_CONFIG.api.baseUrl;
 
 export interface AnalyticsData {
     totalRevenue: number;
@@ -27,9 +29,12 @@ export interface AnalyticsData {
     }[];
 }
 
-export const getCompanyAnalytics = async (companyCode: string): Promise<AnalyticsData> => {
+export const getCompanyAnalytics = async (
+    companyCode: string,
+    params?: { centerId?: string; startDate?: string; endDate?: string; period?: string }
+): Promise<AnalyticsData> => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/analytics/company/${companyCode}`);
+        const response = await axios.get(`${API_BASE_URL}/analytics/company/${companyCode}`, { params });
         return response.data;
     } catch (error) {
         console.error("Error fetching analytics:", error);

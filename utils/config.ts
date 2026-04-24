@@ -8,6 +8,8 @@ export const APP_CONFIG = {
         managers: "http://localhost:8081/api/managers",
         paymentRecords: "http://localhost:8081/api/payment-records",
         invoices: "http://localhost:8081/api/invoices",
+        analytics: "http://localhost:8081/api/analytics",
+        owners: "http://localhost:8081/api/owners",
     },
     // Adding placeholder IDs to resolve arbitrary hardcoded assignments
     placeholders: {

@@ -36,12 +36,22 @@ const salesData = [
     { name: 'Dec', sales: 500 },
 ];
 
-export default function OverviewTab() {
+export default function OverviewTab({ data }: { data: any }) {
     const [isMounted, setIsMounted] = React.useState(false);
 
     React.useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Transform backend revenueOverview to chart format if data exists
+    const chartData = data?.revenueOverview?.map((item: any) => ({
+        name: item.name,
+        sales: item.revenue
+    })) || [
+        { name: 'Apr', sales: 0 },
+        { name: 'May', sales: 0 },
+        { name: 'Jun', sales: 0 },
+    ];
 
     return (
         <Grid container spacing={3}>
@@ -49,24 +59,24 @@ export default function OverviewTab() {
             <Grid size={{ xs: 12 }}>
                 <Box mb={3}>
                     <ChartCard
-                        title="Daily Sales"
+                        title="Revenue Trend"
                         description={
                             <Box display="flex" alignItems="center">
-                                <Typography variant="button" fontWeight="bold" color="success.main">
-                                    +15%
+                                <Typography variant="button" fontWeight="bold" color={data?.revenueChange?.startsWith('+') ? "success.main" : "error.main"}>
+                                    {data?.revenueChange || "0%"}
                                 </Typography>
                                 <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
-                                    increase in today sales.
+                                    change in revenue.
                                 </Typography>
                             </Box>
                         }
-                        date="updated 4 min ago"
+                        date={`Updated ${data?.updatedAt || 'just now'}`}
                         color="primary"
                         chart={
                             isMounted ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
-                                        data={salesData}
+                                        data={chartData}
                                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
@@ -76,17 +86,18 @@ export default function OverviewTab() {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
-                                            interval={0}
                                         />
                                         <YAxis
                                             fontSize={12}
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
+                                            tickFormatter={(value) => `Rs. ${value >= 1000 ? (value / 1000) + 'k' : value}`}
                                         />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                             itemStyle={{ color: '#1e293b' }}
+                                            formatter={(value: any) => [`Rs. ${value.toLocaleString()}`, 'Revenue']}
                                         />
                                         <Line
                                             type="monotone"
@@ -109,36 +120,42 @@ export default function OverviewTab() {
                             Top Performing Centers
                         </Typography>
                         <Box display="flex" flexDirection="column" gap={2}>
-                            {[1, 2, 3].map((i) => (
-                                <Box key={i} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="background.paper" borderRadius="lg" boxShadow="0rem 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.06)">
-                                    <Box display="flex" alignItems="center" gap={2}>
-                                        <Box
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            width="2.5rem"
-                                            height="2.5rem"
-                                            borderRadius="50%"
-                                            bgcolor="primary.main"
-                                            color="#ffffff"
-                                            fontWeight="bold"
-                                            boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
-                                        >
-                                            #{i}
+                            {data?.topCenters?.length > 0 ? (
+                                data.topCenters.map((center: any, index: number) => (
+                                    <Box key={center.id || index} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="background.paper" borderRadius="lg" boxShadow="0rem 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.06)">
+                                        <Box display="flex" alignItems="center" gap={2}>
+                                            <Box
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                width="2.5rem"
+                                                height="2.5rem"
+                                                borderRadius="50%"
+                                                bgcolor="primary.main"
+                                                color="#ffffff"
+                                                fontWeight="bold"
+                                                boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                                            >
+                                                {center.initial || index + 1}
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="subtitle2" fontWeight="bold">{center.name}</Typography>
+                                                <Typography variant="caption" color="text.secondary">{center.jobs} Jobs completed</Typography>
+                                            </Box>
                                         </Box>
-                                        <Box>
-                                            <Typography variant="subtitle2" fontWeight="bold">Downtown Service Hub</Typography>
-                                            <Typography variant="caption" color="text.secondary">New York, NY</Typography>
+                                        <Box textAlign="right">
+                                            <Typography variant="subtitle2" fontWeight="bold">Rs. {center.revenue?.toLocaleString()}</Typography>
+                                            <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
+                                                <Box width={`${Math.min(100, (center.revenue / data.totalRevenue) * 200)}%`} height="100%" bgcolor="primary.main" borderRadius="xl" />
+                                            </Box>
                                         </Box>
                                     </Box>
-                                    <Box textAlign="right">
-                                        <Typography variant="subtitle2" fontWeight="bold">Rs. 45,200</Typography>
-                                        <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
-                                            <Box width="70%" height="100%" bgcolor="primary.main" borderRadius="xl" />
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            ))}
+                                ))
+                            ) : (
+                                <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>
+                                    No center performance data available yet.
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
                 </Card>

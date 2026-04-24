@@ -23,7 +23,8 @@ import {
     TableRow,
     Chip,
     Avatar,
-    LinearProgress
+    LinearProgress,
+    TextField
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
@@ -228,6 +229,8 @@ export default function FinancePage() {
     // Use strictly typed tracking states to organize configuration inputs
     const [period, setPeriod] = useState<string>('monthly');
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     
     // Explicit lists and map tracking
@@ -258,23 +261,23 @@ export default function FinancePage() {
     // Run primary API loading separately to ensure unblocked render tree painting.
     useEffect(() => {
         fetchInitialData();
-    }, []);
-
-    // Effect hook triggers re-processing whenever rawData, chosen period, or center changes.
-    useEffect(() => {
-        if (rawData.payments.length > 0 || rawData.invoices.length > 0) {
-            transformFinanceData();
-        }
-    }, [selectedCenter, period, rawData]);
+    }, [selectedCenter, period, startDate, endDate]);
 
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
+            const params = {
+                centerId: selectedCenter !== 'all' ? selectedCenter : undefined,
+                startDate: startDate || undefined,
+                endDate: endDate || undefined,
+                period: period
+            };
+
             const [analyticsRes, paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
-                axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params }),
                 axios.get(`${APP_CONFIG.api.baseUrl}/payment-records/current`),
                 axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`),
-                axios.get(`${APP_CONFIG.api.baseUrl}/customers`),
+                axios.get(`${APP_CONFIG.api.baseUrl}/customers/current`),
                 axios.get(`${APP_CONFIG.api.baseUrl}/invoices/current`)
             ]);
 
@@ -303,10 +306,18 @@ export default function FinancePage() {
                 growthData: analytics.revenueOverview?.map((m: any) => ({ 
                     month: m.name, 
                     amount: m.revenue,
-                    online: (m.revenue * 0.7), // Fallback approximation if split not in overview
-                    cash: (m.revenue * 0.3)
+                    online: m.onlineRevenue || (m.revenue * 0.7), 
+                    cash: m.cashRevenue || (m.revenue * 0.3)
                 })) || [],
-                recentTransactions: payments
+                recentTransactions: (payments || [])
+                    .filter((p: any) => selectedCenter === 'all' || p.centerId === selectedCenter)
+                    .filter((p: any) => !startDate || new Date(p.createdAt) >= new Date(startDate))
+                    .filter((p: any) => {
+                        if (!endDate) return true;
+                        const end = new Date(endDate);
+                        end.setHours(23, 59, 59, 999);
+                        return new Date(p.createdAt) <= end;
+                    })
                     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                     .slice(0, 10)
                     .map((p: any) => {
@@ -392,6 +403,32 @@ export default function FinancePage() {
                             <MenuItem value="yearly">Yearly</MenuItem>
                         </Select>
                     </FormControl>
+                    <TextField
+                        type="date"
+                        size="small"
+                        label="Start Date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ borderRadius: 2, minWidth: 150 }}
+                    />
+                    <TextField
+                        type="date"
+                        size="small"
+                        label="End Date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ borderRadius: 2, minWidth: 150 }}
+                    />
+                    <Button 
+                        variant="outlined" 
+                        size="small" 
+                        onClick={() => { setStartDate(''); setEndDate(''); setSelectedCenter('all'); }}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Reset
+                    </Button>
                 </Stack>
             </Box>
 
