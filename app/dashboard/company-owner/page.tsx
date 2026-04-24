@@ -151,51 +151,40 @@ function QuickActionBtn({ title, icon, href, color }: { title: string, icon: Rea
     );
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 /**
  * MAIN DASHBOARD COMPONENT: Orchestrates data loading and layout.
+ * Now optimized with DashboardDataContext to prevent unnecessary re-fetching.
  */
 export default function CompanyOwnerDashboard() {
     const [activeTab, setActiveTab] = useState<string>('overview');
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-    const [companyName, setCompanyName] = useState<string>("Company Dashboard");
-    const [statistics, setStatistics] = useState<DashboardStatistics>({
-        totalRevenue: 0, activeCenters: 0, totalCustomers: 0,
-        revenueChange: "+0%", jobsChange: "+0%", customersChange: "+0%"
-    });
+    const { 
+        analyticsData: analytics, 
+        ownerData, 
+        centersData: centers, 
+        customersData: customers, 
+        isLoading, 
+        refreshAll 
+    } = useDashboardData();
 
-    // INITIALIZATION: We fetch all critical dashboard data in parallel to minimize loading time.
+    const companyName = ownerData?.companyName || "Company Dashboard";
+    
+    // Derived statistics from context data
+    const statistics: DashboardStatistics = {
+        totalRevenue: analytics?.totalRevenue || 0,
+        activeCenters: centers.filter((c: any) => c.isActive).length,
+        totalCustomers: customers.length,
+        revenueChange: analytics?.revenueChange || "+0%",
+        jobsChange: analytics?.jobsChange || "+0%",
+        customersChange: analytics?.jobsChange || "+0%"
+    };
+
     useEffect(() => {
-        const loadDashboard = async () => {
-            try {
-                const [centersRes, custRes, analyticsRes, ownerRes] = await Promise.all([
-                    axios.get<ServiceCenterData[]>(APP_CONFIG.api.serviceCenters + "/current"),
-                    axios.get<any[]>(APP_CONFIG.api.customers + "/current"),
-                    axios.get<AnalyticsData>(APP_CONFIG.api.analytics + "/current"),
-                    axios.get<any>(APP_CONFIG.api.owners + "/current")
-                ]);
-
-                const analyticsData = analyticsRes.data;
-                setAnalytics(analyticsData);
-                setCompanyName(ownerRes.data.companyName || "Company Dashboard");
-                setStatistics({
-                    totalRevenue: analyticsData.totalRevenue || 0,
-                    activeCenters: centersRes.data.filter(c => c.isActive).length,
-                    totalCustomers: custRes.data.length,
-                    revenueChange: analyticsData.revenueChange || "+0%",
-                    jobsChange: analyticsData.jobsChange || "+0%",
-                    customersChange: analyticsData.jobsChange || "+0%"
-                });
-            } catch (error) {
-                console.error("Dashboard failed to initialize:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        loadDashboard();
+        // Data is handled by the root provider
     }, []);
 
-    if (isLoading) {
+    if (isLoading && !analytics) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
                 <CircularProgress color="primary" />

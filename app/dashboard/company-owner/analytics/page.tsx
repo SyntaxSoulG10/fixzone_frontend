@@ -36,6 +36,7 @@ import DonutStatCard from "@/components/dashboard/DonutStatCard";
 import { getCompanyAnalytics, AnalyticsData } from "@/services/analyticsService";
 import { APP_CONFIG } from "@/utils/config";
 import axios from "axios";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 
 const columns: GridColDef[] = [
@@ -70,20 +71,19 @@ const columns: GridColDef[] = [
 ];
 
 export default function AnalyticsPage() {
+    const { analyticsData: contextData, centersData: centersList = [], refreshAll } = useDashboardData() || {};
     const [isMounted, setIsMounted] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [data, setData] = useState<AnalyticsData | null>(null);
+    const [isLoading, setIsLoading] = useState(!contextData);
+    const [data, setData] = useState<AnalyticsData | null>(contextData);
     
     // Filter states
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
     const [period, setPeriod] = useState<string>('monthly');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
-    const [centersList, setCentersList] = useState<{centerId: string, name: string}[]>([]);
 
     useEffect(() => {
         setIsMounted(true);
-        fetchInitialData();
     }, []);
 
     useEffect(() => {
@@ -92,17 +92,10 @@ export default function AnalyticsPage() {
         }
     }, [isMounted, selectedCenter, period, startDate, endDate]);
 
-    const fetchInitialData = async () => {
-        try {
-            const centersRes = await axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`);
-            setCentersList(centersRes.data || []);
-        } catch (error) {
-            console.error("Failed to fetch centers:", error);
-        }
-    };
-
     const fetchAnalytics = async () => {
-        setIsLoading(true);
+        // Only show full-page loading if we have absolutely no data to show
+        if (!data) setIsLoading(true);
+        
         try {
             const params = {
                 centerId: selectedCenter !== 'all' ? selectedCenter : undefined,
@@ -110,9 +103,8 @@ export default function AnalyticsPage() {
                 endDate: endDate || undefined,
                 period: period
             };
-            // Using a default company code for now, this could come from auth/session
-            const analyticsData = await getCompanyAnalytics("FIX001", params);
-            setData(analyticsData);
+            const result = await getCompanyAnalytics("FIX001", params);
+            setData(result);
         } catch (error) {
             console.error("Failed to fetch analytics:", error);
         } finally {
@@ -145,7 +137,7 @@ export default function AnalyticsPage() {
                             sx={{ borderRadius: 2 }}
                         >
                             <MenuItem value="all">All Service Centers</MenuItem>
-                            {centersList.map((center) => (
+                            {centersList.map((center: any) => (
                                 <MenuItem key={center.centerId} value={center.centerId}>
                                     {center.name}
                                 </MenuItem>

@@ -55,36 +55,32 @@ interface Customer {
     avatarUrl: string;
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 export default function CustomersPage() {
     const theme = useTheme();
+    const { customersData, refreshAll } = useDashboardData();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchCustomers = async () => {
-            try {
-                const response = await axios.get<CustomerDTO[]>(APP_CONFIG.api.customers + "/current");
-                const mappedCustomers: Customer[] = response.data.map((customer: CustomerDTO) => ({
-                    id: customer.userId || customer.id || Math.random().toString(),
-                    name: customer.fullName || customer.name || "Unknown Customer",
-                    email: customer.email,
-                    visits: customer.visits || 0,
-                    totalSpent: customer.totalSpent || 0,
-                    lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-                    status: customer.status || "Active",
-                    avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
-                }));
-                setCustomers(mappedCustomers);
-            } catch (error) {
-                console.error("Error fetching customers:", error);
-                setCustomers([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCustomers();
-    }, []);
+        if (customersData.length > 0) {
+            const mappedCustomers: Customer[] = customersData.map((customer: CustomerDTO) => ({
+                id: customer.userId || customer.id || Math.random().toString(),
+                name: customer.fullName || customer.name || "Unknown Customer",
+                email: customer.email,
+                visits: customer.visits || 0,
+                totalSpent: customer.totalSpent || 0,
+                lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                status: customer.status || "Active",
+                avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
+            }));
+            setCustomers(mappedCustomers);
+            setLoading(false);
+        } else {
+            refreshAll().then(() => setLoading(false));
+        }
+    }, [customersData, refreshAll]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {

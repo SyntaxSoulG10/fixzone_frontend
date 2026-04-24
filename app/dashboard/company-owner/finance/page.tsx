@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useDashboardData } from "@/context/DashboardDataContext";
 import {
     Grid,
     Card,
@@ -55,26 +56,41 @@ interface InvoiceDTO { invoiceId: number; status: string; centerId: string; tota
  */
 const transactionColumns: GridColDef[] = [
     { 
-        field: 'id', headerName: 'ID', flex: 1, 
+        field: 'id', headerName: 'ID', width: 100,
         renderCell: (p: GridRenderCellParams) => <Typography variant="caption" fontWeight="bold">{p.value}</Typography> 
+    },
+    { 
+        field: 'date', headerName: 'Date', width: 130,
+        renderCell: (p: GridRenderCellParams) => <Typography variant="body2" color="text.secondary">{p.value}</Typography>
     },
     { 
         field: 'customer', headerName: 'Customer', flex: 1.5,
         renderCell: (p: GridRenderCellParams) => (
             <Box display="flex" alignItems="center" gap={1} height="100%">
-                <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>{p.value.charAt(0)}</Avatar>
+                <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>{(p.value || 'U').charAt(0)}</Avatar>
                 <Typography variant="body2" fontWeight="medium">{p.value}</Typography>
             </Box>
         )
     },
-    { field: 'amount', headerName: 'Amount', flex: 1, renderCell: (p: GridRenderCellParams) => <Typography variant="body2" fontWeight="bold">{p.value}</Typography> },
+    { field: 'amount', headerName: 'Amount', flex: 1, renderCell: (p: GridRenderCellParams) => <Typography variant="body2" fontWeight="bold">Rs. {p.value?.toLocaleString()}</Typography> },
     { 
         field: 'method', headerName: 'Method', flex: 1,
         renderCell: (p: GridRenderCellParams) => (
             <Chip label={p.value} size="small" variant="filled" sx={{ bgcolor: p.value === 'CASH' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)', color: p.value === 'CASH' ? '#2e7d32' : '#1976d2', fontWeight: 'bold' }} />
         )
     },
-    { field: 'status', headerName: 'Status', flex: 1, align: 'center', renderCell: (p: GridRenderCellParams) => <Chip label={p.value} size="small" color={p.value === 'Completed' ? 'success' : 'warning'} variant="outlined" sx={{ fontWeight: 'bold' }} /> }
+    { 
+        field: 'status', headerName: 'Status', flex: 1, align: 'center', 
+        renderCell: (p: GridRenderCellParams) => (
+            <Chip 
+                label={p.value === 'PAID' ? 'Completed' : p.value} 
+                size="small" 
+                color={p.value === 'PAID' ? 'success' : 'warning'} 
+                variant="outlined" 
+                sx={{ fontWeight: 'bold' }} 
+            />
+        )
+    }
 ];
 
 /**
@@ -125,57 +141,69 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
 }
 
 /**
- * MAIN PAGE COMPONENT: Orchestrates state management and lifecycle for the finance dashboard.
+ * RESTORED PAGE: FinancePage
+ * Restoring the original complex UI while maintaining performance through DashboardDataContext.
  */
 export default function FinancePage() {
     const theme = useTheme();
-    const [isLoading, setIsLoading] = useState(true);
+    const { centersData, analyticsData: contextData, refreshAll } = useDashboardData();
+    const [isLoading, setIsLoading] = useState(!contextData);
     const [selectedCenter, setSelectedCenter] = useState('all');
     const [period, setPeriod] = useState('monthly');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     
-    const [centersList, setCentersList] = useState<CenterDTO[]>([]);
     const [financeData, setFinanceData] = useState({
-        totalRevenue: 0, onlineRevenue: 0, cashRevenue: 0, avgTransaction: 0,
-        revenueByCenter: [] as any[], growthData: [] as any[], recentTransactions: [] as any[]
+        totalRevenue: contextData?.totalRevenue || 0, 
+        onlineRevenue: contextData?.onlineRevenue || 0, 
+        cashRevenue: contextData?.handCollectionRevenue || 0, 
+        avgTransaction: contextData?.avgJobValue || 0,
+        revenueByCenter: (contextData?.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
+        growthData: (contextData?.revenueOverview || []).map((m: any) => ({ month: m.name, amount: m.revenue, online: m.onlineRevenue, cash: m.cashRevenue })),
+        recentTransactions: (contextData?.recentTransactions || []).map((t: any) => ({ id: t.id, customer: t.customer, amount: t.amount, method: t.method, status: t.status, date: t.date }))
     });
 
-    useEffect(() => { loadFinanceData(); }, [selectedCenter, period, startDate, endDate]);
+    const centersList = centersData;
 
-    // LOAD DATA: Fetches aggregated metrics and transaction logs from the backend.
+    useEffect(() => { 
+        loadFinanceData(); 
+    }, [selectedCenter, period, startDate, endDate]);
+
+    // LOAD DATA: Fetches unified aggregated metrics and transactions from the single analytics endpoint.
     const loadFinanceData = async () => {
         setIsLoading(true);
         try {
             const params = { centerId: selectedCenter !== 'all' ? selectedCenter : undefined, startDate: startDate || undefined, endDate: endDate || undefined, period };
-            const [analyticsRes, paymentsRes, centersRes, customersRes, invoicesRes] = await Promise.all([
-                axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params }),
-                axios.get(`${APP_CONFIG.api.baseUrl}/payment-records/current`),
-                axios.get(`${APP_CONFIG.api.baseUrl}/service-centers/current`),
-                axios.get(`${APP_CONFIG.api.baseUrl}/customers/current`),
-                axios.get(`${APP_CONFIG.api.baseUrl}/invoices/current`)
-            ]);
-
-            const analytics = analyticsRes.data;
-            const payments = paymentsRes.data || [];
-            setCentersList(centersRes.data || []);
+            
+            const analyticsRes = await axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params });
+            const data = analyticsRes.data;
 
             setFinanceData({
-                totalRevenue: analytics.totalRevenue || 0,
-                onlineRevenue: analytics.onlineRevenue || 0,
-                cashRevenue: analytics.handCollectionRevenue || 0,
-                avgTransaction: analytics.avgJobValue || 0,
-                revenueByCenter: analytics.topCenters?.map((c: any) => ({ name: c.name, revenue: c.revenue })) || [],
-                growthData: analytics.revenueOverview?.map((m: any) => ({ 
-                    month: m.name, amount: m.revenue, online: m.onlineRevenue || (m.revenue * 0.7), cash: m.cashRevenue || (m.revenue * 0.3)
-                })) || [],
-                recentTransactions: payments.filter((p: any) => selectedCenter === 'all' || p.centerId === selectedCenter).slice(0, 10).map((p: any) => {
-                    const inv = invoicesRes.data?.find((i: any) => i.invoiceId === p.invoiceId);
-                    const cust = inv ? customersRes.data?.find((c: any) => c.customerId === inv.issuedToCustomerId) : null;
-                    return { id: p.paymentId.substring(0, 8).toUpperCase(), customer: cust?.fullName || 'Guest', amount: `Rs. ${p.amount.toLocaleString()}`, method: p.method, status: p.status === 'Completed' ? 'Completed' : 'Pending' };
-                })
+                totalRevenue: data.totalRevenue || 0,
+                onlineRevenue: data.onlineRevenue || 0,
+                cashRevenue: data.handCollectionRevenue || 0,
+                avgTransaction: data.avgJobValue || 0,
+                revenueByCenter: (data.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
+                growthData: (data.revenueOverview || []).map((m: any) => ({ 
+                    month: m.name, 
+                    amount: m.revenue, 
+                    online: m.onlineRevenue, 
+                    cash: m.cashRevenue 
+                })),
+                recentTransactions: (data.recentTransactions || []).map((t: any) => ({
+                    id: t.id,
+                    customer: t.customer,
+                    amount: t.amount,
+                    method: t.method,
+                    status: t.status,
+                    date: t.date
+                }))
             });
-        } catch (e) { console.error("Finance load error:", e); } finally { setIsLoading(false); }
+        } catch (error) {
+            console.error("Error loading finance data:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -202,13 +230,15 @@ export default function FinancePage() {
             </Grid>
 
             {/* REVENUE GROWTH CHART */}
-            <ChartCard
+            <Box mt={10}>
+            <ChartCard 
+                
                 title="Revenue Overview"
                 description="Monthly revenue growth tracking across all payment methods"
                 date="Last updated just now"
                 color="primary"
                 chart={
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" >
                         <LineChart data={financeData.growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
                             <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} />
@@ -220,6 +250,7 @@ export default function FinancePage() {
                     </ResponsiveContainer>
                 }
             />
+            </Box>
 
             {/* RECENT TRANSACTIONS TABLE */}
             <Box mt={4}>
@@ -232,7 +263,7 @@ export default function FinancePage() {
             </Box>
 
             {/* CENTER PERFORMANCE BAR CHART */}
-            <Box mt={4}>
+            <Box mt={10}>
                 <ChartCard
                     title="Center Performance"
                     description="Revenue comparison across all active service center branches"

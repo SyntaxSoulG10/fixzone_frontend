@@ -147,14 +147,16 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
     );
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 /**
  * MAIN COMPONENT: Manages the lifecycle of manager accounts.
  */
 export default function ManagersPage() {
     const theme = useTheme();
+    const { managersData, centersData, isLoading: contextLoading, refreshAll } = useDashboardData();
     const [managers, setManagers] = useState<ManagerView[]>([]);
     const [centersList, setCentersList] = useState<string[]>([]);
-    const [centersData, setCentersData] = useState<CenterAPIResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
@@ -163,19 +165,18 @@ export default function ManagersPage() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     const [formData, setFormData] = useState({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => { 
+        if (managersData.length > 0 && centersData.length > 0) {
+            mapData(managersData, centersData);
+        }
+    }, [managersData, centersData]);
 
-    const loadData = async () => {
+    const mapData = (mgrData: any[], ctrData: any[]) => {
         setLoading(true);
         try {
-            const [mgrRes, ctrRes] = await Promise.all([
-                axios.get(APP_CONFIG.api.managers + "/current"),
-                axios.get(APP_CONFIG.api.serviceCenters + "/current")
-            ]);
-            setCentersData(ctrRes.data);
-            setCentersList(ctrRes.data.map((c: any) => c.name));
-            const centersMap = ctrRes.data.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-            setManagers(mgrRes.data.map((m: any) => ({
+            setCentersList(ctrData.map((c: any) => c.name));
+            const centersMap = ctrData.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
+            setManagers(mgrData.map((m: any) => ({
                 id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
                 center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
                 status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
@@ -192,7 +193,7 @@ export default function ManagersPage() {
             if (isEditMode && selectedId) await axios.put(`${APP_CONFIG.api.managers}/${selectedId}`, payload);
             else await axios.post(APP_CONFIG.api.managers, payload);
             setOpenDialog(false);
-            loadData();
+            await refreshAll();
             setSnackbar({ open: true, message: 'Saved successfully!', severity: 'success' });
         } catch (e) { setSnackbar({ open: true, message: 'Operation failed', severity: 'error' }); }
     };
@@ -200,7 +201,7 @@ export default function ManagersPage() {
     const handleToggleStatus = async (id: string, current: string) => {
         try {
             await axios.put(`${APP_CONFIG.api.managers}/${id}`, { status: current === 'Active' ? 'Inactive' : 'Active' });
-            loadData();
+            await refreshAll();
             setSnackbar({ open: true, message: 'Status updated!', severity: 'success' });
         } catch (e) { setSnackbar({ open: true, message: 'Update failed', severity: 'error' }); }
     };
@@ -220,7 +221,7 @@ export default function ManagersPage() {
                         InputProps={{ startAdornment: <InputAdornment position="start"><FiSearch /></InputAdornment> }} sx={{ minWidth: 250 }} />
                 </Box>
                 <Box sx={{ height: 600, width: '100%' }}>
-                    <DataGrid rows={filtered} columns={getManagerColumns(theme, (m: any) => { setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); setSelectedId(m.id); setIsEditMode(true); setOpenDialog(true); }, handleToggleStatus, async (id: string) => { if(confirm("Delete?")) { await axios.delete(`${APP_CONFIG.api.managers}/${id}`); loadData(); } })} pageSizeOptions={[5, 10]} disableRowSelectionOnClick rowHeight={80} />
+                    <DataGrid rows={filtered} columns={getManagerColumns(theme, (m: any) => { setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); setSelectedId(m.id); setIsEditMode(true); setOpenDialog(true); }, handleToggleStatus, async (id: string) => { if(confirm("Delete?")) { await axios.delete(`${APP_CONFIG.api.managers}/${id}`); await refreshAll(); } })} pageSizeOptions={[5, 10]} disableRowSelectionOnClick rowHeight={80} />
                 </Box>
             </Card>
 

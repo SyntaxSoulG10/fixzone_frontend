@@ -346,10 +346,13 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
     );
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 /**
  * MAIN PAGE COMPONENT: Handles state and lifecycle.
  */
 export default function ProfilePage() {
+    const { ownerData, refreshAll } = useDashboardData();
     const [tabValue, setTabValue] = useState(0);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -371,31 +374,22 @@ export default function ProfilePage() {
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
 
     useEffect(() => {
-        const fetchOwnerProfile = async () => {
-            try {
-                const response = await axios.get(APP_CONFIG.api.owners + "/current");
-                const owner = response.data;
-                if (owner) {
-                    setUserId(owner.userId);
-                    setFullOwnerData(owner);
-                    const mappedData = {
-                        "Company Name": owner.companyName || "N/A",
-                        "Registration": owner.ownerCode || "N/A",
-                        "Mobile": owner.companyNumber || owner.phone || "N/A",
-                        "Email": owner.companyEmail || owner.email || "N/A",
-                        "Location": "Sri Lanka",
-                    };
-                    setProfileData(mappedData);
-                    setOriginalProfileData(mappedData);
-                    if (owner.profilePictureUrl) setProfileImage(owner.profilePictureUrl);
-                    if (owner.bannerImageUrl) setBannerImage(owner.bannerImageUrl);
-                }
-            } catch (error) {
-                console.error("Failed to fetch profile:", error);
-            }
-        };
-        fetchOwnerProfile();
-    }, []);
+        if (ownerData) {
+            setUserId(ownerData.userId);
+            setFullOwnerData(ownerData);
+            const mappedData = {
+                "Company Name": ownerData.companyName || "N/A",
+                "Registration": ownerData.ownerCode || "N/A",
+                "Mobile": ownerData.companyNumber || ownerData.phone || "N/A",
+                "Email": ownerData.companyEmail || ownerData.email || "N/A",
+                "Location": "Sri Lanka",
+            };
+            setProfileData(mappedData);
+            setOriginalProfileData(mappedData);
+            if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
+            if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
+        }
+    }, [ownerData]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
     const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); };
@@ -407,9 +401,9 @@ export default function ProfilePage() {
             const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
+            await refreshAll();
             setSnackbarMessage("Profile details updated!");
             setSnackbarOpen(true);
-            setFullOwnerData(updatedOwner);
         } catch (error) {
             setSnackbarMessage("Failed to save changes.");
             setSnackbarOpen(true);
@@ -427,9 +421,9 @@ export default function ProfilePage() {
                 if (userId && fullOwnerData) {
                     const updated = { ...fullOwnerData, bannerImageUrl: base64 };
                     await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
+                    await refreshAll();
                     setSnackbarMessage("Cover image updated!");
                     setSnackbarOpen(true);
-                    setFullOwnerData(updated);
                 }
             };
             reader.readAsDataURL(event.target.files[0]);
@@ -445,9 +439,9 @@ export default function ProfilePage() {
                 if (userId && fullOwnerData) {
                     const updated = { ...fullOwnerData, profilePictureUrl: base64 };
                     await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
+                    await refreshAll();
                     setSnackbarMessage("Profile picture updated!");
                     setSnackbarOpen(true);
-                    setFullOwnerData(updated);
                 }
             };
             reader.readAsDataURL(event.target.files[0]);

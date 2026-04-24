@@ -208,12 +208,15 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
     );
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 /**
  * MAIN COMPONENT: Orchestrates the centers lifecycle.
+ * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
-    const [centersList, setCentersList] = useState<ServiceCenterView[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { centersData, isLoading: isContextLoading, refreshAll } = useDashboardData();
+    const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -222,23 +225,17 @@ export default function MyCentersPage() {
 
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
 
-    useEffect(() => { fetchCenters(); }, []);
+    // Map raw centers data from context to View model
+    const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
+        id: c.centerId, name: c.name, location: c.address,
+        manager: c.managerName || "N/A", phone: c.contactPhone,
+        revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
+        mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0
+    }));
 
-    const fetchCenters = async () => {
-        setIsLoading(true);
-        try {
-            const res = await axios.get(APP_CONFIG.api.serviceCenters + "/current");
-            const mapped: ServiceCenterView[] = res.data.map((c: any) => ({
-                id: c.centerId, name: c.name, location: c.address,
-                manager: c.managerName || "N/A", phone: c.contactPhone,
-                revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
-                mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0
-            }));
-            setCentersList(mapped);
-        } catch (e) {
-            setSnackbar({ open: true, message: 'Failed to fetch centers', severity: 'error' });
-        } finally { setIsLoading(false); }
-    };
+    useEffect(() => { 
+        if (centersData.length === 0) refreshAll(); 
+    }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
         const payload = { 
@@ -247,25 +244,38 @@ export default function MyCentersPage() {
             mechanicsCount: formData.mechanics, currentCapacity: formData.capacity,
             ownerId: APP_CONFIG.placeholders.ownerId
         };
+        setIsLoading(true);
         try {
             if (isEditMode && selectedId) await axios.put(`${APP_CONFIG.api.serviceCenters}/${selectedId}`, payload);
             else await axios.post(APP_CONFIG.api.serviceCenters, payload);
-            fetchCenters();
+            
+            // Refresh global data after change
+            await refreshAll();
+            
             setSnackbar({ open: true, message: `Center ${isEditMode ? 'updated' : 'added'}!`, severity: 'success' });
             setOpenDialog(false);
-        } catch (e) { setSnackbar({ open: true, message: 'Save failed', severity: 'error' }); }
+        } catch (e) { 
+            setSnackbar({ open: true, message: 'Save failed', severity: 'error' }); 
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleToggleStatus = async (id: string, current: string) => {
-        const center = centersList.find(c => c.id === id);
+        const center = centersData.find((c: any) => c.centerId === id);
         if (!center) return;
+        setIsLoading(true);
         try {
             await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, {
                 ...center, isActive: current !== 'Active', ownerId: APP_CONFIG.placeholders.ownerId
             });
-            fetchCenters();
+            await refreshAll();
             setSnackbar({ open: true, message: 'Status updated!', severity: 'success' });
-        } catch (e) { setSnackbar({ open: true, message: 'Update failed', severity: 'error' }); }
+        } catch (e) { 
+            setSnackbar({ open: true, message: 'Update failed', severity: 'error' }); 
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleEditClick = (center: ServiceCenterView) => {

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 import { BookingProvider } from "@/context/BookingContext";
+import { DashboardDataProvider } from "@/context/DashboardDataContext";
 
 export default function RootLayout({
   children,
@@ -26,9 +27,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={roboto.className}>
         <ThemeRegistry>
-          <BookingProvider>
-            {children}
-          </BookingProvider>
+          <DashboardDataProvider>
+            <BookingProvider>
+              {children}
+            </BookingProvider>
+          </DashboardDataProvider>
         </ThemeRegistry>
       </body>
     </html>
