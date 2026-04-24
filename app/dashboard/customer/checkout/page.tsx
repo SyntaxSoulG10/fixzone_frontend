@@ -32,7 +32,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const bookingCharge = pkg.price * 0.1;
+  const bookingCharge = pkg.price * 0.4;
 
   const handlePay = async () => {
     try {
@@ -168,7 +168,7 @@ export default function CheckoutPage() {
               <div className="border-t border-slate-100 pt-4">
                 <div className="bg-orange-50/80 rounded-3xl p-5 border border-orange-100 flex items-center justify-between">
                   <div>
-                    <p className="text-orange-600 font-black text-sm">Booking Charge (10%)</p>
+                    <p className="text-orange-600 font-black text-sm">Booking Charge (40%)</p>
                     <p className="text-[10px] text-orange-400 font-bold">Pay now to confirm slot</p>
                   </div>
                   <span className="text-2xl font-black text-orange-600 font-mono tracking-tight">

@@ -161,7 +161,7 @@ export default function StationDetailPage() {
 
         // Step 1: Initialize payment on backend
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
-        const paymentId = await initPayment(selectedPackage.id, selectedVehicleId!, formattedDate, selectedTime!);
+        const paymentId = await initPayment(selectedPackage.id, selectedVehicleId!, formattedDate, selectedTime!, station.id, specialRequest);
 
         // Step 2: Save to context and navigate
         setBookingData({
