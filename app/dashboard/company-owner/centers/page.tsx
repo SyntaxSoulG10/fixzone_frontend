@@ -239,12 +239,23 @@ export default function MyCentersPage() {
 
     const handleSave = async () => {
         // Form Validation
-        if (!formData.name.trim()) {
-            setSnackbar({ open: true, message: 'Center name is required', severity: 'error' });
+        if (!formData.name.trim() || formData.name.length < 3) {
+            setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
             return;
         }
-        if (!formData.phone.trim()) {
-            setSnackbar({ open: true, message: 'Phone number is required', severity: 'error' });
+        if (!formData.manager.trim()) {
+            setSnackbar({ open: true, message: 'Manager name is required', severity: 'error' });
+            return;
+        }
+        if (!formData.location.trim()) {
+            setSnackbar({ open: true, message: 'Address is required', severity: 'error' });
+            return;
+        }
+        
+        // Basic phone validation (digits and min length)
+        const phoneRegex = /^[0-9+]{10,15}$/;
+        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+            setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
 

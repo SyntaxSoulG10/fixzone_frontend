@@ -312,19 +312,33 @@ function BillingTab() {
  * DIALOG COMPONENTS: For handling password changes and deactivation.
  */
 function ChangePasswordDialog({ open, onClose }: any) {
+    const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+    const [error, setError] = useState("");
+
+    const handleUpdate = () => {
+        if (!passwords.current) return setError("Current password is required");
+        if (passwords.new.length < 8) return setError("New password must be at least 8 characters");
+        if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
+        
+        setError("");
+        // API call would go here
+        onClose();
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <Dialog open={open} onClose={() => { onClose(); setError(""); }} fullWidth maxWidth="sm">
             <DialogTitle>Change Password</DialogTitle>
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2} pt={1}>
-                    <TextField label="Current Password" type="password" fullWidth />
-                    <TextField label="New Password" type="password" fullWidth />
-                    <TextField label="Confirm New Password" type="password" fullWidth />
+                    {error && <Typography color="error" variant="caption">{error}</Typography>}
+                    <TextField label="Current Password" type="password" fullWidth value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} error={!!error && !passwords.current} />
+                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < 8} />
+                    <TextField label="Confirm New Password" type="password" fullWidth value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} error={!!error && passwords.new !== passwords.confirm} />
                 </Box>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>Update Password</Button>
+                <Button onClick={handleUpdate} variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>Update Password</Button>
             </DialogActions>
         </Dialog>
     );
@@ -398,9 +412,23 @@ export default function ProfilePage() {
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
-        // Basic validation
-        if (!profileData["Company Name"].trim()) {
-            setSnackbarMessage("Company name is required");
+        // Comprehensive validation
+        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < 3) {
+            setSnackbarMessage("Company name must be at least 3 characters");
+            setSnackbarOpen(true);
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (profileData["Email"] && !emailRegex.test(profileData["Email"])) {
+            setSnackbarMessage("Please enter a valid company email");
+            setSnackbarOpen(true);
+            return;
+        }
+
+        const phoneRegex = /^[0-9+]{10,15}$/;
+        if (profileData["Mobile"] && !phoneRegex.test(profileData["Mobile"].replace(/\s/g, ''))) {
+            setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
             setSnackbarOpen(true);
             return;
         }

@@ -187,14 +187,17 @@ export default function ManagersPage() {
 
     const handleSave = async () => {
         // Form Validation
-        if (!formData.name.trim()) {
-            setSnackbar({ open: true, message: 'Full name is required', severity: 'error' });
+        if (!formData.name.trim() || formData.name.length < 3) {
+            setSnackbar({ open: true, message: 'Full name must be at least 3 characters', severity: 'error' });
             return;
         }
-        if (!formData.email.trim()) {
-            setSnackbar({ open: true, message: 'Email is required', severity: 'error' });
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!formData.email.trim() || !emailRegex.test(formData.email)) {
+            setSnackbar({ open: true, message: 'Please enter a valid email address', severity: 'error' });
             return;
         }
+        
         if (!formData.center) {
             setSnackbar({ open: true, message: 'Please assign a service center', severity: 'error' });
             return;

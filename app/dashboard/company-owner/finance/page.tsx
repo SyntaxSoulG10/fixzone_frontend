@@ -176,6 +176,12 @@ export default function FinancePage() {
      * pattern that reduces latency and ensures data consistency across the page.
      */
     const loadUnifiedFinanceData = async () => {
+        // Date Validation
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            console.warn("Invalid date range selected for finance data");
+            return;
+        }
+
         setIsLoading(true);
         try {
             const queryParameters = { 

@@ -135,12 +135,24 @@ export default function ServicesPage() {
     };
 
     const validateForm = () => {
-        if (!currentPackage.name.trim()) {
-            showSnackbar("Package name is required", "warning");
+        if (!currentPackage.name.trim() || currentPackage.name.length < 3) {
+            showSnackbar("Package name must be at least 3 characters", "warning");
             return false;
         }
         if (currentPackage.price <= 0) {
             showSnackbar("Price must be greater than 0", "warning");
+            return false;
+        }
+        if (currentPackage.price > 1000000) {
+            showSnackbar("Price seems too high. Please verify.", "warning");
+            return false;
+        }
+        if (currentPackage.duration < 5 || currentPackage.duration > 1440) {
+            showSnackbar("Duration must be between 5 minutes and 24 hours", "warning");
+            return false;
+        }
+        if (!currentPackage.description.trim() || currentPackage.description.length < 10) {
+            showSnackbar("Please provide a more detailed description (min 10 chars)", "warning");
             return false;
         }
         if (!currentPackage.centerId) {
