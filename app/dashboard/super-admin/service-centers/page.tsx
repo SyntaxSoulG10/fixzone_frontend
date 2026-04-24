@@ -7,6 +7,7 @@ import Button from "@/components/UI/Button";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import APP_CONFIG from "@/config";
 
 interface Station {
     id: string;
@@ -36,7 +37,7 @@ export default function ServiceStationsPage() {
     const fetchStations = async () => {
         try {
             setLoading(true);
-            const response = await axios.get("http://localhost:8080/api/admin/service-centers");
+            const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers`);
             const transformed = response.data.map((s: any) => ({
                 id: s.centerId || s.id,
                 name: s.name,
@@ -79,7 +80,7 @@ export default function ServiceStationsPage() {
     const handleApprove = async (id: string) => {
         try {
             setProcessingAction(true);
-            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/approve`);
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${id}/approve`);
             toast.success("Service Center approved successfully!");
             fetchStations();
             setIsReviewModalOpen(false);
@@ -97,7 +98,7 @@ export default function ServiceStationsPage() {
         }
         try {
             setProcessingAction(true);
-            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/reject?reason=${encodeURIComponent(rejectionReason)}`);
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${id}/reject?reason=${encodeURIComponent(rejectionReason)}`);
             toast.info("Registration rejected");
             fetchStations();
             setIsReviewModalOpen(false);
@@ -112,7 +113,7 @@ export default function ServiceStationsPage() {
 
     const handleUpdateStatus = async (id: string, status: string) => {
         try {
-            await axios.post(`http://localhost:8080/api/admin/service-centers/${id}/status?status=${status}`);
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${id}/status?status=${status}`);
             toast.success(`Station status updated to ${status}`);
             fetchStations();
         } catch (error) {
