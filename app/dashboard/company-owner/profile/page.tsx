@@ -397,15 +397,24 @@ export default function ProfilePage() {
 
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
+        
+        // Basic validation
+        if (!profileData["Company Name"].trim()) {
+            setSnackbarMessage("Company name is required");
+            setSnackbarOpen(true);
+            return;
+        }
+
         try {
             const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
             await refreshAll();
-            setSnackbarMessage("Profile details updated!");
+            setSnackbarMessage("Profile details updated successfully!");
             setSnackbarOpen(true);
-        } catch (error) {
-            setSnackbarMessage("Failed to save changes.");
+        } catch (error: any) {
+            const msg = error.response?.data?.message || "Failed to save changes.";
+            setSnackbarMessage(msg);
             setSnackbarOpen(true);
         }
     };

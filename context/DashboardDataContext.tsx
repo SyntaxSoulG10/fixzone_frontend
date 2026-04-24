@@ -61,16 +61,17 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             ]);
             
             // Atomically update state to minimize UI re-renders
-            setCentersData(centersResponse.data);
-            setManagersData(managersResponse.data);
-            setAnalyticsData(analyticsResponse.data);
-            setCustomersData(customersResponse.data);
-            setOwnerProfile(ownerResponse.data);
+            setCentersData(centersResponse.data || []);
+            setManagersData(managersResponse.data || []);
+            setAnalyticsData(analyticsResponse.data || null);
+            setCustomersData(customersResponse.data || []);
+            setOwnerProfile(ownerResponse.data || null);
             
             setHasDataInitialized(true);
-        } catch (fetchError) {
+        } catch (fetchError: any) {
             // We log error context for debugging but keep the UI stable
             console.error("Critical error during dashboard data initialization:", fetchError);
+            // We could set a global error state here if needed
         } finally {
             setIsInitialLoad(false);
         }

@@ -238,6 +238,16 @@ export default function MyCentersPage() {
     }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
+        // Form Validation
+        if (!formData.name.trim()) {
+            setSnackbar({ open: true, message: 'Center name is required', severity: 'error' });
+            return;
+        }
+        if (!formData.phone.trim()) {
+            setSnackbar({ open: true, message: 'Phone number is required', severity: 'error' });
+            return;
+        }
+
         const payload = { 
             name: formData.name, address: formData.location, contactPhone: formData.phone,
             managerName: formData.manager, isActive: formData.status === 'Active',
@@ -246,16 +256,20 @@ export default function MyCentersPage() {
         };
         setIsLoading(true);
         try {
-            if (isEditMode && selectedId) await axios.put(`${APP_CONFIG.api.serviceCenters}/${selectedId}`, payload);
-            else await axios.post(APP_CONFIG.api.serviceCenters, payload);
+            if (isEditMode && selectedId) {
+                await axios.put(`${APP_CONFIG.api.serviceCenters}/${selectedId}`, payload);
+                setSnackbar({ open: true, message: 'Center updated successfully!', severity: 'success' });
+            } else {
+                await axios.post(APP_CONFIG.api.serviceCenters, payload);
+                setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
+            }
             
             // Refresh global data after change
             await refreshAll();
-            
-            setSnackbar({ open: true, message: `Center ${isEditMode ? 'updated' : 'added'}!`, severity: 'success' });
             setOpenDialog(false);
-        } catch (e) { 
-            setSnackbar({ open: true, message: 'Save failed', severity: 'error' }); 
+        } catch (e: any) { 
+            const errorMsg = e.response?.data?.message || 'Save operation failed';
+            setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
         } finally {
             setIsLoading(false);
         }
@@ -270,9 +284,9 @@ export default function MyCentersPage() {
                 ...center, isActive: current !== 'Active', ownerId: APP_CONFIG.placeholders.ownerId
             });
             await refreshAll();
-            setSnackbar({ open: true, message: 'Status updated!', severity: 'success' });
-        } catch (e) { 
-            setSnackbar({ open: true, message: 'Update failed', severity: 'error' }); 
+            setSnackbar({ open: true, message: `Branch is now ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
+        } catch (e: any) { 
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Status update failed', severity: 'error' }); 
         } finally {
             setIsLoading(false);
         }

@@ -186,24 +186,55 @@ export default function ManagersPage() {
     };
 
     const handleSave = async () => {
+        // Form Validation
+        if (!formData.name.trim()) {
+            setSnackbar({ open: true, message: 'Full name is required', severity: 'error' });
+            return;
+        }
+        if (!formData.email.trim()) {
+            setSnackbar({ open: true, message: 'Email is required', severity: 'error' });
+            return;
+        }
+        if (!formData.center) {
+            setSnackbar({ open: true, message: 'Please assign a service center', severity: 'error' });
+            return;
+        }
+
         const center = centersData.find(c => c.name === formData.center);
         if (!center) return;
-        const payload = { fullName: formData.name, email: formData.email, managedCenterId: center.centerId, status: formData.status, sendInvite: formData.sendInvite };
+        const payload = { 
+            fullName: formData.name, 
+            email: formData.email, 
+            managedCenterId: center.centerId, 
+            status: formData.status, 
+            sendInvite: formData.sendInvite 
+        };
         try {
-            if (isEditMode && selectedId) await axios.put(`${APP_CONFIG.api.managers}/${selectedId}`, payload);
-            else await axios.post(APP_CONFIG.api.managers, payload);
+            if (isEditMode && selectedId) {
+                await axios.put(`${APP_CONFIG.api.managers}/${selectedId}`, payload);
+                setSnackbar({ open: true, message: 'Manager updated successfully!', severity: 'success' });
+            } else {
+                await axios.post(APP_CONFIG.api.managers, payload);
+                setSnackbar({ open: true, message: 'New manager account created and invite sent!', severity: 'success' });
+            }
             setOpenDialog(false);
             await refreshAll();
-            setSnackbar({ open: true, message: 'Saved successfully!', severity: 'success' });
-        } catch (e) { setSnackbar({ open: true, message: 'Operation failed', severity: 'error' }); }
+        } catch (e: any) { 
+            const errorMsg = e.response?.data?.message || 'Operation failed';
+            setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
+        }
     };
 
     const handleToggleStatus = async (id: string, current: string) => {
         try {
-            await axios.put(`${APP_CONFIG.api.managers}/${id}`, { status: current === 'Active' ? 'Inactive' : 'Active' });
+            await axios.put(`${APP_CONFIG.api.managers}/${id}`, { 
+                status: current === 'Active' ? 'Inactive' : 'Active' 
+            });
             await refreshAll();
-            setSnackbar({ open: true, message: 'Status updated!', severity: 'success' });
-        } catch (e) { setSnackbar({ open: true, message: 'Update failed', severity: 'error' }); }
+            setSnackbar({ open: true, message: `Manager account ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
+        } catch (e: any) { 
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Update failed', severity: 'error' }); 
+        }
     };
 
     const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));

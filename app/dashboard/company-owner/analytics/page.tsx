@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
             };
             const result = await getCompanyAnalytics("FIX001", params);
             setData(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch analytics:", error);
         } finally {
             setIsLoading(false);

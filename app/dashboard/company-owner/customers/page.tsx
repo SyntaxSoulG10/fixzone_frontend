@@ -64,22 +64,31 @@ export default function CustomersPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (customersData.length > 0) {
-            const mappedCustomers: Customer[] = customersData.map((customer: CustomerDTO) => ({
-                id: customer.userId || customer.id || Math.random().toString(),
-                name: customer.fullName || customer.name || "Unknown Customer",
-                email: customer.email,
-                visits: customer.visits || 0,
-                totalSpent: customer.totalSpent || 0,
-                lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-                status: customer.status || "Active",
-                avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
-            }));
-            setCustomers(mappedCustomers);
-            setLoading(false);
-        } else {
-            refreshAll().then(() => setLoading(false));
-        }
+        const loadCustomers = async () => {
+            setLoading(true);
+            try {
+                if (customersData.length === 0) {
+                    await refreshAll();
+                }
+                
+                const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerDTO) => ({
+                    id: customer.userId || customer.id || Math.random().toString(),
+                    name: customer.fullName || customer.name || "Unknown Customer",
+                    email: customer.email,
+                    visits: customer.visits || 0,
+                    totalSpent: customer.totalSpent || 0,
+                    lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                    status: customer.status || "Active",
+                    avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
+                }));
+                setCustomers(mappedCustomers);
+            } catch (err) {
+                console.error("Failed to load customers:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadCustomers();
     }, [customersData, refreshAll]);
 
     const formatCurrency = (amount: number) => {

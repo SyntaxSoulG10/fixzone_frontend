@@ -6,6 +6,7 @@ import Button from "@/components/UI/Button";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
 import axios from "axios";
 import { APP_CONFIG } from "@/utils/config";
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
 
 interface ServicePackage {
     id: string;
@@ -23,8 +24,15 @@ export default function ServicesPage() {
     const [packages, setPackages] = useState<ServicePackage[]>([]);
     const [centers, setCenters] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    
+    const [snackbar, setSnackbar] = useState({ 
+        open: false, 
+        message: '', 
+        severity: 'success' as 'success' | 'error' | 'warning' | 'info' 
+    });
 
     const [currentPackage, setCurrentPackage] = useState<ServicePackage>({
         id: "",
@@ -40,12 +48,24 @@ export default function ServicesPage() {
     const [featuresInput, setFeaturesInput] = useState("");
 
     useEffect(() => {
-        fetchPackages();
-        fetchCenters();
+        const init = async () => {
+            setIsLoading(true);
+            try {
+                await Promise.all([fetchPackages(), fetchCenters()]);
+            } catch (err) {
+                showSnackbar("Failed to initialize data", "error");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        init();
     }, []);
 
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
+
     const fetchPackages = async () => {
-        setIsLoading(true);
         try {
             const response = await axios.get(APP_CONFIG.api.baseUrl + "/service-packages/current");
             const mappedData = (response.data || []).map((pkg: any) => ({
@@ -60,10 +80,9 @@ export default function ServicesPage() {
                 isActive: pkg.isActive
             }));
             setPackages(mappedData);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching service packages:", error);
-        } finally {
-            setIsLoading(false);
+            showSnackbar(error.response?.data?.message || "Error fetching service packages", "error");
         }
     };
 
@@ -75,18 +94,23 @@ export default function ServicesPage() {
                 name: center.name
             }));
             setCenters(mappedCenters);
-            if (mappedCenters.length > 0) {
+            if (mappedCenters.length > 0 && !currentPackage.centerId) {
                 setCurrentPackage(prev => ({ ...prev, centerId: mappedCenters[0].id }));
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching centers:", error);
+            showSnackbar("Error fetching service centers", "error");
         }
     };
 
     const handleOpenCreate = () => {
+        if (centers.length === 0) {
+            showSnackbar("Please create a service center first", "warning");
+            return;
+        }
         setCurrentPackage({
             id: "",
-            centerId: centers.length > 0 ? centers[0].id : "",
+            centerId: centers[0].id,
             name: "",
             description: "",
             price: 0,
@@ -107,12 +131,30 @@ export default function ServicesPage() {
     };
 
     const handleCloseModal = () => {
-        setIsModalOpen(false);
+        if (!isSaving) setIsModalOpen(false);
+    };
+
+    const validateForm = () => {
+        if (!currentPackage.name.trim()) {
+            showSnackbar("Package name is required", "warning");
+            return false;
+        }
+        if (currentPackage.price <= 0) {
+            showSnackbar("Price must be greater than 0", "warning");
+            return false;
+        }
+        if (!currentPackage.centerId) {
+            showSnackbar("Please select a service center", "warning");
+            return false;
+        }
+        return true;
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateForm()) return;
 
+        setIsSaving(true);
         const processedFeatures = featuresInput
             .split("\n")
             .map(f => f.trim())
@@ -132,25 +174,30 @@ export default function ServicesPage() {
         try {
             if (isEditing) {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/service-packages/${currentPackage.id}`, packageData);
+                showSnackbar("Service package updated successfully");
             } else {
                 await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
+                showSnackbar("Service package created successfully");
             }
-            fetchPackages();
-            handleCloseModal();
-        } catch (error) {
+            await fetchPackages();
+            setIsModalOpen(false);
+        } catch (error: any) {
             console.error("Error saving service package:", error);
-            alert("Failed to save service package.");
+            showSnackbar(error.response?.data?.message || "Failed to save service package", "error");
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this service package?")) {
+        if (window.confirm("Are you sure you want to delete this service package?")) {
             try {
                 await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
+                showSnackbar("Service package deleted");
                 fetchPackages();
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error deleting service package:", error);
-                alert("Failed to delete service package.");
+                showSnackbar(error.response?.data?.message || "Failed to delete service package", "error");
             }
         }
     };
@@ -171,7 +218,7 @@ export default function ServicesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                     <div className="col-span-full py-20 text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <CircularProgress color="primary" sx={{ mb: 2 }} />
                         <p className="text-slate-500">Loading service packages...</p>
                     </div>
                 ) : packages.length === 0 ? (
@@ -313,11 +360,11 @@ export default function ServicesPage() {
                                         <input
                                             type="number"
                                             required
-                                            min="0"
+                                            min="0.01"
                                             step="0.01"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="0.00"
-                                            value={isNaN(currentPackage.price) ? "" : currentPackage.price}
+                                            value={currentPackage.price || ""}
                                             onChange={e => {
                                                 const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
                                                 setCurrentPackage({ ...currentPackage, price: val });
@@ -333,7 +380,7 @@ export default function ServicesPage() {
                                             step="5"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="30"
-                                            value={isNaN(currentPackage.duration) ? "" : currentPackage.duration}
+                                            value={currentPackage.duration || ""}
                                             onChange={e => {
                                                 const val = e.target.value === "" ? 0 : parseInt(e.target.value);
                                                 setCurrentPackage({ ...currentPackage, duration: val });
@@ -401,13 +448,19 @@ export default function ServicesPage() {
                                     type="button"
                                     variant="secondary"
                                     onClick={handleCloseModal}
+                                    disabled={isSaving}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
+                                    disabled={isSaving}
                                 >
-                                    <FiSave className="mr-2" />
+                                    {isSaving ? (
+                                        <CircularProgress size={20} color="inherit" className="mr-2" />
+                                    ) : (
+                                        <FiSave className="mr-2" />
+                                    )}
                                     {isEditing ? "Save Changes" : "Create Package"}
                                 </Button>
                             </div>
@@ -415,6 +468,22 @@ export default function ServicesPage() {
                     </div>
                 </div>
             )}
+
+            <Snackbar 
+                open={snackbar.open} 
+                autoHideDuration={6000} 
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={() => setSnackbar({ ...snackbar, open: false })} 
+                    severity={snackbar.severity} 
+                    variant="filled" 
+                    sx={{ width: '100%', borderRadius: '12px' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </div>
     );
 }

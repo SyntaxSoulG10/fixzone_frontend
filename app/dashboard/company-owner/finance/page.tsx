@@ -218,7 +218,7 @@ export default function FinancePage() {
                     date: transaction.date
                 }))
             });
-        } catch (fetchError) {
+        } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
         } finally {
             setIsLoading(false);
