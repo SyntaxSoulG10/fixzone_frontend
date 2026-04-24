@@ -4,6 +4,23 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import axios from "axios";
 import { APP_CONFIG } from "../utils/config";
 
+// Setup Axios Interceptor to inject JWT token
+axios.interceptors.request.use(
+    (config) => {
+        // Ensure we are in the browser environment before accessing localStorage
+        if (typeof window !== "undefined") {
+            const token = localStorage.getItem("token");
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 interface DashboardDataContextType {
     centersData: any[];
     managersData: any[];
