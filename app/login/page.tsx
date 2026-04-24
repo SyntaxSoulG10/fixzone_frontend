@@ -26,6 +26,7 @@ export default function LoginPage() {
             // Save to localStorage (Simulating session)
             localStorage.setItem("userRole", role);
             localStorage.setItem("tenantId", "tenant-123");
+            localStorage.setItem("customerId", "00000000-0000-0000-0000-000000000001");
 
             // Redirect based on role
             router.push(`/dashboard/${role.replace('_', '-')}`);

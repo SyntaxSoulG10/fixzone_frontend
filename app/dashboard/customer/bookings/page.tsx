@@ -33,7 +33,7 @@ type Station = {
 
 const STATIONS: Station[] = [
   { 
-    id: "c0000000-0000-0000-0000-000000000001", 
+    id: "00000000-0000-0000-0000-000000000001", 
     name: "Taylor Express Maintenance", 
     rating: 4.8, 
     reviews: 234,

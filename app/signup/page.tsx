@@ -32,6 +32,7 @@ export default function SignupPage() {
 
             // In a real app, you'd send data to backend here
             localStorage.setItem("userRole", routeRole);
+            localStorage.setItem("customerId", "00000000-0000-0000-0000-000000000001");
 
             router.push(`/dashboard/${routeRole}`);
             setLoading(false);

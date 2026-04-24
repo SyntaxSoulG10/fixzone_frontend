@@ -150,7 +150,7 @@ function PaymentSuccessContent() {
               <Button
                 variant="contained"
                 size="large"
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/dashboard/customer/history")}
                 sx={{
                   mt: 3,
                   px: 5,

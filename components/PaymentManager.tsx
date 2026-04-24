@@ -37,13 +37,13 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
   };
 
   const handleRefund = async () => {
-    if (!confirm("Are you sure you want to cancel and refund 50%?")) return;
+    if (!confirm("Are you sure you want to cancel and receive a 20% refund?")) return;
     
     try {
       setActionLoading(true);
       setMessage(null);
       await refundPayment(bookingId);
-      setMessage({ text: "50% refunded successfully", type: 'success' });
+      setMessage({ text: "20% refunded successfully", type: 'success' });
       await fetchStatus(); // Reload status
     } catch (err: any) {
       setMessage({ text: err.message || "Refund failed", type: 'error' });
@@ -113,7 +113,7 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
             disabled={actionLoading}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
           >
-            {actionLoading ? "Processing..." : "Reschedule (+30%)"}
+            {actionLoading ? "Processing..." : "Reschedule (+5%)"}
           </button>
         </div>
       )}
