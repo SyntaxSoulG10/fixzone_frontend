@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import APP_CONFIG from "@/config";
 import {
     Grid,
     Card,
@@ -100,8 +99,8 @@ export default function ManagersPage() {
         const fetchData = async () => {
             try {
                 const [managersRes, centersRes] = await Promise.all([
-                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/managers`),
-                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/service-centers`)
+                    axios.get("http://localhost:8081/api/managers"),
+                    axios.get("http://localhost:8081/api/service-centers")
                 ]);
 
                 const centersMap = centersRes.data.reduce((acc: any, center: any) => {
