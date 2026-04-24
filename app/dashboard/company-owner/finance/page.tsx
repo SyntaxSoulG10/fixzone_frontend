@@ -166,41 +166,60 @@ export default function FinancePage() {
     const centersList = centersData;
 
     useEffect(() => { 
-        loadFinanceData(); 
+        loadUnifiedFinanceData(); 
     }, [selectedCenter, period, startDate, endDate]);
 
-    // LOAD DATA: Fetches unified aggregated metrics and transactions from the single analytics endpoint.
-    const loadFinanceData = async () => {
+    /**
+     * LOAD FINANCE DATA
+     * Why: Instead of making multiple scattered API calls, we use a single 
+     * unified "Analytics" endpoint. This is a "Backends-for-Frontends" (BFF) 
+     * pattern that reduces latency and ensures data consistency across the page.
+     */
+    const loadUnifiedFinanceData = async () => {
         setIsLoading(true);
         try {
-            const params = { centerId: selectedCenter !== 'all' ? selectedCenter : undefined, startDate: startDate || undefined, endDate: endDate || undefined, period };
+            const queryParameters = { 
+                centerId: selectedCenter !== 'all' ? selectedCenter : undefined, 
+                startDate: startDate || undefined, 
+                endDate: endDate || undefined, 
+                period 
+            };
             
-            const analyticsRes = await axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params });
-            const data = analyticsRes.data;
+            const apiResponse = await axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params: queryParameters });
+            const analyticsPayload = apiResponse.data;
 
             setFinanceData({
-                totalRevenue: data.totalRevenue || 0,
-                onlineRevenue: data.onlineRevenue || 0,
-                cashRevenue: data.handCollectionRevenue || 0,
-                avgTransaction: data.avgJobValue || 0,
-                revenueByCenter: (data.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
-                growthData: (data.revenueOverview || []).map((m: any) => ({ 
-                    month: m.name, 
-                    amount: m.revenue, 
-                    online: m.onlineRevenue, 
-                    cash: m.cashRevenue 
+                totalRevenue: analyticsPayload.totalRevenue || 0,
+                onlineRevenue: analyticsPayload.onlineRevenue || 0,
+                cashRevenue: analyticsPayload.handCollectionRevenue || 0,
+                avgTransaction: analyticsPayload.avgJobValue || 0,
+                
+                // Map branch performance
+                revenueByCenter: (analyticsPayload.topCenters || []).map((branch: any) => ({ 
+                    name: branch.name, 
+                    revenue: branch.revenue 
                 })),
-                recentTransactions: (data.recentTransactions || []).map((t: any) => ({
-                    id: t.id,
-                    customer: t.customer,
-                    amount: t.amount,
-                    method: t.method,
-                    status: t.status,
-                    date: t.date
+                
+                // Map historical growth data
+                growthData: (analyticsPayload.revenueOverview || []).map((monthlyData: any) => ({ 
+                    month: monthlyData.name, 
+                    amount: monthlyData.revenue, 
+                    online: monthlyData.onlineRevenue, 
+                    cash: monthlyData.cashRevenue 
+                })),
+                
+                // Map recent transaction logs
+                recentTransactions: (analyticsPayload.recentTransactions || []).map((transaction: any) => ({
+                    id: transaction.id,
+                    customer: transaction.customer,
+                    amount: transaction.amount,
+                    method: transaction.method,
+                    status: transaction.status,
+                    date: transaction.date
                 }))
             });
-        } catch (error) {
-            console.error("Error loading finance data:", error);
+        } catch (fetchError) {
+            console.error("Critical error during finance data load:", fetchError);
         } finally {
             setIsLoading(false);
         }
