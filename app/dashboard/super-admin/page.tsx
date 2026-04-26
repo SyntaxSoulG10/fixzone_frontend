@@ -5,6 +5,7 @@ import axios from "axios";
 import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiSearch, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import APP_CONFIG from "@/config";
 
 // Mock Data
 const DATA = {
@@ -48,7 +49,7 @@ export default function SuperAdminDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await axios.get("http://localhost:8080/api/admin/stats");
+                const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/stats`);
                 setStats(response.data);
             } catch (error) {
                 console.error("Error fetching admin stats:", error);
