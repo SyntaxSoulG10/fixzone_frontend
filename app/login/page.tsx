@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
+import { getUserRole, isTokenExpired } from "../../utils/authUtils";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -33,13 +34,40 @@ export default function LoginPage() {
 
             const data = await response.json();
             
+            let tokenToSave = null;
             if (data.token) {
+                tokenToSave = data.token;
                 localStorage.setItem("token", data.token);
             } else if (typeof data === 'string') {
+                tokenToSave = data;
                 localStorage.setItem("token", data);
             }
 
-            router.push("/dashboard/service-manager");
+            if (tokenToSave) {
+                if (isTokenExpired(tokenToSave)) {
+                    throw new Error("Received an expired token");
+                }
+                const role = getUserRole(tokenToSave);
+                switch (role) {
+                    case "ROLE_SERVICE_MANAGER":
+                        router.push("/dashboard/service-manager");
+                        break;
+                    case "ROLE_SUPER_ADMIN":
+                        router.push("/dashboard/super-admin");
+                        break;
+                    case "ROLE_COMPANY_OWNER":
+                    case "OWNER":
+                        router.push("/dashboard/company-owner");
+                        break;
+                    case "ROLE_CUSTOMER":
+                        router.push("/dashboard/customer");
+                        break;
+                    default:
+                        router.push("/dashboard/customer"); // fallback
+                }
+            } else {
+                throw new Error("No token received from server");
+            }
             
         } catch (err: any) {
             setError(err.message || "Failed to connect to the server.");
