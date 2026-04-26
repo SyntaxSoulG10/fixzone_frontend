@@ -4,7 +4,7 @@ import type { ServiceCenter } from "@/types/service-center";
 const BASE_URL = "http://localhost:8081";
 
 // Helper to get auth headers
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem("token");
   return token ? { "Authorization": `Bearer ${token}` } : {};
