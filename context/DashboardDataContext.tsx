@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import axios from "axios";
 import { APP_CONFIG } from "../utils/config";
+import { getToken, getUserRole, isTokenExpired } from "../utils/authUtils";
 
 // Setup Axios Interceptor to inject JWT token
 axios.interceptors.request.use(
@@ -27,7 +28,9 @@ interface DashboardDataContextType {
     analyticsData: any | null;
     customersData: any[];
     ownerData: any | null;
+    bookingsData: any[];
     isLoading: boolean;
+    hasDataInitialized: boolean;
     refreshCenters: () => Promise<void>;
     refreshManagers: () => Promise<void>;
     refreshAnalytics: () => Promise<void>;
@@ -49,6 +52,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [analyticsData, setAnalyticsData] = useState<any | null>(null);
     const [customersData, setCustomersData] = useState<any[]>([]);
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
+    const [bookingsData, setBookingsData] = useState<any[]>([]);
     
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
@@ -63,32 +67,51 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const refreshAllDashboardData = useCallback(async () => {
         setIsInitialLoad(true);
         try {
-            const [
-                centersResponse, 
-                managersResponse, 
-                analyticsResponse, 
-                customersResponse, 
-                ownerResponse
-            ] = await Promise.all([
-                axios.get(APP_CONFIG.api.serviceCenters + "/current"),
-                axios.get(APP_CONFIG.api.managers + "/current"),
-                axios.get(APP_CONFIG.api.analytics + "/current"),
-                axios.get(APP_CONFIG.api.customers + "/current"),
-                axios.get(APP_CONFIG.api.owners + "/current")
-            ]);
+            const token = getToken();
+            if (!token || isTokenExpired(token)) {
+                setIsInitialLoad(false);
+                return; // Let the route guard handle the redirect
+            }
+
+            const role = getUserRole(token);
+            const requests = [];
+
+            // Add endpoints conditionally based on role
+            if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
+                requests.push(axios.get(APP_CONFIG.api.owners + "/current").catch(() => ({ data: null })));
+                requests.push(axios.get(APP_CONFIG.api.serviceCenters + "/current").catch(() => ({ data: [] })));
+                requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: [] })));
+            } else if (role === "ROLE_SERVICE_MANAGER") {
+                requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null })));
+                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+            } else if (role === "ROLE_SUPER_ADMIN") {
+                requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
+            } else if (role === "ROLE_CUSTOMER") {
+                requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: null })));
+                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+            }
+
+            // Execute only the relevant endpoints
+            const responses = await Promise.all(requests);
             
-            // Atomically update state to minimize UI re-renders
-            setCentersData(centersResponse.data || []);
-            setManagersData(managersResponse.data || []);
-            setAnalyticsData(analyticsResponse.data || null);
-            setCustomersData(customersResponse.data || []);
-            setOwnerProfile(ownerResponse.data || null);
+            // Assign data based on role
+            if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
+                setOwnerProfile(responses[0]?.data || null);
+                setCentersData(responses[1]?.data || []);
+                setManagersData(responses[2]?.data || []);
+            } else if (role === "ROLE_SERVICE_MANAGER") {
+                setManagersData(responses[0]?.data || []);
+                setBookingsData(responses[1]?.data || []);
+            } else if (role === "ROLE_SUPER_ADMIN") {
+                setAnalyticsData(responses[0]?.data || null);
+            } else if (role === "ROLE_CUSTOMER") {
+                setCustomersData(responses[0]?.data || []);
+                setBookingsData(responses[1]?.data || []);
+            }
             
             setHasDataInitialized(true);
         } catch (fetchError: any) {
-            // We log error context for debugging but keep the UI stable
             console.error("Critical error during dashboard data initialization:", fetchError);
-            // We could set a global error state here if needed
         } finally {
             setIsInitialLoad(false);
         }
@@ -107,7 +130,9 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         analyticsData,
         customersData,
         ownerData: ownerProfile,
+        bookingsData,
         isLoading: isInitialLoad,
+        hasDataInitialized,
         refreshCenters: async () => { /* Individual refresh logic if needed */ },
         refreshManagers: async () => { /* Individual refresh logic if needed */ },
         refreshAnalytics: async () => { /* Individual refresh logic if needed */ },
