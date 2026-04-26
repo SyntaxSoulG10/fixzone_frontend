@@ -16,16 +16,17 @@ import {
   FiUser,
 } from "react-icons/fi";
 
+import { getBookingsByCustomer } from "@/lib/api";
+
 type Booking = {
-  id: string;
-  branch: string;
-  status: "In Progress" | "Pending" | "Completed" | "Scheduled";
-  vehicle: string;
-  service: string;
-  time: string;
-  date: number;
-  progress: number;
-  color: string;
+  bookingId: string;
+  serviceCenterName: string;
+  status: string;
+  vehicleName?: string;
+  packageName: string;
+  bookingTime: string;
+  bookingDate: string;
+  progress?: number;
 };
 
 type Notification = {
@@ -35,98 +36,100 @@ type Notification = {
 };
 
 export default function CustomerDashboard() {
-  const [selectedDate, setSelectedDate] = useState(17);
+  const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Guest");
 
-  const bookings: Booking[] = [
-    {
-      id: "1",
-      branch: "ABC Service Center",
-      status: "In Progress",
-      vehicle: "Honda Civic 2020",
-      service: "Standard Service",
-      time: "10:00 AM",
-      date: 17,
-      progress: 60,
-      color: "from-orange-600 to-orange-400",
-    },
-    {
-      id: "2",
-      branch: "KML Auto Care",
-      status: "Pending",
-      vehicle: "Toyota Camry",
-      service: "Full Service",
-      time: "11:30 AM",
-      date: 17,
-      progress: 0,
-      color: "from-blue-600 to-blue-400",
-    },
-    {
-      id: "3",
-      branch: "B Tech Motors",
-      status: "Completed",
-      vehicle: "Ford Focus",
-      service: "Standard Service",
-      time: "09:00 AM",
-      date: 20,
-      progress: 100,
-      color: "from-green-600 to-green-400",
-    },
-  ];
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("token");
+    
+    // Initial check from localStorage for speed
+    const storedName = localStorage.getItem("fullName");
+    if (storedName) setUserName(storedName);
 
-  const upcomingAppointments = [
-    { vehicle: "Honda Civic", branch: "ABC Service", time: "Dec 28, 10:00 AM" },
-    { vehicle: "Toyota Camry", branch: "KML Auto Care", time: "Dec 30, 11:30 AM" },
-  ];
+    // Fetch live data from backend to ensure it's correct
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("http://localhost:8081/api/customer/profile", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const fullName = data.fullName || `${data.firstName} ${data.secondName}`;
+          setUserName(fullName);
+          localStorage.setItem("fullName", fullName); // Sync localStorage
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile for dashboard greeting:", err);
+      }
+    };
 
-  const notifications = [
-    { icon: "✅", message: "Honda Civic service completed", time: "10:00 AM" },
-    { icon: "💬", message: "New offer: 20% off full service!", time: "Yesterday" },
-    { icon: "⚠️", message: "Toyota Camry next service due Dec 30", time: "2 days ago" },
-    { icon: "💡", message: "Check your loyalty points balance", time: "3 days ago" },
-  ];
+    if (token) {
+      fetchProfile();
+    }
+
+    if (userId) {
+      getBookingsByCustomer(userId)
+        .then(data => {
+          setBookings(data || []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load dashboard data:", err);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   const getDaysInMonth = () => {
     return Array.from({ length: 31 }, (_, i) => i + 1);
   };
 
   const getBookingsForDate = (day: number) => {
-    return bookings.filter((b) => b.date === day).length;
+    return bookings.filter((b) => {
+      try {
+        const bDate = new Date(b.bookingDate);
+        return bDate.getDate() === day && bDate.getMonth() === new Date().getMonth();
+      } catch (e) {
+        return false;
+      }
+    }).length;
   };
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen space-y-6">
-    
+
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-slate-200">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-              Welcome Back,Charlie 👋
+              Welcome Back, {userName} 👋
             </h1>
             <p className="text-slate-600 text-sm md:text-base">
               Your vehicles are ready for the next service!
             </p>
           </div>
-          <button className="relative bg-slate-100 hover:bg-slate-200 p-3 rounded-xl transition-all">
-            <FiBell className="h-6 w-6 text-slate-700" />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              3
-            </span>
-          </button>
         </div>
       </div>
 
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
         {[
           {
-            title: "Next Service",
-            value: "Dec 28",
+            title: "Active Bookings",
+            value: bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS').length.toString(),
             icon: <FiCalendar className="text-blue-500 text-3xl" />,
             bg: "bg-blue-50",
           },
           {
             title: "Completed Services",
-            value: "8",
+            value: bookings.filter(b => b.status === 'COMPLETED').length.toString(),
             icon: <FiTrendingUp className="text-purple-500 text-3xl" />,
             bg: "bg-purple-50",
           },
@@ -145,9 +148,9 @@ export default function CustomerDashboard() {
         ))}
       </div>
 
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-slate-200">
           <h2 className="text-lg md:text-xl font-bold mb-4 text-slate-900">Schedule Calendar</h2>
 
@@ -179,60 +182,67 @@ export default function CustomerDashboard() {
             })}
           </div>
 
-        
+
           <div className="mt-6">
-            <h3 className="font-bold mb-3 text-slate-900">Messages & Notifications</h3>
+            <h3 className="font-bold mb-3 text-slate-900">Notifications</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {notifications.map((n, i) => (
+              {bookings.filter(b => b.status === 'CONFIRMED').map((b, i) => (
                 <div
                   key={i}
                   className="flex gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
                 >
-                  <span className="text-xl">{n.icon}</span>
+                  <span className="text-xl">📅</span>
                   <div>
-                    <p className="text-sm text-slate-900">{n.message}</p>
-                    <span className="text-xs text-slate-400">{n.time}</span>
+                    <p className="text-sm text-slate-900">Upcoming service at {b.serviceCenterName}</p>
+                    <span className="text-xs text-slate-400">{b.bookingDate} at {b.bookingTime}</span>
                   </div>
                 </div>
               ))}
+              {bookings.filter(b => b.status === 'CONFIRMED').length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-4">No new notifications</p>
+              )}
             </div>
           </div>
         </div>
 
-        
+
         <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-slate-200">
           <h2 className="text-lg md:text-xl font-bold mb-4 text-slate-900">Booking Details</h2>
 
           <div className="space-y-4">
-            {bookings.map((b, i) => (
+            {loading ? (
+              <div className="py-10 text-center text-slate-400 italic">Loading your bookings...</div>
+            ) : bookings.length === 0 ? (
+              <div className="py-10 text-center text-slate-400 italic">No bookings found. Start by booking a service!</div>
+            ) : bookings.map((b, i) => (
               <div
                 key={i}
                 className="p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-bold text-lg text-slate-900">{b.branch}</h3>
-                    <p className="text-sm text-slate-600">{b.vehicle}</p>
+                    <h3 className="font-bold text-lg text-slate-900">{b.serviceCenterName}</h3>
+                    <p className="text-sm text-slate-600">{b.vehicleName || "Registered Vehicle"}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    b.status === "In Progress" 
+                    b.status === "IN_PROGRESS"
                       ? "bg-orange-100 text-orange-700 border border-orange-200"
-                      : b.status === "Completed"
-                      ? "bg-green-100 text-green-700 border border-green-200"
-                      : "bg-blue-100 text-blue-700 border border-blue-200"
+                      : b.status === "COMPLETED"
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-blue-100 text-blue-700 border border-blue-200"
                   }`}>
                     {b.status}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
                   <div className="flex items-center gap-1">
                     <FiTool className="w-4 h-4" />
-                    <span>{b.service}</span>
+                    <span>{b.packageName}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <FiClock className="w-4 h-4" />
-                    <span>{b.time}</span>
+                    <span>{b.bookingTime}</span>
                   </div>
                 </div>
               </div>
@@ -242,24 +252,27 @@ export default function CustomerDashboard() {
           <div className="mt-6">
             <h3 className="font-bold mb-3 text-slate-900">Upcoming Appointments</h3>
             <div className="space-y-2">
-              {upcomingAppointments.map((a, i) => (
+              {bookings.filter(b => b.status === 'CONFIRMED').slice(0, 3).map((a, i) => (
                 <div key={i} className="p-4 border-2 border-slate-200 rounded-xl hover:border-orange-300 transition-colors bg-white">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold text-slate-900">{a.vehicle}</p>
+                      <p className="font-semibold text-slate-900">{a.vehicleName || "Registered Vehicle"}</p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-slate-600">
                         <FiMapPin className="w-3.5 h-3.5" />
-                        <span>{a.branch}</span>
+                        <span>{a.serviceCenterName}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-sm text-slate-600">
                         <FiClock className="w-3.5 h-3.5" />
-                        <span>{a.time}</span>
+                        <span>{a.bookingDate} at {a.bookingTime}</span>
                       </div>
                     </div>
                     <FiChevronRight className="w-5 h-5 text-slate-400" />
                   </div>
                 </div>
               ))}
+              {bookings.filter(b => b.status === 'CONFIRMED').length === 0 && (
+                <p className="text-xs text-slate-400 italic">No upcoming appointments scheduled.</p>
+              )}
             </div>
           </div>
         </div>

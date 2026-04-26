@@ -38,20 +38,33 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         setIsProfileOpen(false);
         setIsNotificationsOpen(false);
 
-        // Fetch user data if company owner
+        // Fetch user data based on role
         const fetchUserData = async () => {
             try {
-                // Determine true role from token, not just pathname
+                // Determine true role from token
                 const token = localStorage.getItem("token");
                 const currentRole = localStorage.getItem("userRole");
+                
+                let endpoint = "";
                 if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
-                    const response = await axios.get(APP_CONFIG.api.owners + "/current", {
+                    endpoint = APP_CONFIG.api.owners + "/current";
+                } else if (currentRole === "ROLE_SERVICE_MANAGER") {
+                    endpoint = APP_CONFIG.api.managers + "/me";
+                } else if (currentRole === "ROLE_CUSTOMER") {
+                    endpoint = "http://localhost:8081/api/customer/profile";
+                } else if (currentRole === "ROLE_SUPER_ADMIN") {
+                    endpoint = APP_CONFIG.api.superAdmins + "/me";
+                }
+
+                if (endpoint && token) {
+                    const response = await axios.get(endpoint, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     if (response.data) {
+                        const data = response.data;
                         setUserData({
-                            fullName: response.data.fullName || response.data.companyName,
-                            profilePictureUrl: response.data.profilePictureUrl
+                            fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName}` : 'User'),
+                            profilePictureUrl: data.profilePictureUrl
                         });
                     }
                 }

@@ -33,11 +33,11 @@ type Station = {
 
 const STATIONS: Station[] = [
   { 
-    id: "00000000-0000-0000-0000-000000000001", 
-    name: "Taylor Express Maintenance", 
+    id: "11111111-1111-1111-1111-111111111111", 
+    name: "Janaka Motors HQ", 
     rating: 4.8, 
     reviews: 234,
-    location: "New York", 
+    location: "Colombo", 
     distance: "2.5 km",
     image: "/garages/garage01.jpg",
     priceRange: "$$",
@@ -45,11 +45,11 @@ const STATIONS: Station[] = [
     openStatus: "Open Now"
   },
   { 
-    id: "kml-1", 
-    name: "KML Auto Care", 
+    id: "11111111-1111-1111-1111-111111111112", 
+    name: "Tharindu Motors HQ", 
     rating: 4.3, 
     reviews: 189,
-    location: "Gampaha", 
+    location: "Colombo", 
     distance: "5.2 km",
     image: "/garages/garage02.jpg",
     priceRange: "$",

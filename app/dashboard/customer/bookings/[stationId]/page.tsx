@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import PageHeader from "@/components/UI/PageHeader";
 import BookingHeader from "@/components/bookings/BookingHeader";
@@ -10,15 +11,17 @@ import TimeSlotSelector, { TimeSlot } from "@/components/bookings/TimeSlotSelect
 import VehicleSelector, { Vehicle } from "@/components/bookings/VehicleSelector";
 import BookingSummary from "@/components/bookings/BookingSummary";
 import { useBooking } from "@/context/BookingContext";
-import { getServiceCenterDetails, getServicePackagesByCenter, initPayment } from "@/lib/api";
+import { getServiceCenterDetails, getServicePackagesByCenter, initPayment, getAvailableSlotsAPI } from "@/lib/api";
+import { getVehicles, type Vehicle as ApiVehicle } from "@/lib/customer-api";
 import { format } from "date-fns";
+// import toast from "react-hot-toast";
 
 // --- Mock Data (Fallback) ---
 
 const PACKAGES: Package[] = [
   {
-    id: "8fc0190f-ab60-419f-9cfd-dcf8ab3e38b5",
-    name: "Gold Full Service (Car)",
+    id: "22222222-2222-2222-2222-222222222221",
+    name: "Full Service",
     description: "Premium comprehensive car care package",
     price: 15000,
     duration: "4.5 hrs",
@@ -58,16 +61,12 @@ const TIME_SLOTS: TimeSlot[] = [
   { time: "18:00-19:00", status: "available" },
 ];
 
-const VEHICLES: Vehicle[] = [
-  { id: "29938f6b-7140-4f51-a9f1-a12345678901", brand: "BMW", model: "X5", licensePlate: "CBC-5335", image: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200" },
-  { id: "29938f6b-7140-4f51-a9f1-a12345678902", brand: "Range Rover", model: "Sport", licensePlate: "CBZ-5435", image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=200" },
-  { id: "29938f6b-7140-4f51-a9f1-a12345678903", brand: "Mercedes", model: "C-Class", licensePlate: "ABC-3669", image: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=200" },
-];
+// Vehicles will be fetched from API
 
 const STATIONS_MOCK = [
   { 
-    id: "abc-1", 
-    name: "AutoMiraj - Colombo 07", 
+    id: "11111111-1111-1111-1111-111111111111", 
+    name: "Janaka Motors HQ", 
     location: "24/A, Havelock Road, Colombo", 
     image: "/garages/garage01.jpg", 
     rating: 4.8, 
@@ -94,6 +93,18 @@ export default function StationDetailPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [specialRequest, setSpecialRequest] = useState("");
+  const [userVehicles, setUserVehicles] = useState<Vehicle[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+
+  // --- Auth Check ---
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // toast.error("Please login to book a service");
+      router.push("/login");
+    }
+  }, [router]);
 
   // --- Load Data ---
   useEffect(() => {
@@ -140,13 +151,50 @@ export default function StationDetailPage() {
       }
     };
 
+    const fetchUserData = async () => {
+      try {
+        setVehiclesLoading(true);
+        const data = await getVehicles();
+        const transformed: Vehicle[] = data.map((v: ApiVehicle) => ({
+          id: v.id,
+          brand: v.brand,
+          model: "", // We can add this later
+          licensePlate: v.plateNumber,
+          image: v.imageUrl || "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200"
+        }));
+        setUserVehicles(transformed);
+      } catch (err) {
+        console.error("Failed to load user vehicles:", err);
+      } finally {
+        setVehiclesLoading(false);
+      }
+    };
+
     if (params.stationId) fetchStationDetails();
+    fetchUserData();
   }, [params.stationId]);
+
+  // --- Load Slots ---
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (selectedDate && station?.id) {
+        try {
+          const formattedDate = format(selectedDate, "yyyy-MM-dd");
+          const slots = await getAvailableSlotsAPI(station.id, formattedDate);
+          setAvailableSlots(slots.map(s => ({ time: s, status: "available" })));
+        } catch (err) {
+          console.error("Failed to load slots:", err);
+          setAvailableSlots(TIME_SLOTS); // Fallback
+        }
+      }
+    };
+    fetchSlots();
+  }, [selectedDate, station?.id]);
 
   // --- Helpers ---
   const selectedVehicle = useMemo(() => {
-    return VEHICLES.find(v => v.id === selectedVehicleId) || null;
-  }, [selectedVehicleId]);
+    return userVehicles.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId, userVehicles]);
 
   const isValid = useMemo(() => {
     return !!(selectedPackage && selectedDate && selectedTime && selectedVehicleId);
@@ -246,16 +294,29 @@ export default function StationDetailPage() {
               />
 
               <TimeSlotSelector 
-                slots={TIME_SLOTS} 
+                slots={availableSlots.length > 0 ? availableSlots : TIME_SLOTS} 
                 selectedTime={selectedTime} 
                 onTimeSelect={setSelectedTime} 
               />
 
-              <VehicleSelector 
-                vehicles={VEHICLES} 
-                selectedVehicleId={selectedVehicleId}
-                onVehicleSelect={setSelectedVehicleId}
-              />
+              {vehiclesLoading ? (
+                <div className="py-4 text-center text-slate-400 italic">Loading your vehicles...</div>
+              ) : userVehicles.length > 0 ? (
+                <VehicleSelector 
+                  vehicles={userVehicles} 
+                  selectedVehicleId={selectedVehicleId}
+                  onVehicleSelect={setSelectedVehicleId}
+                />
+              ) : (
+                <div className="p-6 bg-orange-50 border border-orange-100 rounded-2xl text-center space-y-3">
+                  <p className="text-sm font-medium text-orange-800">You don't have any vehicles yet.</p>
+                  <Link href="/dashboard/customer/profile">
+                    <button className="text-xs font-bold text-orange-600 hover:underline">
+                      + Add a vehicle to your profile
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
 
             <BookingSummary 

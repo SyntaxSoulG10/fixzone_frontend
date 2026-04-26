@@ -3,8 +3,19 @@ import type { ServiceCenter } from "@/types/service-center";
 // Updated to the new backend port
 const BASE_URL = "http://localhost:8081";
 
+// Helper to get auth headers
+const getAuthHeaders = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem("token");
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+};
+
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
-  const res = await fetch(`${BASE_URL}/api/service-centers`);
+  const res = await fetch(`${BASE_URL}/api/service-centers`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
 
   if (!res.ok) {
     throw new Error("Failed to load service centers");
@@ -19,7 +30,10 @@ export async function getServiceCenterDetails(centerId: string): Promise<any> {
 
   try {
     const res = await fetch(`${BASE_URL}/api/service-centers/${centerId}`, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        ...getAuthHeaders()
+      }
     });
 
     clearTimeout(timeoutId);
@@ -42,7 +56,10 @@ export async function getServicePackagesByCenter(centerId: string): Promise<any>
   try {
     // Fixed: Correct endpoint path and removed double slash
     const res = await fetch(`${BASE_URL}/api/service-packages/center/${centerId}`, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        ...getAuthHeaders()
+      }
     });
 
     clearTimeout(timeoutId);
@@ -63,6 +80,7 @@ export async function createPaymentSession(bookingId: number, amount: number): P
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders()
     },
     body: JSON.stringify({ bookingId, amount }),
   });
@@ -85,6 +103,7 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders()
     },
     body: JSON.stringify({ servicePackageId, vehicleId, date, timeSlot, centerId, specialRequest }),
   });
@@ -110,6 +129,7 @@ export async function executeStripePayment(paymentId: number): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders()
     },
     body: JSON.stringify({ paymentId }),
   });
@@ -124,7 +144,11 @@ export async function executeStripePayment(paymentId: number): Promise<string> {
 }
 
 export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/success?session_id=${sessionId}`);
+  const res = await fetch(`${BASE_URL}/payments/success?session_id=${sessionId}`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) {
     const errorMsg = await res.text();
     throw new Error(errorMsg || "Failed to verify payment success");
@@ -133,7 +157,11 @@ export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
 }
 
 export async function getPaymentDetails(bookingId: number): Promise<any> {
-  const res = await fetch(`${BASE_URL}/payments/${bookingId}`);
+  const res = await fetch(`${BASE_URL}/payments/${bookingId}`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) {
     const errorMsg = await res.text();
     throw new Error(errorMsg || "Failed to load payment details");
@@ -146,6 +174,7 @@ export async function refundPayment(bookingId: number): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders()
     },
     body: JSON.stringify({ bookingId }),
   });
@@ -161,6 +190,7 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders()
     },
     body: JSON.stringify({ bookingId }),
   });
@@ -172,7 +202,11 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
 }
 
 export async function getBookingsByCustomer(customerId: string): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/bookings/customer/${customerId}`);
+  const res = await fetch(`${BASE_URL}/api/bookings/customer/${customerId}`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) {
     throw new Error("Failed to load customer bookings");
   }
@@ -180,7 +214,11 @@ export async function getBookingsByCustomer(customerId: string): Promise<any[]> 
 }
 
 export async function getAllBookings(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/bookings`);
+  const res = await fetch(`${BASE_URL}/api/bookings`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) {
     throw new Error("Failed to load all bookings");
   }
@@ -193,7 +231,10 @@ export async function rescheduleBookingAPI(bookingId: string, newDate: string, n
   url.searchParams.append("newTime", newTime);
 
   const res = await fetch(url.toString(), {
-    method: "PUT"
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders()
+    }
   });
 
   if (!res.ok) {
@@ -212,7 +253,10 @@ export async function rescheduleBookingAPI(bookingId: string, newDate: string, n
 
 export async function cancelBookingAPI(bookingId: string): Promise<any> {
   const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/cancel`, {
-    method: "PUT"
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders()
+    }
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => null);
@@ -232,7 +276,11 @@ export async function getAvailableSlotsAPI(centerId: string, date: string): Prom
   url.searchParams.append("centerId", centerId);
   url.searchParams.append("date", date);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) {
     throw new Error("Failed to load available slots");
   }

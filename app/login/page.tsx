@@ -43,6 +43,11 @@ export default function LoginPage() {
                 localStorage.setItem("token", data);
             }
 
+            // Keep teammate's localStorage additions if they exist in the response
+            if (data.role) localStorage.setItem("role", data.role);
+            if (data.userId) localStorage.setItem("userId", data.userId);
+            if (data.fullName) localStorage.setItem("fullName", data.fullName);
+
             if (tokenToSave) {
                 if (isTokenExpired(tokenToSave)) {
                     throw new Error("Received an expired token");

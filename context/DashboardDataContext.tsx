@@ -65,6 +65,9 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
      * as the browser can handle multiple concurrent requests.
      */
     const refreshAllDashboardData = useCallback(async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (!token) return; // Don't fetch if no token
+
         setIsInitialLoad(true);
         try {
             const token = getToken();

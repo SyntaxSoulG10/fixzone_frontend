@@ -64,8 +64,13 @@ export default function MyBookingsPage() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const customerId = localStorage.getItem("customerId") || "00000000-0000-0000-0000-000000000001";
-      const data = await getBookingsByCustomer(customerId);
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        console.warn("No userId found in localStorage, using guest view or redirecting...");
+        // Optionally redirect or show a message
+        return;
+      }
+      const data = await getBookingsByCustomer(userId);
       console.log("Fetched Bookings:", data);
       
       const categorized = {
