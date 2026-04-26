@@ -35,11 +35,21 @@ export default function LoginPage() {
             
             if (data.token) {
                 localStorage.setItem("token", data.token);
-            } else if (typeof data === 'string') {
-                localStorage.setItem("token", data);
+                localStorage.setItem("role", data.role);
+                localStorage.setItem("userId", data.userId);
+                if (data.fullName) localStorage.setItem("fullName", data.fullName);
             }
 
-            router.push("/dashboard/service-manager");
+            // Redirect based on role
+            if (data.role === "ROLE_CUSTOMER") {
+                router.push("/dashboard/customer");
+            } else if (data.role === "ROLE_SERVICE_MANAGER") {
+                router.push("/dashboard/service-manager");
+            } else if (data.role === "ROLE_COMPANY_OWNER") {
+                router.push("/dashboard/company-owner");
+            } else {
+                router.push("/dashboard");
+            }
             
         } catch (err: any) {
             setError(err.message || "Failed to connect to the server.");

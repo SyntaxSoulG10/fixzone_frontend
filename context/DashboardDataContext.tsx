@@ -61,8 +61,13 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
      * as the browser can handle multiple concurrent requests.
      */
     const refreshAllDashboardData = useCallback(async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (!token) return; // Don't fetch if no token
+
         setIsInitialLoad(true);
         try {
+            // Only attempt to fetch if we have a token. 
+            // Note: Customers will still get 403s here because they aren't authorized for these specific endpoints.
             const [
                 centersResponse, 
                 managersResponse, 
@@ -70,14 +75,14 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 customersResponse, 
                 ownerResponse
             ] = await Promise.all([
-                axios.get(APP_CONFIG.api.serviceCenters + "/current"),
-                axios.get(APP_CONFIG.api.managers + "/current"),
-                axios.get(APP_CONFIG.api.analytics + "/current"),
-                axios.get(APP_CONFIG.api.customers + "/current"),
-                axios.get(APP_CONFIG.api.owners + "/current")
+                axios.get(APP_CONFIG.api.serviceCenters + "/current").catch(e => ({ data: [] })),
+                axios.get(APP_CONFIG.api.managers + "/current").catch(e => ({ data: [] })),
+                axios.get(APP_CONFIG.api.analytics + "/current").catch(e => ({ data: null })),
+                axios.get(APP_CONFIG.api.customers + "/current").catch(e => ({ data: [] })),
+                axios.get(APP_CONFIG.api.owners + "/current").catch(e => ({ data: null }))
             ]);
             
-            // Atomically update state to minimize UI re-renders
+            // Atomically update state
             setCentersData(centersResponse.data || []);
             setManagersData(managersResponse.data || []);
             setAnalyticsData(analyticsResponse.data || null);
@@ -86,9 +91,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             
             setHasDataInitialized(true);
         } catch (fetchError: any) {
-            // We log error context for debugging but keep the UI stable
-            console.error("Critical error during dashboard data initialization:", fetchError);
-            // We could set a global error state here if needed
+            console.error("Dashboard initialization error:", fetchError);
         } finally {
             setIsInitialLoad(false);
         }
