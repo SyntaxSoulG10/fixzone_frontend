@@ -41,8 +41,13 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         // Fetch user data if company owner
         const fetchUserData = async () => {
             try {
-                if (pathname.includes('/company-owner')) {
-                    const response = await axios.get(APP_CONFIG.api.owners + "/current");
+                // Determine true role from token, not just pathname
+                const token = localStorage.getItem("token");
+                const currentRole = localStorage.getItem("userRole");
+                if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
+                    const response = await axios.get(APP_CONFIG.api.owners + "/current", {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     if (response.data) {
                         setUserData({
                             fullName: response.data.fullName || response.data.companyName,
