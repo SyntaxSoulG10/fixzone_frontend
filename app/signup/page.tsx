@@ -23,20 +23,65 @@ export default function SignupPage() {
         e.preventDefault();
         if (!role) return;
 
+        if (password !== confirmPassword) {
+            alert("Passwords do not match");
+            return;
+        }
+
         setLoading(true);
 
-        // MOCK SIGNUP LOGIC
-        setTimeout(() => {
-            let routeRole = "customer"; // Default vehicle owner
-            if (role === "service-center") routeRole = "company-owner";
+        try {
+            const endpoint = role === "service-center" 
+                ? "http://localhost:8081/api/auth/register/owner" 
+                : "http://localhost:8081/api/auth/register/customer";
+            
+            const payload = role === "service-center" 
+                ? {
+                    companyName,
+                    companyNumber: phoneNumber,
+                    fullName,
+                    email,
+                    password
+                }
+                : {
+                    fullName,
+                    email,
+                    password
+                };
 
-            // In a real app, you'd send data to backend here
-            localStorage.setItem("userRole", routeRole);
-            localStorage.setItem("customerId", "00000000-0000-0000-0000-000000000001");
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || "Registration failed");
+            }
+
+            const data = await response.json();
+            
+            // Store token and user info
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("userRole", data.role);
+                localStorage.setItem("userEmail", data.email);
+                localStorage.setItem("userId", data.userId);
+            }
+
+            // Redirect based on role
+            let routeRole = data.role === "ROLE_COMPANY_OWNER" ? "company-owner" : "customer";
             router.push(`/dashboard/${routeRole}`);
+            
+        } catch (err: any) {
+            console.error("Signup error:", err);
+            alert(err.message || "An error occurred during signup");
+        } finally {
             setLoading(false);
-        }, 1500);
+        }
     };
 
     return (
