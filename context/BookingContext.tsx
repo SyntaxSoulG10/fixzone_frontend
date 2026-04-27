@@ -11,6 +11,7 @@ interface BookingData {
   selectedTime: string | null;
   selectedVehicle: Vehicle | null;
   specialRequest: string;
+  paymentId: number | null;
 }
 
 interface BookingContextType {
@@ -26,6 +27,7 @@ const defaultBookingData: BookingData = {
   selectedTime: null,
   selectedVehicle: null,
   specialRequest: "",
+  paymentId: null,
 };
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);

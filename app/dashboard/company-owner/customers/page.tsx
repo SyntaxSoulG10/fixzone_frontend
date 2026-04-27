@@ -14,15 +14,38 @@ import { useTheme } from "@mui/material/styles";
 import {
     FiUsers,
     FiUserPlus,
-    FiRefreshCw
+    FiRefreshCw,
+    FiSearch,
+    FiDownload,
+    FiFilter,
+    FiUser,
+    FiMoreVertical,
+    FiMail,
+    FiPhone
 } from "react-icons/fi";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";    
 import { formatDistanceToNow } from "date-fns";
+// Interface representation for the structure originating directly from the Backend API
+interface CustomerDTO {
+    userId?: string;
+    id?: string;
+    fullName?: string;
+    name?: string;
+    email: string;
+    visits?: number;
+    totalSpent?: number;
+    lastLoginAt?: string;
+    createdAt?: string;
+    status?: string;
+    profilePictureUrl?: string;
+}
 
+// Client-side View Model mapped safely for rendering
 interface Customer {
-    id: number;
+    id: string | number;
     name: string;
     email: string;
     visits: number;
@@ -32,90 +55,41 @@ interface Customer {
     avatarUrl: string;
 }
 
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 export default function CustomersPage() {
     const theme = useTheme();
+    const { customersData, refreshAll } = useDashboardData();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const dummyCustomers: Customer[] = [
-        {
-            id: 1,
-            name: "Kasun Perera",
-            email: "kasun.perera@example.com",
-            visits: 12,
-            totalSpent: 15600,
-            lastVisit: "2023-10-25T10:00:00Z",
-            status: "VIP",
-            avatarUrl: "https://i.pravatar.cc/150?u=1",
-        },
-        {
-            id: 2,
-            name: "Nimali Silva",
-            email: "nimali.silva@example.com",
-            visits: 5,
-            totalSpent: 3500,
-            lastVisit: "2023-11-01T14:30:00Z",
-            status: "Active",
-            avatarUrl: "https://i.pravatar.cc/150?u=2",
-        },
-        {
-            id: 3,
-            name: "Ruwan Fernando",
-            email: "ruwan.f@example.com",
-            visits: 8,
-            totalSpent: 8900,
-            lastVisit: "2023-10-15T09:15:00Z",
-            status: "Active",
-            avatarUrl: "https://i.pravatar.cc/150?u=3",
-        },
-        {
-            id: 4,
-            name: "Dilshan Bandara",
-            email: "dilshan.b@example.com",
-            visits: 1,
-            totalSpent: 450,
-            lastVisit: "2023-11-05T16:20:00Z",
-            status: "New",
-            avatarUrl: "https://i.pravatar.cc/150?u=4",
-        },
-        {
-            id: 5,
-            name: "Chamari Atapattu",
-            email: "chamari.a@example.com",
-            visits: 20,
-            totalSpent: 25000,
-            lastVisit: "2023-10-28T11:45:00Z",
-            status: "VIP",
-            avatarUrl: "https://i.pravatar.cc/150?u=5",
-        }
-    ];
-
     useEffect(() => {
-        const fetchCustomers = async () => {
+        const loadCustomers = async () => {
+            setLoading(true);
             try {
-                const response = await axios.get("http://localhost:8081/api/customers");
-                const mappedCustomers = response.data.map((customer: any) => ({
-                    ...customer,
-                    id: customer.userId || customer.id, // Ensure we have an 'id' for DataGrid
-                    name: customer.fullName || customer.name,
+                if (customersData.length === 0) {
+                    await refreshAll();
+                }
+                
+                const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerDTO) => ({
+                    id: customer.userId || customer.id || Math.random().toString(),
+                    name: customer.fullName || customer.name || "Unknown Customer",
+                    email: customer.email,
                     visits: customer.visits || 0,
                     totalSpent: customer.totalSpent || 0,
                     lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
                     status: customer.status || "Active",
-                    avatarUrl: customer.avatarUrl || `https://i.pravatar.cc/150?u=${customer.userId || customer.id}`
+                    avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
                 }));
                 setCustomers(mappedCustomers);
-            } catch (error) {
-                console.error("Error fetching customers:", error);
-                // Fallback to dummy data if server is unreachable
-                setCustomers(dummyCustomers);
+            } catch (err) {
+                console.error("Failed to load customers:", err);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchCustomers();
-    }, []);
+        loadCustomers();
+    }, [customersData, refreshAll]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {

@@ -5,9 +5,8 @@ import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
 import axios from "axios";
-
-const API_BASE_URL = "http://127.0.0.1:8081/api/service-packages";
-const CENTERS_API_URL = "http://127.0.0.1:8081/api/service-centers";
+import { APP_CONFIG } from "@/utils/config";
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
 
 interface ServicePackage {
     id: string;
@@ -25,8 +24,15 @@ export default function ServicesPage() {
     const [packages, setPackages] = useState<ServicePackage[]>([]);
     const [centers, setCenters] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    
+    const [snackbar, setSnackbar] = useState({ 
+        open: false, 
+        message: '', 
+        severity: 'success' as 'success' | 'error' | 'warning' | 'info' 
+    });
 
     const [currentPackage, setCurrentPackage] = useState<ServicePackage>({
         id: "",
@@ -42,15 +48,27 @@ export default function ServicesPage() {
     const [featuresInput, setFeaturesInput] = useState("");
 
     useEffect(() => {
-        fetchPackages();
-        fetchCenters();
+        const init = async () => {
+            setIsLoading(true);
+            try {
+                await Promise.all([fetchPackages(), fetchCenters()]);
+            } catch (err) {
+                showSnackbar("Failed to initialize data", "error");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        init();
     }, []);
 
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
+
     const fetchPackages = async () => {
-        setIsLoading(true);
         try {
-            const response = await axios.get(API_BASE_URL);
-            const mappedData = response.data.map((pkg: any) => ({
+            const response = await axios.get(APP_CONFIG.api.baseUrl + "/service-packages/current");
+            const mappedData = (response.data || []).map((pkg: any) => ({
                 id: pkg.packageId,
                 centerId: pkg.centerId,
                 name: pkg.name,
@@ -62,33 +80,37 @@ export default function ServicesPage() {
                 isActive: pkg.isActive
             }));
             setPackages(mappedData);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching service packages:", error);
-        } finally {
-            setIsLoading(false);
+            showSnackbar(error.response?.data?.message || "Error fetching service packages", "error");
         }
     };
 
     const fetchCenters = async () => {
         try {
-            const response = await axios.get(CENTERS_API_URL);
-            const mappedCenters = response.data.map((center: any) => ({
+            const response = await axios.get(APP_CONFIG.api.serviceCenters + "/current");
+            const mappedCenters = (response.data || []).map((center: any) => ({
                 id: center.centerId,
                 name: center.name
             }));
             setCenters(mappedCenters);
-            if (mappedCenters.length > 0) {
+            if (mappedCenters.length > 0 && !currentPackage.centerId) {
                 setCurrentPackage(prev => ({ ...prev, centerId: mappedCenters[0].id }));
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching centers:", error);
+            showSnackbar("Error fetching service centers", "error");
         }
     };
 
     const handleOpenCreate = () => {
+        if (centers.length === 0) {
+            showSnackbar("Please create a service center first", "warning");
+            return;
+        }
         setCurrentPackage({
             id: "",
-            centerId: centers.length > 0 ? centers[0].id : "",
+            centerId: centers[0].id,
             name: "",
             description: "",
             price: 0,
@@ -109,12 +131,42 @@ export default function ServicesPage() {
     };
 
     const handleCloseModal = () => {
-        setIsModalOpen(false);
+        if (!isSaving) setIsModalOpen(false);
+    };
+
+    const validateForm = () => {
+        if (!currentPackage.name.trim() || currentPackage.name.length < 3) {
+            showSnackbar("Package name must be at least 3 characters", "warning");
+            return false;
+        }
+        if (currentPackage.price <= 0) {
+            showSnackbar("Price must be greater than 0", "warning");
+            return false;
+        }
+        if (currentPackage.price > 1000000) {
+            showSnackbar("Price seems too high. Please verify.", "warning");
+            return false;
+        }
+        if (currentPackage.duration < 5 || currentPackage.duration > 1440) {
+            showSnackbar("Duration must be between 5 minutes and 24 hours", "warning");
+            return false;
+        }
+        if (!currentPackage.description.trim() || currentPackage.description.length < 10) {
+            showSnackbar("Please provide a more detailed description (min 10 chars)", "warning");
+            return false;
+        }
+        if (!currentPackage.centerId) {
+            showSnackbar("Please select a service center", "warning");
+            return false;
+        }
+        return true;
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateForm()) return;
 
+        setIsSaving(true);
         const processedFeatures = featuresInput
             .split("\n")
             .map(f => f.trim())
@@ -133,26 +185,31 @@ export default function ServicesPage() {
 
         try {
             if (isEditing) {
-                await axios.put(`${API_BASE_URL}/${currentPackage.id}`, packageData);
+                await axios.put(`${APP_CONFIG.api.baseUrl}/service-packages/${currentPackage.id}`, packageData);
+                showSnackbar("Service package updated successfully");
             } else {
-                await axios.post(API_BASE_URL, packageData);
+                await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
+                showSnackbar("Service package created successfully");
             }
-            fetchPackages();
-            handleCloseModal();
-        } catch (error) {
+            await fetchPackages();
+            setIsModalOpen(false);
+        } catch (error: any) {
             console.error("Error saving service package:", error);
-            alert("Failed to save service package.");
+            showSnackbar(error.response?.data?.message || "Failed to save service package", "error");
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this service package?")) {
+        if (window.confirm("Are you sure you want to delete this service package?")) {
             try {
-                await axios.delete(`${API_BASE_URL}/${id}`);
+                await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
+                showSnackbar("Service package deleted");
                 fetchPackages();
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error deleting service package:", error);
-                alert("Failed to delete service package.");
+                showSnackbar(error.response?.data?.message || "Failed to delete service package", "error");
             }
         }
     };
@@ -173,7 +230,7 @@ export default function ServicesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                     <div className="col-span-full py-20 text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <CircularProgress color="primary" sx={{ mb: 2 }} />
                         <p className="text-slate-500">Loading service packages...</p>
                     </div>
                 ) : packages.length === 0 ? (
@@ -315,12 +372,15 @@ export default function ServicesPage() {
                                         <input
                                             type="number"
                                             required
-                                            min="0"
+                                            min="0.01"
                                             step="0.01"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="0.00"
-                                            value={currentPackage.price}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, price: parseFloat(e.target.value) })}
+                                            value={currentPackage.price || ""}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, price: val });
+                                            }}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -332,8 +392,11 @@ export default function ServicesPage() {
                                             step="5"
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             placeholder="30"
-                                            value={currentPackage.duration}
-                                            onChange={e => setCurrentPackage({ ...currentPackage, duration: parseInt(e.target.value) })}
+                                            value={currentPackage.duration || ""}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, duration: val });
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -397,13 +460,19 @@ export default function ServicesPage() {
                                     type="button"
                                     variant="secondary"
                                     onClick={handleCloseModal}
+                                    disabled={isSaving}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
+                                    disabled={isSaving}
                                 >
-                                    <FiSave className="mr-2" />
+                                    {isSaving ? (
+                                        <CircularProgress size={20} color="inherit" className="mr-2" />
+                                    ) : (
+                                        <FiSave className="mr-2" />
+                                    )}
                                     {isEditing ? "Save Changes" : "Create Package"}
                                 </Button>
                             </div>
@@ -411,6 +480,22 @@ export default function ServicesPage() {
                     </div>
                 </div>
             )}
+
+            <Snackbar 
+                open={snackbar.open} 
+                autoHideDuration={6000} 
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={() => setSnackbar({ ...snackbar, open: false })} 
+                    severity={snackbar.severity} 
+                    variant="filled" 
+                    sx={{ width: '100%', borderRadius: '12px' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </div>
     );
 }

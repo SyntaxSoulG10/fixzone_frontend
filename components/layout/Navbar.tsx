@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { FiBell, FiMenu, FiMoon, FiUser, FiSettings, FiLogOut, FiX } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import axios from "axios";
+import { APP_CONFIG } from "@/utils/config";
 
 interface NavbarProps {
     onToggleSidebar?: () => void;
@@ -15,6 +17,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [role, setRole] = useState<string | null>(null);
+    const [userData, setUserData] = useState<{ fullName?: string, profilePictureUrl?: string } | null>(null);
 
     // Refs for click outside
     const profileRef = useRef<HTMLDivElement>(null);
@@ -34,6 +37,43 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         // Close dropdowns on path change
         setIsProfileOpen(false);
         setIsNotificationsOpen(false);
+
+        // Fetch user data based on role
+        const fetchUserData = async () => {
+            try {
+                // Determine true role from token
+                const token = localStorage.getItem("token");
+                const currentRole = localStorage.getItem("userRole");
+                
+                let endpoint = "";
+                if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
+                    endpoint = APP_CONFIG.api.owners + "/current";
+                } else if (currentRole === "ROLE_SERVICE_MANAGER") {
+                    endpoint = APP_CONFIG.api.managers + "/me";
+                } else if (currentRole === "ROLE_CUSTOMER") {
+                    endpoint = "http://localhost:8081/api/customer/profile";
+                } else if (currentRole === "ROLE_SUPER_ADMIN") {
+                    endpoint = APP_CONFIG.api.superAdmins + "/me";
+                }
+
+                if (endpoint && token) {
+                    const response = await axios.get(endpoint, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (response.data) {
+                        const data = response.data;
+                        setUserData({
+                            fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName}` : 'User'),
+                            profilePictureUrl: data.profilePictureUrl
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch user data for Navbar:", error);
+            }
+        };
+
+        fetchUserData();
     }, [pathname]);
 
     // Close on click outside
@@ -85,8 +125,8 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             </div>
 
             <div className="flex items-center gap-3">
-                {/* Theme Toggle (Moon) */}
-                <button className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+                {/* Theme Toggle (Static) */}
+                <button className="w-9 h-9 rounded-full border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 flex items-center justify-center transition-colors">
                     <FiMoon className="text-lg" />
                 </button>
 
@@ -135,8 +175,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className={`cursor-pointer transition-all ${isProfileOpen ? 'ring-2 ring-orange-100 rounded-full' : ''}`}
                     >
-                        <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-200">
-                            <img src="https://ui-avatars.com/api/?name=Charlie+Brown&background=5f5f5f&color=fff" alt="User" className="w-full h-full object-cover" />
+                        <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                            {userData?.profilePictureUrl ? (
+                                <img src={userData.profilePictureUrl} alt="User" className="w-full h-full object-cover" />
+                            ) : (
+                                <img src={`https://ui-avatars.com/api/?name=${userData?.fullName || 'User'}&background=5f5f5f&color=fff`} alt="User" className="w-full h-full object-cover" />
+                            )}
                         </div>
                     </div>
 
@@ -144,7 +188,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                     {isProfileOpen && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-4 border-b border-slate-100">
-                                <p className="text-sm font-semibold text-slate-800">Charlie Brown</p>
+                                <p className="text-sm font-semibold text-slate-800">{userData?.fullName || "Charlie Brown"}</p>
                                 <p className="text-xs text-slate-500 truncate capitalize">{role?.replace('_', ' ') || 'User'}</p>
                             </div>
                             <div className="p-1">

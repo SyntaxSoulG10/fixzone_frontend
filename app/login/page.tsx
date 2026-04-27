@@ -4,33 +4,83 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
+import { getUserRole, isTokenExpired } from "../../utils/authUtils";
+import APP_CONFIG from "@/config";
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError("");
 
-        // MOCK LOGIN LOGIC
-        // In a real app, this would hit an API.
-        setTimeout(() => {
-            let role = "customer";
-            if (email.includes("admin")) role = "super_admin";
-            else if (email.includes("owner")) role = "company_owner";
-            else if (email.includes("manager")) role = "service_manager";
+        try {
+            const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-            // Save to localStorage (Simulating session)
-            localStorage.setItem("userRole", role);
-            localStorage.setItem("tenantId", "tenant-123");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || "Invalid credentials or server error");
+            }
 
-            // Redirect based on role
-            router.push(`/dashboard/${role.replace('_', '-')}`);
+            const data = await response.json();
+            
+            let tokenToSave = null;
+            if (data.token) {
+                tokenToSave = data.token;
+                localStorage.setItem("token", data.token);
+                
+                // Keep teammate's localStorage additions if they exist in the response
+                if (data.role) localStorage.setItem("role", data.role);
+                if (data.role) localStorage.setItem("userRole", data.role);
+                if (data.userId) localStorage.setItem("userId", data.userId);
+                if (data.fullName) localStorage.setItem("fullName", data.fullName);
+
+                if (tokenToSave) {
+                    if (isTokenExpired(tokenToSave)) {
+                        throw new Error("Received an expired token");
+                    }
+                    const role = getUserRole(tokenToSave);
+                    switch (role) {
+                        case "ROLE_SERVICE_MANAGER":
+                            router.push("/dashboard/service-manager");
+                            break;
+                        case "ROLE_SUPER_ADMIN":
+                            router.push("/dashboard/super-admin");
+                            break;
+                        case "ROLE_COMPANY_OWNER":
+                        case "OWNER":
+                            router.push("/dashboard/company-owner");
+                            break;
+                        case "ROLE_CUSTOMER":
+                            router.push("/dashboard/customer");
+                            break;
+                        default:
+                            router.push("/dashboard/customer"); // fallback
+                    }
+                } else {
+                    throw new Error("No token received from server");
+                }
+            } else if (typeof data === 'string') {
+                tokenToSave = data;
+                localStorage.setItem("token", data);
+                router.push("/dashboard");
+            }
+            
+        } catch (err: any) {
+            setError(err.message || "Failed to connect to the server.");
             setLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -49,6 +99,12 @@ export default function LoginPage() {
                                 </h1>
                                 <p className="text-gray-500 text-sm">Sign in to your account to continue.</p>
                             </div>
+
+                            {error && (
+                                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                    {error}
+                                </div>
+                            )}
 
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div>

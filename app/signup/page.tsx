@@ -25,17 +25,46 @@ export default function SignupPage() {
 
         setLoading(true);
 
-        // MOCK SIGNUP LOGIC
-        setTimeout(() => {
-            let routeRole = "customer"; // Default vehicle owner
-            if (role === "service-center") routeRole = "company-owner";
+        try {
+            const endpoint = role === "vehicle-owner" 
+                ? "http://localhost:8081/api/auth/register/customer" 
+                : "http://localhost:8081/api/auth/register/owner";
 
-            // In a real app, you'd send data to backend here
-            localStorage.setItem("userRole", routeRole);
+            const payload = role === "vehicle-owner" 
+                ? { fullName, email, password }
+                : { fullName, email, password, companyName, companyNumber: phoneNumber };
 
-            router.push(`/dashboard/${routeRole}`);
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || "Registration failed");
+            }
+
+            const data = await response.json();
+            
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("role", data.role);
+                localStorage.setItem("userId", data.userId);
+            }
+
+            // Redirect based on role
+            if (data.role === "ROLE_CUSTOMER") {
+                router.push("/dashboard/customer");
+            } else {
+                router.push("/dashboard/owner");
+            }
+        } catch (error: any) {
+            console.error("Signup error:", error);
+            alert(error.message || "Failed to register");
+        } finally {
             setLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -261,4 +290,3 @@ export default function SignupPage() {
         </div>
     );
 }
-

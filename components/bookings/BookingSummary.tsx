@@ -9,15 +9,13 @@ interface BookingSummaryProps {
   onSpecialRequestChange: (text: string) => void;
   specialRequest: string;
   onProceed?: () => void;
+  isLoading?: boolean;
 }
 
-export default function BookingSummary({ totalPrice, isValid, onSpecialRequestChange, specialRequest, onProceed }: BookingSummaryProps) {
-  const router = useRouter();
-
+export default function BookingSummary({ totalPrice, isValid, onSpecialRequestChange, specialRequest, onProceed, isLoading }: BookingSummaryProps) {
   const handleProceed = () => {
-    if (isValid) {
+    if (isValid && !isLoading) {
       if (onProceed) onProceed();
-      router.push("/dashboard/customer/checkout");
     }
   };
 
@@ -54,15 +52,19 @@ export default function BookingSummary({ totalPrice, isValid, onSpecialRequestCh
 
         <button
           onClick={handleProceed}
-          disabled={!isValid}
+          disabled={!isValid || isLoading}
           className={`group flex items-center justify-between w-full p-6 h-16 rounded-2xl font-bold transition-all duration-500 ${
-            isValid 
+            isValid && !isLoading
               ? 'bg-orange-500 text-white shadow-xl shadow-orange-200 hover:scale-[1.02] active:scale-95' 
               : 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'
           }`}
         >
-          <span className="text-lg">Proceed to Payment</span>
-          <FiArrowRight className={`w-6 h-6 transition-transform duration-500 ${isValid ? 'group-hover:translate-x-2' : ''}`} />
+          <span className="text-lg">{isLoading ? 'Initializing...' : 'Proceed to Payment'}</span>
+          {isLoading ? (
+            <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+          ) : (
+            <FiArrowRight className={`w-6 h-6 transition-transform duration-500 ${isValid ? 'group-hover:translate-x-2' : ''}`} />
+          )}
         </button>
 
         <p className="mt-4 text-[10px] text-center text-slate-400 leading-relaxed max-w-[80%] mx-auto">
