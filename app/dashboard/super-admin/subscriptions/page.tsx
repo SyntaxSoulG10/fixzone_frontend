@@ -39,6 +39,8 @@ export default function SubscriptionsPage() {
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
+    console.log("Subscriptions Page Data:", { subscriptionsData, analyticsData });
+
     const handleStatusUpdate = async (id: string, newStatus: string) => {
         setIsUpdating(true);
         try {
@@ -109,7 +111,7 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Next Invoice",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="text-xs group cursor-help">
                     <div className="flex items-center gap-1.5 mb-1">
                         <FiClock className="text-orange-500" />
@@ -248,14 +250,22 @@ export default function SubscriptionsPage() {
                     count={analyticsData?.activeSubscriptions || "0"}
                     icon={<FiActivity />}
                     color="success"
-                    trend={analyticsData?.subscriptionChange || "0%"}
+                    percentage={{
+                        color: (analyticsData?.subscriptionChange || "").startsWith("+") ? "success" : "danger",
+                        amount: analyticsData?.subscriptionChange || "0%",
+                        label: "vs last month"
+                    }}
                 />
                 <StatCard
                     title="Platform Revenue"
                     count={`Rs. ${analyticsData?.totalPlatformRevenue?.toLocaleString() || "0"}`}
                     icon={<FiTrendingUp />}
                     color="primary"
-                    trend={analyticsData?.revenueChange || "0%"}
+                    percentage={{
+                        color: (analyticsData?.revenueChange || "").startsWith("+") ? "success" : "danger",
+                        amount: analyticsData?.revenueChange || "0%",
+                        label: "vs last month"
+                    }}
                 />
             </div>
 
