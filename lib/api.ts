@@ -287,3 +287,45 @@ export async function getAvailableSlotsAPI(centerId: string, date: string): Prom
   }
   return res.json();
 }
+
+/**
+ * --- Admin/Subscription API ---
+ */
+
+export async function fetchSubscriptions(status?: string): Promise<any[]> {
+  const url = new URL(`${BASE_URL}/api/admin/subscriptions`);
+  if (status && status !== 'ALL') {
+    url.searchParams.append("status", status);
+  }
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to load subscriptions");
+  }
+
+  return res.json();
+}
+
+export async function updateSubscriptionStatus(subscriptionId: string, status: string): Promise<any> {
+  const url = new URL(`${BASE_URL}/api/admin/subscriptions/${subscriptionId}/status`);
+  url.searchParams.append("status", status);
+
+  const res = await fetch(url.toString(), {
+    method: "PATCH",
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
+
+  if (!res.ok) {
+    const errorMsg = await res.text();
+    throw new Error(errorMsg || "Failed to update subscription status");
+  }
+
+  return res.json();
+}

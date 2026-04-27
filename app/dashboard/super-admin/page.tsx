@@ -6,6 +6,7 @@ import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiChe
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import APP_CONFIG from "@/config";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 // Interfaces for type safety
 interface RevenueBar {
@@ -37,32 +38,27 @@ export default function SuperAdminDashboard() {
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const { analyticsData, isLoading, refreshAll } = useDashboardData();
+    const analytics = analyticsData;
+    const loading = isLoading;
+
+    // Local state for UI components only
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalServiceCenters: 0,
         pendingRegistrations: 0
     });
-    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-    const [loading, setLoading] = useState(true);
 
+    // Update stats when analytics data changes
     useEffect(() => {
-        const loadDashboardData = async () => {
-            setLoading(true);
-            try {
-                const [statsRes, analyticsRes] = await Promise.all([
-                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/stats`),
-                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/analytics`)
-                ]);
-                setStats(statsRes.data);
-                setAnalytics(analyticsRes.data);
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadDashboardData();
-    }, []);
+        if (analytics) {
+            setStats({
+                totalUsers: 0, // We might need a real stat for this later
+                totalServiceCenters: analytics.totalServiceCenters,
+                pendingRegistrations: analytics.pendingRegistrations
+            });
+        }
+    }, [analytics]);
 
     // Transform analytics data for the graph
     const getGraphData = () => {
@@ -70,10 +66,10 @@ export default function SuperAdminDashboard() {
         
         const source = view === 'weekly' ? analytics.weeklyRevenue : analytics.monthlyRevenue;
         return {
-            total: source.reduce((acc, curr) => acc + curr.amount, 0),
-            labels: source.map(d => d.label),
-            values: source.map(d => d.percentage),
-            amounts: source.map(d => d.amount)
+            total: source.reduce((acc: number, curr: RevenueBar) => acc + curr.amount, 0),
+            labels: source.map((d: RevenueBar) => d.label),
+            values: source.map((d: RevenueBar) => d.percentage),
+            amounts: source.map((d: RevenueBar) => d.amount)
         };
     };
 
@@ -162,7 +158,7 @@ export default function SuperAdminDashboard() {
         autoTable(doc, {
             startY: yPos + 10,
             head: [['Station Name', 'Revenue']],
-            body: topStations.map(s => [s.name, s.formattedRevenue]),
+            body: topStations.map((s: TopStation) => [s.name, s.formattedRevenue]),
             theme: 'grid',
             headStyles: { fillColor: [234, 88, 12], textColor: 255 }, // Orange header
             styles: { fontSize: 10, cellPadding: 5 },
@@ -294,7 +290,7 @@ export default function SuperAdminDashboard() {
 
                     <div className="relative h-48 flex items-end justify-between gap-4 px-2 z-10">
                         {/* Bars */}
-                        {currentData.values.map((h, i) => (
+                        {currentData.values.map((h: number, i: number) => (
                             <div key={i} className="flex flex-col items-center gap-3 group/bar w-full h-full justify-end">
                                 <div className="relative w-full h-full flex items-end justify-center">
                                     <div
@@ -334,7 +330,7 @@ export default function SuperAdminDashboard() {
                         <div className="p-6 space-y-6">
                             {/* Key Metrics Summary */}
                             <div className="grid grid-cols-3 gap-4">
-                                {summaryMetrics.map((metric, i) => (
+                                {summaryMetrics.map((metric: any, i: number) => (
                                     <div key={i} className={`p-4 rounded-xl border ${i === 0 ? 'bg-orange-50 border-orange-100' : i === 1 ? 'bg-blue-50 border-blue-100' : 'bg-purple-50 border-purple-100'}`}>
                                         <p className={`text-xs font-semibold uppercase ${i === 0 ? 'text-orange-600' : i === 1 ? 'text-blue-600' : 'text-purple-600'}`}>{metric.label}</p>
                                         <p className="text-xl font-bold text-slate-800 mt-1">{metric.value}</p>
@@ -355,7 +351,7 @@ export default function SuperAdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {topStations.map((station, i) => (
+                                            {topStations.map((station: TopStation, i: number) => (
                                                 <tr key={i}>
                                                     <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
                                                     <td className="px-4 py-3 text-slate-600">{station.formattedRevenue}</td>

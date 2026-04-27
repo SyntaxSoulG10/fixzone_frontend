@@ -29,6 +29,7 @@ interface DashboardDataContextType {
     customersData: any[];
     ownerData: any | null;
     bookingsData: any[];
+    subscriptionsData: any[];
     isLoading: boolean;
     hasDataInitialized: boolean;
     refreshCenters: () => Promise<void>;
@@ -53,6 +54,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [customersData, setCustomersData] = useState<any[]>([]);
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
     const [bookingsData, setBookingsData] = useState<any[]>([]);
+    const [subscriptionsData, setSubscriptionsData] = useState<any[]>([]);
 
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
@@ -82,10 +84,11 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null })));
                 requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
-            } else if (role === "ROLE_SUPER_ADMIN") {
-                requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
+            } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
+                requests.push(axios.get("http://localhost:8081/api/admin/analytics").catch(() => ({ data: null })));
                 // Also fetch stats for the super admin cards
                 requests.push(axios.get("http://localhost:8081/api/admin/stats").catch(() => ({ data: null })));
+                requests.push(axios.get("http://localhost:8081/api/admin/subscriptions").catch(() => ({ data: [] })));
             } else if (role === "ROLE_CUSTOMER") {
                 requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: null })));
                 requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
@@ -102,9 +105,10 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 setManagersData(responses[0]?.data || []);
                 setBookingsData(responses[1]?.data || []);
-            } else if (role === "ROLE_SUPER_ADMIN") {
+            } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
                 setAnalyticsData(responses[0]?.data || null);
-                // stats could be stored in a new state if needed, but for now we focus on analytics
+                // responses[1] is stats
+                setSubscriptionsData(responses[2]?.data || []);
             } else if (role === "ROLE_CUSTOMER") {
                 setCustomersData(responses[0]?.data || []);
                 setBookingsData(responses[1]?.data || []);
@@ -132,6 +136,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         customersData,
         ownerData: ownerProfile,
         bookingsData,
+        subscriptionsData,
         isLoading: isInitialLoad,
         hasDataInitialized,
         refreshCenters: async () => { /* Individual refresh logic if needed */ },

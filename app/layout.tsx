@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 import { BookingProvider } from "@/context/BookingContext";
 import { DashboardDataProvider } from "@/context/DashboardDataContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -31,6 +32,7 @@ export default function RootLayout({
           <ThemeProvider>
             <DashboardDataProvider>
               <BookingProvider>
+                <Toaster position="top-right" />
                 {children}
               </BookingProvider>
             </DashboardDataProvider>

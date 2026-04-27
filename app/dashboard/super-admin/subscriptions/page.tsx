@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MOCK_SUBSCRIPTIONS } from "@/data/mockData";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp, FiX, FiExternalLink } from "react-icons/fi";
-import { Subscription } from "@/types";
+import { useDashboardData } from "@/context/DashboardDataContext";
+import { updateSubscriptionStatus } from "@/lib/api";
+import { toast } from "react-hot-toast";
 import Button from "@/components/UI/Button";
 
 interface BillingRecord {
@@ -33,32 +34,29 @@ const MOCK_BILLING_HISTORY: Record<string, BillingRecord[]> = {
 };
 
 export default function SubscriptionsPage() {
-    const [subscriptions, setSubscriptions] = useState(
-        MOCK_SUBSCRIPTIONS.slice(0, 3).map((sub, idx) =>
-            idx === 1 ? { ...sub, autoRenew: false } : sub
-        )
-    );
-
-    const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
+    const { subscriptionsData, analyticsData, refreshAll } = useDashboardData();
+    const [selectedSub, setSelectedSub] = useState<any | null>(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const handleCancelPlan = (id: string) => {
-        setSubscriptions(prev => prev.map(sub =>
-            sub.id === id ? { ...sub, status: 'Cancelled', autoRenew: false } : sub
-        ));
-    };
-
-    const handleActivatePlan = (id: string) => {
-        setSubscriptions(prev => prev.map(sub =>
-            sub.id === id ? { ...sub, status: 'Active', autoRenew: true } : sub
-        ));
+    const handleStatusUpdate = async (id: string, newStatus: string) => {
+        setIsUpdating(true);
+        try {
+            await updateSubscriptionStatus(id, newStatus);
+            toast.success(`Subscription ${newStatus.toLowerCase()} successfully`);
+            refreshAll(); // Refresh data to show changes
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update status");
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const handleNotify = (id: string) => {
-        alert(`Notification sent to subscriber ${id}`);
+        toast(`Notification sent to subscriber ${id}`, { icon: '🔔' });
     };
 
-    const openBillingHistory = (sub: Subscription) => {
+    const openBillingHistory = (sub: any) => {
         setSelectedSub(sub);
         setIsHistoryModalOpen(true);
     };
@@ -66,19 +64,19 @@ export default function SubscriptionsPage() {
     const columns = [
         {
             header: "Plan Details",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${row.plan === 'Premium' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${row.planType === 'PREMIUM' ? 'bg-orange-50 border-orange-100 text-orange-600' :
                         'bg-slate-50 border-slate-200 text-slate-500'
                         }`}>
                         <FiActivity className="text-lg" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <div className="font-bold text-slate-800 text-sm leading-snug">{row.stationName}</div>
-                            {row.plan === 'Premium' && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
+                            <div className="font-bold text-slate-800 text-sm leading-snug">{row.companyName}</div>
+                            {row.planType === 'PREMIUM' && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id.substring(0, 8)}</div>
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id?.substring(0, 8)}</div>
                     </div>
                 </div>
             ),
@@ -86,10 +84,10 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Billing Cycle",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="flex flex-col gap-1">
-                    <span className={`text-sm font-bold ${row.plan === 'Premium' ? 'text-slate-800' : 'text-slate-600'}`}>
-                        {row.plan} Plan
+                    <span className={`text-sm font-bold ${row.planType === 'PREMIUM' ? 'text-slate-800' : 'text-slate-600'}`}>
+                        {row.planType} Plan
                     </span>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                         <FiCreditCard className="text-slate-400" />
@@ -100,8 +98,13 @@ export default function SubscriptionsPage() {
             cellClassName: "align-middle text-center"
         },
         {
-            header: "Revenue",
-            accessor: (row: Subscription) => <span className="font-bold text-slate-800 text-sm tracking-tight">{row.price}</span>,
+            header: "Owner",
+            accessor: (row: any) => <span className="font-medium text-slate-700 text-sm">{row.ownerName}</span>,
+            cellClassName: "align-middle"
+        },
+        {
+            header: "Price",
+            accessor: (row: any) => <span className="font-bold text-slate-800 text-sm tracking-tight">{row.planType === 'PREMIUM' ? 'Rs. 19,900' : 'Rs. 9,900'}</span>,
             cellClassName: "align-middle text-center"
         },
         {
@@ -119,12 +122,12 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Status",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${row.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' :
-                        'bg-slate-50 text-slate-600 border-slate-200'
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${row.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
+                        'bg-red-50 text-red-700 border-red-200'
                         }`}>
-                        <span className={`w-2 h-2 rounded-full ${row.status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                        <span className={`w-2 h-2 rounded-full ${row.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
                         {row.status}
                     </span>
                 </div>
@@ -133,9 +136,9 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Auto-Renew",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="flex items-center h-full">
-                    {row.autoRenew ?
+                    {row.status === 'ACTIVE' ?
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 min-w-20">
                             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                             <span>On</span>
@@ -150,28 +153,30 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Actions",
-            accessor: (row: Subscription) => (
+            accessor: (row: any) => (
                 <div className="flex items-center gap-2 h-full">
                     <button
-                        onClick={() => handleNotify(row.id)}
+                        onClick={() => handleNotify(row.ownerId)}
                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 bg-slate-50"
-                        title="Notify User"
+                        title="Notify Owner"
                     >
                         <FiBell className="w-4 h-4" />
                     </button>
 
-                    {row.status === 'Active' ? (
+                    {row.status === 'ACTIVE' ? (
                         <button
-                            onClick={() => handleCancelPlan(row.id)}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50"
-                            title="Cancel Plan"
+                            onClick={() => handleStatusUpdate(row.id, 'SUSPENDED')}
+                            disabled={isUpdating}
+                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50 disabled:opacity-50"
+                            title="Suspend Plan"
                         >
                             <FiSlash className="w-4 h-4" />
                         </button>
                     ) : (
                         <button
-                            onClick={() => handleActivatePlan(row.id)}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50"
+                            onClick={() => handleStatusUpdate(row.id, 'ACTIVE')}
+                            disabled={isUpdating}
+                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50 disabled:opacity-50"
                             title="Reactivate Plan"
                         >
                             <FiCheckCircle className="w-4 h-4" />
@@ -240,15 +245,17 @@ export default function SubscriptionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StatCard
                     title="Active Subscriptions"
-                    count="234"
+                    count={analyticsData?.activeSubscriptions || "0"}
                     icon={<FiActivity />}
                     color="success"
+                    trend={analyticsData?.subscriptionChange || "0%"}
                 />
                 <StatCard
-                    title="Total Revenue"
-                    count="Rs. 1,245,890"
+                    title="Platform Revenue"
+                    count={`Rs. ${analyticsData?.totalPlatformRevenue?.toLocaleString() || "0"}`}
                     icon={<FiTrendingUp />}
                     color="primary"
+                    trend={analyticsData?.revenueChange || "0%"}
                 />
             </div>
 
@@ -284,7 +291,7 @@ export default function SubscriptionsPage() {
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <Table
                         columns={columns}
-                        data={subscriptions}
+                        data={subscriptionsData}
                         keyField="id"
                     />
                 </div>
