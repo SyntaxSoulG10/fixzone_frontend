@@ -26,6 +26,7 @@ interface DashboardDataContextType {
     centersData: any[];
     managersData: any[];
     analyticsData: any | null;
+    statsData: any | null;
     customersData: any[];
     ownerData: any | null;
     bookingsData: any[];
@@ -36,6 +37,7 @@ interface DashboardDataContextType {
     refreshManagers: () => Promise<void>;
     refreshAnalytics: () => Promise<void>;
     refreshAll: () => Promise<void>;
+    pendingCentersData: any[];
 }
 
 const DashboardDataContext = createContext<DashboardDataContextType | undefined>(undefined);
@@ -51,10 +53,12 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [centersData, setCentersData] = useState<any[]>([]);
     const [managersData, setManagersData] = useState<any[]>([]);
     const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+    const [statsData, setStatsData] = useState<any | null>(null);
     const [customersData, setCustomersData] = useState<any[]>([]);
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
     const [bookingsData, setBookingsData] = useState<any[]>([]);
     const [subscriptionsData, setSubscriptionsData] = useState<any[]>([]);
+    const [pendingCentersData, setPendingCentersData] = useState<any[]>([]);
 
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
@@ -83,15 +87,16 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: [] })));
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/bookings`).catch(() => ({ data: [] })));
             } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
-                requests.push(axios.get("http://localhost:8081/api/admin/analytics").catch(() => ({ data: null })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/admin/analytics`).catch(() => ({ data: null })));
                 // Also fetch stats for the super admin cards
-                requests.push(axios.get("http://localhost:8081/api/admin/stats").catch(() => ({ data: null })));
-                requests.push(axios.get("http://localhost:8081/api/admin/subscriptions").catch(() => ({ data: [] })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/admin/stats`).catch(() => ({ data: null })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/admin/subscriptions`).catch(() => ({ data: [] })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/admin/service-centers/pending`).catch(() => ({ data: [] })));
             } else if (role === "ROLE_CUSTOMER") {
                 requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+                requests.push(axios.get(`${APP_CONFIG.api.baseUrl}/bookings`).catch(() => ({ data: [] })));
             }
 
             // Execute only the relevant endpoints
@@ -107,8 +112,9 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 setBookingsData(responses[1]?.data || []);
             } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
                 setAnalyticsData(responses[0]?.data || null);
-                // responses[1] is stats
+                setStatsData(responses[1]?.data || null);
                 setSubscriptionsData(responses[2]?.data || []);
+                setPendingCentersData(responses[3]?.data || []);
             } else if (role === "ROLE_CUSTOMER") {
                 setCustomersData(responses[0]?.data || []);
                 setBookingsData(responses[1]?.data || []);
@@ -133,10 +139,12 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         centersData,
         managersData,
         analyticsData,
+        statsData,
         customersData,
         ownerData: ownerProfile,
         bookingsData,
         subscriptionsData,
+        pendingCentersData,
         isLoading: isInitialLoad,
         hasDataInitialized,
         refreshCenters: async () => { /* Individual refresh logic if needed */ },

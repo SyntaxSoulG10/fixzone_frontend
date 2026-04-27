@@ -5,6 +5,7 @@ import axios from "axios";
 import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import toast from "react-hot-toast";
 import APP_CONFIG from "@/config";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
@@ -38,9 +39,19 @@ export default function SuperAdminDashboard() {
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
-    const { analyticsData, isLoading, refreshAll } = useDashboardData();
+    const { analyticsData, statsData, subscriptionsData, pendingCentersData, isLoading, refreshAll } = useDashboardData();
     const analytics = analyticsData;
     const loading = isLoading;
+
+    // Review Modal State
+    const [selectedStation, setSelectedStation] = useState<any | null>(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+    // Subscription Modal State
+    const [selectedSubscription, setSelectedSubscription] = useState<any | null>(null);
+    const [isSubModalOpen, setIsSubModalOpen] = useState(false);
 
     // Local state for UI components only
     const [stats, setStats] = useState({
@@ -49,16 +60,16 @@ export default function SuperAdminDashboard() {
         pendingRegistrations: 0
     });
 
-    // Update stats when analytics data changes
+    // Update stats when analytics or stats data changes
     useEffect(() => {
         if (analytics) {
             setStats({
-                totalUsers: 0, // We might need a real stat for this later
+                totalUsers: statsData?.totalUsers || 0,
                 totalServiceCenters: analytics.totalServiceCenters,
                 pendingRegistrations: analytics.pendingRegistrations
             });
         }
-    }, [analytics]);
+    }, [analytics, statsData]);
 
     // Transform analytics data for the graph
     const getGraphData = () => {
@@ -184,11 +195,65 @@ export default function SuperAdminDashboard() {
                 setTimeout(() => setShowSuccess(false), 3000);
             } catch (error) {
                 console.error("PDF Generation failed:", error);
-                alert("Failed to generate PDF. Please try again.");
+                toast.error("Failed to generate PDF. Please try again.");
             } finally {
                 setIsDownloading(false);
             }
         }, 1000);
+    };
+
+    // Action Handlers
+    const handleApprove = async () => {
+        if (!selectedStation) return;
+        setIsProcessingAction(true);
+        try {
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${selectedStation.centerId}/approve`);
+            toast.success("Station approved successfully!");
+            setIsReviewModalOpen(false);
+            refreshAll(); // Refresh data from context
+        } catch (error) {
+            console.error("Error approving station:", error);
+            toast.error("Failed to approve station.");
+        } finally {
+            setIsProcessingAction(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!selectedStation) return;
+        if (!rejectionReason.trim()) {
+            toast.error("Please provide a rejection reason.");
+            return;
+        }
+        setIsProcessingAction(true);
+        try {
+            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${selectedStation.centerId}/reject?reason=${encodeURIComponent(rejectionReason)}`);
+            toast.success("Station rejected successfully.");
+            setIsReviewModalOpen(false);
+            refreshAll(); // Refresh data from context
+        } catch (error) {
+            console.error("Error rejecting station:", error);
+            toast.error("Failed to reject station.");
+        } finally {
+            setIsProcessingAction(false);
+        }
+    };
+
+    const handleUpdateSubStatus = async (status: string) => {
+        if (!selectedSubscription) return;
+        setIsProcessingAction(true);
+        try {
+            const subId = selectedSubscription.subscriptionId || selectedSubscription.id;
+            await axios.patch(`${APP_CONFIG.API_BASE_URL}/api/admin/subscriptions/${subId}/status?status=${status}`);
+            toast.success(`Subscription updated to ${status} successfully!`);
+            setIsSubModalOpen(false);
+            refreshAll();
+        } catch (error) {
+            console.error("Error updating subscription status:", error);
+            toast.error("Failed to update status.");
+        } finally {
+            setIsProcessingAction(false);
+        }
     };
 
     return (
@@ -312,6 +377,197 @@ export default function SuperAdminDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Pending Registrations Table */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mt-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Pending Station Approvals</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500 border-b">
+                            <tr>
+                                <th className="px-4 py-3 font-medium">Station Name</th>
+                                <th className="px-4 py-3 font-medium">Location</th>
+                                <th className="px-4 py-3 font-medium">Status</th>
+                                <th className="px-4 py-3 font-medium">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {pendingCentersData?.map((station: any, i: number) => (
+                                <tr key={i}>
+                                    <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
+                                    <td className="px-4 py-3 text-slate-600">{station.address || "N/A"}</td>
+                                    <td className="px-4 py-3">
+                                        <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold">
+                                            {station.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedStation(station);
+                                                setRejectionReason("");
+                                                setIsReviewModalOpen(true);
+                                            }}
+                                            className="text-blue-600 hover:underline font-medium"
+                                        >
+                                            Review
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!pendingCentersData || pendingCentersData.length === 0) && (
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No pending registrations.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Recent Subscriptions Table */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mt-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Recent Subscriptions</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500 border-b">
+                            <tr>
+                                <th className="px-4 py-3 font-medium">Company Name</th>
+                                <th className="px-4 py-3 font-medium">Plan Type</th>
+                                <th className="px-4 py-3 font-medium">Start Date</th>
+                                <th className="px-4 py-3 font-medium">Status</th>
+                                <th className="px-4 py-3 font-medium">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {subscriptionsData?.slice(0, 5).map((sub: any, i: number) => (
+                                <tr key={i}>
+                                    <td className="px-4 py-3 font-medium text-slate-700">{sub.companyName}</td>
+                                    <td className="px-4 py-3 text-slate-600">{sub.planType || "Standard"}</td>
+                                    <td className="px-4 py-3 text-slate-600">{new Date(sub.startDate).toLocaleDateString()}</td>
+                                    <td className="px-4 py-3">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${sub.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                            {sub.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedSubscription(sub);
+                                                setIsSubModalOpen(true);
+                                            }}
+                                            className="text-blue-600 hover:underline font-medium"
+                                        >
+                                            Manage
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!subscriptionsData || subscriptionsData.length === 0) && (
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No recent subscriptions.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Subscription Status Modal */}
+            {isSubModalOpen && selectedSubscription && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-xl font-bold text-slate-800">Manage Subscription</h3>
+                            <button onClick={() => setIsSubModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                                <FiX className="text-xl" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-500">Company</p>
+                                <p className="text-lg font-bold text-slate-800">{selectedSubscription.companyName}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-500">Current Status</p>
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedSubscription.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                    {selectedSubscription.status}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center gap-3">
+                            <button
+                                onClick={() => handleUpdateSubStatus('SUSPENDED')}
+                                disabled={isProcessingAction || selectedSubscription.status === 'SUSPENDED'}
+                                className="px-4 py-2 text-sm font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                Suspend
+                            </button>
+                            <button
+                                onClick={() => handleUpdateSubStatus('ACTIVE')}
+                                disabled={isProcessingAction || selectedSubscription.status === 'ACTIVE'}
+                                className="px-4 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                            >
+                                Activate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Review Station Modal */}
+            {isReviewModalOpen && selectedStation && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-xl font-bold text-slate-800">Review Station</h3>
+                            <button onClick={() => setIsReviewModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                                <FiX className="text-xl" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-500">Station Name</p>
+                                <p className="text-lg font-bold text-slate-800">{selectedStation.name}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-500">Location</p>
+                                <p className="text-base text-slate-700">{selectedStation.address || "N/A"}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-500">Contact</p>
+                                <p className="text-base text-slate-700">{selectedStation.phoneNumber || "N/A"}</p>
+                            </div>
+                            <div className="pt-4 border-t border-slate-100">
+                                <label className="block text-sm font-semibold text-slate-500 mb-2">Rejection Reason (if rejecting)</label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all resize-none"
+                                    rows={3}
+                                    placeholder="Please explain why if you are rejecting this station..."
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                            <button
+                                onClick={handleReject}
+                                disabled={isProcessingAction}
+                                className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {isProcessingAction ? "Processing..." : "Reject"}
+                            </button>
+                            <button
+                                onClick={handleApprove}
+                                disabled={isProcessingAction}
+                                className="px-4 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                            >
+                                {isProcessingAction ? "Processing..." : "Approve"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Report Modal */}
             {isReportOpen && (
