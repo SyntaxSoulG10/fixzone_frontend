@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiBell, FiMenu, FiMoon, FiUser, FiSettings, FiLogOut, FiX } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 interface NavbarProps {
@@ -57,9 +57,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 }
 
                 if (endpoint && token) {
-                    const response = await axios.get(endpoint, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                    const response = await axios.get(endpoint);
                     if (response.data) {
                         const data = response.data;
                         setUserData({

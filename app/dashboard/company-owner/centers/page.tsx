@@ -33,9 +33,10 @@ import {
     FiEdit2,
     FiUser,
     FiPower,
-    FiSearch
+    FiSearch,
+    FiTrash2
 } from "react-icons/fi";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
@@ -95,7 +96,7 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
  * CARD COMPONENT: Represents a single service center branch.
  * Extracted to separate visual card layout from list management logic.
  */
-function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any }) {
+function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
     const isActive = center.status === 'Active';
     
     return (
@@ -132,17 +133,13 @@ function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterV
 
                 {/* KPI metrics for this specific center */}
                 <Grid container spacing={2}>
-                    <Grid size={{ xs: 4 }}>
+                    <Grid size={{ xs: 6 }}>
                         <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Revenue</Typography>
                         <Typography variant="body2" color="#1e8e3e" align="center" fontWeight="800">Rs.{center.revenue.toLocaleString()}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 4 }}>
-                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team</Typography>
+                    <Grid size={{ xs: 6 }}>
+                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team Size</Typography>
                         <Typography variant="body2" color="#2d3748" align="center" fontWeight="800">{center.mechanics}</Typography>
-                    </Grid>
-                    <Grid size={{ xs: 4 }}>
-                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Load</Typography>
-                        <Typography variant="body2" color="#e53e3e" align="center" fontWeight="800">{center.capacity}%</Typography>
                     </Grid>
                 </Grid>
 
@@ -155,15 +152,25 @@ function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterV
                     >
                         {isActive ? 'Disable' : 'Enable'}
                     </Button>
-                    <Button
-                        variant="contained"
+                    <IconButton
                         size="small"
-                        startIcon={<FiEdit2 />}
-                        onClick={() => onEdit(center)}
-                        sx={{ bgcolor: BRAND_ORANGE, color: '#fff', borderRadius: '0.5rem', '&:hover': { bgcolor: '#d85618' }, textTransform: 'none' }}
+                        onClick={() => onDelete(center.id)}
+                        sx={{ color: '#e53e3e', '&:hover': { bgcolor: 'rgba(229, 62, 62, 0.1)' } }}
+                        title="Delete Branch"
                     >
-                        Edit
-                    </Button>
+                        <FiTrash2 />
+                    </IconButton>
+                    <Box display="flex" gap={1}>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<FiEdit2 />}
+                            onClick={() => onEdit(center)}
+                            sx={{ color: BRAND_ORANGE, borderColor: BRAND_ORANGE, borderRadius: '0.5rem', '&:hover': { bgcolor: alpha(BRAND_ORANGE, 0.05), borderColor: '#d85618' }, textTransform: 'none' }}
+                        >
+                            Edit
+                        </Button>
+                    </Box>
                 </Box>
             </Box>
         </Card>
@@ -310,6 +317,21 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this service center? This will also remove its service packages and invoices.")) return;
+        
+        setIsLoading(true);
+        try {
+            await axios.delete(`${APP_CONFIG.api.serviceCenters}/${id}`);
+            setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
+            await refreshAll();
+        } catch (e: any) {
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Delete operation failed', severity: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
@@ -329,7 +351,7 @@ export default function MyCentersPage() {
             <Grid container spacing={4}>
                 {filtered.map(center => (
                     <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} />
+                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
                     </Grid>
                 ))}
             </Grid>

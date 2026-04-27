@@ -1,26 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "../utils/config";
 import { getToken, getUserRole, isTokenExpired } from "../utils/authUtils";
-
-// Setup Axios Interceptor to inject JWT token
-axios.interceptors.request.use(
-    (config) => {
-        // Ensure we are in the browser environment before accessing localStorage
-        if (typeof window !== "undefined") {
-            const token = localStorage.getItem("token");
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
 
 interface DashboardDataContextType {
     centersData: any[];

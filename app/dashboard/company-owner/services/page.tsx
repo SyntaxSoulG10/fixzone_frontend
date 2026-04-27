@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
 

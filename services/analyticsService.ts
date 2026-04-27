@@ -1,5 +1,4 @@
-import axios from "axios";
-
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 const API_BASE_URL = APP_CONFIG.api.baseUrl;
