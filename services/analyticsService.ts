@@ -41,3 +41,15 @@ export const getCompanyAnalytics = async (
         throw error;
     }
 };
+
+export const getCurrentOwnerAnalytics = async (
+    params?: { centerId?: string; startDate?: string; endDate?: string; period?: string }
+): Promise<AnalyticsData> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/analytics/current`, { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching current owner analytics:", error);
+        throw error;
+    }
+};
