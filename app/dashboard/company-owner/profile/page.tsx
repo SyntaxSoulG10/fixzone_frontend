@@ -21,7 +21,8 @@ import {
     DialogContent,
     DialogActions,
     LinearProgress,
-    Chip
+    Chip,
+    CircularProgress
 } from "@mui/material";
 import {
     FiHome,
@@ -52,6 +53,7 @@ interface ProfileHeaderProps {
     profileImage: string | null;
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     companyName: string;
+    isSaving: boolean;
 }
 
 interface ProfileInfoCardProps {
@@ -77,13 +79,16 @@ function ProfileHeader({
     onBannerChange, 
     profileImage, 
     onProfileImageChange, 
-    companyName 
+    companyName,
+    isSaving
 }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
 
     const handleBannerClick = () => bannerInputRef.current?.click();
     const handleProfileClick = () => profileInputRef.current?.click();
+
+    console.log("[DEBUG] Current Banner Image URL:", bannerImage);
 
     return (
         <Box position="relative" mb={5}>
@@ -92,12 +97,32 @@ function ProfileHeader({
                 minHeight="18.75rem"
                 borderRadius="0.75rem"
                 sx={{
-                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)',
-                    backgroundSize: "cover",
-                    backgroundPosition: "50%",
                     overflow: "hidden",
+                    background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}
             >
+                {bannerImage && (
+                    <Box
+                        component="img"
+                        key={bannerImage} // Force re-render on change
+                        src={bannerImage}
+                        alt="banner"
+                        sx={{
+                            width: '100%',
+                            height: '18.75rem',
+                            objectFit: 'cover',
+                        }}
+                        onError={(e: any) => {
+                            console.error("Banner failed to load:", bannerImage);
+                            // If it fails, we keep the gradient visible behind
+                            e.target.style.opacity = '0';
+                        }}
+                    />
+                )}
+                
                 <Box position="absolute" top={20} right={20}>
                     <Button
                         variant="contained"
@@ -162,6 +187,26 @@ function ProfileHeader({
                             <Tab label="Account" icon={<FiSettings size={18} />} iconPosition="start" />
                             <Tab label="Billing" icon={<FiCreditCard size={18} />} iconPosition="start" />
                         </Tabs>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 2 }} sx={{ ml: "auto", display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="contained"
+                            disabled={isSaving}
+                            startIcon={isSaving ? <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}><CircularProgress size={16} color="inherit" /></Box> : <FiSave />}
+                            onClick={() => (window as any).handleGlobalSave()}
+                            sx={{
+                                bgcolor: '#EA580C',
+                                color: 'white',
+                                borderRadius: '8px',
+                                px: 3,
+                                py: 1,
+                                fontWeight: 'bold',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#c2410c' }
+                            }}
+                        >
+                            Save Profile
+                        </Button>
                     </Grid>
                 </Grid>
                 {children}
@@ -373,6 +418,7 @@ export default function ProfilePage() {
 
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
@@ -405,6 +451,8 @@ export default function ProfilePage() {
         }
     }, [ownerData]);
 
+
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
     const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); };
     const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); };
@@ -433,35 +481,44 @@ export default function ProfilePage() {
             return;
         }
 
+        setIsSaving(true);
         try {
-            const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
+            const updatedOwner = { 
+                ...fullOwnerData, 
+                companyName: profileData["Company Name"], 
+                companyNumber: profileData["Mobile"], 
+                companyEmail: profileData["Email"],
+                profilePictureUrl: profileImage,
+                bannerImageUrl: bannerImage
+            };
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
             await refreshAll();
-            setSnackbarMessage("Profile details updated successfully!");
+            setSnackbarMessage("Profile saved successfully to ImageKit!");
             setSnackbarOpen(true);
         } catch (error: any) {
             const msg = error.response?.data?.message || "Failed to save changes.";
             setSnackbarMessage(msg);
             setSnackbarOpen(true);
+        } finally {
+            setIsSaving(false);
         }
     };
+
+    useEffect(() => {
+        (window as any).handleGlobalSave = handleSaveProfile;
+    }, [handleSaveProfile]);
 
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-            reader.onloadend = async () => {
+            reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, bannerImageUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Cover image updated!");
-                    setSnackbarOpen(true);
-                }
+                setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
+                setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -470,16 +527,11 @@ export default function ProfilePage() {
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-            reader.onloadend = async () => {
+            reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, profilePictureUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Profile picture updated!");
-                    setSnackbarOpen(true);
-                }
+                setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
+                setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -498,6 +550,7 @@ export default function ProfilePage() {
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
+            isSaving={isSaving}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
