@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiSearch, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
+import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import APP_CONFIG from "@/config";
@@ -205,20 +205,6 @@ export default function SuperAdminDashboard() {
                     <div>
                         <h1 className="text-3xl font-bold mb-2">Welcome back, Super Admin!</h1>
                         <p className="text-orange-100/80">Here&apos;s what&apos;s happening with your network today.</p>
-                    </div>
-
-                    {/* Integrated Search */}
-                    <div className="w-full md:max-w-md relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FiSearch className="text-white/50" />
-                        </div>
-                        <input
-                            className="w-full bg-white/10 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all backdrop-blur-sm"
-                            placeholder="Search users, stations, or subscriptions..."
-                        />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                            <kbd className="hidden md:inline-block px-2 py-0.5 bg-white/10 rounded text-[10px] text-white/50 border border-white/10">⌘K</kbd>
-                        </div>
                     </div>
                 </div>
             </div>
