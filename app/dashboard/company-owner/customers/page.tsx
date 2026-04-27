@@ -59,7 +59,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 
 export default function CustomersPage() {
     const theme = useTheme();
-    const { customersData, refreshAll } = useDashboardData();
+    const { customersData, analyticsData, refreshAll } = useDashboardData();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -191,6 +191,11 @@ export default function CustomersPage() {
     const totalCustomers = customers.length;
     const repeatCustomers = customers.filter(c => c.visits > 1).length;
     const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
+    
+    // Calculate new customers from the latest month in analytics data
+    const latestGrowth = analyticsData?.customerGrowth?.[analyticsData.customerGrowth.length - 1];
+    const newCustomersCount = latestGrowth?.newCustomers || 0;
+    const growthPercentage = analyticsData?.jobsChange || "+0%"; // Using jobs change as a proxy for growth
 
     if (loading) {
         return (
@@ -227,11 +232,11 @@ export default function CustomersPage() {
                 </Grid>
                 <Grid sx={{ xs: 12, md: 4 }}>
                     <StatCard
-                        title="New This Month"
-                        count="48"
+                        title="New Customers"
+                        count={newCustomersCount.toString()}
                         percentage={{
-                            color: 'success',
-                            amount: '+12%',
+                            color: growthPercentage.startsWith('+') ? 'success' : 'danger',
+                            amount: growthPercentage,
                             label: 'growth'
                         }}
                         icon={<FiUserPlus />}
