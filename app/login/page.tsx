@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
+import { getUserRole, isTokenExpired } from "../../utils/authUtils";
+import APP_CONFIG from "@/config";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -18,7 +20,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:8081/api/auth/login", {
+            const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -33,21 +35,45 @@ export default function LoginPage() {
 
             const data = await response.json();
             
+            let tokenToSave = null;
             if (data.token) {
+                tokenToSave = data.token;
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("role", data.role);
-                localStorage.setItem("userId", data.userId);
+                
+                // Keep teammate's localStorage additions if they exist in the response
+                if (data.role) localStorage.setItem("role", data.role);
+                if (data.role) localStorage.setItem("userRole", data.role);
+                if (data.userId) localStorage.setItem("userId", data.userId);
                 if (data.fullName) localStorage.setItem("fullName", data.fullName);
-            }
 
-            // Redirect based on role
-            if (data.role === "ROLE_CUSTOMER") {
-                router.push("/dashboard/customer");
-            } else if (data.role === "ROLE_SERVICE_MANAGER") {
-                router.push("/dashboard/service-manager");
-            } else if (data.role === "ROLE_COMPANY_OWNER") {
-                router.push("/dashboard/company-owner");
-            } else {
+                if (tokenToSave) {
+                    if (isTokenExpired(tokenToSave)) {
+                        throw new Error("Received an expired token");
+                    }
+                    const role = getUserRole(tokenToSave);
+                    switch (role) {
+                        case "ROLE_SERVICE_MANAGER":
+                            router.push("/dashboard/service-manager");
+                            break;
+                        case "ROLE_SUPER_ADMIN":
+                            router.push("/dashboard/super-admin");
+                            break;
+                        case "ROLE_COMPANY_OWNER":
+                        case "OWNER":
+                            router.push("/dashboard/company-owner");
+                            break;
+                        case "ROLE_CUSTOMER":
+                            router.push("/dashboard/customer");
+                            break;
+                        default:
+                            router.push("/dashboard/customer"); // fallback
+                    }
+                } else {
+                    throw new Error("No token received from server");
+                }
+            } else if (typeof data === 'string') {
+                tokenToSave = data;
+                localStorage.setItem("token", data);
                 router.push("/dashboard");
             }
             

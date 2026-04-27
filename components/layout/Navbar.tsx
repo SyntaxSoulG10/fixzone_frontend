@@ -41,19 +41,25 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         // Fetch user data based on role
         const fetchUserData = async () => {
             try {
+                // Determine true role from token
+                const token = localStorage.getItem("token");
+                const currentRole = localStorage.getItem("userRole");
+                
                 let endpoint = "";
-                if (pathname.includes('/company-owner')) {
+                if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
                     endpoint = APP_CONFIG.api.owners + "/current";
-                } else if (pathname.includes('/service-manager')) {
+                } else if (currentRole === "ROLE_SERVICE_MANAGER") {
                     endpoint = APP_CONFIG.api.managers + "/me";
-                } else if (pathname.includes('/customer')) {
+                } else if (currentRole === "ROLE_CUSTOMER") {
                     endpoint = "http://localhost:8081/api/customer/profile";
-                } else if (pathname.includes('/super-admin')) {
+                } else if (currentRole === "ROLE_SUPER_ADMIN") {
                     endpoint = APP_CONFIG.api.superAdmins + "/me";
                 }
 
-                if (endpoint) {
-                    const response = await axios.get(endpoint);
+                if (endpoint && token) {
+                    const response = await axios.get(endpoint, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     if (response.data) {
                         const data = response.data;
                         setUserData({

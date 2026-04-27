@@ -1,10 +1,11 @@
 import type { ServiceCenter } from "@/types/service-center";
+import APP_CONFIG from "../config";
 
-// Updated to the new backend port
-const BASE_URL = "http://localhost:8081";
+// Use centralized configuration
+const BASE_URL = APP_CONFIG.API_BASE_URL;
 
 // Helper to get auth headers
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem("token");
   return token ? { "Authorization": `Bearer ${token}` } : {};

@@ -334,7 +334,7 @@ export default function CustomerProfilePage() {
               )}
               <div className="pt-4">
                 <Button
-                  onClick={handleProfileSave}
+                  onClick={() => handleProfileSave()}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-bold shadow-md shadow-orange-200"
                 >
                   Save Changes
