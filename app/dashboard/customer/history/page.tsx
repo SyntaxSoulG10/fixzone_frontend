@@ -16,6 +16,7 @@ import {
   FiAlertCircle,
   FiDollarSign
 } from "react-icons/fi";
+import APP_CONFIG from "@/config";
 import { getBookingsByCustomer, rescheduleBookingAPI, cancelBookingAPI, downloadInvoice, getAvailableSlotsAPI } from "@/lib/api";
 
 // Keep dummy bookings as fallback for UI demonstration if no data
@@ -93,7 +94,7 @@ export default function MyBookingsPage() {
       setActionLoading(`reschedule-${reschedulingBooking.bookingId}`);
       
       console.log("🎯 TASK 3 & 6: RESCHEDULE DEBUG");
-      console.log("URL:", `http://localhost:8081/api/bookings/${reschedulingBooking.bookingId}/reschedule`);
+      console.log("URL:", `${APP_CONFIG.API_BASE_URL}/api/bookings/${reschedulingBooking.bookingId}/reschedule`);
       console.log("Payload:", { newDate, newTime });
 
       const response = await rescheduleBookingAPI(reschedulingBooking.bookingId, newDate, newTime);
@@ -124,7 +125,7 @@ export default function MyBookingsPage() {
     try {
       setActionLoading(`cancel-${bookingId}`);
       console.log("🎯 TASK 2: CANCEL DEBUG");
-      console.log("URL:", `http://localhost:8081/api/bookings/${bookingId}/cancel`);
+      console.log("URL:", `${APP_CONFIG.API_BASE_URL}/api/bookings/${bookingId}/cancel`);
 
       await cancelBookingAPI(bookingId);
       alert("Booking cancelled successfully.");

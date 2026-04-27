@@ -53,29 +53,24 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [customersData, setCustomersData] = useState<any[]>([]);
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
     const [bookingsData, setBookingsData] = useState<any[]>([]);
-    
+
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
     const [hasDataInitialized, setHasDataInitialized] = useState<boolean>(false);
 
     /**
      * REFRESH ALL DATA
-     * Why: By using Promise.all, we trigger all 5 API calls simultaneously. 
-     * This is significantly faster than calling them one by one (waterfall effect),
-     * as the browser can handle multiple concurrent requests.
+     * Why: By using Promise.all, we trigger all relevant API calls simultaneously. 
      */
     const refreshAllDashboardData = useCallback(async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        if (!token) return; // Don't fetch if no token
+        if (!token || isTokenExpired(token)) {
+            setIsInitialLoad(false);
+            return;
+        }
 
         setIsInitialLoad(true);
         try {
-            const token = getToken();
-            if (!token || isTokenExpired(token)) {
-                setIsInitialLoad(false);
-                return; // Let the route guard handle the redirect
-            }
-
             const role = getUserRole(token);
             const requests = [];
 
@@ -89,6 +84,8 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
             } else if (role === "ROLE_SUPER_ADMIN") {
                 requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
+                // Also fetch stats for the super admin cards
+                requests.push(axios.get("http://localhost:8081/api/admin/stats").catch(() => ({ data: null })));
             } else if (role === "ROLE_CUSTOMER") {
                 requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: null })));
                 requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
@@ -107,6 +104,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 setBookingsData(responses[1]?.data || []);
             } else if (role === "ROLE_SUPER_ADMIN") {
                 setAnalyticsData(responses[0]?.data || null);
+                // stats could be stored in a new state if needed, but for now we focus on analytics
             } else if (role === "ROLE_CUSTOMER") {
                 setCustomersData(responses[0]?.data || []);
                 setBookingsData(responses[1]?.data || []);
