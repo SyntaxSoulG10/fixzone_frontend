@@ -1,7 +1,8 @@
 import type { ServiceCenter } from "@/types/service-center";
+import APP_CONFIG from "../config";
 
-// Updated to the new backend port
-const BASE_URL = "http://localhost:8081";
+// Use centralized configuration
+const BASE_URL = APP_CONFIG.API_BASE_URL;
 
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
   const res = await fetch(`${BASE_URL}/api/service-centers`);

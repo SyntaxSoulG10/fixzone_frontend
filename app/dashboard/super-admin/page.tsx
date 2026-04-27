@@ -7,33 +7,30 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import APP_CONFIG from "@/config";
 
-// Mock Data
-const DATA = {
-    weekly: {
-        total: 26826150,
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        values: [35, 62, 45, 85, 55, 95, 68], // Percentages
-        amounts: [130200, 230640, 167400, 316200, 204600, 353400, 252960] // Actual amounts
-    },
-    monthly: {
-        total: 104520300,
-        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        values: [65, 45, 80, 55],
-        amounts: [26826150, 18571000, 33012000, 22698000]
-    }
-};
+// Interfaces for type safety
+interface RevenueBar {
+    label: string;
+    amount: number;
+    percentage: number;
+}
 
-const SUMMARY_METRICS = [
-    { label: "Total Revenue", value: "Rs 26.8M", change: "+15.3% growth" },
-    { label: "New Stations", value: "12", change: "Last 30 days" },
-    { label: "Active Subs", value: "234", change: "+5.7% growth" },
-];
+interface TopStation {
+    name: string;
+    revenue: number;
+    formattedRevenue: string;
+}
 
-const TOP_STATIONS = [
-    { name: "Colombo Central Hub", revenue: "Rs 4.2M" },
-    { name: "Kandy Express Service", revenue: "Rs 3.8M" },
-    { name: "Galle Motors", revenue: "Rs 3.1M" },
-];
+interface AnalyticsData {
+    totalPlatformRevenue: number;
+    revenueChange: string;
+    totalServiceCenters: number;
+    pendingRegistrations: number;
+    activeSubscriptions: number;
+    subscriptionChange: string;
+    weeklyRevenue: RevenueBar[];
+    monthlyRevenue: RevenueBar[];
+    topStations: TopStation[];
+}
 
 export default function SuperAdminDashboard() {
     const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
@@ -45,20 +42,65 @@ export default function SuperAdminDashboard() {
         totalServiceCenters: 0,
         pendingRegistrations: 0
     });
+    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const loadDashboardData = async () => {
+            setLoading(true);
             try {
-                const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/stats`);
-                setStats(response.data);
+                const [statsRes, analyticsRes] = await Promise.all([
+                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/stats`),
+                    axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/analytics`)
+                ]);
+                setStats(statsRes.data);
+                setAnalytics(analyticsRes.data);
             } catch (error) {
-                console.error("Error fetching admin stats:", error);
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchStats();
+        loadDashboardData();
     }, []);
 
-    const currentData = DATA[view];
+    // Transform analytics data for the graph
+    const getGraphData = () => {
+        if (!analytics) return { total: 0, labels: [], values: [], amounts: [] };
+        
+        const source = view === 'weekly' ? analytics.weeklyRevenue : analytics.monthlyRevenue;
+        return {
+            total: source.reduce((acc, curr) => acc + curr.amount, 0),
+            labels: source.map(d => d.label),
+            values: source.map(d => d.percentage),
+            amounts: source.map(d => d.amount)
+        };
+    };
+
+    const currentData = getGraphData();
+
+    // Mapping for Summary Metrics
+    const summaryMetrics = analytics ? [
+        { 
+            label: "Total Revenue", 
+            value: `Rs ${analytics.totalPlatformRevenue >= 1000000 
+                ? (analytics.totalPlatformRevenue / 1000000).toFixed(1) + 'M' 
+                : (analytics.totalPlatformRevenue / 1000).toFixed(0) + 'K'}`, 
+            change: `${analytics.revenueChange} growth` 
+        },
+        { 
+            label: "Total Stations", 
+            value: analytics.totalServiceCenters.toString(), 
+            change: `${analytics.pendingRegistrations} pending` 
+        },
+        { 
+            label: "Active Subs", 
+            value: analytics.activeSubscriptions.toString(), 
+            change: `${analytics.subscriptionChange} growth` 
+        },
+    ] : [];
+
+    const topStations = analytics?.topStations || [];
 
     const generatePDF = () => {
         const doc = new jsPDF();
@@ -87,7 +129,7 @@ export default function SuperAdminDashboard() {
         yPos += 15;
         const boxWidth = (pageWidth - 40 - 10) / 3; // 40 margin, 10 gap
 
-        SUMMARY_METRICS.forEach((metric, i) => {
+        summaryMetrics.forEach((metric, i) => {
             const x = 20 + (boxWidth + 5) * i;
 
             // Box
@@ -120,7 +162,7 @@ export default function SuperAdminDashboard() {
         autoTable(doc, {
             startY: yPos + 10,
             head: [['Station Name', 'Revenue']],
-            body: TOP_STATIONS.map(s => [s.name, s.revenue]),
+            body: topStations.map(s => [s.name, s.formattedRevenue]),
             theme: 'grid',
             headStyles: { fillColor: [234, 88, 12], textColor: 255 }, // Orange header
             styles: { fontSize: 10, cellPadding: 5 },
@@ -199,11 +241,15 @@ export default function SuperAdminDashboard() {
                     <div className="w-12 h-12 bg-orange-50 group-hover:bg-orange-600 transition-colors duration-300 rounded-full flex items-center justify-center text-orange-600 group-hover:text-white mb-3">
                         <FiDollarSign className="text-xl" />
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Monthly Revenue</h3>
+                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Platform Revenue</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">Rs 26,826,000</span>
+                        <span className="text-3xl font-bold text-slate-900">
+                            {loading ? "..." : `Rs ${analytics?.totalPlatformRevenue.toLocaleString()}`}
+                        </span>
                     </div>
-                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+15.3% this month</span>
+                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                        {analytics?.revenueChange} overall
+                    </span>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
@@ -302,7 +348,7 @@ export default function SuperAdminDashboard() {
                         <div className="p-6 space-y-6">
                             {/* Key Metrics Summary */}
                             <div className="grid grid-cols-3 gap-4">
-                                {SUMMARY_METRICS.map((metric, i) => (
+                                {summaryMetrics.map((metric, i) => (
                                     <div key={i} className={`p-4 rounded-xl border ${i === 0 ? 'bg-orange-50 border-orange-100' : i === 1 ? 'bg-blue-50 border-blue-100' : 'bg-purple-50 border-purple-100'}`}>
                                         <p className={`text-xs font-semibold uppercase ${i === 0 ? 'text-orange-600' : i === 1 ? 'text-blue-600' : 'text-purple-600'}`}>{metric.label}</p>
                                         <p className="text-xl font-bold text-slate-800 mt-1">{metric.value}</p>
@@ -323,10 +369,10 @@ export default function SuperAdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {TOP_STATIONS.map((station, i) => (
+                                            {topStations.map((station, i) => (
                                                 <tr key={i}>
                                                     <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{station.revenue}</td>
+                                                    <td className="px-4 py-3 text-slate-600">{station.formattedRevenue}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

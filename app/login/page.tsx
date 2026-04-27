@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
+import APP_CONFIG from "@/config";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -18,7 +19,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:8081/api/auth/login", {
+            const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -35,11 +36,17 @@ export default function LoginPage() {
             
             if (data.token) {
                 localStorage.setItem("token", data.token);
+                if (data.role) {
+                    localStorage.setItem("userRole", data.role);
+                    const roleRoute = data.role.toLowerCase().replace('role_', '').replace('_', '-');
+                    router.push(`/dashboard/${roleRoute}`);
+                } else {
+                    router.push("/dashboard");
+                }
             } else if (typeof data === 'string') {
                 localStorage.setItem("token", data);
+                router.push("/dashboard");
             }
-
-            router.push("/dashboard/service-manager");
             
         } catch (err: any) {
             setError(err.message || "Failed to connect to the server.");

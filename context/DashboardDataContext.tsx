@@ -49,7 +49,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [analyticsData, setAnalyticsData] = useState<any | null>(null);
     const [customersData, setCustomersData] = useState<any[]>([]);
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
-    
+
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
     const [hasDataInitialized, setHasDataInitialized] = useState<boolean>(false);
@@ -64,10 +64,10 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         setIsInitialLoad(true);
         try {
             const [
-                centersResponse, 
-                managersResponse, 
-                analyticsResponse, 
-                customersResponse, 
+                centersResponse,
+                managersResponse,
+                analyticsResponse,
+                customersResponse,
                 ownerResponse
             ] = await Promise.all([
                 axios.get(APP_CONFIG.api.serviceCenters + "/current"),
@@ -76,14 +76,14 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 axios.get(APP_CONFIG.api.customers + "/current"),
                 axios.get(APP_CONFIG.api.owners + "/current")
             ]);
-            
+
             // Atomically update state to minimize UI re-renders
             setCentersData(centersResponse.data || []);
             setManagersData(managersResponse.data || []);
             setAnalyticsData(analyticsResponse.data || null);
             setCustomersData(customersResponse.data || []);
             setOwnerProfile(ownerResponse.data || null);
-            
+
             setHasDataInitialized(true);
         } catch (fetchError: any) {
             // We log error context for debugging but keep the UI stable
