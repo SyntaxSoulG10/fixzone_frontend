@@ -33,7 +33,7 @@ import {
 import { FiDollarSign, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
 import React, { useState, useEffect } from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
-import { getCompanyAnalytics, AnalyticsData } from "@/services/analyticsService";
+import { getCompanyAnalytics, getCurrentOwnerAnalytics, AnalyticsData } from "@/services/analyticsService";
 import { APP_CONFIG } from "@/utils/config";
 import axios from "axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
@@ -110,7 +110,7 @@ export default function AnalyticsPage() {
                 endDate: endDate || undefined,
                 period: period
             };
-            const result = await getCompanyAnalytics("FIX001", params);
+            const result = await getCurrentOwnerAnalytics(params);
             setData(result);
         } catch (error: any) {
             console.error("Failed to fetch analytics:", error);

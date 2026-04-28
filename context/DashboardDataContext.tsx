@@ -1,26 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "../utils/config";
 import { getToken, getUserRole, isTokenExpired } from "../utils/authUtils";
-
-// Setup Axios Interceptor to inject JWT token
-axios.interceptors.request.use(
-    (config) => {
-        // Ensure we are in the browser environment before accessing localStorage
-        if (typeof window !== "undefined") {
-            const token = localStorage.getItem("token");
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
 
 interface DashboardDataContextType {
     centersData: any[];
@@ -79,6 +62,8 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 requests.push(axios.get(APP_CONFIG.api.owners + "/current").catch(() => ({ data: null })));
                 requests.push(axios.get(APP_CONFIG.api.serviceCenters + "/current").catch(() => ({ data: [] })));
                 requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: [] })));
+                requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
+                requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: [] })));
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null })));
                 requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
@@ -99,6 +84,8 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 setOwnerProfile(responses[0]?.data || null);
                 setCentersData(responses[1]?.data || []);
                 setManagersData(responses[2]?.data || []);
+                setAnalyticsData(responses[3]?.data || null);
+                setCustomersData(responses[4]?.data || []);
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 setManagersData(responses[0]?.data || []);
                 setBookingsData(responses[1]?.data || []);
