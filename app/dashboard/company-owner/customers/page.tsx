@@ -43,7 +43,7 @@ interface CustomerDTO {
     profilePictureUrl?: string;
 }
 
-// Client-side View Model mapped safely for rendering
+// Client-side view model mapped for UI rendering
 interface Customer {
     id: string | number;
     name: string;
@@ -192,10 +192,10 @@ export default function CustomersPage() {
     const repeatCustomers = customers.filter(c => c.visits > 1).length;
     const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
     
-    // Calculate new customers from the latest month in analytics data
+    // Calculates new customers from the latest month in analytics data
     const latestGrowth = analyticsData?.customerGrowth?.[analyticsData.customerGrowth.length - 1];
     const newCustomersCount = latestGrowth?.newCustomers || 0;
-    const growthPercentage = analyticsData?.jobsChange || "+0%"; // Using jobs change as a proxy for growth
+    const growthPercentage = analyticsData?.jobsChange || "+0%"; // Uses jobs change as a proxy for growth
 
     if (loading) {
         return (

@@ -42,8 +42,8 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * DATA MODELS: Defining strict types for financial records helps maintain 
- * consistency between the backend response and the UI rendering.
+ * Strict types for financial records.
+ * Maintains consistency between the backend response and the UI rendering.
  */
 interface PaymentRecordDTO { paymentId: string; invoiceId: number; amount: number; status: string; method: string; centerId: string; createdAt: string; }
 interface CenterDTO { centerId: string; name: string; }
@@ -51,8 +51,8 @@ interface CustomerDTO { customerId: string; name: string; fullName?: string; }
 interface InvoiceDTO { invoiceId: number; status: string; centerId: string; total?: number; issuedToCustomerId: string; }
 
 /**
- * TABLE CONFIGURATION: Defining column structures outside the component 
- * reduces render complexity and makes it easier to update the table layout.
+ * Column structures for the table layout.
+ * Defined outside the component to reduce render complexity.
  */
 const transactionColumns: GridColDef[] = [
     { 
@@ -94,7 +94,7 @@ const transactionColumns: GridColDef[] = [
 ];
 
 /**
- * STAT CARD COMPONENT: Reusable display for financial KPIs.
+ * Reusable display component for financial KPIs.
  */
 function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
     const theme = useTheme();
@@ -114,7 +114,7 @@ function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
 }
 
 /**
- * FILTERS COMPONENT: Encapsulates the selection logic for center, period, and dates.
+ * Encapsulates the selection logic for center, period, and dates.
  */
 function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPeriodChange, startDate, onStartChange, endDate, onEndChange, onReset }: any) {
     return (
@@ -141,8 +141,8 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
 }
 
 /**
- * RESTORED PAGE: FinancePage
- * Restoring the original complex UI while maintaining performance through DashboardDataContext.
+ * Orchestrates the financial page layout and data rendering.
+ * Utilizes DashboardDataContext for data retrieval.
  */
 export default function FinancePage() {
     const theme = useTheme();
@@ -170,13 +170,11 @@ export default function FinancePage() {
     }, [selectedCenter, period, startDate, endDate]);
 
     /**
-     * LOAD FINANCE DATA
-     * Why: Instead of making multiple scattered API calls, we use a single 
-     * unified "Analytics" endpoint. This is a "Backends-for-Frontends" (BFF) 
-     * pattern that reduces latency and ensures data consistency across the page.
+     * Loads unified financial data from the analytics endpoint.
+     * Reduces scattered API calls and ensures data consistency across the page.
      */
     const loadUnifiedFinanceData = async () => {
-        // Date Validation
+        // Validates date range before executing fetch
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Invalid date range selected for finance data");
             return;

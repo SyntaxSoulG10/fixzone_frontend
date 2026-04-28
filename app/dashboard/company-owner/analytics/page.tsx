@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = useState(!contextData);
     const [data, setData] = useState<AnalyticsData | null>(contextData);
     
-    // Filter states
+    // Filter state variables
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
     const [period, setPeriod] = useState<string>('monthly');
     const [startDate, setStartDate] = useState<string>('');
@@ -93,14 +93,13 @@ export default function AnalyticsPage() {
     }, [isMounted, selectedCenter, period, startDate, endDate]);
 
     const fetchAnalytics = async () => {
-        // Date Validation
+        // Validates date range before fetching
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Start date cannot be after end date");
-            // Optionally show a snackbar if available, but for now we'll just prevent the call
             return;
         }
 
-        // Only show full-page loading if we have absolutely no data to show
+        // Displays full-page loading only when no data is present
         if (!data) setIsLoading(true);
         
         try {

@@ -8,6 +8,10 @@ import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
 
+/**
+ * Interface defining the structure of a service package.
+ * Used for maintaining consistency between the frontend and the API.
+ */
 interface ServicePackage {
     id: string;
     centerId: string;
@@ -20,6 +24,10 @@ interface ServicePackage {
     isActive: boolean;
 }
 
+/**
+ * Orchestrates the management of service packages.
+ * Allows creating, editing, and deleting available service offerings.
+ */
 export default function ServicesPage() {
     const [packages, setPackages] = useState<ServicePackage[]>([]);
     const [centers, setCenters] = useState<{ id: string, name: string }[]>([]);

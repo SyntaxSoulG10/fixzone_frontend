@@ -42,7 +42,7 @@ import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * PROPS INTERFACES: Defining strict representations for our components
+ * Interface definitions for component props.
  */
 interface ProfileHeaderProps {
     tabValue: number;
@@ -69,7 +69,7 @@ interface ProfileInfoCardProps {
 }
 
 /**
- * HEADER COMPONENT: Separates branding from content.
+ * Header component displaying branding and navigation.
  */
 function ProfileHeader({ 
     tabValue, 
@@ -88,8 +88,6 @@ function ProfileHeader({
     const handleBannerClick = () => bannerInputRef.current?.click();
     const handleProfileClick = () => profileInputRef.current?.click();
 
-    console.log("[DEBUG] Current Banner Image URL:", bannerImage);
-
     return (
         <Box position="relative" mb={5}>
             <Box
@@ -107,7 +105,7 @@ function ProfileHeader({
                 {bannerImage && (
                     <Box
                         component="img"
-                        key={bannerImage} // Force re-render on change
+                        key={bannerImage} // Keys element to force re-render on update
                         src={bannerImage}
                         alt="banner"
                         sx={{
@@ -116,8 +114,7 @@ function ProfileHeader({
                             objectFit: 'cover',
                         }}
                         onError={(e: any) => {
-                            console.error("Banner failed to load:", bannerImage);
-                            // If it fails, we keep the gradient visible behind
+                            // Hides broken image to reveal fallback gradient
                             e.target.style.opacity = '0';
                         }}
                     />
@@ -216,7 +213,7 @@ function ProfileHeader({
 }
 
 /**
- * INFO CARD COMPONENT: Reusable display for company details.
+ * Reusable card component for displaying and editing details.
  */
 function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
     return (
@@ -303,7 +300,7 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
 }
 
 /**
- * OVERVIEW TAB: Displays company info and details.
+ * Overview tab content component.
  */
 function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
     return (
@@ -332,7 +329,7 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
 }
 
 /**
- * SECURITY TAB: Manages account security and danger zone.
+ * Security settings tab component.
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
@@ -355,7 +352,7 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
- * BILLING TAB: Subscription and payment history.
+ * Billing and subscription tab component.
  */
 function BillingTab() {
     return (
@@ -383,7 +380,7 @@ function BillingTab() {
 }
 
 /**
- * DIALOG COMPONENTS: For handling password changes and deactivation.
+ * Dialog components for critical actions.
  */
 function ChangePasswordDialog({ open, onClose }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -395,7 +392,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
         if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
         
         setError("");
-        // API call would go here
+        // TODO: Implement password update API call
         onClose();
     };
 
@@ -437,7 +434,7 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * MAIN PAGE COMPONENT: Handles state and lifecycle.
+ * Main profile page component managing state and lifecycle.
  */
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
@@ -495,8 +492,6 @@ export default function ProfilePage() {
         }
     }, [ownerData]);
 
-
-
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
     const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); setOriginalSocialData({ ...socialData }); };
     const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
@@ -504,7 +499,7 @@ export default function ProfilePage() {
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
-        // Comprehensive validation
+        // Validates form data before submission
         if (!profileData["Company Name"].trim() || profileData["Company Name"].length < 3) {
             setSnackbarMessage("Company name must be at least 3 characters");
             setSnackbarOpen(true);

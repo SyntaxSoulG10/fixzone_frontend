@@ -40,14 +40,14 @@ import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * GLOBAL CONSTANTS: Using constants for branding and configuration 
- * avoids "magic numbers" and makes theme updates easier.
+ * Global branding constants.
+ * Centralizes theme configuration and avoids magic numbers.
  */
 const BRAND_ORANGE = "#f3651c";
 
 /**
- * DATA MODELS: Strict interfaces ensure type safety and 
- * predictable data handling between API and UI.
+ * Interfaces for service center data.
+ * Ensures type safety and predictable data handling.
  */
 interface ServiceCenterView {
     id: string;
@@ -62,7 +62,7 @@ interface ServiceCenterView {
 }
 
 /**
- * HEADER COMPONENT: Encapsulates the page title and primary CTA.
+ * Encapsulates the page title and primary action button.
  */
 function CentersHeader({ onAdd }: { onAdd: () => void }) {
     return (
@@ -93,8 +93,8 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 /**
- * CARD COMPONENT: Represents a single service center branch.
- * Extracted to separate visual card layout from list management logic.
+ * Represents a single service center branch.
+ * Separates visual layout from list management logic.
  */
 function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
     const isActive = center.status === 'Active';
@@ -178,7 +178,7 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
 }
 
 /**
- * FORM DIALOG: Standardized input for adding or editing center data.
+ * Standardized dialog form for adding or editing center data.
  */
 function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any) {
     return (
@@ -218,7 +218,7 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * MAIN COMPONENT: Orchestrates the centers lifecycle.
+ * Orchestrates the service centers lifecycle.
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
@@ -232,7 +232,7 @@ export default function MyCentersPage() {
 
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
 
-    // Map raw centers data from context to View model
+    // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
@@ -245,7 +245,7 @@ export default function MyCentersPage() {
     }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
-        // Form Validation
+        // Validates input fields before submission
         if (!formData.name.trim() || formData.name.length < 3) {
             setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
             return;
@@ -282,7 +282,7 @@ export default function MyCentersPage() {
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
-            // Refresh global data after change
+            // Refreshes global data after changes
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 
