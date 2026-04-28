@@ -38,7 +38,7 @@ import {
     FiCreditCard,
     FiDownload
 } from "react-icons/fi";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
@@ -60,7 +60,7 @@ interface ProfileInfoCardProps {
     title: string;
     description: string;
     info: { [key: string]: string };
-    social: { icon: React.ReactNode, color: string }[];
+    social: { name: string, icon: React.ReactNode, color: string, url: string, onChange: (val: string) => void }[];
     onEdit: () => void;
     isEditing: boolean;
     onSave: () => void;
@@ -261,11 +261,40 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                             )}
                         </Box>
                     ))}
-                    <Box display="flex" py={1} pr={2} mt={1}>
+                    <Box display="flex" py={1} pr={2} mt={1} flexDirection="column" gap={1}>
                         <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>Social:</Typography>
-                        {social.map((item: any, index: number) => (
-                            <IconButton key={index} size="small" sx={{ color: item.color }}>{item.icon}</IconButton>
-                        ))}
+                        {isEditing ? (
+                            <Box display="flex" flexDirection="column" gap={1} ml={1} mt={1}>
+                                {social.map((item: any, index: number) => (
+                                    <Box key={index} display="flex" alignItems="center">
+                                        <Box sx={{ color: item.color, display: 'flex', alignItems: 'center', mr: 2 }}>{item.icon}</Box>
+                                        <TextField
+                                            variant="standard"
+                                            fullWidth
+                                            placeholder={`${item.name} URL`}
+                                            value={item.url || ''}
+                                            onChange={(e) => item.onChange(e.target.value)}
+                                            size="small"
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        ) : (
+                            <Box display="flex" gap={1} mt={0.5}>
+                                {social.map((item: any, index: number) => {
+                                    const validUrl = item.url ? (item.url.startsWith('http') ? item.url : `https://${item.url}`) : '';
+                                    return item.url ? (
+                                        <IconButton key={index} size="small" sx={{ color: item.color }} component="a" href={validUrl} target="_blank" rel="noopener noreferrer">
+                                            {item.icon}
+                                        </IconButton>
+                                    ) : (
+                                        <IconButton key={index} size="small" sx={{ color: '#ccc' }} disabled>
+                                            {item.icon}
+                                        </IconButton>
+                                    );
+                                })}
+                            </Box>
+                        )}
                     </Box>
                 </Box>
             </Box>
@@ -276,7 +305,7 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
 /**
  * OVERVIEW TAB: Displays company info and details.
  */
-function OverviewTab({ profileData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange }: any) {
+function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
     return (
         <Grid container spacing={1} justifyContent="center">
             <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
@@ -286,9 +315,9 @@ function OverviewTab({ profileData, isEditing, handleEdit, handleSaveProfile, ha
                         description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence.`}
                         info={profileData}
                         social={[
-                            { icon: <FiFacebook />, color: "#1877F2" },
-                            { icon: <FiTwitter />, color: "#1DA1F2" },
-                            { icon: <FiInstagram />, color: "#E4405F" },
+                            { name: "Facebook", icon: <FiFacebook />, color: "#1877F2", url: socialData.facebook, onChange: (v: string) => handleSocialChange('facebook', v) },
+                            { name: "Twitter", icon: <FiTwitter />, color: "#1DA1F2", url: socialData.twitter, onChange: (v: string) => handleSocialChange('twitter', v) },
+                            { name: "Instagram", icon: <FiInstagram />, color: "#E4405F", url: socialData.instagram, onChange: (v: string) => handleSocialChange('instagram', v) },
                         ]}
                         isEditing={isEditing}
                         onEdit={handleEdit}
@@ -431,21 +460,36 @@ export default function ProfilePage() {
         "Email": "",
         "Location": "Sri Lanka",
     });
+    const [socialData, setSocialData] = useState({
+        facebook: "",
+        twitter: "",
+        instagram: ""
+    });
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
+    const [originalSocialData, setOriginalSocialData] = useState(socialData);
 
     useEffect(() => {
         if (ownerData) {
             setUserId(ownerData.userId);
             setFullOwnerData(ownerData);
             const mappedData = {
-                "Company Name": ownerData.companyName || "N/A",
-                "Registration": ownerData.ownerCode || "N/A",
-                "Mobile": ownerData.companyNumber || ownerData.phone || "N/A",
-                "Email": ownerData.companyEmail || ownerData.email || "N/A",
+                "Company Name": ownerData.companyName || "",
+                "Registration": ownerData.ownerCode || "",
+                "Mobile": ownerData.companyNumber || ownerData.phone || "",
+                "Email": ownerData.companyEmail || ownerData.email || "",
                 "Location": "Sri Lanka",
             };
             setProfileData(mappedData);
             setOriginalProfileData(mappedData);
+            
+            const mappedSocial = {
+                facebook: ownerData.facebookUrl || "",
+                twitter: ownerData.twitterUrl || "",
+                instagram: ownerData.instagramUrl || ""
+            };
+            setSocialData(mappedSocial);
+            setOriginalSocialData(mappedSocial);
+
             if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
             if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
         }
@@ -454,8 +498,8 @@ export default function ProfilePage() {
 
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
-    const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); };
-    const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); };
+    const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); setOriginalSocialData({ ...socialData }); };
+    const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
 
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
@@ -489,15 +533,22 @@ export default function ProfilePage() {
                 companyNumber: profileData["Mobile"], 
                 companyEmail: profileData["Email"],
                 profilePictureUrl: profileImage,
-                bannerImageUrl: bannerImage
+                bannerImageUrl: bannerImage,
+                facebookUrl: socialData.facebook,
+                twitterUrl: socialData.twitter,
+                instagramUrl: socialData.instagram
             };
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
             await refreshAll();
-            setSnackbarMessage("Profile saved successfully to ImageKit!");
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('profileUpdated'));
+            }
+            setSnackbarMessage("Profile saved successfully!");
             setSnackbarOpen(true);
         } catch (error: any) {
-            const msg = error.response?.data?.message || "Failed to save changes.";
+            console.error("Save profile error:", error);
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save changes.";
             setSnackbarMessage(msg);
             setSnackbarOpen(true);
         } finally {
@@ -510,6 +561,7 @@ export default function ProfilePage() {
     }, [handleSaveProfile]);
 
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
+    const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -556,11 +608,13 @@ export default function ProfilePage() {
                 {tabValue === 0 && (
                     <OverviewTab 
                         profileData={profileData} 
+                        socialData={socialData}
                         isEditing={isEditing} 
                         handleEdit={handleEdit} 
                         handleSaveProfile={handleSaveProfile} 
                         handleCancel={handleCancel} 
-                        handleProfileChange={handleProfileChange} 
+                        handleProfileChange={handleProfileChange}
+                        handleSocialChange={handleSocialChange} 
                     />
                 )}
 

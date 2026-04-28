@@ -23,6 +23,38 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
 
+    const fetchUserData = async () => {
+        try {
+            // Determine true role from token
+            const token = localStorage.getItem("token");
+            const currentRole = localStorage.getItem("userRole");
+            
+            let endpoint = "";
+            if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
+                endpoint = APP_CONFIG.api.owners + "/current";
+            } else if (currentRole === "ROLE_SERVICE_MANAGER") {
+                endpoint = APP_CONFIG.api.managers + "/me";
+            } else if (currentRole === "ROLE_CUSTOMER") {
+                endpoint = "http://localhost:8081/api/customer/profile";
+            } else if (currentRole === "ROLE_SUPER_ADMIN") {
+                endpoint = APP_CONFIG.api.superAdmins + "/me";
+            }
+
+            if (endpoint && token) {
+                const response = await axios.get(endpoint);
+                if (response.data) {
+                    const data = response.data;
+                    setUserData({
+                        fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName}` : 'User'),
+                        profilePictureUrl: data.profilePictureUrl
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch user data for Navbar:", error);
+        }
+    };
+
     useEffect(() => {
         // Derive role from path
         if (pathname.includes('/super-admin')) setRole('super_admin');
@@ -38,41 +70,16 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         setIsProfileOpen(false);
         setIsNotificationsOpen(false);
 
-        // Fetch user data based on role
-        const fetchUserData = async () => {
-            try {
-                // Determine true role from token
-                const token = localStorage.getItem("token");
-                const currentRole = localStorage.getItem("userRole");
-                
-                let endpoint = "";
-                if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
-                    endpoint = APP_CONFIG.api.owners + "/current";
-                } else if (currentRole === "ROLE_SERVICE_MANAGER") {
-                    endpoint = APP_CONFIG.api.managers + "/me";
-                } else if (currentRole === "ROLE_CUSTOMER") {
-                    endpoint = "http://localhost:8081/api/customer/profile";
-                } else if (currentRole === "ROLE_SUPER_ADMIN") {
-                    endpoint = APP_CONFIG.api.superAdmins + "/me";
-                }
-
-                if (endpoint && token) {
-                    const response = await axios.get(endpoint);
-                    if (response.data) {
-                        const data = response.data;
-                        setUserData({
-                            fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName}` : 'User'),
-                            profilePictureUrl: data.profilePictureUrl
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to fetch user data for Navbar:", error);
-            }
-        };
-
         fetchUserData();
     }, [pathname]);
+
+    useEffect(() => {
+        const handleProfileUpdate = () => {
+            fetchUserData();
+        };
+        window.addEventListener('profileUpdated', handleProfileUpdate);
+        return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+    }, []);
 
     // Close on click outside
     useEffect(() => {
