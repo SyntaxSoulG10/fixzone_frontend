@@ -38,6 +38,11 @@ import { APP_CONFIG } from "@/utils/config";
 import axios from "axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
+/**
+ * Chart display constants.
+ */
+const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
+
 
 const columns: GridColDef[] = [
     {
@@ -385,11 +390,10 @@ export default function AnalyticsPage() {
                         data={(() => {
                             const serviceData = data?.serviceBreakdown || [];
                             const total = serviceData.reduce((acc, curr) => acc + curr.value, 0);
-                            const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
                             return serviceData.map((item, index) => ({
                                 name: item.name,
                                 value: total > 0 ? Math.round((item.value / total) * 100) : 0,
-                                color: referenceColors[index % referenceColors.length]
+                                color: DONUT_CHART_COLORS[index % DONUT_CHART_COLORS.length]
                             }));
                         })()}
                     />

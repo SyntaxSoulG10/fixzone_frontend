@@ -42,6 +42,14 @@ import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
+ * Validation constants for profile management.
+ */
+const MIN_COMPANY_NAME_LENGTH = 3;
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[0-9+]{10,15}$/;
+
+/**
  * Interface definitions for component props.
  */
 interface ProfileHeaderProps {
@@ -388,7 +396,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
 
     const handleUpdate = () => {
         if (!passwords.current) return setError("Current password is required");
-        if (passwords.new.length < 8) return setError("New password must be at least 8 characters");
+        if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
         if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
         
         setError("");
@@ -403,7 +411,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
                 <Box display="flex" flexDirection="column" gap={2} pt={1}>
                     {error && <Typography color="error" variant="caption">{error}</Typography>}
                     <TextField label="Current Password" type="password" fullWidth value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} error={!!error && !passwords.current} />
-                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < 8} />
+                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < MIN_PASSWORD_LENGTH} />
                     <TextField label="Confirm New Password" type="password" fullWidth value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} error={!!error && passwords.new !== passwords.confirm} />
                 </Box>
             </DialogContent>
@@ -500,21 +508,19 @@ export default function ProfilePage() {
         if (!userId || !fullOwnerData) return;
         
         // Validates form data before submission
-        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < 3) {
-            setSnackbarMessage("Company name must be at least 3 characters");
+        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
+            setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
             setSnackbarOpen(true);
             return;
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (profileData["Email"] && !emailRegex.test(profileData["Email"])) {
+        if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
             setSnackbarMessage("Please enter a valid company email");
             setSnackbarOpen(true);
             return;
         }
 
-        const phoneRegex = /^[0-9+]{10,15}$/;
-        if (profileData["Mobile"] && !phoneRegex.test(profileData["Mobile"].replace(/\s/g, ''))) {
+        if (profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
             setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
             setSnackbarOpen(true);
             return;

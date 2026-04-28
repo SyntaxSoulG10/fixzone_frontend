@@ -44,6 +44,10 @@ import { APP_CONFIG } from "@/utils/config";
  * Centralizes theme configuration and avoids magic numbers.
  */
 const BRAND_ORANGE = "#f3651c";
+const DEFAULT_MECHANICS = 5;
+const DEFAULT_CAPACITY = 0;
+const MIN_CENTER_NAME_LENGTH = 3;
+const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
  * Interfaces for service center data.
@@ -230,7 +234,7 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
+    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
     // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
@@ -246,8 +250,8 @@ export default function MyCentersPage() {
 
     const handleSave = async () => {
         // Validates input fields before submission
-        if (!formData.name.trim() || formData.name.length < 3) {
-            setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
+        if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
+            setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
         if (!formData.manager.trim()) {
@@ -260,8 +264,7 @@ export default function MyCentersPage() {
         }
         
         // Basic phone validation (digits and min length)
-        const phoneRegex = /^[0-9+]{10,15}$/;
-        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+        if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
@@ -336,7 +339,7 @@ export default function MyCentersPage() {
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 

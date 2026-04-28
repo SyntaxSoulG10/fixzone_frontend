@@ -42,6 +42,12 @@ import {
 import { APP_CONFIG } from "@/utils/config";
 
 /**
+ * Validation and default constants for managers.
+ */
+const MIN_MANAGER_NAME_LENGTH = 3;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
  * Strict types for managers and centers.
  * Ensures data transformations are type-safe and consistent.
  */
@@ -186,14 +192,12 @@ export default function ManagersPage() {
     };
 
     const handleSave = async () => {
-        // Validates input fields
-        if (!formData.name.trim() || formData.name.length < 3) {
-            setSnackbar({ open: true, message: 'Full name must be at least 3 characters', severity: 'error' });
+        if (!formData.name.trim() || formData.name.length < MIN_MANAGER_NAME_LENGTH) {
+            setSnackbar({ open: true, message: `Full name must be at least ${MIN_MANAGER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
         
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!formData.email.trim() || !emailRegex.test(formData.email)) {
+        if (!formData.email.trim() || !EMAIL_REGEX.test(formData.email)) {
             setSnackbar({ open: true, message: 'Please enter a valid email address', severity: 'error' });
             return;
         }
