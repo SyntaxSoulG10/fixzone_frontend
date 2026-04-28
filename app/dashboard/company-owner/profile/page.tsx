@@ -449,6 +449,7 @@ export default function ProfilePage() {
     const [tabValue, setTabValue] = useState(0);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -507,21 +508,23 @@ export default function ProfilePage() {
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
-        // Validates form data before submission
         if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
             setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
 
         if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
             setSnackbarMessage("Please enter a valid company email");
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
 
-        if (profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
+        if (!profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
             setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
@@ -546,11 +549,13 @@ export default function ProfilePage() {
                 window.dispatchEvent(new Event('profileUpdated'));
             }
             setSnackbarMessage("Profile saved successfully!");
+            setSnackbarSeverity("success");
             setSnackbarOpen(true);
         } catch (error: any) {
             console.error("Save profile error:", error);
             const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save changes.";
             setSnackbarMessage(msg);
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
             setIsSaving(false);
@@ -571,6 +576,7 @@ export default function ProfilePage() {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
                 setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
+                setSnackbarSeverity("success");
                 setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
@@ -584,6 +590,7 @@ export default function ProfilePage() {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
                 setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
+                setSnackbarSeverity("success");
                 setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
@@ -639,7 +646,7 @@ export default function ProfilePage() {
             />
 
             <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>{snackbarMessage}</Alert>
+                <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
             </Snackbar>
         </ProfileHeader >
     );

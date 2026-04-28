@@ -18,7 +18,9 @@ import {
     Avatar,
     LinearProgress,
     TextField,
-    Chip
+    Chip,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
@@ -152,6 +154,7 @@ export default function FinancePage() {
     const [period, setPeriod] = useState('monthly');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     const [financeData, setFinanceData] = useState({
         totalRevenue: contextData?.totalRevenue || 0, 
@@ -177,6 +180,7 @@ export default function FinancePage() {
         // Validates date range before executing fetch
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Invalid date range selected for finance data");
+            setSnackbar({ open: true, message: "Invalid date range selected", severity: 'error' });
             return;
         }
 
@@ -224,6 +228,8 @@ export default function FinancePage() {
             });
         } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
+            const msg = fetchError.response?.data?.message || fetchError.message || "Failed to load finance data.";
+            setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -304,6 +310,12 @@ export default function FinancePage() {
                     }
                 />
             </Box>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

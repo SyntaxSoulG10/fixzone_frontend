@@ -13,7 +13,9 @@ import {
     InputLabel,
     Stack,
     TextField,
-    Button
+    Button,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -80,6 +82,7 @@ export default function AnalyticsPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(!contextData);
     const [data, setData] = useState<AnalyticsData | null>(contextData);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     // Filter state variables
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
@@ -118,6 +121,8 @@ export default function AnalyticsPage() {
             setData(result);
         } catch (error: any) {
             console.error("Failed to fetch analytics:", error);
+            const msg = error.response?.data?.message || error.message || "Failed to fetch analytics data.";
+            setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -437,6 +442,12 @@ export default function AnalyticsPage() {
                     </Card>
                 </Grid>
             </Grid>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

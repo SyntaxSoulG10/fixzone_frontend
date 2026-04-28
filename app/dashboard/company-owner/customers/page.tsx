@@ -8,7 +8,9 @@ import {
     Typography,
     Avatar,
     Chip,
-    CircularProgress
+    CircularProgress,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -62,6 +64,7 @@ export default function CustomersPage() {
     const { customersData, analyticsData, refreshAll } = useDashboardData();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
         const loadCustomers = async () => {
@@ -82,8 +85,10 @@ export default function CustomersPage() {
                     avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
                 }));
                 setCustomers(mappedCustomers);
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Failed to load customers:", err);
+                const msg = err.response?.data?.message || err.message || "Failed to load customers.";
+                setSnackbar({ open: true, message: msg, severity: 'error' });
             } finally {
                 setLoading(false);
             }
@@ -294,6 +299,12 @@ export default function CustomersPage() {
                     }}
                 />
             </Card>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
