@@ -135,8 +135,8 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
                     <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
             </FormControl>
-            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
-            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ min: startDate, max: new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
             <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2 }}>Reset</Button>
         </Stack>
     );

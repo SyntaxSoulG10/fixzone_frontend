@@ -178,6 +178,7 @@ export default function AnalyticsPage() {
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
+                        inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }}
                         sx={{ borderRadius: 2, minWidth: 150 }}
                     />
                     <TextField
@@ -187,6 +188,10 @@ export default function AnalyticsPage() {
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
+                        inputProps={{ 
+                            min: startDate, 
+                            max: new Date().toISOString().split('T')[0] 
+                        }}
                         sx={{ borderRadius: 2, minWidth: 150 }}
                     />
                     <Button 
