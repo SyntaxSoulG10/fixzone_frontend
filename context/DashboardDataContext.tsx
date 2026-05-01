@@ -17,6 +17,7 @@ interface DashboardDataContextType {
     refreshCenters: () => Promise<void>;
     refreshManagers: () => Promise<void>;
     refreshAnalytics: () => Promise<void>;
+    refreshBookings: () => Promise<void>;
     refreshAll: () => Promise<void>;
 }
 
@@ -48,60 +49,62 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const refreshAllDashboardData = useCallback(async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         if (!token || isTokenExpired(token)) {
+            console.warn("[DashboardDataContext] No valid token found. Skipping data fetch.");
             setIsInitialLoad(false);
+            setHasDataInitialized(true); // Mark as done so the dashboard doesn't spin forever
             return;
         }
 
         setIsInitialLoad(true);
         try {
             const role = getUserRole(token);
-            const requests = [];
+            console.log("[DashboardDataContext] Fetching for role:", role);
 
-            // Add endpoints conditionally based on role
+            // Always fetch bookings for manager and customer roles
             if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
-                requests.push(axios.get(APP_CONFIG.api.owners + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get(APP_CONFIG.api.serviceCenters + "/current").catch(() => ({ data: [] })));
-                requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: [] })));
-                requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: [] })));
+                const [ownerRes, centersRes, managersRes] = await Promise.all([
+                    axios.get(APP_CONFIG.api.owners + "/current").catch((e) => { console.error("owners/current failed", e); return { data: null }; }),
+                    axios.get(APP_CONFIG.api.serviceCenters + "/current").catch((e) => { console.error("serviceCenters/current failed", e); return { data: [] }; }),
+                    axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: [] }; }),
+                ]);
+                setOwnerProfile(ownerRes.data || null);
+                setCentersData(centersRes.data || []);
+                setManagersData(managersRes.data || []);
             } else if (role === "ROLE_SERVICE_MANAGER") {
-                requests.push(axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+                const [managerRes, bookingsRes] = await Promise.all([
+                    axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: null }; }),
+                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.error("bookings fetch failed", e); return { data: [] }; }),
+                ]);
+                const mData = managerRes.data;
+                setManagersData(Array.isArray(mData) ? mData : (mData ? [mData] : []));
+                const bookingsArray = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
+                console.log("[DashboardDataContext] Bookings fetched:", bookingsArray.length);
+                setBookingsData(bookingsArray);
+
             } else if (role === "ROLE_SUPER_ADMIN") {
-                requests.push(axios.get(APP_CONFIG.api.analytics + "/current").catch(() => ({ data: null })));
-                // Also fetch stats for the super admin cards
-                requests.push(axios.get("http://localhost:8081/api/admin/stats").catch(() => ({ data: null })));
+                const [analyticsRes] = await Promise.all([
+                    axios.get(APP_CONFIG.api.analytics + "/current").catch((e) => { console.error("analytics/current failed", e); return { data: null }; }),
+                ]);
+                setAnalyticsData(analyticsRes.data || null);
+
             } else if (role === "ROLE_CUSTOMER") {
-                requests.push(axios.get(APP_CONFIG.api.customers + "/current").catch(() => ({ data: null })));
-                requests.push(axios.get("http://localhost:8081/api/bookings").catch(() => ({ data: [] })));
+                const [customerRes, bookingsRes] = await Promise.all([
+                    axios.get(APP_CONFIG.api.customers + "/current").catch((e) => { console.error("customers/current failed", e); return { data: null }; }),
+                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.error("bookings fetch failed", e); return { data: [] }; }),
+                ]);
+                setCustomersData(customerRes.data ? [customerRes.data] : []);
+                setBookingsData(Array.isArray(bookingsRes.data) ? bookingsRes.data : []);
+
+            } else {
+                console.warn("[DashboardDataContext] Unknown role, no data fetched:", role);
             }
 
-            // Execute only the relevant endpoints
-            const responses = await Promise.all(requests);
-            
-            // Assign data based on role
-            if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
-                setOwnerProfile(responses[0]?.data || null);
-                setCentersData(responses[1]?.data || []);
-                setManagersData(responses[2]?.data || []);
-                setAnalyticsData(responses[3]?.data || null);
-                setCustomersData(responses[4]?.data || []);
-            } else if (role === "ROLE_SERVICE_MANAGER") {
-                setManagersData(responses[0]?.data || []);
-                setBookingsData(responses[1]?.data || []);
-            } else if (role === "ROLE_SUPER_ADMIN") {
-                setAnalyticsData(responses[0]?.data || null);
-                // stats could be stored in a new state if needed, but for now we focus on analytics
-            } else if (role === "ROLE_CUSTOMER") {
-                setCustomersData(responses[0]?.data || []);
-                setBookingsData(responses[1]?.data || []);
-            }
-            
-            setHasDataInitialized(true);
+
         } catch (fetchError: any) {
-            console.error("Critical error during dashboard data initialization:", fetchError);
+            console.error("[DashboardDataContext] Critical error during data initialization:", fetchError);
         } finally {
             setIsInitialLoad(false);
+            setHasDataInitialized(true); // Always mark initialized so UI doesn't spin forever
         }
     }, []);
 
@@ -111,6 +114,17 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             refreshAllDashboardData();
         }
     }, [hasDataInitialized, refreshAllDashboardData]);
+
+    const refreshBookings = useCallback(async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (!token) return;
+        try {
+            const res = await axios.get(APP_CONFIG.api.baseUrl + "/bookings");
+            setBookingsData(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            console.error("[DashboardDataContext] refreshBookings failed", e);
+        }
+    }, []);
 
     const contextValue: DashboardDataContextType = {
         centersData,
@@ -124,6 +138,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         refreshCenters: async () => { /* Individual refresh logic if needed */ },
         refreshManagers: async () => { /* Individual refresh logic if needed */ },
         refreshAnalytics: async () => { /* Individual refresh logic if needed */ },
+        refreshBookings,
         refreshAll: refreshAllDashboardData
     };
 
