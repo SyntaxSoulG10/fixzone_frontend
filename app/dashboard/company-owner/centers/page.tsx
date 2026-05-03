@@ -193,7 +193,6 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
                     <TextField label="Center Name" name="name" value={formData.name} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
-                    <TextField label="Manager Name" name="manager" value={formData.manager} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <TextField label="Address" name="location" value={formData.location} onChange={onChange} fullWidth multiline rows={2} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}><TextField label="Phone" name="phone" value={formData.phone} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} /></Grid>
@@ -252,10 +251,6 @@ export default function MyCentersPage() {
         // Validates input fields before submission
         if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
-            return;
-        }
-        if (!formData.manager.trim()) {
-            setSnackbar({ open: true, message: 'Manager name is required', severity: 'error' });
             return;
         }
         if (!formData.location.trim()) {
