@@ -45,7 +45,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 if (response.data) {
                     const data = response.data;
                     setUserData({
-                        fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName}` : 'User'),
+                        fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName || ''}`.trim() : 'User'),
                         profilePictureUrl: data.profilePictureUrl
                     });
                 }
