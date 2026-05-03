@@ -103,7 +103,23 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     const getProfileUrl = () => {
         if (!role) return "/dashboard";
-        return `/dashboard/${role.replace('_', '-')}/profile`;
+        
+        // Robust mapping for dashboard sub-paths
+        const roleToPath: Record<string, string> = {
+            "ROLE_COMPANY_OWNER": "company-owner",
+            "OWNER": "company-owner",
+            "ROLE_SERVICE_MANAGER": "service-manager",
+            "ROLE_SUPER_ADMIN": "super-admin",
+            "ROLE_CUSTOMER": "customer",
+            "CUSTOMER": "customer",
+            // Handle derived roles (lowercase/hyphenated) if they already exist
+            "company_owner": "company-owner",
+            "service_manager": "service-manager",
+            "super_admin": "super-admin"
+        };
+        
+        const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
+        return `/dashboard/${path}/profile`;
     };
 
     const notifications = [

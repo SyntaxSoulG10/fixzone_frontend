@@ -79,7 +79,19 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
             setRole('customer');
         } else {
             const r = localStorage.getItem("userRole");
-            setRole(r || "customer");
+            if (r) {
+                // Map backend roles to ROLE_MENUS keys
+                const roleMap: Record<string, string> = {
+                    "ROLE_COMPANY_OWNER": "company_owner",
+                    "OWNER": "company_owner",
+                    "ROLE_SERVICE_MANAGER": "service_manager",
+                    "ROLE_SUPER_ADMIN": "super_admin",
+                    "ROLE_CUSTOMER": "customer"
+                };
+                setRole(roleMap[r] || r.toLowerCase().replace('role_', ''));
+            } else {
+                setRole("customer");
+            }
         }
     }, [pathname]);
 
