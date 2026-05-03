@@ -149,6 +149,8 @@ export default function ServiceStationsPage() {
                 <div className="font-semibold text-slate-700 text-sm">{row.owner}</div>
             )
         },
+
+        
         {
             header: "Location",
             accessor: (row: Station) => (
@@ -283,8 +285,8 @@ export default function ServiceStationsPage() {
 
             {/* DYNAMIC REVIEW MODAL */}
             {isReviewModalOpen && selectedStation && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-100 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-4xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
                         <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-start">
                             <div className="flex gap-4">
@@ -336,7 +338,7 @@ export default function ServiceStationsPage() {
                                 <div className="bg-red-50 border-2 border-red-100 rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom-5 duration-300">
                                     <h4 className="text-red-800 font-bold flex items-center gap-2"><FiAlertCircle /> Rejection Feedback</h4>
                                     <textarea 
-                                        className="w-full bg-white border border-red-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-red-100 outline-none min-h-[100px] transition-all"
+                                        className="w-full bg-white border border-red-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-red-100 outline-none min-h-25 transition-all"
                                         placeholder="Explain to the owner why this registration is being rejected..."
                                         value={rejectionReason}
                                         onChange={(e) => setRejectionReason(e.target.value)}

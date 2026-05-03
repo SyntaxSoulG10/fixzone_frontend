@@ -5,7 +5,6 @@ import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiChe
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
-import APP_CONFIG from "@/config";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 // Interfaces for type safety
@@ -44,24 +43,6 @@ export default function SuperAdminDashboard() {
 
 
 
-    // Local state for UI components only
-    const [stats, setStats] = useState({
-        totalUsers: 0,
-        totalServiceCenters: 0,
-        pendingRegistrations: 0
-    });
-
-    // Update stats when analytics or stats data changes
-    useEffect(() => {
-        if (analytics) {
-            setStats({
-                totalUsers: statsData?.totalUsers || 0,
-                totalServiceCenters: analytics.totalServiceCenters,
-                pendingRegistrations: analytics.pendingRegistrations
-            });
-        }
-    }, [analytics, statsData]);
-
     // Transform analytics data for the graph
     const getGraphData = () => {
         if (!analytics) return { total: 0, labels: [], values: [], amounts: [] };
@@ -98,7 +79,7 @@ export default function SuperAdminDashboard() {
         },
     ] : [];
 
-    const topStations = analytics?.topStations || [];
+    // const topStations = analytics?.topStations || []; // Redundant fallback - using context values directly
 
     const generatePDF = () => {
         const doc = new jsPDF();
@@ -160,7 +141,7 @@ export default function SuperAdminDashboard() {
         autoTable(doc, {
             startY: yPos + 10,
             head: [['Station Name', 'Revenue']],
-            body: topStations.map((s: TopStation) => [s.name, s.formattedRevenue]),
+            body: (analytics?.topStations || []).map((s: TopStation) => [s.name, s.formattedRevenue]),
             theme: 'grid',
             headStyles: { fillColor: [234, 88, 12], textColor: 255 }, // Orange header
             styles: { fontSize: 10, cellPadding: 5 },
@@ -239,9 +220,9 @@ export default function SuperAdminDashboard() {
                     </div>
                     <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Service Stations</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">{stats.totalServiceCenters}</span>
+                        <span className="text-3xl font-bold text-slate-900">{analytics?.totalServiceCenters || 0}</span>
                     </div>
-                    <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">{stats.pendingRegistrations} pending review</span>
+                    <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">{analytics?.pendingRegistrations || 0} pending review</span>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
@@ -251,11 +232,11 @@ export default function SuperAdminDashboard() {
                     <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Platform Revenue</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-slate-900">
-                            {loading ? "..." : `Rs ${analytics?.totalPlatformRevenue.toLocaleString()}`}
+                            {loading ? "..." : `Rs ${analytics?.totalPlatformRevenue.toLocaleString() || 0}`}
                         </span>
                     </div>
                     <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
-                        {analytics?.revenueChange} overall
+                        {analytics?.revenueChange || "0%"} overall
                     </span>
                 </div>
 
@@ -265,7 +246,7 @@ export default function SuperAdminDashboard() {
                     </div>
                     <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Total Platform Users</h3>
                     <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">{stats.totalUsers}</span>
+                        <span className="text-3xl font-bold text-slate-900">{statsData?.totalUsers || 0}</span>
                     </div>
                     <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">Across all roles</span>
                 </div>
@@ -378,7 +359,7 @@ export default function SuperAdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {topStations.map((station: TopStation, i: number) => (
+                                            {(analytics?.topStations || []).map((station: TopStation, i: number) => (
                                                 <tr key={i}>
                                                     <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
                                                     <td className="px-4 py-3 text-slate-600">{station.formattedRevenue}</td>
