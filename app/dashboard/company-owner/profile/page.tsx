@@ -1,3 +1,7 @@
+
+// --- Owner Profile Page ---
+// This file implements the company owner profile page, including profile editing, security, and billing tabs.
+// It uses MUI components, custom context, and local state for a rich, interactive UI.
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -45,17 +49,16 @@ import { APP_CONFIG } from "@/utils/config";
  * Validation constants for profile management.
  */
 // Minimum length for company name
-const MIN_COMPANY_NAME_LENGTH = 3;
-// Minimum length for password changes
-const MIN_PASSWORD_LENGTH = 8;
-// Email validation pattern
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Phone number validation pattern (10-15 digits)
-const PHONE_REGEX = /^[0-9+]{10,15}$/;
+const MIN_COMPANY_NAME_LENGTH = 3; // Minimum company name length
+const MIN_PASSWORD_LENGTH = 8; // Minimum password length
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
+const PHONE_REGEX = /^[0-9+]{10,15}$/; // Phone validation regex
 
 /**
  * Interface definitions for component props.
  */
+// --- Component Prop Types ---
+// Props for ProfileHeader
 interface ProfileHeaderProps {
     tabValue: number;
     onTabChange: (event: React.SyntheticEvent, newValue: number) => void;
@@ -68,6 +71,7 @@ interface ProfileHeaderProps {
     isSaving: boolean;
 }
 
+// Props for ProfileInfoCard
 interface ProfileInfoCardProps {
     title: string;
     description: string;
@@ -83,6 +87,7 @@ interface ProfileInfoCardProps {
 /**
  * Header component displaying branding and navigation.
  */
+// --- ProfileHeader ---
 // Displays banner, profile image, company name, and tab navigation
 function ProfileHeader({ 
     tabValue, 
@@ -103,6 +108,7 @@ function ProfileHeader({
     // Trigger profile image file picker
     const handleProfileClick = () => profileInputRef.current?.click();
 
+    // Render header UI
     return (
         <Box position="relative" mb={5}>
             <Box
@@ -221,6 +227,7 @@ function ProfileHeader({
                         </Button>
                     </Grid>
                 </Grid>
+                {/* Tab content goes here */}
                 {children}
             </Card>
         </Box>
@@ -228,9 +235,11 @@ function ProfileHeader({
 }
 
 /**
+ * --- ProfileInfoCard ---
  * Reusable card component for displaying and editing details.
  */
 function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
+    // Render info card UI
     return (
         <Card sx={{ height: "100%", boxShadow: 'none' }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" pt={2} px={2}>
@@ -315,9 +324,11 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
 }
 
 /**
+ * --- OverviewTab ---
  * Overview tab content component.
  */
 function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
+    // Render overview tab
     return (
         <Grid container spacing={1} justifyContent="center">
             <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
@@ -344,9 +355,11 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
 }
 
 /**
+ * --- SecurityTab ---
  * Security settings tab component.
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
+    // Render security tab
     return (
         <Grid container spacing={1} justifyContent="center">
             <Grid size={{ xs: 12, md: 8, xl: 6 }}>
@@ -367,9 +380,11 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
+ * --- BillingTab ---
  * Billing and subscription tab component.
  */
 function BillingTab() {
+    // Render billing tab
     return (
         <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 8 }}>
@@ -395,12 +410,14 @@ function BillingTab() {
 }
 
 /**
- * Dialog components for critical actions.
+ * --- Dialog Components ---
+ * Dialog components for critical actions (change password, deactivate account).
  */
 function ChangePasswordDialog({ open, onClose }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
     const [error, setError] = useState("");
 
+    // Handle password update logic
     const handleUpdate = () => {
         if (!passwords.current) return setError("Current password is required");
         if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
@@ -411,6 +428,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
         onClose();
     };
 
+    // Render change password dialog
     return (
         <Dialog open={open} onClose={() => { onClose(); setError(""); }} fullWidth maxWidth="sm">
             <DialogTitle>Change Password</DialogTitle>
@@ -431,6 +449,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
 }
 
 function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivateInput }: any) {
+    // Render deactivate account dialog
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
             <DialogTitle sx={{ color: 'error.main' }}>Deactivate Account</DialogTitle>
@@ -446,11 +465,14 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
     );
 }
 
+
+// --- Main Profile Page ---
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
  * Main profile page component managing state and lifecycle.
  */
+// Main profile page component
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
     const [tabValue, setTabValue] = useState(0);
@@ -458,17 +480,17 @@ export default function ProfilePage() {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
-    // Image upload states
+    // --- State: Image upload ---
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Edit mode and form states
+    // --- State: Edit mode and form ---
     const [isEditing, setIsEditing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
     const [fullOwnerData, setFullOwnerData] = useState<any>(null);
     
-    // Profile information fields
+    // --- State: Profile information fields ---
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
         "Company Name": "",
         "Registration": "",
@@ -476,17 +498,17 @@ export default function ProfilePage() {
         "Email": "",
         "Location": "Sri Lanka",
     });
-    // Social media links
+    // --- State: Social media links ---
     const [socialData, setSocialData] = useState({
         facebook: "",
         twitter: "",
         instagram: ""
     });
-    // Store original data for cancel functionality
+    // --- State: Store original data for cancel functionality ---
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
     const [originalSocialData, setOriginalSocialData] = useState(socialData);
 
-    // Load owner data when component mounts
+    // --- Effect: Load owner data when component mounts ---
     useEffect(() => {
         if (ownerData) {
             setUserId(ownerData.userId);
@@ -517,6 +539,7 @@ export default function ProfilePage() {
         }
     }, [ownerData]);
 
+    // --- Handlers: Tab switching, edit, cancel ---
     // Handle tab switching
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
     // Enter edit mode and save current data
@@ -524,7 +547,7 @@ export default function ProfilePage() {
     // Exit edit mode and discard changes
     const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
 
-    // Submit profile updates to API
+    // --- Handler: Submit profile updates to API ---
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
@@ -589,13 +612,16 @@ export default function ProfilePage() {
         }
     };
 
+    // Expose save handler globally for Save Profile button
     useEffect(() => {
         (window as any).handleGlobalSave = handleSaveProfile;
     }, [handleSaveProfile]);
 
+    // --- Handlers: Profile and social field changes ---
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
     const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
 
+    // --- Handler: Banner image upload ---
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
@@ -610,6 +636,7 @@ export default function ProfilePage() {
         }
     };
 
+    // --- Handler: Profile image upload ---
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
@@ -624,10 +651,12 @@ export default function ProfilePage() {
         }
     };
 
+    // --- State: Dialogs for password and deactivation ---
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [openDeactivateDialog, setOpenDeactivateDialog] = useState(false);
     const [deactivateInput, setDeactivateInput] = useState("");
 
+    // --- Render main profile page UI ---
     return (
         <ProfileHeader
             tabValue={tabValue}
