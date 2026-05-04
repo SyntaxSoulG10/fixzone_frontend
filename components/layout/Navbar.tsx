@@ -56,8 +56,8 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                         profilePictureUrl: data.profilePictureUrl || ""
                     });
                 }
-            } catch (error) {
-                console.error("Failed to fetch user data for Navbar:", error);
+            } catch (error: any) {
+                console.warn("Failed to fetch user data for Navbar:", error.message);
             }
         };
 

@@ -63,17 +63,17 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             // Always fetch bookings for manager and customer roles
             if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
                 const [ownerRes, centersRes, managersRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.owners + "/current").catch((e) => { console.error("owners/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.serviceCenters + "/current").catch((e) => { console.error("serviceCenters/current failed", e); return { data: [] }; }),
-                    axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: [] }; }),
+                    axios.get("/owners/current").catch((e) => { console.warn("owners/current failed", e.message); return { data: null }; }),
+                    axios.get("/service-centers/current").catch((e) => { console.warn("serviceCenters/current failed", e.message); return { data: [] }; }),
+                    axios.get("/managers/current").catch((e) => { console.warn("managers/current failed", e.message); return { data: [] }; }),
                 ]);
                 setOwnerProfile(ownerRes.data || null);
                 setCentersData(centersRes.data || []);
                 setManagersData(managersRes.data || []);
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const [managerRes, bookingsRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.error("bookings fetch failed", e); return { data: [] }; }),
+                    axios.get("/managers/current").catch((e) => { console.warn("managers/current failed", e.message); return { data: null }; }),
+                    axios.get("/bookings").catch((e) => { console.warn("bookings fetch failed", e.message); return { data: [] }; }),
                 ]);
                 const mData = managerRes.data;
                 setManagersData(Array.isArray(mData) ? mData : (mData ? [mData] : []));
@@ -83,14 +83,14 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
 
             } else if (role === "ROLE_SUPER_ADMIN") {
                 const [analyticsRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.analytics + "/current").catch((e) => { console.error("analytics/current failed", e); return { data: null }; }),
+                    axios.get("/analytics/current").catch((e) => { console.warn("analytics/current failed", e.message); return { data: null }; }),
                 ]);
                 setAnalyticsData(analyticsRes.data || null);
 
             } else if (role === "ROLE_CUSTOMER") {
                 const [customerRes, bookingsRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.customers + "/current").catch((e) => { console.error("customers/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.error("bookings fetch failed", e); return { data: [] }; }),
+                    axios.get("/customers/current").catch((e) => { console.warn("customers/current failed", e.message); return { data: null }; }),
+                    axios.get("/bookings").catch((e) => { console.warn("bookings fetch failed", e.message); return { data: [] }; }),
                 ]);
                 setCustomersData(customerRes.data ? [customerRes.data] : []);
                 setBookingsData(Array.isArray(bookingsRes.data) ? bookingsRes.data : []);
@@ -101,7 +101,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
 
 
         } catch (fetchError: any) {
-            console.error("[DashboardDataContext] Critical error during data initialization:", fetchError);
+            console.warn("[DashboardDataContext] Critical error during data initialization:", fetchError.message);
         } finally {
             setIsInitialLoad(false);
             setHasDataInitialized(true); // Always mark initialized so UI doesn't spin forever
@@ -119,10 +119,10 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         if (!token) return;
         try {
-            const res = await axios.get(APP_CONFIG.api.baseUrl + "/bookings");
+            const res = await axios.get("/bookings");
             setBookingsData(Array.isArray(res.data) ? res.data : []);
-        } catch (e) {
-            console.error("[DashboardDataContext] refreshBookings failed", e);
+        } catch (e: any) {
+            console.warn("[DashboardDataContext] refreshBookings failed", e.message);
         }
     }, []);
 
