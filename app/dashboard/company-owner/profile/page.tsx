@@ -44,9 +44,13 @@ import { APP_CONFIG } from "@/utils/config";
 /**
  * Validation constants for profile management.
  */
+// Minimum length for company name
 const MIN_COMPANY_NAME_LENGTH = 3;
+// Minimum length for password changes
 const MIN_PASSWORD_LENGTH = 8;
+// Email validation pattern
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Phone number validation pattern (10-15 digits)
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
@@ -79,6 +83,7 @@ interface ProfileInfoCardProps {
 /**
  * Header component displaying branding and navigation.
  */
+// Displays banner, profile image, company name, and tab navigation
 function ProfileHeader({ 
     tabValue, 
     onTabChange, 
@@ -93,7 +98,9 @@ function ProfileHeader({
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
 
+    // Trigger banner file picker
     const handleBannerClick = () => bannerInputRef.current?.click();
+    // Trigger profile image file picker
     const handleProfileClick = () => profileInputRef.current?.click();
 
     return (
@@ -451,14 +458,17 @@ export default function ProfilePage() {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
+    // Image upload states
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Edit mode and form states
     const [isEditing, setIsEditing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
     const [fullOwnerData, setFullOwnerData] = useState<any>(null);
     
+    // Profile information fields
     const [profileData, setProfileData] = useState<{ [key: string]: string }>({
         "Company Name": "",
         "Registration": "",
@@ -466,18 +476,22 @@ export default function ProfilePage() {
         "Email": "",
         "Location": "Sri Lanka",
     });
+    // Social media links
     const [socialData, setSocialData] = useState({
         facebook: "",
         twitter: "",
         instagram: ""
     });
+    // Store original data for cancel functionality
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
     const [originalSocialData, setOriginalSocialData] = useState(socialData);
 
+    // Load owner data when component mounts
     useEffect(() => {
         if (ownerData) {
             setUserId(ownerData.userId);
             setFullOwnerData(ownerData);
+            // Map API data to form fields
             const mappedData = {
                 "Company Name": ownerData.companyName || "",
                 "Registration": ownerData.ownerCode || "",
@@ -488,6 +502,7 @@ export default function ProfilePage() {
             setProfileData(mappedData);
             setOriginalProfileData(mappedData);
             
+            // Map social media URLs
             const mappedSocial = {
                 facebook: ownerData.facebookUrl || "",
                 twitter: ownerData.twitterUrl || "",
@@ -496,18 +511,24 @@ export default function ProfilePage() {
             setSocialData(mappedSocial);
             setOriginalSocialData(mappedSocial);
 
+            // Load profile and banner images
             if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
             if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
         }
     }, [ownerData]);
 
+    // Handle tab switching
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
+    // Enter edit mode and save current data
     const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); setOriginalSocialData({ ...socialData }); };
+    // Exit edit mode and discard changes
     const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
 
+    // Submit profile updates to API
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
+        // Validate company name length
         if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
             setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
             setSnackbarSeverity("error");
@@ -515,6 +536,7 @@ export default function ProfilePage() {
             return;
         }
 
+        // Validate email format
         if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
             setSnackbarMessage("Please enter a valid company email");
             setSnackbarSeverity("error");
@@ -522,6 +544,7 @@ export default function ProfilePage() {
             return;
         }
 
+        // Validate phone number format
         if (!profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
             setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
             setSnackbarSeverity("error");
@@ -531,6 +554,7 @@ export default function ProfilePage() {
 
         setIsSaving(true);
         try {
+            // Prepare updated owner data
             const updatedOwner = { 
                 ...fullOwnerData, 
                 companyName: profileData["Company Name"], 
@@ -542,9 +566,12 @@ export default function ProfilePage() {
                 twitterUrl: socialData.twitter,
                 instagramUrl: socialData.instagram
             };
+            // Send update to API
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
+            // Refresh all data
             await refreshAll();
+            // Dispatch event for other components to react to profile update
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('profileUpdated'));
             }

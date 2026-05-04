@@ -44,13 +44,16 @@ import { APP_CONFIG } from "@/utils/config";
 /**
  * Validation and default constants for managers.
  */
+// Minimum length for manager name
 const MIN_MANAGER_NAME_LENGTH = 3;
+// Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Strict types for managers and centers.
  * Ensures data transformations are type-safe and consistent.
  */
+// Manager display model
 interface ManagerView {
     id: string;
     name: string;
@@ -63,12 +66,14 @@ interface ManagerView {
     avatar: string;
 }
 
+// API response format for centers
 interface CenterAPIResponse { centerId: string; name: string; }
 
 /**
  * Column definitions for the manager table.
  * Defined outside the component to improve rendering performance.
  */
+// Data grid column configuration
 const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any): GridColDef[] => [
     {
         field: 'name', headerName: 'Name', flex: 2, minWidth: 250,

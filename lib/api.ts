@@ -4,13 +4,14 @@ import APP_CONFIG from "../config";
 // Use centralized configuration
 const BASE_URL = APP_CONFIG.API_BASE_URL;
 
-// Helper to get auth headers
+// Retrieve auth token from localStorage and add to request headers
 const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem("token");
   return token ? { "Authorization": `Bearer ${token}` } : {};
 };
 
+// Fetch all available service centers
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
   const res = await fetch(`${BASE_URL}/api/service-centers`, {
     headers: {
@@ -25,9 +26,11 @@ export async function getServiceCenters(): Promise<ServiceCenter[]> {
   return res.json();
 }
 
+// Get detailed info for a specific service center with timeout protection
 export async function getServiceCenterDetails(centerId: string): Promise<any> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+  // Set 2 second timeout for safety
+  const timeoutId = setTimeout(() => controller.abort(), 2000);
 
   try {
     const res = await fetch(`${BASE_URL}/api/service-centers/${centerId}`, {
@@ -50,9 +53,11 @@ export async function getServiceCenterDetails(centerId: string): Promise<any> {
   }
 }
 
+// Fetch all service packages available at a specific center
 export async function getServicePackagesByCenter(centerId: string): Promise<any> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+  // Set 2 second timeout for safety
+  const timeoutId = setTimeout(() => controller.abort(), 2000);
 
   try {
     // Fixed: Correct endpoint path and removed double slash
@@ -76,6 +81,7 @@ export async function getServicePackagesByCenter(centerId: string): Promise<any>
   }
 }
 
+// Create initial payment session without processing payment
 export async function createPaymentSession(bookingId: number, amount: number): Promise<string> {
   const res = await fetch(`${BASE_URL}/payments/create`, {
     method: "POST",
@@ -95,10 +101,7 @@ export async function createPaymentSession(bookingId: number, amount: number): P
   return res.text();
 }
 
-/**
- * Step 1: Initialize a booking session and reserve a slot.
- * Returns the generated paymentId.
- */
+// Initialize booking session - reserves a time slot and returns paymentId
 export async function initPayment(servicePackageId: string, vehicleId: string, date: string, timeSlot: string, centerId: string, specialRequest: string = ""): Promise<number> {
   const res = await fetch(`${BASE_URL}/payments/init`, {
     method: "POST",
@@ -111,6 +114,7 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
 
   if (!res.ok) {
     const errorMsg = await res.text();
+    // Check for time slot conflict
     if (res.status === 409 || errorMsg.toLowerCase().includes("unavailable")) {
       throw new Error("TIME_SLOT_UNAVAILABLE");
     }
@@ -121,10 +125,7 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
   return data.paymentId;
 }
 
-/**
- * Step 2: Execute Stripe payment for the initialized session.
- * Returns a plain text Stripe Checkout URL.
- */
+// Process payment with Stripe - returns checkout URL
 export async function executeStripePayment(paymentId: number): Promise<string> {
   const res = await fetch(`${BASE_URL}/payments/stripe`, {
     method: "POST",
@@ -144,6 +145,7 @@ export async function executeStripePayment(paymentId: number): Promise<string> {
   return res.text();
 }
 
+// Verify successful Stripe payment completion using session ID
 export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
   const res = await fetch(`${BASE_URL}/payments/success?session_id=${sessionId}`, {
     headers: {
@@ -157,6 +159,7 @@ export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
   return res.text(); // Return plain text like "Payment updated successfully"
 }
 
+// Retrieve payment details for a booking
 export async function getPaymentDetails(bookingId: number): Promise<any> {
   const res = await fetch(`${BASE_URL}/payments/${bookingId}`, {
     headers: {
@@ -170,6 +173,7 @@ export async function getPaymentDetails(bookingId: number): Promise<any> {
   return res.json();
 }
 
+// Process refund for a booking
 export async function refundPayment(bookingId: number): Promise<string> {
   const res = await fetch(`${BASE_URL}/payments/refund`, {
     method: "POST",
@@ -186,6 +190,7 @@ export async function refundPayment(bookingId: number): Promise<string> {
   return res.text();
 }
 
+// Reschedule payment for a new booking time
 export async function reschedulePayment(bookingId: number): Promise<string> {
   const res = await fetch(`${BASE_URL}/payments/reschedule`, {
     method: "POST",
@@ -202,6 +207,7 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
   return res.text(); // Should return the new Stripe checkout URL
 }
 
+// Fetch all bookings made by a specific customer
 export async function getBookingsByCustomer(customerId: string): Promise<any[]> {
   const res = await fetch(`${BASE_URL}/api/bookings/customer/${customerId}`, {
     headers: {
@@ -214,6 +220,7 @@ export async function getBookingsByCustomer(customerId: string): Promise<any[]> 
   return res.json();
 }
 
+// Fetch all bookings across the entire system
 export async function getAllBookings(): Promise<any[]> {
   const res = await fetch(`${BASE_URL}/api/bookings`, {
     headers: {
@@ -226,6 +233,7 @@ export async function getAllBookings(): Promise<any[]> {
   return res.json();
 }
 
+// Reschedule existing booking to new date and time
 export async function rescheduleBookingAPI(bookingId: string, newDate: string, newTime: string): Promise<any> {
   const url = new URL(`${BASE_URL}/api/bookings/${bookingId}/reschedule`);
   url.searchParams.append("newDate", newDate);
@@ -252,6 +260,7 @@ export async function rescheduleBookingAPI(bookingId: string, newDate: string, n
   return res.json();
 }
 
+// Cancel booking - prevents further modifications
 export async function cancelBookingAPI(bookingId: string): Promise<any> {
   const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/cancel`, {
     method: "PUT",
@@ -267,11 +276,13 @@ export async function cancelBookingAPI(bookingId: string): Promise<any> {
   return res.json();
 }
 
+// Open invoice PDF for download in new tab
 export async function downloadInvoice(bookingId: string): Promise<void> {
   // Try to open invoice directly or fetch it
   window.open(`${BASE_URL}/api/invoices/booking/${bookingId}/download`, "_blank");
 }
 
+// Get all available time slots for a service center on specific date
 export async function getAvailableSlotsAPI(centerId: string, date: string): Promise<string[]> {
   const url = new URL(`${BASE_URL}/api/bookings/available-slots`);
   url.searchParams.append("centerId", centerId);

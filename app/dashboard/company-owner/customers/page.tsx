@@ -30,7 +30,8 @@ import StatCard from "@/components/dashboard/StatCard";
 import axios from "axios";
 import { APP_CONFIG } from "@/utils/config";    
 import { formatDistanceToNow } from "date-fns";
-// Interface representation for the structure originating directly from the Backend API
+
+// Backend API response format
 interface CustomerDTO {
     userId?: string;
     id?: string;
@@ -45,7 +46,7 @@ interface CustomerDTO {
     profilePictureUrl?: string;
 }
 
-// Client-side view model mapped for UI rendering
+// Frontend view model for display
 interface Customer {
     id: string | number;
     name: string;
@@ -59,6 +60,7 @@ interface Customer {
 
 import { useDashboardData } from "@/context/DashboardDataContext";
 
+// Page for managing and viewing all customers
 export default function CustomersPage() {
     const theme = useTheme();
     const { customersData, analyticsData, refreshAll } = useDashboardData();
@@ -66,14 +68,17 @@ export default function CustomersPage() {
     const [loading, setLoading] = useState(true);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
+    // Load and transform customer data
     useEffect(() => {
         const loadCustomers = async () => {
             setLoading(true);
             try {
+                // Fetch if no data cached
                 if (customersData.length === 0) {
                     await refreshAll();
                 }
                 
+                // Map API data to view model
                 const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerDTO) => ({
                     id: customer.userId || customer.id || Math.random().toString(),
                     name: customer.fullName || customer.name || "Unknown Customer",

@@ -43,6 +43,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 /**
  * Chart display constants.
  */
+// Colors for donut chart visualization
 const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
 
 
@@ -84,7 +85,7 @@ export default function AnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(contextData);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
-    // Filter state variables
+    // Filter state for analytics queries
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
     const [period, setPeriod] = useState<string>('monthly');
     const [startDate, setStartDate] = useState<string>('');
@@ -94,20 +95,22 @@ export default function AnalyticsPage() {
         setIsMounted(true);
     }, []);
 
+    // Fetch analytics when filters change
     useEffect(() => {
         if (isMounted) {
             fetchAnalytics();
         }
     }, [isMounted, selectedCenter, period, startDate, endDate]);
 
+    // Fetch analytics data with optional filters
     const fetchAnalytics = async () => {
-        // Validates date range before fetching
+        // Validate date range
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Start date cannot be after end date");
             return;
         }
 
-        // Displays full-page loading only when no data is present
+        // Show loading only if no data exists
         if (!data) setIsLoading(true);
         
         try {

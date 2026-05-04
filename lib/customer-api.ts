@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// Use environment variables or default localhost
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.VITE_API_BASE_URL ||
@@ -9,7 +10,7 @@ const api = axios.create({
   baseURL: BASE_URL,
 });
 
-// Setup Axios Interceptor to inject JWT token
+// Auto-inject JWT token into every request
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
@@ -25,6 +26,7 @@ api.interceptors.request.use(
 
 const CUSTOMER_BASE = "/api/customer";
 
+// Customer profile information type
 export type CustomerProfile = {
   firstName: string;
   secondName: string;
@@ -33,6 +35,7 @@ export type CustomerProfile = {
   profilePictureUrl?: string;
 };
 
+// Vehicle information type
 export type Vehicle = {
   id: string;
   brand: string;
@@ -40,20 +43,24 @@ export type Vehicle = {
   imageUrl?: string | null;
 };
 
+// Customer notification and preference settings
 export type CustomerSettings = {
   notificationsOn: boolean;
   language: string;
 };
 
+// API error response structure
 export type ApiValidationError = {
   message: string;
   details?: Record<string, string[]> | string[];
 };
 
+// Convert API error to readable message
 export function toApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     const data = error.response?.data as ApiValidationError | undefined;
+    // Extract validation error details
     if (status === 400 && data) {
       if (Array.isArray(data.details) && data.details.length > 0) {
         return data.details.join(", ");
@@ -70,48 +77,48 @@ export function toApiErrorMessage(error: unknown): string {
   return "Something went wrong.";
 }
 
-// 1) GET /profile
+// Retrieve customer profile information
 export async function getProfile(): Promise<CustomerProfile> {
   const { data } = await api.get<CustomerProfile>(`${CUSTOMER_BASE}/profile`);
   return data;
 }
 
-// 2) PUT /profile
+// Update customer profile information
 export async function updateProfile(payload: CustomerProfile): Promise<CustomerProfile> {
   const { data } = await api.put<CustomerProfile>(`${CUSTOMER_BASE}/profile`, payload);
   return data;
 }
 
-// 3) GET /vehicles
+// Get all vehicles for customer
 export async function getVehicles(): Promise<Vehicle[]> {
   const { data } = await api.get<Vehicle[]>(`${CUSTOMER_BASE}/vehicles`);
   return data;
 }
 
-// 4) POST /vehicle
+// Add new vehicle to customer account
 export async function addVehicle(payload: Omit<Vehicle, "id">): Promise<Vehicle> {
   const { data } = await api.post<Vehicle>(`${CUSTOMER_BASE}/vehicle`, payload);
   return data;
 }
 
-// 5) DELETE /vehicle/{id}
+// Remove vehicle from customer account
 export async function deleteVehicle(vehicleId: string): Promise<void> {
   await api.delete(`${CUSTOMER_BASE}/vehicle/${vehicleId}`);
 }
 
-// 6) GET /settings
+// Retrieve customer notification and language settings
 export async function getSettings(): Promise<CustomerSettings> {
   const { data } = await api.get<CustomerSettings>(`${CUSTOMER_BASE}/settings`);
   return data;
 }
 
-// 7) PUT /settings
+// Update customer settings and preferences
 export async function updateSettings(payload: CustomerSettings): Promise<CustomerSettings> {
   const { data } = await api.put<CustomerSettings>(`${CUSTOMER_BASE}/settings`, payload);
   return data;
 }
 
-// 8) GET /payment-methods
+// Saved payment method information
 export type PaymentMethod = {
   id: number;
   cardType: string;

@@ -47,9 +47,13 @@ import { APP_CONFIG } from "@/utils/config";
  * Strict types for financial records.
  * Maintains consistency between the backend response and the UI rendering.
  */
+// Payment transaction data from API
 interface PaymentRecordDTO { paymentId: string; invoiceId: number; amount: number; status: string; method: string; centerId: string; createdAt: string; }
+// Service center info
 interface CenterDTO { centerId: string; name: string; }
+// Customer profile info
 interface CustomerDTO { customerId: string; name: string; fullName?: string; }
+// Invoice record
 interface InvoiceDTO { invoiceId: number; status: string; centerId: string; total?: number; issuedToCustomerId: string; }
 
 /**
@@ -97,14 +101,18 @@ const transactionColumns: GridColDef[] = [
 
 /**
  * Reusable display component for financial KPIs.
+ * Shows metric title, value, icon, and supporting context.
  */
 function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
     const theme = useTheme();
     return (
         <Card sx={{ p: 3, height: '100%', position: 'relative', overflow: 'visible', borderRadius: 3, boxShadow: theme.shadows[2] }}>
+            {/* Icon badge positioned at top-left of card */}
             <Box sx={{ position: 'absolute', top: -20, left: 20, background: 'linear-gradient(195deg, #FB923C, #EA580C)', borderRadius: 3, p: 2, boxShadow: theme.shadows[4], color: '#fff' }}>
                 <Icon size={24} />
             </Box>
+            
+            {/* Right-aligned text layout: title → large value → divider → supporting text */}
             <Box textAlign="right">
                 <Typography variant="body2" color="text.secondary" gutterBottom>{title}</Typography>
                 <Typography variant="h4" fontWeight="bold">{value}</Typography>
@@ -117,10 +125,12 @@ function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
 
 /**
  * Encapsulates the selection logic for center, period, and dates.
+ * Isolates filter controls from main component to reduce complexity.
  */
 function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPeriodChange, startDate, onStartChange, endDate, onEndChange, onReset }: any) {
     return (
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={4} flexWrap="wrap">
+            {/* Center selector: filter by specific service center or view all */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>All Centers</InputLabel>
                 <Select label="All Centers" value={selectedCenter} onChange={(e) => onCenterChange(e.target.value)} sx={{ borderRadius: 2 }}>
@@ -128,6 +138,8 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
                     {centers.map((c: any) => <MenuItem key={c.centerId} value={c.centerId}>{c.name}</MenuItem>)}
                 </Select>
             </FormControl>
+            
+            {/* Period selector: daily/monthly/yearly aggregation */}
             <FormControl size="small" sx={{ minWidth: 120 }}>
                 <Select value={period} onChange={(e) => onPeriodChange(e.target.value)} sx={{ borderRadius: 2 }}>
                     <MenuItem value="daily">Daily</MenuItem>
@@ -135,8 +147,12 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
                     <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
             </FormControl>
+            
+            {/* Date range pickers: constrain data to specific timeframe */}
             <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
             <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ min: startDate, max: new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            
+            {/* Reset button: clear all filters and start fresh */}
             <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2 }}>Reset</Button>
         </Stack>
     );
@@ -149,13 +165,20 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
 export default function FinancePage() {
     const theme = useTheme();
     const { centersData, analyticsData: contextData, refreshAll } = useDashboardData();
+    
+    // UI state: controls loading indicator during data fetch
     const [isLoading, setIsLoading] = useState(!contextData);
+    
+    // Filter states: allow users to slice data by center, time period, and date range
     const [selectedCenter, setSelectedCenter] = useState('all');
     const [period, setPeriod] = useState('monthly');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    
+    // Notification state: display success/error messages to user
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
+    // Financial metrics: aggregate revenue, payment method breakdown, center performance, and transaction history
     const [financeData, setFinanceData] = useState({
         totalRevenue: contextData?.totalRevenue || 0, 
         onlineRevenue: contextData?.onlineRevenue || 0, 
@@ -168,6 +191,7 @@ export default function FinancePage() {
 
     const centersList = centersData;
 
+    // Re-fetch finance data whenever filter criteria change (center, period, or dates)
     useEffect(() => { 
         loadUnifiedFinanceData(); 
     }, [selectedCenter, period, startDate, endDate]);
@@ -186,6 +210,7 @@ export default function FinancePage() {
 
         setIsLoading(true);
         try {
+            // Build query parameters: exclude undefined values to prevent API errors
             const queryParameters = { 
                 centerId: selectedCenter !== 'all' ? selectedCenter : undefined, 
                 startDate: startDate || undefined, 
@@ -193,22 +218,25 @@ export default function FinancePage() {
                 period 
             };
             
+            // Fetch analytics data with applied filters
             const apiResponse = await axios.get(`${APP_CONFIG.api.baseUrl}/analytics/current`, { params: queryParameters });
             const analyticsPayload = apiResponse.data;
 
+            // Transform API response to component state structure
             setFinanceData({
+                // Raw revenue totals
                 totalRevenue: analyticsPayload.totalRevenue || 0,
                 onlineRevenue: analyticsPayload.onlineRevenue || 0,
                 cashRevenue: analyticsPayload.handCollectionRevenue || 0,
                 avgTransaction: analyticsPayload.avgJobValue || 0,
                 
-                // Map branch performance
+                // Map branch performance data for bar chart
                 revenueByCenter: (analyticsPayload.topCenters || []).map((branch: any) => ({ 
                     name: branch.name, 
                     revenue: branch.revenue 
                 })),
                 
-                // Map historical growth data
+                // Map historical growth data for line chart (online vs cash comparison)
                 growthData: (analyticsPayload.revenueOverview || []).map((monthlyData: any) => ({ 
                     month: monthlyData.name, 
                     amount: monthlyData.revenue, 
@@ -216,7 +244,7 @@ export default function FinancePage() {
                     cash: monthlyData.cashRevenue 
                 })),
                 
-                // Map recent transaction logs
+                // Map recent transaction logs for DataGrid display
                 recentTransactions: (analyticsPayload.recentTransactions || []).map((transaction: any) => ({
                     id: transaction.id,
                     customer: transaction.customer,
@@ -237,28 +265,35 @@ export default function FinancePage() {
 
     return (
         <Box pb={3}>
+            {/* Page header with title and description */}
             <Box mb={6}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>Finance & Revenue</Typography>
                 <Typography variant="body1" color="text.secondary">Track earnings and financial health.</Typography>
             </Box>
 
+            {/* Filter controls: center, time period, and date range */}
             <FinanceFilters 
                 centers={centersList} selectedCenter={selectedCenter} onCenterChange={setSelectedCenter} 
                 period={period} onPeriodChange={setPeriod} startDate={startDate} onStartChange={setStartDate} 
                 endDate={endDate} onEndChange={setEndDate} onReset={() => { setStartDate(''); setEndDate(''); setSelectedCenter('all'); }} 
             />
 
+            {/* Loading indicator during data fetch */}
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: 'rgba(234, 88, 12, 0.1)', '& .MuiLinearProgress-bar': { bgcolor: '#EA580C' } }} />}
 
-            {/* KPI STATS ROW */}
+            {/* KPI STATS ROW: Display key financial metrics */}
             <Grid container spacing={3} mb={4}>
+                {/* Total revenue across all payment methods */}
                 <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${financeData.totalRevenue.toLocaleString()}`} subtext="+12% from last month" icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
+                {/* Cash collected from in-person transactions */}
                 <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${financeData.cashRevenue.toLocaleString()}`} subtext="In-person" icon={FiDollarSign} color="#4caf50" /></Grid>
+                {/* Online payments via Stripe */}
                 <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${financeData.onlineRevenue.toLocaleString()}`} subtext="Digital" icon={FiCreditCard} color="#2196f3" /></Grid>
+                {/* Average value per transaction */}
                 <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job" value={`Rs. ${financeData.avgTransaction.toFixed(0)}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
             </Grid>
 
-            {/* REVENUE GROWTH CHART */}
+            {/* REVENUE GROWTH CHART: Line chart showing total revenue trend */}
             <Box mt={10}>
             <ChartCard 
                 
@@ -281,17 +316,18 @@ export default function FinancePage() {
             />
             </Box>
 
-            {/* RECENT TRANSACTIONS TABLE */}
+            {/* RECENT TRANSACTIONS TABLE: DataGrid showing latest payment records */}
             <Box mt={4}>
                 <Card sx={{ p: 3, borderRadius: 3 }}>
                     <Typography variant="h6" fontWeight="bold" mb={3}>Recent Transactions</Typography>
+                    {/* Paginated table with payment method and status indicators */}
                     <Box sx={{ height: 400, width: '100%' }}>
                         <DataGrid rows={financeData.recentTransactions} columns={transactionColumns} pageSizeOptions={[5]} disableRowSelectionOnClick />
                     </Box>
                 </Card>
             </Box>
 
-            {/* CENTER PERFORMANCE BAR CHART */}
+            {/* CENTER PERFORMANCE BAR CHART: Revenue by service center branch */}
             <Box mt={10}>
                 <ChartCard
                     title="Center Performance"

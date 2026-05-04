@@ -43,6 +43,7 @@ interface ServicePackage {
 function ServicePackageCard({ pkg, onEdit, onDelete }: { pkg: ServicePackage, onEdit: (pkg: ServicePackage) => void, onDelete: (id: string) => void }) {
     return (
         <div className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            {/* Edit/Delete buttons - hidden by default, shown on hover */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button
                     onClick={() => onEdit(pkg)}
@@ -61,12 +62,14 @@ function ServicePackageCard({ pkg, onEdit, onDelete }: { pkg: ServicePackage, on
             </div>
 
             <div className="p-6 flex-1">
+                {/* Package header with name and status */}
                 <div className="flex justify-between items-start mb-4">
                     <div className="w-full">
                         <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
                             {pkg.name}
                         </h3>
 
+                        {/* Status badge and duration indicator */}
                         <div className="flex items-center gap-3 mt-2">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}`}>
                                 {pkg.isActive ? 'Active' : 'Inactive'}
@@ -79,15 +82,18 @@ function ServicePackageCard({ pkg, onEdit, onDelete }: { pkg: ServicePackage, on
                     </div>
                 </div>
 
+                {/* Package description */}
                 <p className="text-slate-600 text-sm mb-6 line-clamp-2 h-10">
                     {pkg.description}
                 </p>
 
+                {/* Price display */}
                 <div className="flex items-baseline mb-6">
                     <span className="text-3xl font-bold text-slate-900 tracking-tight">Rs. {Number(pkg.price).toFixed(2)}</span>
                     <span className="text-slate-500 ml-1 text-sm font-medium">/ service</span>
                 </div>
 
+                {/* Features list with "more" indicator */}
                 <div className="space-y-3 pt-6 border-t border-slate-100">
                     <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Features</h4>
                     <ul className="space-y-2">
@@ -127,6 +133,7 @@ function ServicePackageDialog({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                {/* Modal header with title and close button */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                     <h2 className="text-xl font-bold text-slate-900">
                         {isEditing ? `Edit ${currentPackage.name}` : "Create New Package"}
@@ -142,6 +149,7 @@ function ServicePackageDialog({
 
                 <form onSubmit={handleSave} className="p-6 space-y-6">
                     <div className="space-y-4">
+                        {/* Service center selector */}
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700">Service Center</label>
                             <select
@@ -156,6 +164,8 @@ function ServicePackageDialog({
                                 ))}
                             </select>
                         </div>
+
+                        {/* Package name input */}
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700">Package Name</label>
                             <input
@@ -168,6 +178,7 @@ function ServicePackageDialog({
                             />
                         </div>
 
+                        {/* Price and duration inputs */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-slate-700">Price (Rs.)</label>
@@ -203,6 +214,7 @@ function ServicePackageDialog({
                             </div>
                         </div>
 
+                        {/* Description textarea */}
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700">Description</label>
                             <textarea
@@ -215,6 +227,7 @@ function ServicePackageDialog({
                             />
                         </div>
 
+                        {/* Active/Inactive status toggle */}
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700">Status</label>
                             <div className="flex items-center space-x-4 pt-2">
@@ -241,6 +254,7 @@ function ServicePackageDialog({
                             </div>
                         </div>
 
+                        {/* Features list textarea - one feature per line */}
                         <div className="space-y-1">
                             <div className="flex justify-between">
                                 <label className="text-sm font-medium text-slate-700">Features</label>
@@ -257,6 +271,7 @@ function ServicePackageDialog({
                         </div>
                     </div>
 
+                    {/* Action buttons - Cancel and Save/Create */}
                     <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
                         <Button
                             type="button"
@@ -315,10 +330,12 @@ export default function ServicesPage() {
 
     const [featuresInput, setFeaturesInput] = useState("");
 
+    // Load packages and centers on component mount
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
             try {
+                // Fetch both packages and centers in parallel
                 await Promise.all([fetchPackages(), fetchCenters()]);
             } catch (err) {
                 showSnackbar("Failed to initialize data", "error");
@@ -329,13 +346,16 @@ export default function ServicesPage() {
         init();
     }, []);
 
+    // Display notification toast message
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
     };
 
+    // Fetch all service packages from API and transform data
     const fetchPackages = async () => {
         try {
             const response = await axios.get(APP_CONFIG.api.baseUrl + "/service-packages/current");
+            // Map API response to component interface structure
             const mappedData = (response.data || []).map((pkg: any) => ({
                 id: pkg.packageId,
                 centerId: pkg.centerId,
@@ -344,6 +364,7 @@ export default function ServicesPage() {
                 description: pkg.description,
                 price: pkg.basePrice,
                 duration: pkg.estimatedDurationMins,
+                // Parse comma-separated features string into array
                 features: pkg.type ? pkg.type.split(",").filter((f: string) => f.length > 0) : [],
                 isActive: pkg.isActive
             }));
@@ -354,14 +375,17 @@ export default function ServicesPage() {
         }
     };
 
+    // Fetch all service centers and set first as default
     const fetchCenters = async () => {
         try {
             const response = await axios.get(APP_CONFIG.api.serviceCenters + "/current");
+            // Transform centers to simple id/name objects
             const mappedCenters = (response.data || []).map((center: any) => ({
                 id: center.centerId,
                 name: center.name
             }));
             setCenters(mappedCenters);
+            // Auto-select first center if none selected
             if (mappedCenters.length > 0 && !currentPackage.centerId) {
                 setCurrentPackage(prev => ({ ...prev, centerId: mappedCenters[0].id }));
             }
@@ -371,11 +395,14 @@ export default function ServicesPage() {
         }
     };
 
+    // Initialize form for creating a new package
     const handleOpenCreate = () => {
+        // Check if service centers exist before allowing package creation
         if (centers.length === 0) {
             showSnackbar("Please create a service center first", "warning");
             return;
         }
+        // Reset form to empty state with defaults
         setCurrentPackage({
             id: "",
             centerId: centers[0].id,
@@ -391,22 +418,28 @@ export default function ServicesPage() {
         setIsModalOpen(true);
     };
 
+    // Load existing package data into form for editing
     const handleOpenEdit = (pkg: ServicePackage) => {
         setCurrentPackage(pkg);
+        // Convert features array back to newline-separated string for textarea
         setFeaturesInput(pkg.features.join("\n"));
         setIsEditing(true);
         setIsModalOpen(true);
     };
 
+    // Close modal only if not actively saving
     const handleCloseModal = () => {
         if (!isSaving) setIsModalOpen(false);
     };
 
+    // Validate form fields against constraints
     const validateForm = () => {
+        // Check package name length
         if (!currentPackage.name.trim() || currentPackage.name.length < MIN_PACKAGE_NAME_LENGTH) {
             showSnackbar(`Package name must be at least ${MIN_PACKAGE_NAME_LENGTH} characters`, "warning");
             return false;
         }
+        // Validate price is within acceptable range
         if (currentPackage.price <= MIN_PRICE) {
             showSnackbar(`Price must be greater than ${MIN_PRICE}`, "warning");
             return false;
@@ -415,14 +448,17 @@ export default function ServicesPage() {
             showSnackbar(`Price exceeds maximum allowed value`, "warning");
             return false;
         }
+        // Validate service duration
         if (currentPackage.duration < MIN_DURATION || currentPackage.duration > MAX_DURATION) {
             showSnackbar(`Duration must be between ${MIN_DURATION} minutes and ${MAX_DURATION / 60} hours`, "warning");
             return false;
         }
+        // Validate description length
         if (!currentPackage.description.trim() || currentPackage.description.length < MIN_DESC_LENGTH) {
             showSnackbar(`Please provide a more detailed description (min ${MIN_DESC_LENGTH} chars)`, "warning");
             return false;
         }
+        // Ensure a service center is selected
         if (!currentPackage.centerId) {
             showSnackbar("Please select a service center", "warning");
             return false;
@@ -430,16 +466,19 @@ export default function ServicesPage() {
         return true;
     };
 
+    // Save new or updated service package to API
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
 
         setIsSaving(true);
+        // Convert textarea input to comma-separated feature list
         const processedFeatures = featuresInput
             .split("\n")
             .map(f => f.trim())
             .filter(f => f.length > 0);
 
+        // Structure data for API submission
         const packageData = {
             packageId: isEditing ? currentPackage.id : undefined,
             centerId: currentPackage.centerId,
@@ -452,6 +491,7 @@ export default function ServicesPage() {
         };
 
         try {
+            // Send either PUT (update) or POST (create) request
             if (isEditing) {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/service-packages/${currentPackage.id}`, packageData);
                 showSnackbar("Service package updated successfully");
@@ -459,6 +499,7 @@ export default function ServicesPage() {
                 await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
                 showSnackbar("Service package created successfully");
             }
+            // Refresh package list and close modal
             await fetchPackages();
             setIsModalOpen(false);
         } catch (error: any) {
@@ -469,11 +510,14 @@ export default function ServicesPage() {
         }
     };
 
+    // Delete service package after user confirmation
     const handleDelete = async (id: string) => {
+        // Confirm deletion with user
         if (window.confirm("Are you sure you want to delete this service package?")) {
             try {
                 await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
                 showSnackbar("Service package deleted");
+                // Refresh package list
                 fetchPackages();
             } catch (error: any) {
                 console.error("Error deleting service package:", error);

@@ -43,10 +43,15 @@ import { APP_CONFIG } from "@/utils/config";
  * Global branding constants.
  * Centralizes theme configuration and avoids magic numbers.
  */
+// Primary orange brand color
 const BRAND_ORANGE = "#f3651c";
+// Default number of mechanics per center
 const DEFAULT_MECHANICS = 5;
+// Default daily capacity
 const DEFAULT_CAPACITY = 0;
+// Minimum center name length
 const MIN_CENTER_NAME_LENGTH = 3;
+// Phone number validation pattern
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
@@ -68,6 +73,7 @@ interface ServiceCenterView {
 /**
  * Encapsulates the page title and primary action button.
  */
+// Header component with title and "New Branch" button
 function CentersHeader({ onAdd }: { onAdd: () => void }) {
     return (
         <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'flex-start' }} gap={3} mb={6} mt={2}>
@@ -79,6 +85,7 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
                     Manage your branches and operational locations.
                 </Typography>
             </Box>
+            {/* Button to create new service center */}
             <Button
                 variant="contained"
                 onClick={onAdd}
@@ -233,9 +240,10 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
+    // Form fields for creating/editing service center
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
-    // Maps raw centers data from context to the view model
+    // Transform API data to view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
@@ -243,12 +251,14 @@ export default function MyCentersPage() {
         mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0
     }));
 
+    // Fetch centers if not already loaded
     useEffect(() => { 
         if (centersData.length === 0) refreshAll(); 
     }, [centersData.length, refreshAll]);
 
+    // Save new or updated service center
     const handleSave = async () => {
-        // Validates input fields before submission
+        // Validate all required fields before submission
         if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
             return;
@@ -258,12 +268,13 @@ export default function MyCentersPage() {
             return;
         }
         
-        // Basic phone validation (digits and min length)
+        // Validate phone format
         if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
 
+        // Prepare payload for API
         const payload = { 
             name: formData.name, address: formData.location, contactPhone: formData.phone,
             managerName: formData.manager, isActive: formData.status === 'Active',
@@ -273,14 +284,16 @@ export default function MyCentersPage() {
         setIsLoading(true);
         try {
             if (isEditMode && selectedId) {
+                // Update existing center
                 await axios.put(`${APP_CONFIG.api.serviceCenters}/${selectedId}`, payload);
                 setSnackbar({ open: true, message: 'Center updated successfully!', severity: 'success' });
             } else {
+                // Create new center
                 await axios.post(APP_CONFIG.api.serviceCenters, payload);
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
-            // Refreshes global data after changes
+            // Refresh all data in dashboard context
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 

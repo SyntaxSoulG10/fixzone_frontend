@@ -14,12 +14,14 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Handle form submission and user authentication
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
         try {
+            // Send credentials to authentication endpoint
             const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/login`, {
                 method: "POST",
                 headers: {
@@ -38,26 +40,29 @@ export default function LoginPage() {
             let tokenToSave = null;
             if (data.token) {
                 tokenToSave = data.token;
+                // Store JWT token
                 localStorage.setItem("token", data.token);
                 
-                // Keep teammate's localStorage additions if they exist in the response
+                // Store user metadata for quick access
                 if (data.role) localStorage.setItem("role", data.role);
                 if (data.role) localStorage.setItem("userRole", data.role);
                 if (data.userId) localStorage.setItem("userId", data.userId);
                 if (data.fullName) localStorage.setItem("fullName", data.fullName);
 
                 if (tokenToSave) {
+                    // Verify token is not expired
                     if (isTokenExpired(tokenToSave)) {
                         throw new Error("Received an expired token");
                     }
                     const role = getUserRole(tokenToSave);
                     
-                    // Ensure the role is persisted for other components to use
+                    // Persist role for navigation checks
                     if (role) {
                         localStorage.setItem("userRole", role);
                         localStorage.setItem("role", role);
                     }
 
+                    // Route to appropriate dashboard based on user role
                     switch (role) {
                         case "ROLE_SERVICE_MANAGER":
                             router.push("/dashboard/service-manager");
@@ -74,7 +79,8 @@ export default function LoginPage() {
                             router.push("/dashboard/customer");
                             break;
                         default:
-                            router.push("/dashboard/customer"); // fallback
+                            // Fallback route
+                            router.push("/dashboard/customer");
                     }
                 } else {
                     throw new Error("No token received from server");
