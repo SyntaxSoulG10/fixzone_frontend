@@ -51,6 +51,13 @@ export default function LoginPage() {
                         throw new Error("Received an expired token");
                     }
                     const role = getUserRole(tokenToSave);
+                    
+                    // Ensure the role is persisted for other components to use
+                    if (role) {
+                        localStorage.setItem("userRole", role);
+                        localStorage.setItem("role", role);
+                    }
+
                     switch (role) {
                         case "ROLE_SERVICE_MANAGER":
                             router.push("/dashboard/service-manager");
@@ -59,6 +66,7 @@ export default function LoginPage() {
                             router.push("/dashboard/super-admin");
                             break;
                         case "ROLE_COMPANY_OWNER":
+                        case "ROLE_OWNER":
                         case "OWNER":
                             router.push("/dashboard/company-owner");
                             break;

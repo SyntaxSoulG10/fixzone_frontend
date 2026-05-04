@@ -57,7 +57,7 @@ export default function SignupPage() {
             if (data.role === "ROLE_CUSTOMER") {
                 router.push("/dashboard/customer");
             } else {
-                router.push("/dashboard/owner");
+                router.push("/dashboard/company-owner");
             }
         } catch (error: any) {
             console.error("Signup error:", error);

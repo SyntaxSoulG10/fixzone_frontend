@@ -83,6 +83,7 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                 // Map backend roles to ROLE_MENUS keys
                 const roleMap: Record<string, string> = {
                     "ROLE_COMPANY_OWNER": "company_owner",
+                    "ROLE_OWNER": "company_owner",
                     "OWNER": "company_owner",
                     "ROLE_SERVICE_MANAGER": "service_manager",
                     "ROLE_SUPER_ADMIN": "super_admin",
