@@ -173,19 +173,33 @@ export default function ServiceStationsPage() {
             )
         },
         {
+
+
             header: "Actions",
             accessor: (row: Station) => (
                 <div className="flex items-center gap-2">
                     {row.status === 'Active' ? (
-                        <button onClick={() => handleUpdateStatus(row.id, 'SUSPENDED')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Suspend"><FiSlash /></button>
+                        <button onClick={() => {
+                            alert("Are you sure you want to suspend this service center?");
+                            handleUpdateStatus(row.id, 'SUSPENDED');
+                        }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Suspend"><FiSlash /></button>
                     ) : (
-                        <button onClick={() => handleUpdateStatus(row.id, 'APPROVED')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reactivate"><FiCheckCircle /></button>
+
+
+
+
+
+                        <button onClick={() => {
+                                alert("Are you sure you want to re-activate this service center?");
+                                handleUpdateStatus(row.id, 'APPROVED');}}className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reactivate"><FiCheckCircle /></button>
                     )}
                     <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details"><FiFileText /></button>
                 </div>
             )
         }
     ];
+
+
 
     return (
         <div className="space-y-8 pb-10">

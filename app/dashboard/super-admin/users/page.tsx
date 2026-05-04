@@ -37,7 +37,7 @@ const ROLE_NAME_MAP: Record<string, string> = {
     'MANAGER': 'Service Manager',
     'ROLE_SERVICE_MANAGER': 'Service Manager',
     'ROLE_CUSTOMER': 'Customer',
-    'ROLE_MECHANIC': 'Mechanic'
+    
 };
 
 const mapBackendRoleToDisplay = (backendRole: string): string => {
@@ -81,7 +81,7 @@ function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) 
     const isSuspending = action === 'Suspended';
     
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 <div className={`h-2 ${isSuspending ? 'bg-orange-500' : 'bg-green-500'}`}></div>
                 <div className="p-8 text-center space-y-6">
@@ -95,7 +95,7 @@ function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) 
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button onClick={onCancel} className="px-6 py-3 text-sm font-bold text-slate-50 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">Cancel</button>
+                        <button onClick={onCancel} className="px-6 py-3 text-sm font-bold text-black bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">Cancel</button>
                         <button onClick={onConfirm} className={`px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all shadow-lg ${isSuspending ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-100' : 'bg-green-600 hover:bg-green-700 shadow-green-100'}`}>Confirm</button>
                     </div>
                 </div>
@@ -204,7 +204,7 @@ export default function UsersPage() {
                 <StatCard title="Suspended" count={users.filter(u => u.status === 'Suspended').length.toString()} icon={<FiAlertCircle />} color="error" />
             </div>
 
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+            <div className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-150">
                 <UserSidebarFilters activeTab={sidebarTab} onTabChange={setSidebarTab} />
                 
                 <div className="flex-1 p-6 space-y-6">
