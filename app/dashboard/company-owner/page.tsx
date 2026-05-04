@@ -113,7 +113,7 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
                     title="Total Customers"
                     count={stats.totalCustomers.toString()}
                     percentage={{
-                        color: 'success',
+                        color: stats.customersChange.startsWith('+') ? 'success' : 'danger',
                         amount: stats.customersChange,
                         label: 'vs. last month'
                     }}
