@@ -658,7 +658,7 @@ export default function ProfilePage() {
 
     // --- Render main profile page UI ---
     return (
-        <ProfileHeader
+        <ProfileHeader 
             tabValue={tabValue}
             onTabChange={handleTabChange}
             bannerImage={bannerImage}

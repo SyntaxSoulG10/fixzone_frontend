@@ -33,12 +33,14 @@ import {
     Line,
 } from 'recharts';
 import { FiDollarSign, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 import { getCompanyAnalytics, getCurrentOwnerAnalytics, AnalyticsData } from "@/services/analyticsService";
 import { APP_CONFIG } from "@/utils/config";
 import axios from "axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import { formatCurrency, formatDate, validateDateRange } from "@/utils/helpers";
+import { getErrorMessage } from "@/utils/errorHandler";
 
 /**
  * Chart display constants.
@@ -73,7 +75,7 @@ const columns: GridColDef[] = [
         headerAlign: 'right',
         align: 'right',
         renderCell: (params: GridRenderCellParams) => (
-            <Typography fontWeight="bold">Rs. {params.value.toLocaleString()}</Typography>
+            <Typography fontWeight="bold">{formatCurrency(params.value)}</Typography>
         )
     }
 ];
@@ -82,7 +84,7 @@ export default function AnalyticsPage() {
     const { analyticsData: contextData, centersData: centersList = [], refreshAll } = useDashboardData() || {};
     const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(!contextData);
-    const [data, setData] = useState<AnalyticsData | null>(contextData);
+    const [data, setData] = useState<AnalyticsData | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     // Filter state for analytics queries
@@ -93,7 +95,11 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
+        // Load initial data from context when component mounts
+        if (contextData) {
+            setData(contextData as AnalyticsData);
+        }
+    }, [contextData]);
 
     // Fetch analytics when filters change
     useEffect(() => {
@@ -105,8 +111,8 @@ export default function AnalyticsPage() {
     // Fetch analytics data with optional filters
     const fetchAnalytics = async () => {
         // Validate date range
-        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-            console.warn("Start date cannot be after end date");
+        if (!validateDateRange(startDate, endDate)) {
+            setSnackbar({ open: true, message: 'Start date cannot be after end date', severity: 'error' });
             return;
         }
 
@@ -123,8 +129,7 @@ export default function AnalyticsPage() {
             const result = await getCurrentOwnerAnalytics(params);
             setData(result);
         } catch (error: any) {
-            console.error("Failed to fetch analytics:", error);
-            const msg = error.response?.data?.message || error.message || "Failed to fetch analytics data.";
+            const msg = getErrorMessage(error);
             setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);

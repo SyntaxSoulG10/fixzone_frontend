@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Box,
     Grid,
@@ -29,7 +29,8 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import axios from "axios";
 import { APP_CONFIG } from "@/utils/config";    
-import { formatDistanceToNow } from "date-fns";
+import { formatCurrency, getTimeAgo, getCurrentTimezone } from "@/utils/helpers";
+import { getErrorMessage } from "@/utils/errorHandler";
 
 // Backend API response format
 interface CustomerDTO {
@@ -79,20 +80,19 @@ export default function CustomersPage() {
                 }
                 
                 // Map API data to view model
-                const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerDTO) => ({
+                const mappedCustomers: Customer[] = (customersData || []).map((customer: any) => ({
                     id: customer.userId || customer.id || Math.random().toString(),
                     name: customer.fullName || customer.name || "Unknown Customer",
-                    email: customer.email,
+                    email: customer.email || "N/A",
                     visits: customer.visits || 0,
                     totalSpent: customer.totalSpent || 0,
-                    lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                    lastVisit: getTimeAgo(customer.lastLoginAt || customer.createdAt),
                     status: customer.status || "Active",
                     avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
                 }));
                 setCustomers(mappedCustomers);
             } catch (err: any) {
-                console.error("Failed to load customers:", err);
-                const msg = err.response?.data?.message || err.message || "Failed to load customers.";
+                const msg = getErrorMessage(err);
                 setSnackbar({ open: true, message: msg, severity: 'error' });
             } finally {
                 setLoading(false);
@@ -100,23 +100,6 @@ export default function CustomersPage() {
         };
         loadCustomers();
     }, [customersData, refreshAll]);
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0
-        }).format(amount).replace('₹', 'Rs. ');
-    };
-
-    const formatDate = (dateString: string) => {
-        if (!dateString) return "N/A";
-        try {
-            return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-        } catch (e) {
-            return dateString;
-        }
-    };
 
     const columns: GridColDef[] = [
         {
@@ -147,21 +130,6 @@ export default function CustomersPage() {
             minWidth: 100,
         },
         {
-            field: 'totalSpent',
-            headerName: 'Total Spent',
-            flex: 1,
-            headerAlign: 'center',
-            align: 'center',
-            minWidth: 150,
-            renderCell: (params: GridRenderCellParams) => (
-                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
-                    <Typography variant="body2" color="text.secondary">
-                        {formatCurrency(params.value)}
-                    </Typography>
-                </Box>
-            ),
-        },
-        {
             field: 'lastVisit',
             headerName: 'Last Visit',
             flex: 1,
@@ -169,9 +137,20 @@ export default function CustomersPage() {
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" height="100%">
                     <Typography variant="body2" color="text.secondary">
-                        {formatDate(params.value)}
+                        {params.value}
                     </Typography>
                 </Box>
+            ),
+        },
+        {
+            field: 'totalSpent',
+            headerName: 'Total Spent',
+            flex: 1,
+            minWidth: 150,
+            headerAlign: 'right',
+            align: 'right',
+            renderCell: (params: GridRenderCellParams) => (
+                <Typography fontWeight="bold">{formatCurrency(params.value)}</Typography>
             ),
         },
         {

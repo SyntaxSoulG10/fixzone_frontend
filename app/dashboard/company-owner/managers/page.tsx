@@ -141,7 +141,7 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
                     <FormControl fullWidth required>
                         <InputLabel>Assign Center</InputLabel>
                         <Select name="center" value={formData.center} label="Assign Center" onChange={onChange}>
-                            {centers.map((c: any) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                            {centers.map((c: any, idx: number) => <MenuItem key={`${idx}-${c}`} value={c}>{c}</MenuItem>)}
                         </Select>
                     </FormControl>
                     <TextField label="Email (Login ID)" name="email" value={formData.email} onChange={onChange} fullWidth />

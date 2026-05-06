@@ -4,16 +4,21 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "../utils/config";
 import { getToken, getUserRole, isTokenExpired } from "../utils/authUtils";
+import { getErrorMessage } from "../utils/errorHandler";
 
+/**
+ * Type-safe interfaces for dashboard data
+ */
 interface DashboardDataContextType {
-    centersData: any[];
-    managersData: any[];
-    analyticsData: any | null;
-    customersData: any[];
-    ownerData: any | null;
-    bookingsData: any[];
+    centersData: Array<Record<string, any>>;
+    managersData: Array<Record<string, any>>;
+    analyticsData: Record<string, any> | null;
+    customersData: Array<Record<string, any>>;
+    ownerData: Record<string, any> | null;
+    bookingsData: Array<Record<string, any>>;
     isLoading: boolean;
     hasDataInitialized: boolean;
+    error: string | null;
     refreshCenters: () => Promise<void>;
     refreshManagers: () => Promise<void>;
     refreshAnalytics: () => Promise<void>;
@@ -30,16 +35,17 @@ const DashboardDataContext = createContext<DashboardDataContextType | undefined>
  */
 export const DashboardDataProvider = ({ children }: { children: ReactNode }) => {
     // State for core business entities
-    const [centersData, setCentersData] = useState<any[]>([]);
-    const [managersData, setManagersData] = useState<any[]>([]);
-    const [analyticsData, setAnalyticsData] = useState<any | null>(null);
-    const [customersData, setCustomersData] = useState<any[]>([]);
-    const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
-    const [bookingsData, setBookingsData] = useState<any[]>([]);
+    const [centersData, setCentersData] = useState<Array<Record<string, any>>>([]);
+    const [managersData, setManagersData] = useState<Array<Record<string, any>>>([]);
+    const [analyticsData, setAnalyticsData] = useState<Record<string, any> | null>(null);
+    const [customersData, setCustomersData] = useState<Array<Record<string, any>>>([]);
+    const [ownerProfile, setOwnerProfile] = useState<Record<string, any> | null>(null);
+    const [bookingsData, setBookingsData] = useState<Array<Record<string, any>>>([]);
 
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
     const [hasDataInitialized, setHasDataInitialized] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     /**
      * REFRESH ALL DATA
@@ -49,10 +55,12 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         if (!token || isTokenExpired(token)) {
             setIsInitialLoad(false);
+            setError('Authentication token is invalid or expired');
             return;
         }
 
         setIsInitialLoad(true);
+        setError(null);
         try {
             const role = getUserRole(token);
             const requests = [];
@@ -99,7 +107,9 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             
             setHasDataInitialized(true);
         } catch (fetchError: any) {
-            console.error("Critical error during dashboard data initialization:", fetchError);
+            const errorMessage = getErrorMessage(fetchError);
+            console.error("Critical error during dashboard data initialization:", errorMessage);
+            setError(errorMessage);
         } finally {
             setIsInitialLoad(false);
         }
@@ -121,6 +131,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         bookingsData,
         isLoading: isInitialLoad,
         hasDataInitialized,
+        error,
         refreshCenters: async () => { /* Individual refresh logic if needed */ },
         refreshManagers: async () => { /* Individual refresh logic if needed */ },
         refreshAnalytics: async () => { /* Individual refresh logic if needed */ },

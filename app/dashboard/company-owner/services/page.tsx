@@ -7,6 +7,9 @@ import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import { validateMinLength, validatePrice, validateDuration } from "@/utils/validation";
+import { getErrorMessage } from "@/utils/errorHandler";
+import { formatCurrency } from "@/utils/helpers";
 
 /**
  * Validation and default constants for service packages.
@@ -89,7 +92,7 @@ function ServicePackageCard({ pkg, onEdit, onDelete }: { pkg: ServicePackage, on
 
                 {/* Price display */}
                 <div className="flex items-baseline mb-6">
-                    <span className="text-3xl font-bold text-slate-900 tracking-tight">Rs. {Number(pkg.price).toFixed(2)}</span>
+                    <span className="text-3xl font-bold text-slate-900 tracking-tight">{formatCurrency(Number(pkg.price))}</span>
                     <span className="text-slate-500 ml-1 text-sm font-medium">/ service</span>
                 </div>
 

@@ -38,6 +38,9 @@ import {
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+import { validatePhone, validateMinLength } from "@/utils/validation";
+import { getErrorMessage } from "@/utils/errorHandler";
+import { formatCurrency } from "@/utils/helpers";
 
 /**
  * Global branding constants.
@@ -51,8 +54,6 @@ const DEFAULT_MECHANICS = 5;
 const DEFAULT_CAPACITY = 0;
 // Minimum center name length
 const MIN_CENTER_NAME_LENGTH = 3;
-// Phone number validation pattern
-const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
  * Interfaces for service center data.
@@ -146,7 +147,7 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                 <Grid container spacing={2}>
                     <Grid size={{ xs: 6 }}>
                         <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Revenue</Typography>
-                        <Typography variant="body2" color="#1e8e3e" align="center" fontWeight="800">Rs.{center.revenue.toLocaleString()}</Typography>
+                        <Typography variant="body2" color="#1e8e3e" align="center" fontWeight="800">{formatCurrency(center.revenue)}</Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
                         <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team Size</Typography>
@@ -268,8 +269,8 @@ export default function MyCentersPage() {
             return;
         }
         
-        // Validate phone format
-        if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
+        // Validate phone format using centralized validator
+        if (!validatePhone(formData.phone)) {
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
