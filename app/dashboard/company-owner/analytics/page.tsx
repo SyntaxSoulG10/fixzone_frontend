@@ -54,6 +54,7 @@ const columns: GridColDef[] = [
         field: 'name',
         headerName: 'Center Name',
         flex: 2,
+        minWidth: 200,
         renderCell: (params: GridRenderCellParams) => (
             <Box display="flex" alignItems="center" gap={2} height="100%">
                 <Box width={32} height={32} borderRadius="50%" bgcolor={params.row.color || 'primary.main'} display="flex" alignItems="center" justifyContent="center" fontSize={12} color="#ffffff" fontWeight="bold">
@@ -67,15 +68,17 @@ const columns: GridColDef[] = [
         field: 'jobs',
         headerName: 'Jobs',
         flex: 1,
+        minWidth: 100,
     },
     {
         field: 'revenue',
         headerName: 'Revenue',
-        flex: 1,
+        flex: 1.5,
+        minWidth: 160,
         headerAlign: 'right',
         align: 'right',
         renderCell: (params: GridRenderCellParams) => (
-            <Typography fontWeight="bold">{formatCurrency(params.value)}</Typography>
+            <Typography fontWeight="bold" sx={{ whiteSpace: 'nowrap' }}>{formatCurrency(params.value)}</Typography>
         )
     }
 ];
@@ -417,12 +420,12 @@ export default function AnalyticsPage() {
                     />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card sx={{ height: '100%', overflow: 'visible' }}>
+                <Grid size={{ xs: 12, md: 6 }} >
+                    <Card sx={{ height: '100%', overflow: 'hidden' }} >
                         <Box pt={3} px={3}>
                             <Typography variant="h6" fontWeight="bold">Top Centers</Typography>
                         </Box>
-                        <Box sx={{ height: 400, width: '100%' }}>
+                        <Box sx={{ height: 400, width: '100%' }} >
                             <DataGrid
                                 rows={data?.topCenters || []}
                                 columns={columns}
