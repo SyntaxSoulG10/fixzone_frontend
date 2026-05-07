@@ -194,6 +194,7 @@ export default function ServiceStationsPage() {
                                 handleUpdateStatus(row.id, 'APPROVED');}}className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reactivate"><FiCheckCircle /></button>
                     )}
                     <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details"><FiFileText /></button>
+                    
                 </div>
             )
         }

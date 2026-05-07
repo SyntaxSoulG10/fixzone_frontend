@@ -116,7 +116,7 @@ export default function SubscriptionsPage() {
             header: "Price",
             accessor: (row: any) => (
                 <span className="font-bold text-slate-800 text-sm tracking-tight">
-                    {row.plan?.price ? `Rs. ${row.plan.price.toLocaleString()}` : (row.planType === 'PREMIUM' ? 'Rs. 19,900' : 'Rs. 9,900')}
+                    {row.plan?.price ? `Rs. ${row.plan.price.toLocaleString()}` : `Rs. ${row.price?.toLocaleString() || '0'}`}
                 </span>
             ),
             cellClassName: "align-middle text-center"
