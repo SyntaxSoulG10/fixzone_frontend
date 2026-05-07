@@ -54,9 +54,17 @@ export default function SubscriptionsPage() {
         }
     };
 
+
+
+
     const handleNotify = (id: string) => {
-        toast(`Notification sent to subscriber ${id}`, { icon: '🔔' });
+        // Feature to be implemented later
+        toast(`Notification feature coming soon for ${id}`);
     };
+
+
+
+
 
     const openBillingHistory = (sub: any) => {
         setSelectedSub(sub);
@@ -68,7 +76,7 @@ export default function SubscriptionsPage() {
             header: "Plan Details",
             accessor: (row: any) => (
                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${row.planType === 'PREMIUM' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${row.plan?.name === 'Premium' ? 'bg-orange-50 border-orange-100 text-orange-600' :
                         'bg-slate-50 border-slate-200 text-slate-500'
                         }`}>
                         <FiActivity className="text-lg" />
@@ -76,7 +84,7 @@ export default function SubscriptionsPage() {
                     <div>
                         <div className="flex items-center gap-2">
                             <div className="font-bold text-slate-800 text-sm leading-snug">{row.companyName}</div>
-                            {row.planType === 'PREMIUM' && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
+                            {row.plan?.isPopular && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
                         </div>
                         <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id?.substring(0, 8)}</div>
                     </div>
@@ -88,8 +96,8 @@ export default function SubscriptionsPage() {
             header: "Billing Cycle",
             accessor: (row: any) => (
                 <div className="flex flex-col gap-1">
-                    <span className={`text-sm font-bold ${row.planType === 'PREMIUM' ? 'text-slate-800' : 'text-slate-600'}`}>
-                        {row.planType} Plan
+                    <span className={`text-sm font-bold ${row.plan?.name === 'Premium' ? 'text-slate-800' : 'text-slate-600'}`}>
+                        {row.plan?.name || row.planType} Plan
                     </span>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                         <FiCreditCard className="text-slate-400" />
@@ -106,7 +114,11 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Price",
-            accessor: (row: any) => <span className="font-bold text-slate-800 text-sm tracking-tight">{row.planType === 'PREMIUM' ? 'Rs. 19,900' : 'Rs. 9,900'}</span>,
+            accessor: (row: any) => (
+                <span className="font-bold text-slate-800 text-sm tracking-tight">
+                    {row.plan?.price ? `Rs. ${row.plan.price.toLocaleString()}` : (row.planType === 'PREMIUM' ? 'Rs. 19,900' : 'Rs. 9,900')}
+                </span>
+            ),
             cellClassName: "align-middle text-center"
         },
         {
@@ -167,7 +179,8 @@ export default function SubscriptionsPage() {
 
                     {row.status === 'ACTIVE' ? (
                         <button
-                            onClick={() => handleStatusUpdate(row.id, 'SUSPENDED')}
+                            onClick={() => {alert("Are you sure you want to suspend this plan?");
+                                handleStatusUpdate(row.id, 'SUSPENDED')}}
                             disabled={isUpdating}
                             className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50 disabled:opacity-50"
                             title="Suspend Plan"
@@ -176,7 +189,8 @@ export default function SubscriptionsPage() {
                         </button>
                     ) : (
                         <button
-                            onClick={() => handleStatusUpdate(row.id, 'ACTIVE')}
+                            onClick={() => {alert("Are you sure you want to reactivate this plan?");
+                                handleStatusUpdate(row.id, 'ACTIVE')}}
                             disabled={isUpdating}
                             className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50 disabled:opacity-50"
                             title="Reactivate Plan"
@@ -287,9 +301,6 @@ export default function SubscriptionsPage() {
                         </div>
                     </div>
                     <div className="flex gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:-translate-y-0.5">
-                            <FiDownload /> Export
-                        </button>
                         <Link href="/dashboard/super-admin/subscription-plans">
                             <Button className="shadow-lg shadow-orange-200">
                                 Create Plan

@@ -311,6 +311,49 @@ export async function fetchSubscriptions(status?: string): Promise<any[]> {
   return res.json();
 }
 
+// Subscription Plans API
+export async function getSubscriptionPlans(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/subscription-plans`, {
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) throw new Error("Failed to load subscription plans");
+  return res.json();
+}
+
+export async function createSubscriptionPlan(plan: any): Promise<any> {
+  const res = await fetch(`${BASE_URL}/api/subscription-plans`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(plan)
+  });
+  if (!res.ok) throw new Error("Failed to create subscription plan");
+  return res.json();
+}
+
+export async function updateSubscriptionPlan(id: string, plan: any): Promise<any> {
+  const res = await fetch(`${BASE_URL}/api/subscription-plans/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(plan)
+  });
+  if (!res.ok) throw new Error("Failed to update subscription plan");
+  return res.json();
+}
+
+export async function deleteSubscriptionPlan(id: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/subscription-plans/${id}`, {
+    method: "DELETE",
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) throw new Error("Failed to delete subscription plan");
+}
+
 export async function updateSubscriptionStatus(subscriptionId: string, status: string): Promise<any> {
   const url = new URL(`${BASE_URL}/api/admin/subscriptions/${subscriptionId}/status`);
   url.searchParams.append("status", status);
