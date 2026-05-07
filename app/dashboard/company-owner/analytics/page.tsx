@@ -46,7 +46,18 @@ import { getErrorMessage } from "@/utils/errorHandler";
  * Chart display constants.
  */
 // Colors for donut chart visualization
-const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
+const DONUT_CHART_COLORS = [
+    '#EA580C', // Primary Orange
+    '#1E293B', // Charcoal Slate
+    '#F97316', // Bright Orange
+    '#334155', // Dark Slate
+    '#FB923C', // Medium Orange
+    '#475569', // Medium Slate
+    '#F59E0B', // Amber
+    '#64748B', // Slate Gray
+    '#C2410C', // Burnt Orange
+    '#0F172A'  // Deep Black-Navy
+];
 
 
 const columns: GridColDef[] = [
@@ -411,11 +422,18 @@ export default function AnalyticsPage() {
                         data={(() => {
                             const serviceData = data?.serviceBreakdown || [];
                             const total = serviceData.reduce((acc, curr) => acc + curr.value, 0);
-                            return serviceData.map((item, index) => ({
-                                name: item.name,
-                                value: total > 0 ? Math.round((item.value / total) * 100) : 0,
-                                color: DONUT_CHART_COLORS[index % DONUT_CHART_COLORS.length]
-                            }));
+                            return serviceData.map((item, index) => {
+                                let colorIndex = index % DONUT_CHART_COLORS.length;
+                                // Prevent first and last segments from having the same color if they wrap around
+                                if (index > 0 && index === serviceData.length - 1 && colorIndex === 0) {
+                                    colorIndex = 1;
+                                }
+                                return {
+                                    name: item.name,
+                                    value: total > 0 ? Math.round((item.value / total) * 100) : 0,
+                                    color: DONUT_CHART_COLORS[colorIndex]
+                                };
+                            });
                         })()}
                     />
                 </Grid>
