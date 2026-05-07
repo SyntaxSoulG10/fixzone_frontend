@@ -206,7 +206,7 @@ export default function CustomersPage() {
             </Box>
 
             <Grid container spacing={3} mb={6}>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{  xs: 12, sm: 6, lg: 4  }}>
                     <StatCard
                         title="Total Customers"
                         count={totalCustomers.toString()}
@@ -219,7 +219,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{  xs: 12, sm: 6, lg: 4  }}>
                     <StatCard
                         title="New Customers"
                         count={newCustomersCount.toString()}
@@ -232,7 +232,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{  xs: 12, sm: 6, lg: 4  }}>
                     <StatCard
                         title="Repeat Customers"
                         count={`${repeatRate}%`}
