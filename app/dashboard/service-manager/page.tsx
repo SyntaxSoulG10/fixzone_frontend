@@ -32,7 +32,6 @@ export default function ServiceManagerDashboard() {
         }
     }, [hasDataInitialized, bookingsData]);
 
-    // Fix: completedCount comes from ALL bookings (not just activeBookings table)
     const completedCount = useMemo(() => {
         return bookingsData.filter((b: any) => b.status === "COMPLETED").length;
     }, [bookingsData]);

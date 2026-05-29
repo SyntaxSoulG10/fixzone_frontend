@@ -287,6 +287,7 @@ export async function getAvailableSlotsAPI(centerId: string, date: string): Prom
   }
   return res.json();
 }
+<<<<<<< HEAD
 
 /**
  * --- Admin/Subscription API ---
@@ -329,3 +330,5 @@ export async function updateSubscriptionStatus(subscriptionId: string, status: s
 
   return res.json();
 }
+=======
+>>>>>>> backup-chamathka

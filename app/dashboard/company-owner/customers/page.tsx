@@ -45,7 +45,7 @@ interface CustomerDTO {
     profilePictureUrl?: string;
 }
 
-// Client-side view model mapped for UI rendering
+// Client-side View Model mapped safely for rendering
 interface Customer {
     id: string | number;
     name: string;

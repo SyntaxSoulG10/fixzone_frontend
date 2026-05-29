@@ -50,7 +50,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
- * Interface definitions for component props.
+ * PROPS INTERFACES: Defining strict representations for our components
  */
 interface ProfileHeaderProps {
     tabValue: number;
@@ -77,7 +77,7 @@ interface ProfileInfoCardProps {
 }
 
 /**
- * Header component displaying branding and navigation.
+ * HEADER COMPONENT: Separates branding from content.
  */
 function ProfileHeader({ 
     tabValue, 
@@ -221,7 +221,9 @@ function ProfileHeader({
 }
 
 /**
- * Reusable card component for displaying and editing details.
+/**
+ * INFO CARD COMPONENT: Reusable display for company details.
+ */
  */
 function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
     return (
@@ -301,6 +303,7 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                             </Box>
                         )}
                     </Box>
+                    </Box>
                 </Box>
             </Box>
         </Card>
@@ -308,7 +311,8 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
 }
 
 /**
- * Overview tab content component.
+/**
+ * OVERVIEW TAB: Displays company info and details.
  */
 function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
     return (
@@ -337,7 +341,9 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
 }
 
 /**
- * Security settings tab component.
+/**
+ * SECURITY TAB: Manages account security and danger zone.
+ */
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
@@ -360,7 +366,11 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
+<<<<<<< HEAD
  * Billing and subscription tab component.
+=======
+ * BILLING TAB: Subscription and payment history.
+>>>>>>> backup-chamathka
  */
 function BillingTab() {
     return (
@@ -388,7 +398,9 @@ function BillingTab() {
 }
 
 /**
- * Dialog components for critical actions.
+/**
+ * DIALOG COMPONENTS: For handling password changes and deactivation.
+ */
  */
 function ChangePasswordDialog({ open, onClose }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -400,7 +412,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
         if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
         
         setError("");
-        // TODO: Implement password update API call
+        // API call would go here
         onClose();
     };
 
@@ -442,7 +454,9 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * Main profile page component managing state and lifecycle.
+/**
+ * MAIN PAGE COMPONENT: Handles state and lifecycle.
+ */
  */
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
@@ -495,7 +509,6 @@ export default function ProfilePage() {
             };
             setSocialData(mappedSocial);
             setOriginalSocialData(mappedSocial);
-
             if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
             if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
         }
@@ -508,6 +521,7 @@ export default function ProfilePage() {
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
+        // Comprehensive validation
         if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
             setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
             setSnackbarSeverity("error");
@@ -522,7 +536,7 @@ export default function ProfilePage() {
             return;
         }
 
-        if (!profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
+        if (profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
             setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
@@ -568,16 +582,46 @@ export default function ProfilePage() {
 
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
     const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
+=======
+        try {
+            const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
+            await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
+            setIsEditing(false);
+            await refreshAll();
+            setSnackbarMessage("Profile details updated successfully!");
+            setSnackbarOpen(true);
+        } catch (error: any) {
+            const msg = error.response?.data?.message || "Failed to save changes.";
+            setSnackbarMessage(msg);
+            setSnackbarOpen(true);
+        }
+    };
+
+    const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
+>>>>>>> backup-chamathka
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
+<<<<<<< HEAD
             reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
                 setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
+=======
+            reader.onloadend = async () => {
+                const base64 = reader.result as string;
+                setBannerImage(base64);
+                if (userId && fullOwnerData) {
+                    const updated = { ...fullOwnerData, bannerImageUrl: base64 };
+                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
+                    await refreshAll();
+                    setSnackbarMessage("Cover image updated!");
+                    setSnackbarOpen(true);
+                }
+>>>>>>> backup-chamathka
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -586,12 +630,25 @@ export default function ProfilePage() {
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
+<<<<<<< HEAD
             reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
                 setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
+=======
+            reader.onloadend = async () => {
+                const base64 = reader.result as string;
+                setProfileImage(base64);
+                if (userId && fullOwnerData) {
+                    const updated = { ...fullOwnerData, profilePictureUrl: base64 };
+                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
+                    await refreshAll();
+                    setSnackbarMessage("Profile picture updated!");
+                    setSnackbarOpen(true);
+                }
+>>>>>>> backup-chamathka
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -610,19 +667,29 @@ export default function ProfilePage() {
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
+<<<<<<< HEAD
             isSaving={isSaving}
+=======
+>>>>>>> backup-chamathka
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
                     <OverviewTab 
                         profileData={profileData} 
+<<<<<<< HEAD
                         socialData={socialData}
+=======
+>>>>>>> backup-chamathka
                         isEditing={isEditing} 
                         handleEdit={handleEdit} 
                         handleSaveProfile={handleSaveProfile} 
                         handleCancel={handleCancel} 
+<<<<<<< HEAD
                         handleProfileChange={handleProfileChange}
                         handleSocialChange={handleSocialChange} 
+=======
+                        handleProfileChange={handleProfileChange} 
+>>>>>>> backup-chamathka
                     />
                 )}
 
@@ -646,7 +713,11 @@ export default function ProfilePage() {
             />
 
             <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+<<<<<<< HEAD
                 <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
+=======
+                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>{snackbarMessage}</Alert>
+>>>>>>> backup-chamathka
             </Snackbar>
         </ProfileHeader >
     );

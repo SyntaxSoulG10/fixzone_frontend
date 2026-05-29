@@ -45,7 +45,10 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  */
 const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> backup-chamathka
 const columns: GridColDef[] = [
     {
         field: 'name',
@@ -84,7 +87,7 @@ export default function AnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(contextData);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
-    // Filter state variables
+    // Filter states
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
     const [period, setPeriod] = useState<string>('monthly');
     const [startDate, setStartDate] = useState<string>('');
@@ -107,7 +110,7 @@ export default function AnalyticsPage() {
             return;
         }
 
-        // Displays full-page loading only when no data is present
+        // Only show full-page loading if we have absolutely no data to show
         if (!data) setIsLoading(true);
         
         try {

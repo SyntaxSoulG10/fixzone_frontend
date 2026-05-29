@@ -31,7 +31,8 @@ import {
 } from "react-icons/fi";
 
 /**
- * Strict interfaces for data models to ensure type safety.
+ * PROPS & DATA MODELS: We use strict interfaces to avoid 'any' types.
+ * This makes the code predictable and prevents runtime errors.
  */
 interface ServiceCenterData {
     isActive: boolean;
@@ -56,7 +57,7 @@ interface AnalyticsData {
 }
 
 /**
- * Header section component.
+ * HEADER SECTION: Separates the greeting from the main dashboard logic.
  */
 function DashboardHeader({ companyName }: { companyName: string }) {
     return (
@@ -81,7 +82,7 @@ function DashboardHeader({ companyName }: { companyName: string }) {
 }
 
 /**
- * High-level KPI cards grid.
+ * STATISTICS SECTION: Displays the high-level KPI cards.
  */
 function StatsGrid({ stats }: { stats: DashboardStatistics }) {
     return (
@@ -126,7 +127,7 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
 }
 
 /**
- * Reusable button component for quick actions.
+ * QUICK ACTION BUTTON: A reusable component for dashboard shortcuts.
  */
 function QuickActionBtn({ title, icon, href, color }: { title: string, icon: React.ReactNode, href: string, color: 'primary' | 'default' }) {
     const isPrimary = color === 'primary';
@@ -153,7 +154,8 @@ function QuickActionBtn({ title, icon, href, color }: { title: string, icon: Rea
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * Main dashboard component handling data loading and layout orchestration.
+ * MAIN DASHBOARD COMPONENT: Orchestrates data loading and layout.
+ * Now optimized with DashboardDataContext to prevent unnecessary re-fetching.
  */
 export default function CompanyOwnerDashboard() {
     const [activeTab, setActiveTab] = useState<string>('overview');
@@ -168,7 +170,7 @@ export default function CompanyOwnerDashboard() {
 
     const companyName = ownerData?.companyName || "Company Dashboard";
     
-    // Calculates dashboard statistics from context
+    // Derived statistics from context data
     const statistics: DashboardStatistics = {
         totalRevenue: analytics?.totalRevenue || 0,
         activeCenters: centers.filter((c: any) => c.isActive).length,
@@ -179,7 +181,7 @@ export default function CompanyOwnerDashboard() {
     };
 
     useEffect(() => {
-        // Component initialization
+        // Data is handled by the root provider
     }, []);
 
     if (isLoading && !analytics) {
@@ -196,7 +198,7 @@ export default function CompanyOwnerDashboard() {
             
             <StatsGrid stats={statistics} />
 
-            {/* Overview and Performance tabs */}
+            {/* TAB SECTION: Separates Overview metrics from Performance charts. */}
             <Box mb={4}>
                 <Box borderBottom={1} borderColor="divider" mb={3}>
                     <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} textColor="primary" indicatorColor="primary">
@@ -210,7 +212,7 @@ export default function CompanyOwnerDashboard() {
                 </Box>
             </Box>
 
-            {/* Quick action shortcuts */}
+            {/* QUICK ACTIONS: High-visibility shortcuts for common admin tasks. */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 4 }}>
                     <QuickActionBtn title="Service Reports" icon={<FiFileText size={24} />} href="/dashboard/company-owner/reports" color="primary" />

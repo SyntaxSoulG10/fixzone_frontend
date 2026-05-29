@@ -533,6 +533,7 @@ export default function ServicesPage() {
             </div>
 
             {isModalOpen && (
+<<<<<<< HEAD
                 <ServicePackageDialog
                     isEditing={isEditing}
                     currentPackage={currentPackage}
@@ -546,6 +547,164 @@ export default function ServicesPage() {
                 />
             )}
             
+=======
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
+                            <h2 className="text-xl font-bold text-slate-900">
+                                {isEditing ? `Edit ${currentPackage.name}` : "Create New Package"}
+                            </h2>
+                            <button
+                                onClick={handleCloseModal}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                            >
+                                <FiX size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSave} className="p-6 space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Service Center</label>
+                                    <select
+                                        required
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
+                                        value={currentPackage.centerId}
+                                        onChange={e => setCurrentPackage({ ...currentPackage, centerId: e.target.value })}
+                                    >
+                                        <option value="" disabled>Select a center</option>
+                                        {centers.map(center => (
+                                            <option key={center.id} value={center.id}>{center.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Package Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                        placeholder="e.g. Gold Service"
+                                        value={currentPackage.name}
+                                        onChange={e => setCurrentPackage({ ...currentPackage, name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-slate-700">Price (Rs.)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="0.01"
+                                            step="0.01"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            placeholder="0.00"
+                                            value={currentPackage.price || ""}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, price: val });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-slate-700">Estimated Duration (mins)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="5"
+                                            step="5"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            placeholder="30"
+                                            value={currentPackage.duration || ""}
+                                            onChange={e => {
+                                                const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                                setCurrentPackage({ ...currentPackage, duration: val });
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Description</label>
+                                    <textarea
+                                        required
+                                        rows={2}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                        placeholder="Brief description of the service package..."
+                                        value={currentPackage.description}
+                                        onChange={e => setCurrentPackage({ ...currentPackage, description: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Status</label>
+                                    <div className="flex items-center space-x-4 pt-2">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="status"
+                                                className="text-primary focus:ring-primary"
+                                                checked={currentPackage.isActive}
+                                                onChange={() => setCurrentPackage({ ...currentPackage, isActive: true })}
+                                            />
+                                            <span className="text-sm text-slate-600">Active</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="status"
+                                                className="text-primary focus:ring-primary"
+                                                checked={!currentPackage.isActive}
+                                                onChange={() => setCurrentPackage({ ...currentPackage, isActive: false })}
+                                            />
+                                            <span className="text-sm text-slate-600">Inactive</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <div className="flex justify-between">
+                                        <label className="text-sm font-medium text-slate-700">Features</label>
+                                        <span className="text-xs text-slate-400">One feature per line</span>
+                                    </div>
+                                    <textarea
+                                        required
+                                        rows={5}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono text-sm"
+                                        placeholder="- Oil change&#10;- Filter replacement&#10;- Tire check"
+                                        value={featuresInput}
+                                        onChange={e => setFeaturesInput(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={handleCloseModal}
+                                    disabled={isSaving}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? (
+                                        <CircularProgress size={20} color="inherit" className="mr-2" />
+                                    ) : (
+                                        <FiSave className="mr-2" />
+                                    )}
+                                    {isEditing ? "Save Changes" : "Create Package"}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+>>>>>>> backup-chamathka
 
             <Snackbar 
                 open={snackbar.open} 

@@ -32,6 +32,12 @@ import {
     FiPlus,
     FiEdit2,
     FiUser,
+import {
+    FiMapPin,
+    FiPhone,
+    FiPlus,
+    FiEdit2,
+    FiUser,
     FiPower,
     FiSearch,
     FiTrash2
@@ -40,8 +46,8 @@ import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * Global branding constants.
- * Centralizes theme configuration and avoids magic numbers.
+ * GLOBAL CONSTANTS: Using constants for branding and configuration 
+ * avoids "magic numbers" and makes theme updates easier.
  */
 const BRAND_ORANGE = "#f3651c";
 const DEFAULT_MECHANICS = 5;
@@ -50,8 +56,8 @@ const MIN_CENTER_NAME_LENGTH = 3;
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
- * Interfaces for service center data.
- * Ensures type safety and predictable data handling.
+ * DATA MODELS: Strict interfaces ensure type safety and 
+ * predictable data handling between API and UI.
  */
 interface ServiceCenterView {
     id: string;
@@ -66,7 +72,7 @@ interface ServiceCenterView {
 }
 
 /**
- * Encapsulates the page title and primary action button.
+ * HEADER COMPONENT: Encapsulates the page title and primary CTA.
  */
 function CentersHeader({ onAdd }: { onAdd: () => void }) {
     return (
@@ -97,8 +103,8 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 /**
- * Represents a single service center branch.
- * Separates visual layout from list management logic.
+ * CARD COMPONENT: Represents a single service center branch.
+ * Extracted to separate visual card layout from list management logic.
  */
 function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
     const isActive = center.status === 'Active';
@@ -137,13 +143,17 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
 
                 {/* KPI metrics for this specific center */}
                 <Grid container spacing={2}>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid size={{ xs: 4 }}>
                         <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Revenue</Typography>
                         <Typography variant="body2" color="#1e8e3e" align="center" fontWeight="800">Rs.{center.revenue.toLocaleString()}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team Size</Typography>
+                    <Grid size={{ xs: 4 }}>
+                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team</Typography>
                         <Typography variant="body2" color="#2d3748" align="center" fontWeight="800">{center.mechanics}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Load</Typography>
+                        <Typography variant="body2" color="#e53e3e" align="center" fontWeight="800">{center.capacity}%</Typography>
                     </Grid>
                 </Grid>
 
@@ -176,13 +186,14 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                         </Button>
                     </Box>
                 </Box>
+                </Box>
             </Box>
         </Card>
     );
 }
 
 /**
- * Standardized dialog form for adding or editing center data.
+ * FORM DIALOG: Standardized input for adding or editing center data.
  */
 function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any) {
     return (
@@ -222,7 +233,11 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
+<<<<<<< HEAD
  * Orchestrates the service centers lifecycle.
+=======
+ * MAIN COMPONENT: Orchestrates the centers lifecycle.
+>>>>>>> backup-chamathka
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
@@ -234,9 +249,15 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
+<<<<<<< HEAD
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
     // Maps raw centers data from context to the view model
+=======
+    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
+
+    // Map raw centers data from context to View model
+>>>>>>> backup-chamathka
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
@@ -249,9 +270,15 @@ export default function MyCentersPage() {
     }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
+<<<<<<< HEAD
         // Validates input fields before submission
         if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
+=======
+        // Form Validation
+        if (!formData.name.trim() || formData.name.length < 3) {
+            setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
+>>>>>>> backup-chamathka
             return;
         }
         if (!formData.manager.trim()) {
@@ -264,7 +291,12 @@ export default function MyCentersPage() {
         }
         
         // Basic phone validation (digits and min length)
+<<<<<<< HEAD
         if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
+=======
+        const phoneRegex = /^[0-9+]{10,15}$/;
+        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+>>>>>>> backup-chamathka
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
@@ -285,7 +317,11 @@ export default function MyCentersPage() {
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
+<<<<<<< HEAD
             // Refreshes global data after changes
+=======
+            // Refresh global data after change
+>>>>>>> backup-chamathka
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 
@@ -320,6 +356,7 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
+<<<<<<< HEAD
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this service center? This will also remove its service packages and invoices.")) return;
         
@@ -335,11 +372,17 @@ export default function MyCentersPage() {
         }
     };
 
+=======
+>>>>>>> backup-chamathka
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
+<<<<<<< HEAD
             <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+=======
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 }); setOpenDialog(true); }} />
+>>>>>>> backup-chamathka
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -354,7 +397,11 @@ export default function MyCentersPage() {
             <Grid container spacing={4}>
                 {filtered.map(center => (
                     <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
+<<<<<<< HEAD
                         <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
+=======
+                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} />
+>>>>>>> backup-chamathka
                     </Grid>
                 ))}
             </Grid>

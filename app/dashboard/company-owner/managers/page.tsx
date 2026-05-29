@@ -42,14 +42,15 @@ import {
 import { APP_CONFIG } from "@/utils/config";
 
 /**
+/**
  * Validation and default constants for managers.
  */
 const MIN_MANAGER_NAME_LENGTH = 3;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Strict types for managers and centers.
- * Ensures data transformations are type-safe and consistent.
+ * DATA MODELS: Defining strict types for managers and centers 
+ * ensures that our data transformations are type-safe and consistent.
  */
 interface ManagerView {
     id: string;
@@ -66,8 +67,8 @@ interface ManagerView {
 interface CenterAPIResponse { centerId: string; name: string; }
 
 /**
- * Column definitions for the manager table.
- * Defined outside the component to improve rendering performance.
+ * TABLE COLUMNS: Defining the table structure outside the component 
+ * reduces complexity and improves rendering performance.
  */
 const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any): GridColDef[] => [
     {
@@ -109,7 +110,9 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
 ];
 
 /**
- * Encapsulates page title and add action functionality.
+/**
+ * HEADER COMPONENT: Encapsulates page title and add action functionality.
+ */
  */
 function ManagersHeader({ onAdd }: { onAdd: () => void }) {
     return (
@@ -124,7 +127,9 @@ function ManagersHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 /**
- * Standardized form dialog for managing manager data.
+/**
+ * DIALOG COMPONENT: Standardized form dialog for managing manager data.
+ */
  */
 function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers }: any) {
     return (
@@ -156,7 +161,9 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * Orchestrates the display and lifecycle of manager accounts.
+/**
+ * MAIN COMPONENT: Orchestrates the display and lifecycle of manager accounts.
+ */
  */
 export default function ManagersPage() {
     const theme = useTheme();
@@ -192,6 +199,7 @@ export default function ManagersPage() {
     };
 
     const handleSave = async () => {
+        // Form Validation
         if (!formData.name.trim() || formData.name.length < MIN_MANAGER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Full name must be at least ${MIN_MANAGER_NAME_LENGTH} characters`, severity: 'error' });
             return;

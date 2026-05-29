@@ -44,8 +44,8 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * Strict types for financial records.
- * Maintains consistency between the backend response and the UI rendering.
+ * DATA MODELS: Defining strict types for financial records helps maintain 
+ * consistency between the backend response and the UI rendering.
  */
 interface PaymentRecordDTO { paymentId: string; invoiceId: number; amount: number; status: string; method: string; centerId: string; createdAt: string; }
 interface CenterDTO { centerId: string; name: string; }
@@ -53,8 +53,8 @@ interface CustomerDTO { customerId: string; name: string; fullName?: string; }
 interface InvoiceDTO { invoiceId: number; status: string; centerId: string; total?: number; issuedToCustomerId: string; }
 
 /**
- * Column structures for the table layout.
- * Defined outside the component to reduce render complexity.
+ * TABLE CONFIGURATION: Defining column structures outside the component 
+ * reduces render complexity and makes it easier to update the table layout.
  */
 const transactionColumns: GridColDef[] = [
     { 
@@ -96,7 +96,7 @@ const transactionColumns: GridColDef[] = [
 ];
 
 /**
- * Reusable display component for financial KPIs.
+ * STAT CARD COMPONENT: Reusable display for financial KPIs.
  */
 function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
     const theme = useTheme();
@@ -116,7 +116,7 @@ function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
 }
 
 /**
- * Encapsulates the selection logic for center, period, and dates.
+ * FILTERS COMPONENT: Encapsulates the selection logic for center, period, and dates.
  */
 function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPeriodChange, startDate, onStartChange, endDate, onEndChange, onReset }: any) {
     return (
@@ -143,8 +143,8 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
 }
 
 /**
- * Orchestrates the financial page layout and data rendering.
- * Utilizes DashboardDataContext for data retrieval.
+ * RESTORED PAGE: FinancePage
+ * Restoring the original complex UI while maintaining performance through DashboardDataContext.
  */
 export default function FinancePage() {
     const theme = useTheme();
@@ -173,8 +173,10 @@ export default function FinancePage() {
     }, [selectedCenter, period, startDate, endDate]);
 
     /**
-     * Loads unified financial data from the analytics endpoint.
-     * Reduces scattered API calls and ensures data consistency across the page.
+     * LOAD FINANCE DATA
+     * Why: Instead of making multiple scattered API calls, we use a single 
+     * unified "Analytics" endpoint. This is a "Backends-for-Frontends" (BFF) 
+     * pattern that reduces latency and ensures data consistency across the page.
      */
     const loadUnifiedFinanceData = async () => {
         // Validates date range before executing fetch
@@ -228,8 +230,11 @@ export default function FinancePage() {
             });
         } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
+<<<<<<< HEAD
             const msg = fetchError.response?.data?.message || fetchError.message || "Failed to load finance data.";
             setSnackbar({ open: true, message: msg, severity: 'error' });
+=======
+>>>>>>> backup-chamathka
         } finally {
             setIsLoading(false);
         }
@@ -310,12 +315,15 @@ export default function FinancePage() {
                     }
                 />
             </Box>
+<<<<<<< HEAD
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+=======
+>>>>>>> backup-chamathka
         </Box>
     );
 }
