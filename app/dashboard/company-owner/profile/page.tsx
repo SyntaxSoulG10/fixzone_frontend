@@ -21,7 +21,8 @@ import {
     DialogContent,
     DialogActions,
     LinearProgress,
-    Chip
+    Chip,
+    CircularProgress
 } from "@mui/material";
 import {
     FiHome,
@@ -37,8 +38,16 @@ import {
     FiCreditCard,
     FiDownload
 } from "react-icons/fi";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+
+/**
+ * Validation constants for profile management.
+ */
+const MIN_COMPANY_NAME_LENGTH = 3;
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
  * PROPS INTERFACES: Defining strict representations for our components
@@ -52,13 +61,14 @@ interface ProfileHeaderProps {
     profileImage: string | null;
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     companyName: string;
+    isSaving: boolean;
 }
 
 interface ProfileInfoCardProps {
     title: string;
     description: string;
     info: { [key: string]: string };
-    social: { icon: React.ReactNode, color: string }[];
+    social: { name: string, icon: React.ReactNode, color: string, url: string, onChange: (val: string) => void }[];
     onEdit: () => void;
     isEditing: boolean;
     onSave: () => void;
@@ -77,7 +87,8 @@ function ProfileHeader({
     onBannerChange, 
     profileImage, 
     onProfileImageChange, 
-    companyName 
+    companyName,
+    isSaving
 }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
@@ -92,12 +103,31 @@ function ProfileHeader({
                 minHeight="18.75rem"
                 borderRadius="0.75rem"
                 sx={{
-                    background: bannerImage ? `url(${bannerImage})` : 'linear-gradient(195deg, #FB923C, #EA580C)',
-                    backgroundSize: "cover",
-                    backgroundPosition: "50%",
                     overflow: "hidden",
+                    background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}
             >
+                {bannerImage && (
+                    <Box
+                        component="img"
+                        key={bannerImage} // Keys element to force re-render on update
+                        src={bannerImage}
+                        alt="banner"
+                        sx={{
+                            width: '100%',
+                            height: '18.75rem',
+                            objectFit: 'cover',
+                        }}
+                        onError={(e: any) => {
+                            // Hides broken image to reveal fallback gradient
+                            e.target.style.opacity = '0';
+                        }}
+                    />
+                )}
+                
                 <Box position="absolute" top={20} right={20}>
                     <Button
                         variant="contained"
@@ -163,6 +193,26 @@ function ProfileHeader({
                             <Tab label="Billing" icon={<FiCreditCard size={18} />} iconPosition="start" />
                         </Tabs>
                     </Grid>
+                    <Grid size={{ xs: 12, md: 2 }} sx={{ ml: "auto", display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="contained"
+                            disabled={isSaving}
+                            startIcon={isSaving ? <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}><CircularProgress size={16} color="inherit" /></Box> : <FiSave />}
+                            onClick={() => (window as any).handleGlobalSave()}
+                            sx={{
+                                bgcolor: '#EA580C',
+                                color: 'white',
+                                borderRadius: '8px',
+                                px: 3,
+                                py: 1,
+                                fontWeight: 'bold',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#c2410c' }
+                            }}
+                        >
+                            Save Profile
+                        </Button>
+                    </Grid>
                 </Grid>
                 {children}
             </Card>
@@ -171,7 +221,9 @@ function ProfileHeader({
 }
 
 /**
+/**
  * INFO CARD COMPONENT: Reusable display for company details.
+ */
  */
 function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
     return (
@@ -216,11 +268,41 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                             )}
                         </Box>
                     ))}
-                    <Box display="flex" py={1} pr={2} mt={1}>
+                    <Box display="flex" py={1} pr={2} mt={1} flexDirection="column" gap={1}>
                         <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>Social:</Typography>
-                        {social.map((item: any, index: number) => (
-                            <IconButton key={index} size="small" sx={{ color: item.color }}>{item.icon}</IconButton>
-                        ))}
+                        {isEditing ? (
+                            <Box display="flex" flexDirection="column" gap={1} ml={1} mt={1}>
+                                {social.map((item: any, index: number) => (
+                                    <Box key={index} display="flex" alignItems="center">
+                                        <Box sx={{ color: item.color, display: 'flex', alignItems: 'center', mr: 2 }}>{item.icon}</Box>
+                                        <TextField
+                                            variant="standard"
+                                            fullWidth
+                                            placeholder={`${item.name} URL`}
+                                            value={item.url || ''}
+                                            onChange={(e) => item.onChange(e.target.value)}
+                                            size="small"
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        ) : (
+                            <Box display="flex" gap={1} mt={0.5}>
+                                {social.map((item: any, index: number) => {
+                                    const validUrl = item.url ? (item.url.startsWith('http') ? item.url : `https://${item.url}`) : '';
+                                    return item.url ? (
+                                        <IconButton key={index} size="small" sx={{ color: item.color }} component="a" href={validUrl} target="_blank" rel="noopener noreferrer">
+                                            {item.icon}
+                                        </IconButton>
+                                    ) : (
+                                        <IconButton key={index} size="small" sx={{ color: '#ccc' }} disabled>
+                                            {item.icon}
+                                        </IconButton>
+                                    );
+                                })}
+                            </Box>
+                        )}
+                    </Box>
                     </Box>
                 </Box>
             </Box>
@@ -229,9 +311,10 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
 }
 
 /**
+/**
  * OVERVIEW TAB: Displays company info and details.
  */
-function OverviewTab({ profileData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange }: any) {
+function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
     return (
         <Grid container spacing={1} justifyContent="center">
             <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
@@ -241,9 +324,9 @@ function OverviewTab({ profileData, isEditing, handleEdit, handleSaveProfile, ha
                         description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence.`}
                         info={profileData}
                         social={[
-                            { icon: <FiFacebook />, color: "#1877F2" },
-                            { icon: <FiTwitter />, color: "#1DA1F2" },
-                            { icon: <FiInstagram />, color: "#E4405F" },
+                            { name: "Facebook", icon: <FiFacebook />, color: "#1877F2", url: socialData.facebook, onChange: (v: string) => handleSocialChange('facebook', v) },
+                            { name: "Twitter", icon: <FiTwitter />, color: "#1DA1F2", url: socialData.twitter, onChange: (v: string) => handleSocialChange('twitter', v) },
+                            { name: "Instagram", icon: <FiInstagram />, color: "#E4405F", url: socialData.instagram, onChange: (v: string) => handleSocialChange('instagram', v) },
                         ]}
                         isEditing={isEditing}
                         onEdit={handleEdit}
@@ -258,7 +341,9 @@ function OverviewTab({ profileData, isEditing, handleEdit, handleSaveProfile, ha
 }
 
 /**
+/**
  * SECURITY TAB: Manages account security and danger zone.
+ */
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
@@ -281,7 +366,7 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
- * BILLING TAB: Subscription and payment history.
+ * Billing and subscription tab component.
  */
 function BillingTab() {
     return (
@@ -317,7 +402,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
 
     const handleUpdate = () => {
         if (!passwords.current) return setError("Current password is required");
-        if (passwords.new.length < 8) return setError("New password must be at least 8 characters");
+        if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
         if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
         
         setError("");
@@ -332,7 +417,7 @@ function ChangePasswordDialog({ open, onClose }: any) {
                 <Box display="flex" flexDirection="column" gap={2} pt={1}>
                     {error && <Typography color="error" variant="caption">{error}</Typography>}
                     <TextField label="Current Password" type="password" fullWidth value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} error={!!error && !passwords.current} />
-                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < 8} />
+                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < MIN_PASSWORD_LENGTH} />
                     <TextField label="Confirm New Password" type="password" fullWidth value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} error={!!error && passwords.new !== passwords.confirm} />
                 </Box>
             </DialogContent>
@@ -370,9 +455,11 @@ export default function ProfilePage() {
     const [tabValue, setTabValue] = useState(0);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
@@ -385,83 +472,118 @@ export default function ProfilePage() {
         "Email": "",
         "Location": "Sri Lanka",
     });
+    const [socialData, setSocialData] = useState({
+        facebook: "",
+        twitter: "",
+        instagram: ""
+    });
     const [originalProfileData, setOriginalProfileData] = useState(profileData);
+    const [originalSocialData, setOriginalSocialData] = useState(socialData);
 
     useEffect(() => {
         if (ownerData) {
             setUserId(ownerData.userId);
             setFullOwnerData(ownerData);
             const mappedData = {
-                "Company Name": ownerData.companyName || "N/A",
-                "Registration": ownerData.ownerCode || "N/A",
-                "Mobile": ownerData.companyNumber || ownerData.phone || "N/A",
-                "Email": ownerData.companyEmail || ownerData.email || "N/A",
+                "Company Name": ownerData.companyName || "",
+                "Registration": ownerData.ownerCode || "",
+                "Mobile": ownerData.companyNumber || ownerData.phone || "",
+                "Email": ownerData.companyEmail || ownerData.email || "",
                 "Location": "Sri Lanka",
             };
             setProfileData(mappedData);
             setOriginalProfileData(mappedData);
+            
+            const mappedSocial = {
+                facebook: ownerData.facebookUrl || "",
+                twitter: ownerData.twitterUrl || "",
+                instagram: ownerData.instagramUrl || ""
+            };
+            setSocialData(mappedSocial);
+            setOriginalSocialData(mappedSocial);
             if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
             if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
         }
     }, [ownerData]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
-    const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); };
-    const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); };
+    const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); setOriginalSocialData({ ...socialData }); };
+    const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
 
     const handleSaveProfile = async () => {
         if (!userId || !fullOwnerData) return;
         
         // Comprehensive validation
-        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < 3) {
-            setSnackbarMessage("Company name must be at least 3 characters");
+        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
+            setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (profileData["Email"] && !emailRegex.test(profileData["Email"])) {
+        if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
             setSnackbarMessage("Please enter a valid company email");
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
 
-        const phoneRegex = /^[0-9+]{10,15}$/;
-        if (profileData["Mobile"] && !phoneRegex.test(profileData["Mobile"].replace(/\s/g, ''))) {
+        if (profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
             setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
         }
 
+        setIsSaving(true);
         try {
-            const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
+            const updatedOwner = { 
+                ...fullOwnerData, 
+                companyName: profileData["Company Name"], 
+                companyNumber: profileData["Mobile"], 
+                companyEmail: profileData["Email"],
+                profilePictureUrl: profileImage,
+                bannerImageUrl: bannerImage,
+                facebookUrl: socialData.facebook,
+                twitterUrl: socialData.twitter,
+                instagramUrl: socialData.instagram
+            };
             await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
             setIsEditing(false);
             await refreshAll();
-            setSnackbarMessage("Profile details updated successfully!");
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('profileUpdated'));
+            }
+            setSnackbarMessage("Profile saved successfully!");
+            setSnackbarSeverity("success");
             setSnackbarOpen(true);
         } catch (error: any) {
-            const msg = error.response?.data?.message || "Failed to save changes.";
+            console.error("Save profile error:", error);
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save changes.";
             setSnackbarMessage(msg);
+            setSnackbarSeverity("error");
             setSnackbarOpen(true);
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    useEffect(() => {
+        (window as any).handleGlobalSave = handleSaveProfile;
+    }, [handleSaveProfile]);
+
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
+    const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-            reader.onloadend = async () => {
+            reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, bannerImageUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Cover image updated!");
-                    setSnackbarOpen(true);
-                }
+                setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -470,16 +592,12 @@ export default function ProfilePage() {
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-            reader.onloadend = async () => {
+            reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, profilePictureUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Profile picture updated!");
-                    setSnackbarOpen(true);
-                }
+                setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -498,16 +616,19 @@ export default function ProfilePage() {
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
+            isSaving={isSaving}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
                     <OverviewTab 
                         profileData={profileData} 
+                        socialData={socialData}
                         isEditing={isEditing} 
                         handleEdit={handleEdit} 
                         handleSaveProfile={handleSaveProfile} 
                         handleCancel={handleCancel} 
-                        handleProfileChange={handleProfileChange} 
+                        handleProfileChange={handleProfileChange}
+                        handleSocialChange={handleSocialChange} 
                     />
                 )}
 
@@ -531,7 +652,7 @@ export default function ProfilePage() {
             />
 
             <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>{snackbarMessage}</Alert>
+                <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
             </Snackbar>
         </ProfileHeader >
     );

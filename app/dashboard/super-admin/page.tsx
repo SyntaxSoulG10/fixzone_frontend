@@ -38,7 +38,7 @@ export default function SuperAdminDashboard() {
     const [isDownloading, setIsDownloading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const { analyticsData, statsData, subscriptionsData, isLoading, refreshAll } = useDashboardData();
-    const analytics = analyticsData;
+    const analytics = analyticsData as AnalyticsData | null;
     const loading = isLoading;
 
 

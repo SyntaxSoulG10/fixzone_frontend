@@ -33,24 +33,6 @@
   }
 }
 
-.dark {
-  --color-background: #0F172A;
-  --color-surface: #1E293B;
-  --color-secondary: #F1F5F9;
-
-  /* Global overrides for common tailwind classes */
-  background-color: var(--color-background);
-  color: var(--color-secondary);
-
-  .bg-white { background-color: var(--color-surface) !important; }
-  .bg-slate-50 { background-color: var(--color-background) !important; }
-  .text-slate-900 { color: #F1F5F9 !important; }
-  .text-slate-800 { color: #E2E8F0 !important; }
-  .text-slate-700 { color: #CBD5E1 !important; }
-  .text-slate-600 { color: #94A3B8 !important; }
-  .border-slate-200 { border-color: #334155 !important; }
-  .border-slate-100 { border-color: #1E293B !important; }
-}
 
 /* Glassmorphism Utilities */
 @utility glass {

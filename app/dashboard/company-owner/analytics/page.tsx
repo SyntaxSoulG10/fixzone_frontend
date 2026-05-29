@@ -13,7 +13,9 @@ import {
     InputLabel,
     Stack,
     TextField,
-    Button
+    Button,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -33,11 +35,15 @@ import {
 import { FiDollarSign, FiBriefcase, FiArrowUp, FiClock } from "react-icons/fi";
 import React, { useState, useEffect } from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
-import { getCompanyAnalytics, AnalyticsData } from "@/services/analyticsService";
+import { getCompanyAnalytics, getCurrentOwnerAnalytics, AnalyticsData } from "@/services/analyticsService";
 import { APP_CONFIG } from "@/utils/config";
 import axios from "axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
+/**
+ * Chart display constants.
+ */
+const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
 
 const columns: GridColDef[] = [
     {
@@ -75,6 +81,7 @@ export default function AnalyticsPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(!contextData);
     const [data, setData] = useState<AnalyticsData | null>(contextData);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     // Filter states
     const [selectedCenter, setSelectedCenter] = useState<string>('all');
@@ -93,10 +100,9 @@ export default function AnalyticsPage() {
     }, [isMounted, selectedCenter, period, startDate, endDate]);
 
     const fetchAnalytics = async () => {
-        // Date Validation
+        // Validates date range before fetching
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Start date cannot be after end date");
-            // Optionally show a snackbar if available, but for now we'll just prevent the call
             return;
         }
 
@@ -110,10 +116,12 @@ export default function AnalyticsPage() {
                 endDate: endDate || undefined,
                 period: period
             };
-            const result = await getCompanyAnalytics("FIX001", params);
+            const result = await getCurrentOwnerAnalytics(params);
             setData(result);
         } catch (error: any) {
             console.error("Failed to fetch analytics:", error);
+            const msg = error.response?.data?.message || error.message || "Failed to fetch analytics data.";
+            setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -169,6 +177,7 @@ export default function AnalyticsPage() {
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
+                        inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }}
                         sx={{ borderRadius: 2, minWidth: 150 }}
                     />
                     <TextField
@@ -178,6 +187,10 @@ export default function AnalyticsPage() {
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
+                        inputProps={{ 
+                            min: startDate, 
+                            max: new Date().toISOString().split('T')[0] 
+                        }}
                         sx={{ borderRadius: 2, minWidth: 150 }}
                     />
                     <Button 
@@ -386,11 +399,10 @@ export default function AnalyticsPage() {
                         data={(() => {
                             const serviceData = data?.serviceBreakdown || [];
                             const total = serviceData.reduce((acc, curr) => acc + curr.value, 0);
-                            const referenceColors = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
                             return serviceData.map((item, index) => ({
                                 name: item.name,
                                 value: total > 0 ? Math.round((item.value / total) * 100) : 0,
-                                color: referenceColors[index % referenceColors.length]
+                                color: DONUT_CHART_COLORS[index % DONUT_CHART_COLORS.length]
                             }));
                         })()}
                     />
@@ -434,6 +446,12 @@ export default function AnalyticsPage() {
                     </Card>
                 </Grid>
             </Grid>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

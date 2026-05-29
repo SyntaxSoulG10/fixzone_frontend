@@ -14,27 +14,30 @@ const initialInvoices = [
 ];
 
 export default function ServiceManagerDashboard() {
-    const { bookingsData, hasDataInitialized } = useDashboardData();
+    const { bookingsData, hasDataInitialized, refreshBookings } = useDashboardData();
     const [activeBookings, setActiveBookings] = useState<any[]>([]);
     const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
     const [todaysInvoices, setTodaysInvoices] = useState(initialInvoices);
 
     useEffect(() => {
-        if (hasDataInitialized && bookingsData) {
-            const upcoming = bookingsData.filter((b: any) => b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING");
-            // Only show bookings currently in progress. Completed/Cancelled bookings will be filtered out of the active view.
+        if (hasDataInitialized) {
+            console.log("[Dashboard] bookingsData received:", bookingsData);
+            const upcoming = bookingsData.filter((b: any) =>
+                b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING"
+            );
             const active = bookingsData.filter((b: any) => b.status === "IN_PROGRESS");
+            console.log("[Dashboard] Active:", active.length, "Upcoming:", upcoming.length);
             setUpcomingBookings(upcoming);
             setActiveBookings(active);
         }
     }, [hasDataInitialized, bookingsData]);
 
+    const completedCount = useMemo(() => {
+        return bookingsData.filter((b: any) => b.status === "COMPLETED").length;
+    }, [bookingsData]);
+
     const inProgressCount = useMemo(() => {
         return activeBookings.filter(b => b.status === "IN_PROGRESS").length;
-    }, [activeBookings]);
-
-    const completedCount = useMemo(() => {
-        return activeBookings.filter(b => b.status === "COMPLETED").length;
     }, [activeBookings]);
 
     const totalIncome = useMemo(() => {

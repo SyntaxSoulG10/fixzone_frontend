@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import {
     Grid,
@@ -18,7 +18,9 @@ import {
     Avatar,
     LinearProgress,
     TextField,
-    Chip
+    Chip,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
@@ -133,8 +135,8 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
                     <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
             </FormControl>
-            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
-            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ min: startDate, max: new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
             <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2 }}>Reset</Button>
         </Stack>
     );
@@ -152,6 +154,7 @@ export default function FinancePage() {
     const [period, setPeriod] = useState('monthly');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     const [financeData, setFinanceData] = useState({
         totalRevenue: contextData?.totalRevenue || 0, 
@@ -176,9 +179,10 @@ export default function FinancePage() {
      * pattern that reduces latency and ensures data consistency across the page.
      */
     const loadUnifiedFinanceData = async () => {
-        // Date Validation
+        // Validates date range before executing fetch
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Invalid date range selected for finance data");
+            setSnackbar({ open: true, message: "Invalid date range selected", severity: 'error' });
             return;
         }
 
@@ -226,6 +230,8 @@ export default function FinancePage() {
             });
         } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
+            const msg = fetchError.response?.data?.message || fetchError.message || "Failed to load finance data.";
+            setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -306,6 +312,12 @@ export default function FinancePage() {
                     }
                 />
             </Box>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

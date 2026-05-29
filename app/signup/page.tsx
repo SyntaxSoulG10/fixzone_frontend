@@ -50,14 +50,16 @@ export default function SignupPage() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("role", data.role);
+                localStorage.setItem("userRole", data.role);
                 localStorage.setItem("userId", data.userId);
+                if (data.fullName) localStorage.setItem("fullName", data.fullName);
             }
 
             // Redirect based on role
             if (data.role === "ROLE_CUSTOMER") {
                 router.push("/dashboard/customer");
             } else {
-                router.push("/dashboard/owner");
+                router.push("/dashboard/company-owner");
             }
         } catch (error: any) {
             console.error("Signup error:", error);
@@ -75,7 +77,7 @@ export default function SignupPage() {
             {/* Main Glass Card */}
             <div className="relative z-10 w-full max-w-3xl mx-4">
                 <div className="bg-white/30 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 md:p-8 transition-all duration-500">
-                    <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl w-full">
+                    <div className="bg-white rounded-4xl p-6 md:p-8 shadow-xl w-full">
                         {step === 1 ? (
                             /* STEP 1: Role Selection */
                             <div className="flex flex-col items-center animate-fade-in">

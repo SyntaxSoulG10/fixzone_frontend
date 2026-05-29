@@ -29,7 +29,7 @@ export const useRoleGuard = (allowedRoles: string[]) => {
             if (!userRole || !allowedRoles.includes(userRole)) {
                 // If wrong role, redirect to their own dashboard or login
                 if (userRole === "ROLE_SERVICE_MANAGER") router.push("/dashboard/service-manager");
-                else if (userRole === "ROLE_SUPER_ADMIN") router.push("/dashboard/super-admin");
+                else if (userRole === "ROLE_SUPER_ADMIN" || userRole === "SUPER_ADMIN") router.push("/dashboard/super-admin");
                 else if (userRole === "ROLE_COMPANY_OWNER" || userRole === "OWNER") router.push("/dashboard/company-owner");
                 else if (userRole === "ROLE_CUSTOMER") router.push("/dashboard/customer");
                 else router.push("/login");

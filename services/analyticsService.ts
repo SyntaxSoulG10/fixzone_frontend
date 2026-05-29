@@ -1,5 +1,4 @@
-import axios from "axios";
-
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 const API_BASE_URL = APP_CONFIG.api.baseUrl;
@@ -38,6 +37,18 @@ export const getCompanyAnalytics = async (
         return response.data;
     } catch (error) {
         console.error("Error fetching analytics:", error);
+        throw error;
+    }
+};
+
+export const getCurrentOwnerAnalytics = async (
+    params?: { centerId?: string; startDate?: string; endDate?: string; period?: string }
+): Promise<AnalyticsData> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/analytics/current`, { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching current owner analytics:", error);
         throw error;
     }
 };
