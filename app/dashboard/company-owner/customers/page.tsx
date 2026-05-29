@@ -8,7 +8,9 @@ import {
     Typography,
     Avatar,
     Chip,
-    CircularProgress
+    CircularProgress,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -43,7 +45,7 @@ interface CustomerDTO {
     profilePictureUrl?: string;
 }
 
-// Client-side View Model mapped safely for rendering
+// Client-side view model mapped for UI rendering
 interface Customer {
     id: string | number;
     name: string;
@@ -59,9 +61,10 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 
 export default function CustomersPage() {
     const theme = useTheme();
-    const { customersData, refreshAll } = useDashboardData();
+    const { customersData, analyticsData, refreshAll } = useDashboardData();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
         const loadCustomers = async () => {
@@ -82,8 +85,10 @@ export default function CustomersPage() {
                     avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
                 }));
                 setCustomers(mappedCustomers);
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Failed to load customers:", err);
+                const msg = err.response?.data?.message || err.message || "Failed to load customers.";
+                setSnackbar({ open: true, message: msg, severity: 'error' });
             } finally {
                 setLoading(false);
             }
@@ -191,6 +196,11 @@ export default function CustomersPage() {
     const totalCustomers = customers.length;
     const repeatCustomers = customers.filter(c => c.visits > 1).length;
     const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
+    
+    // Calculates new customers from the latest month in analytics data
+    const latestGrowth = analyticsData?.customerGrowth?.[analyticsData.customerGrowth.length - 1];
+    const newCustomersCount = latestGrowth?.newCustomers || 0;
+    const growthPercentage = analyticsData?.jobsChange || "+0%"; // Uses jobs change as a proxy for growth
 
     if (loading) {
         return (
@@ -227,11 +237,11 @@ export default function CustomersPage() {
                 </Grid>
                 <Grid sx={{ xs: 12, md: 4 }}>
                     <StatCard
-                        title="New This Month"
-                        count="48"
+                        title="New Customers"
+                        count={newCustomersCount.toString()}
                         percentage={{
-                            color: 'success',
-                            amount: '+12%',
+                            color: growthPercentage.startsWith('+') ? 'success' : 'danger',
+                            amount: growthPercentage,
                             label: 'growth'
                         }}
                         icon={<FiUserPlus />}
@@ -289,6 +299,12 @@ export default function CustomersPage() {
                     }}
                 />
             </Card>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

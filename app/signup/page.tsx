@@ -50,14 +50,16 @@ export default function SignupPage() {
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("role", data.role);
+                localStorage.setItem("userRole", data.role);
                 localStorage.setItem("userId", data.userId);
+                if (data.fullName) localStorage.setItem("fullName", data.fullName);
             }
 
             // Redirect based on role
             if (data.role === "ROLE_CUSTOMER") {
                 router.push("/dashboard/customer");
             } else {
-                router.push("/dashboard/owner");
+                router.push("/dashboard/company-owner");
             }
         } catch (error: any) {
             console.error("Signup error:", error);

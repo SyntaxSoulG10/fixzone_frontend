@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import {
     Grid,
@@ -18,7 +18,9 @@ import {
     Avatar,
     LinearProgress,
     TextField,
-    Chip
+    Chip,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
@@ -42,8 +44,8 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * DATA MODELS: Defining strict types for financial records helps maintain 
- * consistency between the backend response and the UI rendering.
+ * Strict types for financial records.
+ * Maintains consistency between the backend response and the UI rendering.
  */
 interface PaymentRecordDTO { paymentId: string; invoiceId: number; amount: number; status: string; method: string; centerId: string; createdAt: string; }
 interface CenterDTO { centerId: string; name: string; }
@@ -51,8 +53,8 @@ interface CustomerDTO { customerId: string; name: string; fullName?: string; }
 interface InvoiceDTO { invoiceId: number; status: string; centerId: string; total?: number; issuedToCustomerId: string; }
 
 /**
- * TABLE CONFIGURATION: Defining column structures outside the component 
- * reduces render complexity and makes it easier to update the table layout.
+ * Column structures for the table layout.
+ * Defined outside the component to reduce render complexity.
  */
 const transactionColumns: GridColDef[] = [
     { 
@@ -94,7 +96,7 @@ const transactionColumns: GridColDef[] = [
 ];
 
 /**
- * STAT CARD COMPONENT: Reusable display for financial KPIs.
+ * Reusable display component for financial KPIs.
  */
 function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
     const theme = useTheme();
@@ -114,7 +116,7 @@ function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
 }
 
 /**
- * FILTERS COMPONENT: Encapsulates the selection logic for center, period, and dates.
+ * Encapsulates the selection logic for center, period, and dates.
  */
 function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPeriodChange, startDate, onStartChange, endDate, onEndChange, onReset }: any) {
     return (
@@ -133,16 +135,16 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
                     <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
             </FormControl>
-            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
-            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
+            <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ min: startDate, max: new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
             <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2 }}>Reset</Button>
         </Stack>
     );
 }
 
 /**
- * RESTORED PAGE: FinancePage
- * Restoring the original complex UI while maintaining performance through DashboardDataContext.
+ * Orchestrates the financial page layout and data rendering.
+ * Utilizes DashboardDataContext for data retrieval.
  */
 export default function FinancePage() {
     const theme = useTheme();
@@ -152,6 +154,7 @@ export default function FinancePage() {
     const [period, setPeriod] = useState('monthly');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     
     const [financeData, setFinanceData] = useState({
         totalRevenue: contextData?.totalRevenue || 0, 
@@ -170,15 +173,14 @@ export default function FinancePage() {
     }, [selectedCenter, period, startDate, endDate]);
 
     /**
-     * LOAD FINANCE DATA
-     * Why: Instead of making multiple scattered API calls, we use a single 
-     * unified "Analytics" endpoint. This is a "Backends-for-Frontends" (BFF) 
-     * pattern that reduces latency and ensures data consistency across the page.
+     * Loads unified financial data from the analytics endpoint.
+     * Reduces scattered API calls and ensures data consistency across the page.
      */
     const loadUnifiedFinanceData = async () => {
-        // Date Validation
+        // Validates date range before executing fetch
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Invalid date range selected for finance data");
+            setSnackbar({ open: true, message: "Invalid date range selected", severity: 'error' });
             return;
         }
 
@@ -226,6 +228,8 @@ export default function FinancePage() {
             });
         } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
+            const msg = fetchError.response?.data?.message || fetchError.message || "Failed to load finance data.";
+            setSnackbar({ open: true, message: msg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -306,6 +310,12 @@ export default function FinancePage() {
                     }
                 />
             </Box>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

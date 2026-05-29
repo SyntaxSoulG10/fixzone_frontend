@@ -9,7 +9,18 @@ export default function DashboardRedirect() {
     useEffect(() => {
         const role = localStorage.getItem("userRole");
         if (role) {
-            router.push(`/dashboard/${role.replace('_', '-')}`);
+            // Robust mapping from backend role to frontend dashboard path
+            const roleToPath: Record<string, string> = {
+                "ROLE_COMPANY_OWNER": "company-owner",
+                "OWNER": "company-owner",
+                "ROLE_SERVICE_MANAGER": "service-manager",
+                "ROLE_SUPER_ADMIN": "super-admin",
+                "ROLE_CUSTOMER": "customer",
+                "CUSTOMER": "customer"
+            };
+            
+            const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
+            router.push(`/dashboard/${path}`);
         } else {
             router.push("/login");
         }

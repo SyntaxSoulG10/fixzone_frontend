@@ -33,20 +33,25 @@ import {
     FiEdit2,
     FiUser,
     FiPower,
-    FiSearch
+    FiSearch,
+    FiTrash2
 } from "react-icons/fi";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 
 /**
- * GLOBAL CONSTANTS: Using constants for branding and configuration 
- * avoids "magic numbers" and makes theme updates easier.
+ * Global branding constants.
+ * Centralizes theme configuration and avoids magic numbers.
  */
 const BRAND_ORANGE = "#f3651c";
+const DEFAULT_MECHANICS = 5;
+const DEFAULT_CAPACITY = 0;
+const MIN_CENTER_NAME_LENGTH = 3;
+const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
- * DATA MODELS: Strict interfaces ensure type safety and 
- * predictable data handling between API and UI.
+ * Interfaces for service center data.
+ * Ensures type safety and predictable data handling.
  */
 interface ServiceCenterView {
     id: string;
@@ -61,7 +66,7 @@ interface ServiceCenterView {
 }
 
 /**
- * HEADER COMPONENT: Encapsulates the page title and primary CTA.
+ * Encapsulates the page title and primary action button.
  */
 function CentersHeader({ onAdd }: { onAdd: () => void }) {
     return (
@@ -92,10 +97,10 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 /**
- * CARD COMPONENT: Represents a single service center branch.
- * Extracted to separate visual card layout from list management logic.
+ * Represents a single service center branch.
+ * Separates visual layout from list management logic.
  */
-function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any }) {
+function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
     const isActive = center.status === 'Active';
     
     return (
@@ -132,17 +137,13 @@ function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterV
 
                 {/* KPI metrics for this specific center */}
                 <Grid container spacing={2}>
-                    <Grid size={{ xs: 4 }}>
+                    <Grid size={{ xs: 6 }}>
                         <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Revenue</Typography>
                         <Typography variant="body2" color="#1e8e3e" align="center" fontWeight="800">Rs.{center.revenue.toLocaleString()}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 4 }}>
-                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team</Typography>
+                    <Grid size={{ xs: 6 }}>
+                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Team Size</Typography>
                         <Typography variant="body2" color="#2d3748" align="center" fontWeight="800">{center.mechanics}</Typography>
-                    </Grid>
-                    <Grid size={{ xs: 4 }}>
-                        <Typography variant="caption" color="#a0aec0" display="block" align="center" fontWeight="600">Load</Typography>
-                        <Typography variant="body2" color="#e53e3e" align="center" fontWeight="800">{center.capacity}%</Typography>
                     </Grid>
                 </Grid>
 
@@ -155,15 +156,25 @@ function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterV
                     >
                         {isActive ? 'Disable' : 'Enable'}
                     </Button>
-                    <Button
-                        variant="contained"
+                    <IconButton
                         size="small"
-                        startIcon={<FiEdit2 />}
-                        onClick={() => onEdit(center)}
-                        sx={{ bgcolor: BRAND_ORANGE, color: '#fff', borderRadius: '0.5rem', '&:hover': { bgcolor: '#d85618' }, textTransform: 'none' }}
+                        onClick={() => onDelete(center.id)}
+                        sx={{ color: '#e53e3e', '&:hover': { bgcolor: 'rgba(229, 62, 62, 0.1)' } }}
+                        title="Delete Branch"
                     >
-                        Edit
-                    </Button>
+                        <FiTrash2 />
+                    </IconButton>
+                    <Box display="flex" gap={1}>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<FiEdit2 />}
+                            onClick={() => onEdit(center)}
+                            sx={{ color: BRAND_ORANGE, borderColor: BRAND_ORANGE, borderRadius: '0.5rem', '&:hover': { bgcolor: alpha(BRAND_ORANGE, 0.05), borderColor: '#d85618' }, textTransform: 'none' }}
+                        >
+                            Edit
+                        </Button>
+                    </Box>
                 </Box>
             </Box>
         </Card>
@@ -171,7 +182,7 @@ function CenterCard({ center, onToggleStatus, onEdit }: { center: ServiceCenterV
 }
 
 /**
- * FORM DIALOG: Standardized input for adding or editing center data.
+ * Standardized dialog form for adding or editing center data.
  */
 function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any) {
     return (
@@ -211,7 +222,7 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
- * MAIN COMPONENT: Orchestrates the centers lifecycle.
+ * Orchestrates the service centers lifecycle.
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
@@ -223,9 +234,9 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
+    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
-    // Map raw centers data from context to View model
+    // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
@@ -238,9 +249,9 @@ export default function MyCentersPage() {
     }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
-        // Form Validation
-        if (!formData.name.trim() || formData.name.length < 3) {
-            setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
+        // Validates input fields before submission
+        if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
+            setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
         if (!formData.manager.trim()) {
@@ -253,8 +264,7 @@ export default function MyCentersPage() {
         }
         
         // Basic phone validation (digits and min length)
-        const phoneRegex = /^[0-9+]{10,15}$/;
-        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+        if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
@@ -275,7 +285,7 @@ export default function MyCentersPage() {
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
-            // Refresh global data after change
+            // Refreshes global data after changes
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 
@@ -310,11 +320,26 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this service center? This will also remove its service packages and invoices.")) return;
+        
+        setIsLoading(true);
+        try {
+            await axios.delete(`${APP_CONFIG.api.serviceCenters}/${id}`);
+            setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
+            await refreshAll();
+        } catch (e: any) {
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Delete operation failed', severity: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -329,7 +354,7 @@ export default function MyCentersPage() {
             <Grid container spacing={4}>
                 {filtered.map(center => (
                     <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} />
+                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
                     </Grid>
                 ))}
             </Grid>
