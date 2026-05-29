@@ -32,12 +32,6 @@ import {
     FiPlus,
     FiEdit2,
     FiUser,
-import {
-    FiMapPin,
-    FiPhone,
-    FiPlus,
-    FiEdit2,
-    FiUser,
     FiPower,
     FiSearch,
     FiTrash2
@@ -233,11 +227,7 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
-<<<<<<< HEAD
  * Orchestrates the service centers lifecycle.
-=======
- * MAIN COMPONENT: Orchestrates the centers lifecycle.
->>>>>>> backup-chamathka
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
@@ -249,15 +239,9 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-<<<<<<< HEAD
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
     // Maps raw centers data from context to the view model
-=======
-    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 });
-
-    // Map raw centers data from context to View model
->>>>>>> backup-chamathka
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
@@ -270,15 +254,9 @@ export default function MyCentersPage() {
     }, [centersData.length, refreshAll]);
 
     const handleSave = async () => {
-<<<<<<< HEAD
         // Validates input fields before submission
         if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
-=======
-        // Form Validation
-        if (!formData.name.trim() || formData.name.length < 3) {
-            setSnackbar({ open: true, message: 'Center name must be at least 3 characters', severity: 'error' });
->>>>>>> backup-chamathka
             return;
         }
         if (!formData.manager.trim()) {
@@ -291,12 +269,7 @@ export default function MyCentersPage() {
         }
         
         // Basic phone validation (digits and min length)
-<<<<<<< HEAD
         if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
-=======
-        const phoneRegex = /^[0-9+]{10,15}$/;
-        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
->>>>>>> backup-chamathka
             setSnackbar({ open: true, message: 'Please enter a valid phone number (10-15 digits)', severity: 'error' });
             return;
         }
@@ -317,11 +290,7 @@ export default function MyCentersPage() {
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
-<<<<<<< HEAD
             // Refreshes global data after changes
-=======
-            // Refresh global data after change
->>>>>>> backup-chamathka
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 
@@ -356,7 +325,6 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
-<<<<<<< HEAD
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this service center? This will also remove its service packages and invoices.")) return;
         
@@ -372,17 +340,11 @@ export default function MyCentersPage() {
         }
     };
 
-=======
->>>>>>> backup-chamathka
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-<<<<<<< HEAD
             <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
-=======
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: 5, capacity: 0 }); setOpenDialog(true); }} />
->>>>>>> backup-chamathka
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -397,11 +359,7 @@ export default function MyCentersPage() {
             <Grid container spacing={4}>
                 {filtered.map(center => (
                     <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-<<<<<<< HEAD
                         <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
-=======
-                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} />
->>>>>>> backup-chamathka
                     </Grid>
                 ))}
             </Grid>

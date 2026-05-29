@@ -81,7 +81,7 @@ function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) 
     const isSuspending = action === 'Suspended';
     
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 <div className={`h-2 ${isSuspending ? 'bg-orange-500' : 'bg-green-500'}`}></div>
                 <div className="p-8 text-center space-y-6">
@@ -204,7 +204,7 @@ export default function UsersPage() {
                 <StatCard title="Suspended" count={users.filter(u => u.status === 'Suspended').length.toString()} icon={<FiAlertCircle />} color="error" />
             </div>
 
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+            <div className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-150">
                 <UserSidebarFilters activeTab={sidebarTab} onTabChange={setSidebarTab} />
                 
                 <div className="flex-1 p-6 space-y-6">

@@ -77,7 +77,7 @@ export default function SignupPage() {
             {/* Main Glass Card */}
             <div className="relative z-10 w-full max-w-3xl mx-4">
                 <div className="bg-white/30 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 md:p-8 transition-all duration-500">
-                    <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl w-full">
+                    <div className="bg-white rounded-4xl p-6 md:p-8 shadow-xl w-full">
                         {step === 1 ? (
                             /* STEP 1: Role Selection */
                             <div className="flex flex-col items-center animate-fade-in">

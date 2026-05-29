@@ -230,11 +230,8 @@ export default function FinancePage() {
             });
         } catch (fetchError: any) {
             console.error("Critical error during finance data load:", fetchError);
-<<<<<<< HEAD
             const msg = fetchError.response?.data?.message || fetchError.message || "Failed to load finance data.";
             setSnackbar({ open: true, message: msg, severity: 'error' });
-=======
->>>>>>> backup-chamathka
         } finally {
             setIsLoading(false);
         }
@@ -315,15 +312,12 @@ export default function FinancePage() {
                     }
                 />
             </Box>
-<<<<<<< HEAD
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-=======
->>>>>>> backup-chamathka
         </Box>
     );
 }

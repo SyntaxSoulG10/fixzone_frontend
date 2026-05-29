@@ -366,11 +366,7 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
-<<<<<<< HEAD
  * Billing and subscription tab component.
-=======
- * BILLING TAB: Subscription and payment history.
->>>>>>> backup-chamathka
  */
 function BillingTab() {
     return (
@@ -398,9 +394,7 @@ function BillingTab() {
 }
 
 /**
-/**
  * DIALOG COMPONENTS: For handling password changes and deactivation.
- */
  */
 function ChangePasswordDialog({ open, onClose }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -454,9 +448,7 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
-/**
  * MAIN PAGE COMPONENT: Handles state and lifecycle.
- */
  */
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
@@ -582,46 +574,16 @@ export default function ProfilePage() {
 
     const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
     const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
-=======
-        try {
-            const updatedOwner = { ...fullOwnerData, companyName: profileData["Company Name"], companyNumber: profileData["Mobile"], companyEmail: profileData["Email"] };
-            await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
-            setIsEditing(false);
-            await refreshAll();
-            setSnackbarMessage("Profile details updated successfully!");
-            setSnackbarOpen(true);
-        } catch (error: any) {
-            const msg = error.response?.data?.message || "Failed to save changes.";
-            setSnackbarMessage(msg);
-            setSnackbarOpen(true);
-        }
-    };
-
-    const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
->>>>>>> backup-chamathka
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-<<<<<<< HEAD
             reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
                 setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
-=======
-            reader.onloadend = async () => {
-                const base64 = reader.result as string;
-                setBannerImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, bannerImageUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Cover image updated!");
-                    setSnackbarOpen(true);
-                }
->>>>>>> backup-chamathka
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -630,25 +592,12 @@ export default function ProfilePage() {
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-<<<<<<< HEAD
             reader.onloadend = () => {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
                 setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
-=======
-            reader.onloadend = async () => {
-                const base64 = reader.result as string;
-                setProfileImage(base64);
-                if (userId && fullOwnerData) {
-                    const updated = { ...fullOwnerData, profilePictureUrl: base64 };
-                    await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updated);
-                    await refreshAll();
-                    setSnackbarMessage("Profile picture updated!");
-                    setSnackbarOpen(true);
-                }
->>>>>>> backup-chamathka
             };
             reader.readAsDataURL(event.target.files[0]);
         }
@@ -667,29 +616,19 @@ export default function ProfilePage() {
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
-<<<<<<< HEAD
             isSaving={isSaving}
-=======
->>>>>>> backup-chamathka
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
                     <OverviewTab 
                         profileData={profileData} 
-<<<<<<< HEAD
                         socialData={socialData}
-=======
->>>>>>> backup-chamathka
                         isEditing={isEditing} 
                         handleEdit={handleEdit} 
                         handleSaveProfile={handleSaveProfile} 
                         handleCancel={handleCancel} 
-<<<<<<< HEAD
                         handleProfileChange={handleProfileChange}
                         handleSocialChange={handleSocialChange} 
-=======
-                        handleProfileChange={handleProfileChange} 
->>>>>>> backup-chamathka
                     />
                 )}
 
@@ -713,11 +652,7 @@ export default function ProfilePage() {
             />
 
             <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-<<<<<<< HEAD
                 <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
-=======
-                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>{snackbarMessage}</Alert>
->>>>>>> backup-chamathka
             </Snackbar>
         </ProfileHeader >
     );

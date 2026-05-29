@@ -45,10 +45,6 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  */
 const DONUT_CHART_COLORS = ['#EA580C', '#343a40', '#FB923C', '#FED7AA', '#e91e63'];
 
-<<<<<<< HEAD
-
-=======
->>>>>>> backup-chamathka
 const columns: GridColDef[] = [
     {
         field: 'name',
