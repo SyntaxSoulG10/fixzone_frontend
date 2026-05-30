@@ -221,9 +221,7 @@ function ProfileHeader({
 }
 
 /**
-/**
  * INFO CARD COMPONENT: Reusable display for company details.
- */
  */
 function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
     return (
@@ -303,14 +301,12 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                             </Box>
                         )}
                     </Box>
-                    </Box>
                 </Box>
             </Box>
         </Card>
     );
 }
 
-/**
 /**
  * OVERVIEW TAB: Displays company info and details.
  */
@@ -341,9 +337,7 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
 }
 
 /**
-/**
  * SECURITY TAB: Manages account security and danger zone.
- */
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
