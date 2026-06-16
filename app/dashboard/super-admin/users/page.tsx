@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { 

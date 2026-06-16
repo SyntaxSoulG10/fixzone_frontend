@@ -5,7 +5,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell, FiExternalLink, FiAlertCircle } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { toast } from "react-toastify";
 import APP_CONFIG from "@/config";
 

@@ -37,7 +37,7 @@ import React, { useState, useEffect } from 'react';
 import DonutStatCard from "@/components/dashboard/DonutStatCard";
 import { getCompanyAnalytics, getCurrentOwnerAnalytics, AnalyticsData } from "@/services/analyticsService";
 import { APP_CONFIG } from "@/utils/config";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**

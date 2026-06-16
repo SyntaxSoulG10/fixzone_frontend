@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { FiTool, FiClock, FiCalendar, FiCheckCircle, FiPlus, FiMinus, FiLoader } from "react-icons/fi";
 import { FaUserCog, FaMoneyBillWave } from "react-icons/fa";
 import { useDashboardData } from "../../../context/DashboardDataContext";

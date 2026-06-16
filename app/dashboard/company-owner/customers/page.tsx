@@ -27,7 +27,7 @@ import {
 } from "react-icons/fi";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";    
 import { formatDistanceToNow } from "date-fns";
 // Interface representation for the structure originating directly from the Backend API
