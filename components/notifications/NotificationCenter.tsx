@@ -246,9 +246,10 @@ export default function NotificationCenter() {
                                             {formatTime(n.createdAt)}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                                        {n.message}
-                                    </p>
+                                    <div 
+                                        className="text-xs text-slate-500 leading-relaxed font-medium prose prose-slate max-w-none [&_img]:max-h-60 [&_img]:rounded-lg [&_img]:mt-2 [&_img]:object-cover"
+                                        dangerouslySetInnerHTML={{ __html: n.message }}
+                                    />
 
                                     {/* Link indicator */}
                                     {n.targetUrl && (

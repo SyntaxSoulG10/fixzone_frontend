@@ -413,3 +413,37 @@ export async function deleteNotification(id: string): Promise<void> {
     throw new Error("Failed to delete notification");
   }
 }
+
+export async function broadcastCustomNotification(payload: { title: string, message: string, type: string, targetRole: string, targetUrl?: string, targetUserId?: string }): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/admin/notifications/broadcast`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    throw new Error("Failed to broadcast notification");
+  }
+}
+
+export async function fetchAdminNotifications(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/admin/notifications`, {
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) {
+    throw new Error("Failed to load admin notifications log");
+  }
+  return res.json();
+}
+
+export async function fetchAllUsers(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/admin/users`, {
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) {
+    throw new Error("Failed to load users");
+  }
+  return res.json();
+}

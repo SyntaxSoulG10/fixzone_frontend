@@ -169,13 +169,6 @@ export default function SubscriptionsPage() {
             header: "Actions",
             accessor: (row: any) => (
                 <div className="flex items-center gap-2 h-full">
-                    <button
-                        onClick={() => handleNotify(row.ownerId)}
-                        className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 bg-slate-50"
-                        title="Notify Owner"
-                    >
-                        <FiBell className="w-4 h-4" />
-                    </button>
 
                     {row.status === 'ACTIVE' ? (
                         <button

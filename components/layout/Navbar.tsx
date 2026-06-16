@@ -312,9 +312,10 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                                                             {formatTime(n.createdAt)}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                                        {n.message}
-                                                    </p>
+                                                    <div 
+                                                        className="text-xs text-slate-500 line-clamp-2 leading-relaxed [&_img]:hidden [&_.notif-attachment-link]:hidden"
+                                                        dangerouslySetInnerHTML={{ __html: n.message }}
+                                                    />
                                                     <div className="flex gap-2 mt-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                                         {!isNotificationRead && (
                                                             <button

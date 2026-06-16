@@ -31,6 +31,7 @@ const ROLE_MENUS: any = {
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
         { name: 'Subscriptions', icon: FiBriefcase, href: '/dashboard/super-admin/subscriptions' },
         { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
+        { name: 'Notifications Manager', icon: FiBell, href: '/dashboard/super-admin/notifications' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
