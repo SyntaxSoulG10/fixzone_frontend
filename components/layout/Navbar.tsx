@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FiBell, FiMenu, FiMoon, FiUser, FiSettings, FiLogOut, FiX } from "react-icons/fi";
+import { FiBell, FiMenu, FiMoon, FiUser, FiSettings, FiLogOut, FiX, FiCheck, FiTrash } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from "@/lib/api";
 
 interface NavbarProps {
     onToggleSidebar?: () => void;
@@ -122,11 +123,119 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         return `/dashboard/${path}/profile`;
     };
 
-    const notifications = [
-        { id: 1, title: "New Booking Request", desc: "John Doe requested a tire service.", time: "5 min ago", unread: true },
-        { id: 2, title: "System Update", desc: "Maintenance scheduled for tonight.", time: "1 hr ago", unread: false },
-        { id: 3, title: "Payment Received", desc: "Invoice #1023 was paid.", time: "3 hrs ago", unread: false },
-    ];
+    const [notifications, setNotifications] = useState<any[]>([]);
+
+    const fetchNotifications = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+            const data = await getNotifications();
+            setNotifications(data || []);
+            // Dispatch custom event for the Sidebar or other components
+            window.dispatchEvent(new CustomEvent("notificationsUpdated", { detail: data || [] }));
+        } catch (error) {
+            console.error("Failed to fetch notifications in Navbar:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        
+        // Listen to force updates
+        const handleForceUpdate = () => fetchNotifications();
+        window.addEventListener("forceUpdateNotifications", handleForceUpdate);
+
+        const interval = setInterval(fetchNotifications, 30000); // 30 seconds
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("forceUpdateNotifications", handleForceUpdate);
+        };
+    }, [pathname]);
+
+    const formatTime = (dateStr: string) => {
+        try {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            if (isNaN(diffMs) || diffMs < 0) return "Just now";
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return "Just now";
+            if (diffMins < 60) return `${diffMins} min ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays === 1) return "Yesterday";
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
+        } catch (e) {
+            return "Recently";
+        }
+    };
+
+    const handleNotificationClick = async (n: any) => {
+        const isNotificationRead = n.read !== undefined ? n.read : n.isRead;
+        try {
+            if (!isNotificationRead) {
+                await markNotificationAsRead(n.id);
+                fetchNotifications();
+            }
+            setIsNotificationsOpen(false);
+            if (n.targetUrl) {
+                router.push(n.targetUrl);
+            }
+        } catch (error) {
+            console.error("Failed to handle notification click:", error);
+        }
+    };
+
+    const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await markNotificationAsRead(id);
+            fetchNotifications();
+        } catch (error) {
+            console.error("Failed to mark notification as read:", error);
+        }
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await deleteNotification(id);
+            fetchNotifications();
+        } catch (error) {
+            console.error("Failed to delete notification:", error);
+        }
+    };
+
+    const handleMarkAllRead = async () => {
+        try {
+            await markAllNotificationsAsRead();
+            fetchNotifications();
+        } catch (error) {
+            console.error("Failed to mark all as read:", error);
+        }
+    };
+
+    const getNotificationsPageUrl = () => {
+        if (!role) return "";
+        if (role === "ROLE_SUPER_ADMIN" || role === "super_admin") return "";
+        
+        const roleToPath: Record<string, string> = {
+            "ROLE_COMPANY_OWNER": "company-owner",
+            "OWNER": "company-owner",
+            "ROLE_SERVICE_MANAGER": "service-manager",
+            "ROLE_CUSTOMER": "customer",
+            "CUSTOMER": "customer",
+            "company_owner": "company-owner",
+            "service_manager": "service-manager",
+        };
+        
+        const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
+        return `/dashboard/${path}/notifications`;
+    };
+
+    const unreadCount = notifications.filter(n => !(n.read !== undefined ? n.read : n.isRead)).length;
 
     return (
         <nav className="fixed top-0 left-0 w-full h-16 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4 lg:px-6">
@@ -160,31 +269,92 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                     >
                         <FiBell className="text-lg" />
                         {/* Dot */}
-                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 border-2 border-white rounded-full"></span>
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 border-2 border-white rounded-full animate-pulse"></span>
+                        )}
                     </button>
 
                     {/* Notifications Dropdown */}
                     {isNotificationsOpen && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+                        <div className="absolute right-0 mt-2 w-85 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50 animate-in fade-in duration-200">
                             <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <h3 className="font-semibold text-sm text-slate-800">Notifications</h3>
-                                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">1 New</span>
+                                <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                                    {unreadCount} New
+                                </span>
                             </div>
                             <div className="max-h-80 overflow-y-auto">
-                                {notifications.map((n) => (
-                                    <div key={n.id} className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${n.unread ? 'bg-orange-50/30' : ''}`}>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <p className={`text-sm ${n.unread ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'}`}>{n.title}</p>
-                                            <span className="text-xs text-slate-400 whitespace-nowrap ml-2">{n.time}</span>
-                                        </div>
-                                        <p className="text-xs text-slate-500 line-clamp-2">{n.desc}</p>
+                                {notifications.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-400 text-xs italic">
+                                        No notifications yet
                                     </div>
-                                ))}
+                                ) : (
+                                    notifications.map((n) => {
+                                        const isNotificationRead = n.read !== undefined ? n.read : n.isRead;
+                                        return (
+                                            <div
+                                                key={n.id}
+                                                onClick={() => handleNotificationClick(n)}
+                                                className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer flex gap-2.5 items-start group ${
+                                                    !isNotificationRead ? 'bg-orange-50/20 border-l-2 border-orange-500' : ''
+                                                }`}
+                                            >
+                                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${
+                                                    n.type === 'SUCCESS' ? 'bg-green-500' :
+                                                    n.type === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
+                                                }`} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-start mb-0.5">
+                                                        <p className={`text-xs truncate ${!isNotificationRead ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'}`}>
+                                                            {n.title}
+                                                        </p>
+                                                        <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">
+                                                            {formatTime(n.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                                                        {n.message}
+                                                    </p>
+                                                    <div className="flex gap-2 mt-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {!isNotificationRead && (
+                                                            <button
+                                                                onClick={(e) => handleMarkAsRead(n.id, e)}
+                                                                className="p-1 text-[10px] text-green-600 hover:bg-green-50 rounded border border-green-100 flex items-center justify-center"
+                                                                title="Mark as read"
+                                                            >
+                                                                <FiCheck className="w-3 h-3" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => handleDelete(n.id, e)}
+                                                            className="p-1 text-[10px] text-red-500 hover:bg-red-50 rounded border border-red-100 flex items-center justify-center"
+                                                            title="Delete"
+                                                        >
+                                                            <FiTrash className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
-                            <div className="p-2 text-center border-t border-slate-100">
-                                <button className="text-xs font-medium text-orange-600 hover:text-orange-700 transition-colors">
+                            <div className="p-2.5 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+                                <button
+                                    onClick={handleMarkAllRead}
+                                    className="text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors"
+                                >
                                     Mark all as read
                                 </button>
+                                {getNotificationsPageUrl() && (
+                                    <Link
+                                        href={getNotificationsPageUrl()}
+                                        onClick={() => setIsNotificationsOpen(false)}
+                                        className="text-xs font-bold text-orange-600 hover:text-orange-700 transition-colors"
+                                    >
+                                        View all
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     )}
