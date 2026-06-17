@@ -16,7 +16,7 @@ import {
   FiUser,
 } from "react-icons/fi";
 
-import { getBookingsByCustomer } from "@/lib/api";
+import { getBookingsByCustomer, getNotifications } from "@/lib/api";
 
 type Booking = {
   bookingId: string;
@@ -38,6 +38,7 @@ type Notification = {
 export default function CustomerDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Guest");
 
@@ -81,6 +82,14 @@ export default function CustomerDashboard() {
         .catch(err => {
           console.error("Failed to load dashboard data:", err);
           setLoading(false);
+        });
+
+      getNotifications()
+        .then(data => {
+          setNotifications(data || []);
+        })
+        .catch(err => {
+          console.error("Failed to load customer notifications:", err);
         });
     } else {
       setLoading(false);
@@ -184,22 +193,34 @@ export default function CustomerDashboard() {
 
 
           <div className="mt-6">
-            <h3 className="font-bold mb-3 text-slate-900">Notifications</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-slate-900">Notifications</h3>
+              <Link href="/dashboard/customer/notifications" className="text-xs font-bold text-orange-600 hover:text-orange-700 transition-colors">
+                View all
+              </Link>
+            </div>
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {bookings.filter(b => b.status === 'CONFIRMED').map((b, i) => (
-                <div
-                  key={i}
-                  className="flex gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
-                >
-                  <span className="text-xl">📅</span>
-                  <div>
-                    <p className="text-sm text-slate-900">Upcoming service at {b.serviceCenterName}</p>
-                    <span className="text-xs text-slate-400">{b.bookingDate} at {b.bookingTime}</span>
+              {notifications.slice(0, 5).map((n, i) => {
+                const isRead = n.read !== undefined ? n.read : n.isRead;
+                return (
+                  <div
+                    key={n.id || i}
+                    className={`flex gap-3 p-3 bg-slate-50 rounded-lg border hover:border-slate-300 transition-colors ${
+                      !isRead ? "border-orange-100 bg-orange-50/10" : "border-slate-200"
+                    }`}
+                  >
+                    <span className="text-lg shrink-0">
+                      {n.type === "SUCCESS" ? "✅" : n.type === "WARNING" ? "⚠️" : "ℹ️"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs truncate ${!isRead ? "font-bold text-slate-800" : "font-semibold text-slate-700"}`}>{n.title}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {bookings.filter(b => b.status === 'CONFIRMED').length === 0 && (
-                <p className="text-xs text-slate-400 text-center py-4">No new notifications</p>
+                );
+              })}
+              {notifications.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-4 italic">No new notifications</p>
               )}
             </div>
           </div>

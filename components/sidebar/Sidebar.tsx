@@ -31,6 +31,7 @@ const ROLE_MENUS: any = {
         { name: 'Users', icon: FiUsers, href: '/dashboard/super-admin/users' },
         { name: 'Subscriptions', icon: FiBriefcase, href: '/dashboard/super-admin/subscriptions' },
         { name: 'Subscription Plans', icon: FiTag, href: '/dashboard/super-admin/subscription-plans' },
+        { name: 'Notifications Manager', icon: FiBell, href: '/dashboard/super-admin/notifications' },
     ],
     company_owner: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/company-owner' },
@@ -41,6 +42,7 @@ const ROLE_MENUS: any = {
         { name: 'Managers', icon: FiUsers, href: '/dashboard/company-owner/managers' },
         { name: 'Finance', icon: FiDollarSign, href: '/dashboard/company-owner/finance' },
         { name: 'Customers', icon: FiSmile, href: '/dashboard/company-owner/customers' },
+        { name: 'Notifications', icon: FiBell, href: '/dashboard/company-owner/notifications', badge: true },
         { name: 'Profile', icon: FiUsers, href: '/dashboard/company-owner/profile' },
     ],
     service_manager: [
@@ -49,12 +51,14 @@ const ROLE_MENUS: any = {
         { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
+        { name: 'Notifications', icon: FiBell, href: '/dashboard/service-manager/notifications', badge: true },
         { name: 'MyProfile', icon: FiUser, href: '/dashboard/service-manager/profile' },
     ],
     customer: [
         { name: 'Dashboard', icon: FiHome, href: '/dashboard/customer' },
         { name: 'Book Service', icon: FiCalendar, href: '/dashboard/customer/bookings' },
         { name: 'My bookings', icon: FiClock, href: '/dashboard/customer/history' },
+        { name: 'Notifications', icon: FiBell, href: '/dashboard/customer/notifications', badge: true },
         { name: 'My Profile', icon: FiUsers, href: '/dashboard/customer/profile' },
     ]
 };
@@ -66,6 +70,20 @@ interface SidebarProps {
 export default function Sidebar({ isOpen = true }: SidebarProps) {
     const pathname = usePathname();
     const [role, setRole] = useState<string | null>(null);
+    const [unreadCount, setUnreadCount] = useState<number>(0);
+
+    useEffect(() => {
+        const handleUpdates = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail) {
+                const count = customEvent.detail.filter((n: any) => !(n.read !== undefined ? n.read : n.isRead)).length;
+                setUnreadCount(count);
+            }
+        };
+
+        window.addEventListener("notificationsUpdated", handleUpdates);
+        return () => window.removeEventListener("notificationsUpdated", handleUpdates);
+    }, []);
 
     useEffect(() => {
         // Derive role from path to ensure correct menu is shown
@@ -124,7 +142,12 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                                     className={`mr-3 h-5 w-5 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-500'
                                         }`}
                                 />
-                                {item.name}
+                                <span className="flex-1">{item.name}</span>
+                                {item.badge && unreadCount > 0 && (
+                                    <span className="ml-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        {unreadCount}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}

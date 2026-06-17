@@ -180,7 +180,7 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                         </Button>
                     </Box>
                 </Box>
-            </Box>
+                </Box>
         </Card>
     );
 }
