@@ -66,14 +66,18 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
 
             // Always fetch bookings for manager and customer roles
             if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
-                const [ownerRes, centersRes, managersRes] = await Promise.all([
+                const [ownerRes, centersRes, managersRes, customersRes, analyticsRes] = await Promise.all([
                     axios.get(APP_CONFIG.api.owners + "/current").catch((e) => { console.error("owners/current failed", e); return { data: null }; }),
                     axios.get(APP_CONFIG.api.serviceCenters + "/current").catch((e) => { console.error("serviceCenters/current failed", e); return { data: [] }; }),
                     axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: [] }; }),
+                    axios.get(APP_CONFIG.api.customers + "/current").catch((e) => { console.error("customers/current failed", e); return { data: [] }; }),
+                    axios.get(APP_CONFIG.api.analytics + "/current").catch((e) => { console.error("analytics/current failed", e); return { data: null }; }),
                 ]);
                 setOwnerProfile(ownerRes.data || null);
                 setCentersData(centersRes.data || []);
                 setManagersData(managersRes.data || []);
+                setCustomersData(customersRes.data || []);
+                setAnalyticsData(analyticsRes.data || null);
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const [managerRes, bookingsRes] = await Promise.all([
                     axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.error("managers/current failed", e); return { data: null }; }),
