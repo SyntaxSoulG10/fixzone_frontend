@@ -16,10 +16,8 @@ import {
 import { FiDownload, FiFileText } from "react-icons/fi";
 
 /**
-/**
  * DATA MODEL: Strictly defining the report structure ensures 
  * predictable rendering in the list view.
- */
  */
 interface ReportItem {
     id: number;
@@ -30,10 +28,8 @@ interface ReportItem {
 }
 
 /**
-/**
  * STATIC CONTENT: Defining the dataset outside the component 
  * keeps the render function focused only on layout logic.
- */
  */
 const DUMMY_REPORTS: ReportItem[] = [
     { id: 1, name: "January 2026 Revenue Report", date: "Feb 01, 2026", type: "Financial", size: "1.2 MB" },
@@ -44,9 +40,7 @@ const DUMMY_REPORTS: ReportItem[] = [
 ];
 
 /**
-/**
  * ROW COMPONENT: Extracted to separate the item styling from the main list container.
- */
  */
 function ReportRow({ report, isLast }: { report: ReportItem, isLast: boolean }) {
     return (
@@ -77,9 +71,7 @@ function ReportRow({ report, isLast }: { report: ReportItem, isLast: boolean }) 
 }
 
 /**
-/**
  * MAIN PAGE: Orchestrates the reports list display.
- */
  */
 export default function ReportsPage() {
     return (

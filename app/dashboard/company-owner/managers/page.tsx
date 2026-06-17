@@ -42,7 +42,6 @@ import {
 import { APP_CONFIG } from "@/utils/config";
 
 /**
-/**
  * Validation and default constants for managers.
  */
 const MIN_MANAGER_NAME_LENGTH = 3;
@@ -110,9 +109,7 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
 ];
 
 /**
-/**
  * HEADER COMPONENT: Encapsulates page title and add action functionality.
- */
  */
 function ManagersHeader({ onAdd }: { onAdd: () => void }) {
     return (
@@ -127,9 +124,7 @@ function ManagersHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 /**
-/**
  * DIALOG COMPONENT: Standardized form dialog for managing manager data.
- */
  */
 function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers }: any) {
     return (
@@ -161,9 +156,7 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
-/**
  * MAIN COMPONENT: Orchestrates the display and lifecycle of manager accounts.
- */
  */
 export default function ManagersPage() {
     const theme = useTheme();

@@ -181,7 +181,6 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                     </Box>
                 </Box>
                 </Box>
-            </Box>
         </Card>
     );
 }
