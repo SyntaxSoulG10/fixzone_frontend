@@ -134,7 +134,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             // Dispatch custom event for the Sidebar or other components
             window.dispatchEvent(new CustomEvent("notificationsUpdated", { detail: data || [] }));
         } catch (error) {
-            console.error("Failed to fetch notifications in Navbar:", error);
+            console.warn("Failed to fetch notifications in Navbar:", error);
         }
     };
 
