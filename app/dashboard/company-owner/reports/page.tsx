@@ -88,6 +88,8 @@ export default function ReportsPage() {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [reportToDelete, setReportToDelete] = useState<string | null>(null);
     
     // Native PDF Preview States
     const [previewGenerating, setPreviewGenerating] = useState(false);
@@ -695,14 +697,9 @@ export default function ReportsPage() {
                     <IconButton 
                         color="error" 
                         size="small"
-                        onClick={async () => {
-                            try {
-                                await deleteReport(params.row.id);
-                                toast.success("Report deleted successfully");
-                                fetchReports();
-                            } catch (error) {
-                                toast.error("Failed to delete report");
-                            }
+                        onClick={() => {
+                            setReportToDelete(params.row.id);
+                            setDeleteDialogOpen(true);
                         }}
                     >
                         <FiTrash2 />
@@ -725,7 +722,7 @@ export default function ReportsPage() {
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Box pb={3}>
-                <Toaster position="top-right" />
+                <Toaster position="bottom-right" />
                 <Box mb={4} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2}>
                     <Box>
                         <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -1071,6 +1068,36 @@ export default function ReportsPage() {
                     </DialogActions>
                 </Dialog>
             </Box>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <Typography>Are you sure you want to delete this report? This action cannot be undone.</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">Cancel</Button>
+                    <Button 
+                        onClick={async () => {
+                            if (!reportToDelete) return;
+                            try {
+                                setDeleteDialogOpen(false);
+                                await deleteReport(reportToDelete);
+                                toast.success("Report deleted successfully");
+                                fetchReports();
+                            } catch (error) {
+                                toast.error("Failed to delete report");
+                            } finally {
+                                setReportToDelete(null);
+                            }
+                        }} 
+                        color="error" 
+                        variant="contained"
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </LocalizationProvider>
     );
 }
