@@ -218,21 +218,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     };
 
     const getNotificationsPageUrl = () => {
-        if (!role) return "";
-        if (role === "ROLE_SUPER_ADMIN" || role === "super_admin") return "";
-        
-        const roleToPath: Record<string, string> = {
-            "ROLE_COMPANY_OWNER": "company-owner",
-            "OWNER": "company-owner",
-            "ROLE_SERVICE_MANAGER": "service-manager",
-            "ROLE_CUSTOMER": "customer",
-            "CUSTOMER": "customer",
-            "company_owner": "company-owner",
-            "service_manager": "service-manager",
-        };
-        
-        const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
-        return `/dashboard/${path}/notifications`;
+        return "";
     };
 
     const unreadCount = notifications.filter(n => !(n.read !== undefined ? n.read : n.isRead)).length;
