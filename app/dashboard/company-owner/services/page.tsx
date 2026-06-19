@@ -7,6 +7,8 @@ import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import EmptyState from "@/components/UI/EmptyState";
+import { FiLayers } from "react-icons/fi";
 
 /**
  * Validation and default constants for service packages.
@@ -502,12 +504,14 @@ export default function ServicesPage() {
                         <p className="text-slate-500">Loading service packages...</p>
                     </div>
                 ) : packages.length === 0 ? (
-                    <div className="col-span-full py-20 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                        <p className="text-slate-500 mb-4">No service packages found in database.</p>
-                        <Button onClick={handleOpenCreate} variant="secondary">
-                            <FiPlus className="mr-2 h-4 w-4" />
-                            Create First Package
-                        </Button>
+                    <div className="col-span-full">
+                        <EmptyState 
+                            icon={<FiLayers />}
+                            title="No Service Packages"
+                            description="You haven't added any service offerings yet. Create your first service package to allow customers to book appointments."
+                            actionLabel="Create First Package"
+                            onAction={handleOpenCreate}
+                        />
                     </div>
                 ) : (
                     <>
