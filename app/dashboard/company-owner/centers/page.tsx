@@ -34,7 +34,8 @@ import {
     FiUser,
     FiPower,
     FiSearch,
-    FiTrash2
+    FiTrash2,
+    FiBriefcase
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
