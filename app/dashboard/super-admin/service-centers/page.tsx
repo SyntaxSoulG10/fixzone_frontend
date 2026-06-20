@@ -2,7 +2,7 @@
 
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell, FiExternalLink, FiAlertCircle } from "react-icons/fi";
+import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell, FiExternalLink, FiAlertCircle, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { useState, useEffect } from "react";
 import axios from "@/lib/axios";
@@ -33,6 +33,15 @@ export default function ServiceStationsPage() {
     const [rejectionMode, setRejectionMode] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [processingAction, setProcessingAction] = useState(false);
+    
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
+
+    // Reset pagination when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const fetchStations = async () => {
         try {
@@ -293,9 +302,46 @@ export default function ServiceStationsPage() {
                         />
                     </div>
                 </div>
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <Table columns={columns} data={filteredStations} keyField="id" />
-                </div>
+                
+                {(() => {
+                    const totalPages = Math.ceil(filteredStations.length / pageSize);
+                    const paginatedStations = filteredStations.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+                    return (
+                        <>
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                <Table columns={columns} data={paginatedStations} keyField="id" />
+                            </div>
+
+                            {/* Pagination Controls */}
+                            {filteredStations.length > 0 && (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-4">
+                                    <div className="text-xs font-bold text-slate-500">
+                                        Showing {Math.min(filteredStations.length, (currentPage - 1) * pageSize + 1)}–{Math.min(filteredStations.length, currentPage * pageSize)} of {filteredStations.length} stations
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                        >
+                                            <FiChevronLeft className="w-4 h-4" />
+                                        </button>
+                                        <span className="text-xs font-bold text-slate-700">
+                                            Page {currentPage} of {totalPages || 1}
+                                        </span>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages || totalPages === 0}
+                                            className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                        >
+                                            <FiChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
             </section>
 
             {/* DYNAMIC REVIEW MODAL */}
