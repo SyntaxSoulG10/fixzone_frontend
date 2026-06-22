@@ -34,7 +34,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
                 endpoint = APP_CONFIG.api.owners + "/current";
             } else if (currentRole === "ROLE_SERVICE_MANAGER") {
-                endpoint = APP_CONFIG.api.managers + "/me";
+                endpoint = APP_CONFIG.api.managers + "/current";
             } else if (currentRole === "ROLE_CUSTOMER") {
                 endpoint = "http://localhost:8081/api/customer/profile";
             } else if (currentRole === "ROLE_SUPER_ADMIN") {
