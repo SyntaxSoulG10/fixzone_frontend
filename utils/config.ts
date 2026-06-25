@@ -11,6 +11,7 @@ export const APP_CONFIG = {
         analytics: "http://localhost:8081/api/analytics",
         owners: "http://localhost:8081/api/owners",
         superAdmins: "http://localhost:8081/api/super-admins",
+        auth: "http://localhost:8081/api/auth",
     },
     // Adding placeholder IDs to resolve arbitrary hardcoded assignments
     placeholders: {
