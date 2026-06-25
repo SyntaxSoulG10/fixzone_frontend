@@ -199,7 +199,6 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
                     <TextField label="Center Name" name="name" value={formData.name} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
-                    <TextField label="Manager Name" name="manager" value={formData.manager} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <TextField label="Address" name="location" value={formData.location} onChange={onChange} fullWidth multiline rows={2} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}><TextField label="Phone" name="phone" value={formData.phone} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} /></Grid>
@@ -240,7 +239,7 @@ export default function MyCentersPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
+    const [formData, setFormData] = useState({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
     // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
@@ -260,10 +259,7 @@ export default function MyCentersPage() {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
-        if (!formData.manager.trim()) {
-            setSnackbar({ open: true, message: 'Manager name is required', severity: 'error' });
-            return;
-        }
+
         if (!formData.location.trim()) {
             setSnackbar({ open: true, message: 'Address is required', severity: 'error' });
             return;
@@ -277,7 +273,7 @@ export default function MyCentersPage() {
 
         const payload = { 
             name: formData.name, address: formData.location, contactPhone: formData.phone,
-            managerName: formData.manager, isActive: formData.status === 'Active',
+            isActive: formData.status === 'Active',
             mechanicsCount: formData.mechanics, currentCapacity: formData.capacity,
             ownerId: APP_CONFIG.placeholders.ownerId
         };
@@ -320,7 +316,7 @@ export default function MyCentersPage() {
     };
 
     const handleEditClick = (center: ServiceCenterView) => {
-        setFormData({ name: center.name, location: center.location, manager: center.manager, phone: center.phone, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
+        setFormData({ name: center.name, location: center.location, phone: center.phone, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
         setSelectedId(center.id);
         setIsEditMode(true);
         setOpenDialog(true);
@@ -345,7 +341,7 @@ export default function MyCentersPage() {
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -363,7 +359,7 @@ export default function MyCentersPage() {
                     title="No Service Centers"
                     description="You don't have any service center branches yet. Let's create your first branch to get started."
                     actionLabel="New Branch"
-                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
+                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
                 />
             ) : (
                 <Grid container spacing={4}>
