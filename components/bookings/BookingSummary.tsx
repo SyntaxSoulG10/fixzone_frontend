@@ -36,11 +36,11 @@ export default function BookingSummary({ totalPrice, isValid, onSpecialRequestCh
       <div className="pt-6 border-t border-slate-50">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Estimate</div>
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Booking Fee</div>
             <div className="flex items-baseline gap-2">
               <span className="text-xs font-bold text-slate-400">LKR</span>
               <span className="text-4xl font-black text-slate-900 leading-none">
-                {totalPrice.toLocaleString()}
+                {(totalPrice * 0.4).toLocaleString()}
               </span>
             </div>
           </div>

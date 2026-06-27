@@ -1,9 +1,6 @@
 import axios from "axios";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.VITE_API_BASE_URL ||
-  "http://localhost:8081";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -36,7 +33,9 @@ export type CustomerProfile = {
 export type Vehicle = {
   id: string;
   brand: string;
+  model?: string;
   plateNumber: string;
+  vehicleType?: "CAR" | "BIKE" | "VAN" | "TRUCK";
   imageUrl?: string | null;
 };
 
@@ -82,6 +81,12 @@ export async function updateProfile(payload: CustomerProfile): Promise<CustomerP
   return data;
 }
 
+// 2b) POST /profile/picture
+export async function uploadProfilePicture(imageData: string): Promise<{ profilePictureUrl: string }> {
+  const { data } = await api.post<{ profilePictureUrl: string }>(`${CUSTOMER_BASE}/profile/picture`, { imageData });
+  return data;
+}
+
 // 3) GET /vehicles
 export async function getVehicles(): Promise<Vehicle[]> {
   const { data } = await api.get<Vehicle[]>(`${CUSTOMER_BASE}/vehicles`);
@@ -89,8 +94,14 @@ export async function getVehicles(): Promise<Vehicle[]> {
 }
 
 // 4) POST /vehicle
-export async function addVehicle(payload: Omit<Vehicle, "id">): Promise<Vehicle> {
+export async function addVehicle(payload: { brand: string; model?: string; plateNumber: string; vehicleType: "CAR" | "BIKE" | "VAN" | "TRUCK"; imageData?: string | null }): Promise<Vehicle> {
   const { data } = await api.post<Vehicle>(`${CUSTOMER_BASE}/vehicle`, payload);
+  return data;
+}
+
+// 4b) POST /vehicle/{id}/image
+export async function uploadVehicleImage(vehicleId: string, imageData: string): Promise<{ imageUrl: string }> {
+  const { data } = await api.post<{ imageUrl: string }>(`${CUSTOMER_BASE}/vehicle/${vehicleId}/image`, { imageData });
   return data;
 }
 

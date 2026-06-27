@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import axios from "@/lib/axios";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { 
-    FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch, 
-    FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter 
+import {
+    FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch,
+    FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter
 } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { toast } from "react-toastify";
@@ -56,12 +56,11 @@ function UserSidebarFilters({ activeTab, onTabChange }: any) {
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 font-mono">Focus Group</h4>
                 <div className="space-y-1">
                     {tabs.map((tab) => (
-                        <button 
+                        <button
                             key={tab}
                             onClick={() => onTabChange(tab as any)}
-                            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${
-                                activeTab === tab ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-500 hover:bg-slate-100'
-                            }`}
+                            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${activeTab === tab ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-500 hover:bg-slate-100'
+                                }`}
                         >
                             {tab}
                             {activeTab === tab && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>}
@@ -79,7 +78,7 @@ function UserSidebarFilters({ activeTab, onTabChange }: any) {
 function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) {
     if (!isOpen) return null;
     const isSuspending = action === 'Suspended';
-    
+
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
@@ -91,7 +90,7 @@ function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) 
                     <div>
                         <h3 className="text-xl font-bold text-slate-900">{action} User?</h3>
                         <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Are you sure you want to {action.toLowerCase()} <span className="font-bold text-slate-800">{user.name}</span>? 
+                            Are you sure you want to {action.toLowerCase()} <span className="font-bold text-slate-800">{user.name}</span>?
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-2">
@@ -163,20 +162,20 @@ export default function UsersPage() {
         },
         { header: "Contact", accessor: (row: UserRecord) => <div className="text-xs font-medium text-slate-600">{row.email}</div> },
         { header: "Role", accessor: (row: UserRecord) => <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-slate-50">{row.role}</span> },
-        { 
-            header: "Status", 
+        {
+            header: "Status",
             accessor: (row: UserRecord) => (
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${row.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${row.status === 'Active' ? 'bg-green-500' : 'bg-orange-500'}`} />{row.status}
                 </span>
-            ) 
+            )
         },
         {
             header: "Actions",
             accessor: (row: UserRecord) => (
                 <div className="flex items-center gap-2">
                     {row.role !== 'Super Admin' && (
-                        <button 
+                        <button
                             onClick={() => setConfirmModal({ isOpen: true, userId: row.id, userName: row.name, action: row.status === 'Active' ? 'Suspended' : 'Active' })}
                             className={`px-4 py-1.5 border rounded-xl text-xs font-bold transition-all ${row.status === 'Active' ? 'text-orange-600 border-orange-200' : 'text-green-600 border-green-200'}`}
                         >
@@ -206,7 +205,7 @@ export default function UsersPage() {
 
             <div className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-150">
                 <UserSidebarFilters activeTab={sidebarTab} onTabChange={setSidebarTab} />
-                
+
                 <div className="flex-1 p-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="relative w-full md:max-w-md">
@@ -221,12 +220,12 @@ export default function UsersPage() {
                 </div>
             </div>
 
-            <StatusConfirmModal 
-                isOpen={confirmModal.isOpen} 
-                user={{ name: confirmModal.userName }} 
-                action={confirmModal.action} 
-                onConfirm={handleStatusUpdate} 
-                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+            <StatusConfirmModal
+                isOpen={confirmModal.isOpen}
+                user={{ name: confirmModal.userName }}
+                action={confirmModal.action}
+                onConfirm={handleStatusUpdate}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
             />
         </div>
     );

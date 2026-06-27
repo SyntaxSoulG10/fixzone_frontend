@@ -34,10 +34,13 @@ import {
     FiUser,
     FiPower,
     FiSearch,
-    FiTrash2
+    FiTrash2,
+    FiExternalLink
 } from "react-icons/fi";
+import { useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+import { getStripeConnectStatus, connectStripe } from "@/lib/api";
 
 /**
  * GLOBAL CONSTANTS: Using constants for branding and configuration 
@@ -195,7 +198,7 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
                 {isEdit ? "Edit Service Center" : "Add New Service Center"}
             </DialogTitle>
             <DialogContent>
-                <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
+                <Box display="flex" flexDirection="column" gap={2.5} pt={isEdit ? 2 : 0}>
                     <TextField label="Center Name" name="name" value={formData.name} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <TextField label="Manager Name" name="manager" value={formData.manager} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
                     <TextField label="Address" name="location" value={formData.location} onChange={onChange} fullWidth multiline rows={2} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
@@ -215,7 +218,11 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
                 <Button onClick={onClose} sx={{ color: '#718096' }}>Cancel</Button>
-                <Button onClick={onSave} variant="contained" sx={{ bgcolor: BRAND_ORANGE, borderRadius: '0.75rem', px: 4, fontWeight: '700', textTransform: 'none' }}>
+                <Button
+                    onClick={onSave}
+                    variant="contained"
+                    sx={{ bgcolor: BRAND_ORANGE, borderRadius: '0.75rem', px: 4, fontWeight: '700', textTransform: 'none', '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#a0aec0' } }}
+                >
                     {isEdit ? "Update Branch" : "Create Branch"}
                 </Button>
             </DialogActions>
@@ -231,12 +238,15 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  */
 export default function MyCentersPage() {
     const { centersData, isLoading: isContextLoading, refreshAll } = useDashboardData();
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [stripeConnected, setStripeConnected] = useState(false);
+    const [stripeLoading, setStripeLoading] = useState(false);
 
     const [formData, setFormData] = useState({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
 
@@ -245,12 +255,77 @@ export default function MyCentersPage() {
         id: c.centerId, name: c.name, location: c.address,
         manager: c.managerName || "N/A", phone: c.contactPhone,
         revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
-        mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0
+        mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0,
     }));
 
     useEffect(() => { 
         if (centersData.length === 0) refreshAll(); 
     }, [centersData.length, refreshAll]);
+
+    const refreshStripeStatus = async () => {
+        try {
+            const data = await getStripeConnectStatus();
+            setStripeConnected(Boolean(data.stripeConnected));
+        } catch {
+            setStripeConnected(false);
+        }
+    };
+
+    // Fetch Stripe connect status once on mount
+    useEffect(() => {
+        refreshStripeStatus();
+    }, []);
+
+    // Handle Stripe Connect redirect query params
+    useEffect(() => {
+        if (!searchParams) return;
+        const connectResult = searchParams.get("connect");
+        if (connectResult === "success") {
+            setSnackbar({ open: true, message: 'Stripe account connected successfully.', severity: 'success' });
+            refreshStripeStatus();
+            if (typeof window !== "undefined") {
+                const newUrl = window.location.pathname;
+                window.history.replaceState(null, "", newUrl);
+            }
+        } else if (connectResult === "error") {
+            setSnackbar({ open: true, message: 'Stripe connection failed. Please try again.', severity: 'error' });
+            refreshStripeStatus();
+            if (typeof window !== "undefined") {
+                const newUrl = window.location.pathname;
+                window.history.replaceState(null, "", newUrl);
+            }
+        }
+    }, [searchParams]);
+
+    const handleConnectStripe = async () => {
+        setStripeLoading(true);
+        try {
+            const url = await connectStripe();
+            if (!url) {
+                throw new Error('No Stripe onboarding URL returned');
+            }
+
+            const popup = window.open(url, '_blank', 'noopener,noreferrer');
+            if (!popup) {
+                throw new Error('Popup blocked');
+            }
+
+            const intervalId = window.setInterval(async () => {
+                if (popup.closed) {
+                    window.clearInterval(intervalId);
+                    await refreshStripeStatus();
+                    return;
+                }
+                if (document.visibilityState === 'visible') {
+                    await refreshStripeStatus();
+                }
+            }, 3000);
+        } catch {
+            setSnackbar({ open: true, message: 'Failed to generate Stripe link. Please try again.', severity: 'error' });
+        } finally {
+            setStripeLoading(false);
+        }
+    };
 
     const handleSave = async () => {
         // Validates input fields before submission
@@ -293,7 +368,8 @@ export default function MyCentersPage() {
             await refreshAll();
             setOpenDialog(false);
         } catch (e: any) { 
-            const errorMsg = e.response?.data?.message || 'Save operation failed';
+            const data = e.response?.data;
+            const errorMsg = typeof data === 'string' ? data : (data?.message || 'Save operation failed');
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
         } finally {
             setIsLoading(false);
@@ -311,7 +387,9 @@ export default function MyCentersPage() {
             await refreshAll();
             setSnackbar({ open: true, message: `Branch is now ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
         } catch (e: any) { 
-            setSnackbar({ open: true, message: e.response?.data?.message || 'Status update failed', severity: 'error' }); 
+            const data = e.response?.data;
+            const errorMsg = typeof data === 'string' ? data : (data?.message || 'Status update failed');
+            setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
         } finally {
             setIsLoading(false);
         }
@@ -333,7 +411,9 @@ export default function MyCentersPage() {
             setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
             await refreshAll();
         } catch (e: any) {
-            setSnackbar({ open: true, message: e.response?.data?.message || 'Delete operation failed', severity: 'error' });
+            const data = e.response?.data;
+            const errorMsg = typeof data === 'string' ? data : (data?.message || 'Delete operation failed');
+            setSnackbar({ open: true, message: errorMsg, severity: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -346,6 +426,41 @@ export default function MyCentersPage() {
             <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
+
+            <Box
+                sx={{
+                    mb: 4,
+                    p: 2.5,
+                    borderRadius: '1rem',
+                    border: `1px solid ${stripeConnected ? '#bbf7d0' : '#fed7aa'}`,
+                    bgcolor: stripeConnected ? '#f0fdf4' : '#fff7ed',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    gap: 2,
+                }}
+            >
+                <Box>
+                    <Typography variant="subtitle2" fontWeight={800} color={stripeConnected ? '#166534' : '#9a2c0c'} textTransform="uppercase" letterSpacing={0.8}>
+                        Stripe payout setup
+                    </Typography>
+                    <Typography variant="body2" color={stripeConnected ? '#166534' : '#9a2c0c'} fontWeight={600} sx={{ mt: 0.5 }}>
+                        {stripeConnected
+                            ? 'Your owner account is connected for payouts and online payments.'
+                            : 'Complete Stripe Connect to enable online payments for your branches.'}
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
+                    startIcon={<FiExternalLink size={16} />}
+                    onClick={handleConnectStripe}
+                    disabled={stripeLoading}
+                    sx={{ bgcolor: '#635bff', color: '#fff', '&:hover': { bgcolor: '#4f48e2' }, borderRadius: '0.75rem', textTransform: 'none', fontWeight: 700 }}
+                >
+                    {stripeLoading ? 'Opening...' : 'Connect Stripe'}
+                </Button>
+            </Box>
 
             <Box mb={4} display="flex" justifyContent="flex-end">
                 <TextField

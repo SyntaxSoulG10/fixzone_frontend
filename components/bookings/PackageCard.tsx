@@ -37,11 +37,14 @@ export default function PackageCard({ pkg, isSelected, onSelect }: PackageCardPr
 
       {/* Package Image Source */}
       <div className="md:w-1/3 h-48 md:h-auto relative overflow-hidden">
-        <Image
-          src={pkg.image}
+        {/* Use standard img tag to support dynamic/untrusted protocols like file:// */}
+        <img
+          src={pkg.image.startsWith('file://') ? 'https://images.unsplash.com/photo-15057404209ce-096b99092408?auto=format&fit=crop&q=80&w=400' : pkg.image}
           alt={pkg.name}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-15057404209ce-096b99092408?auto=format&fit=crop&q=80&w=400';
+          }}
         />
         {pkg.isRecommended && (
           <div className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#f1f5f9"/>
+  <rect x="80" y="130" width="240" height="80" rx="12" fill="#cbd5e1"/>
+  <rect x="110" y="100" width="160" height="70" rx="10" fill="#94a3b8"/>
+  <circle cx="130" cy="215" r="22" fill="#64748b"/>
+  <circle cx="130" cy="215" r="10" fill="#94a3b8"/>
+  <circle cx="270" cy="215" r="22" fill="#64748b"/>
+  <circle cx="270" cy="215" r="10" fill="#94a3b8"/>
+  <rect x="80" y="155" width="50" height="30" rx="4" fill="#e2e8f0"/>
+  <rect x="270" y="155" width="50" height="30" rx="4" fill="#e2e8f0"/>
+  <text x="200" y="270" font-family="system-ui,sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">No photo uploaded</text>
+</svg>

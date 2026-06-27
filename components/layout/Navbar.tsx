@@ -36,7 +36,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             } else if (currentRole === "ROLE_SERVICE_MANAGER") {
                 endpoint = APP_CONFIG.api.managers + "/me";
             } else if (currentRole === "ROLE_CUSTOMER") {
-                endpoint = "http://localhost:8081/api/customer/profile";
+                endpoint = APP_CONFIG.api.customer + "/profile";
             } else if (currentRole === "ROLE_SUPER_ADMIN") {
                 endpoint = APP_CONFIG.api.superAdmins + "/me";
             }
@@ -219,14 +219,14 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     const getNotificationsPageUrl = () => {
         if (!role) return "";
+        // Super admin and customer don't have a dedicated notifications page tab
         if (role === "ROLE_SUPER_ADMIN" || role === "super_admin") return "";
-        
+        if (role === "ROLE_CUSTOMER" || role === "CUSTOMER" || role === "customer") return "";
+
         const roleToPath: Record<string, string> = {
             "ROLE_COMPANY_OWNER": "company-owner",
             "OWNER": "company-owner",
             "ROLE_SERVICE_MANAGER": "service-manager",
-            "ROLE_CUSTOMER": "customer",
-            "CUSTOMER": "customer",
             "company_owner": "company-owner",
             "service_manager": "service-manager",
         };

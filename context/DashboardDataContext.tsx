@@ -81,7 +81,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const [managerRes, bookingsRes] = await Promise.all([
                     axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.warn("managers/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
+                    axios.get(APP_CONFIG.api.bookings).catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
                 ]);
                 const mData = managerRes.data;
                 setManagersData(Array.isArray(mData) ? mData : (mData ? [mData] : []));
@@ -100,12 +100,18 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 setSubscriptionsData(subscriptionsRes.data || []);
 
             } else if (role === "ROLE_CUSTOMER") {
-                const [customerRes, bookingsRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.customers + "/current").catch((e) => { console.warn("customers/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.baseUrl + "/bookings").catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
-                ]);
-                setCustomersData(customerRes.data ? [customerRes.data] : []);
-                setBookingsData(Array.isArray(bookingsRes.data) ? bookingsRes.data : []);
+                const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+
+                // Only fetch bookings — profile is fetched directly by the customer pages
+                if (userId) {
+                    try {
+                        const res = await axios.get(`${APP_CONFIG.api.bookings}/customer/${userId}`);
+                        setBookingsData(Array.isArray(res.data) ? res.data : []);
+                    } catch (e: any) {
+                        console.warn("[DashboardDataContext] customer bookings failed:", e?.response?.status, e?.message);
+                        setBookingsData([]);
+                    }
+                }
 
             } else {
                 console.warn("[DashboardDataContext] Unknown role, no data fetched:", role);
@@ -128,9 +134,17 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const refreshBookings = useCallback(async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         if (!token) return;
+        const role = getUserRole(token);
         try {
-            const res = await axios.get(APP_CONFIG.api.baseUrl + "/bookings");
-            setBookingsData(Array.isArray(res.data) ? res.data : []);
+            if (role === "ROLE_CUSTOMER") {
+                const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+                if (!userId) return;
+                const res = await axios.get(`${APP_CONFIG.api.bookings}/customer/${userId}`);
+                setBookingsData(Array.isArray(res.data) ? res.data : []);
+            } else {
+                const res = await axios.get(APP_CONFIG.api.bookings);
+                setBookingsData(Array.isArray(res.data) ? res.data : []);
+            }
         } catch (e) {
             console.warn("[DashboardDataContext] refreshBookings failed", e);
         }

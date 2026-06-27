@@ -1,19 +1,30 @@
+/**
+ * Derived API endpoint map.
+ * All paths are built from NEXT_PUBLIC_API_BASE_URL so there is one source of truth.
+ * Import APP_CONFIG from "@/utils/config" wherever you need a specific endpoint URL.
+ */
+const BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
+
 export const APP_CONFIG = {
-    // We encapsulate the API base URLs to avoid scattering raw strings throughout the frontend.
-    // This allows for central updates if the backend host ever changes.
-    api: {
-        baseUrl: "http://localhost:8081/api",
-        serviceCenters: "http://localhost:8081/api/service-centers",
-        customers: "http://localhost:8081/api/customers",
-        managers: "http://localhost:8081/api/managers",
-        paymentRecords: "http://localhost:8081/api/payment-records",
-        invoices: "http://localhost:8081/api/invoices",
-        analytics: "http://localhost:8081/api/analytics",
-        owners: "http://localhost:8081/api/owners",
-        superAdmins: "http://localhost:8081/api/super-admins",
-    },
-    // Adding placeholder IDs to resolve arbitrary hardcoded assignments
-    placeholders: {
-        ownerId: "00000000-0000-0000-0000-000000010011"
-    }
+  api: {
+    baseUrl:        `${BASE}/api`,
+    serviceCenters: `${BASE}/api/service-centers`,
+    customers:      `${BASE}/api/customers`,
+    customer:       `${BASE}/api/customer`,        // singular — profile, vehicles, settings
+    managers:       `${BASE}/api/managers`,
+    paymentRecords: `${BASE}/api/payment-records`,
+    invoices:       `${BASE}/api/invoices`,
+    analytics:      `${BASE}/api/analytics`,
+    owners:         `${BASE}/api/owners`,
+    superAdmins:    `${BASE}/api/super-admins`,
+    auth:           `${BASE}/api/auth`,
+    bookings:       `${BASE}/api/bookings`,
+    payments:       `${BASE}/api/payments`,
+    subscriptions:  `${BASE}/api/subscriptions`,
+    subPlans:       `${BASE}/api/subscription-plans`,
+  },
+  placeholders: {
+    ownerId: "00000000-0000-0000-0000-000000010011",
+  },
 };

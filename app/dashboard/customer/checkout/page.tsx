@@ -2,18 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiCalendar, FiClock, FiInfo, FiChevronRight, FiPackage, FiTruck } from "react-icons/fi";
-import Image from "next/image";
 import { useState } from "react";
 import { useBooking } from "@/context/BookingContext";
 import { format } from "date-fns";
 import Button from "@/components/UI/Button";
-import { executeStripePayment } from "@/lib/api";
+import { executeStripePayment, initPayment } from "@/lib/api";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { bookingData } = useBooking();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentReady, setPaymentReady] = useState(true);
 
   const pkg = bookingData.selectedPackage;
   const vehicle = bookingData.selectedVehicle;
@@ -38,21 +38,58 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
       setError(null);
+      setPaymentReady(true);
 
       if (!paymentId) {
         throw new Error("Booking session expired. Please go back and try again.");
       }
 
-      const stripeUrl = await executeStripePayment(paymentId);
+      const initResult = await initPayment(
+        String(pkg.id),
+        String(vehicle.id),
+        date ? format(date, "yyyy-MM-dd") : "",
+        time || "",
+        String(bookingData.station?.id || ""),
+        bookingData.specialRequest || ""
+      );
 
-      if (stripeUrl && stripeUrl.startsWith("http")) {
+      if (!initResult.paymentId) {
+        throw new Error(initResult.message || "Booking session could not be prepared.");
+      }
+
+      if (!initResult.stripeConnected) {
+        setPaymentReady(false);
+        setError(initResult.message || "This branch is not ready for online payments yet. Please complete Stripe Connect onboarding first.");
+        return;
+      }
+
+      const stripeUrl = await executeStripePayment(initResult.paymentId);
+
+      if (stripeUrl && /^https?:\/\//i.test(stripeUrl)) {
         window.location.href = stripeUrl;
       } else {
-        throw new Error("Invalid payment URL received from server.");
+        throw new Error("This branch cannot accept online payments until the owner completes Stripe Connect.");
       }
     } catch (err: any) {
       console.error("Stripe payment error:", err);
-      setError(err.message || "Failed to initiate payment. Please try again.");
+
+      const msg: string = err.message || "";
+      const normalized = msg.toLowerCase();
+      const isStripeNotConnected =
+        normalized.includes("stripe connect") ||
+        normalized.includes("stripe account") ||
+        normalized.includes("not connected") ||
+        normalized.includes("not ready") ||
+        normalized.includes("onboarding") ||
+        normalized.includes("requiresstripeconnect");
+
+      if (isStripeNotConnected) {
+        setPaymentReady(false);
+        setError("This branch cannot accept online payments until the owner completes Stripe Connect.");
+      } else {
+        setError(msg || "We couldn’t start the payment flow right now. Please try again in a moment.");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -75,13 +112,18 @@ export default function CheckoutPage() {
         <div className="flex-1 space-y-6">
 
           {/* Vehicle Banner */}
-          <div className="relative rounded-3xl overflow-hidden shadow-sm h-64 md:h-80 group">
-            <Image
-              src={vehicle.image}
+          <div className="relative rounded-3xl overflow-hidden shadow-sm h-64 md:h-80 group bg-slate-100">
+            <img
+              src={
+                (vehicle as any).imageUrl ||
+                vehicle.image ||
+                "/images/vehicle-placeholder.svg"
+              }
               alt={vehicle.brand}
-              fill
-              sizes="(max-width: 768px) 100vw, 60vw"
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/vehicle-placeholder.svg";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-8 left-8 text-white">
@@ -183,7 +225,7 @@ export default function CheckoutPage() {
               <Button
                 onClick={handlePay}
                 disabled={loading}
-                className={`w-full h-16 rounded-2xl text-lg font-black transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl
+                className={`w-full h-16 rounded-2xl text-xl font-black transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl
                   ${loading
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
                     : "bg-orange-500 hover:bg-orange-600 shadow-orange-200 text-white"
@@ -206,8 +248,8 @@ export default function CheckoutPage() {
               </Button>
 
               {error && (
-                <div className="mt-4 bg-red-50 border border-red-100 rounded-2xl p-4">
-                  <p className="text-xs text-center text-red-600 font-bold leading-relaxed">{error}</p>
+                <div className={`mt-4 rounded-2xl border p-4 ${paymentReady ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-200"}`}>
+                  <p className={`text-xs text-center font-bold leading-relaxed ${paymentReady ? "text-red-600" : "text-amber-700"}`}>{error}</p>
                 </div>
               )}
 

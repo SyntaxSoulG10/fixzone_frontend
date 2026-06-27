@@ -92,8 +92,10 @@ export default function StationDetailPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string | null>(null);
   const [specialRequest, setSpecialRequest] = useState("");
   const [userVehicles, setUserVehicles] = useState<Vehicle[]>([]);
+  const [rawApiVehicles, setRawApiVehicles] = useState<any[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
 
@@ -121,25 +123,32 @@ export default function StationDetailPage() {
           image: "/garages/garage01.jpg",
           rating: data.rating || 4.5,
           reviews: data.customerRatings?.length || 0,
-          openStatus: "Contact center for hours"
+          openStatus: "Contact center for hours",
+          contactPhone: data.contactPhone || null,
+          openingHours: data.openingHours || null,
         };
         
         setStation(transformedStation);
         
-        // Load real packages from backend
-        if (data.servicePackages && data.servicePackages.length > 0) {
-          const transformedPackages = data.servicePackages.map((pkg: any) => ({
-            id: pkg.packageId,
-            name: pkg.name,
-            description: pkg.description,
-            price: pkg.basePrice,
-            duration: `${pkg.estimatedDurationMins / 60} hrs`,
-            image: "/images/bookings/package-gold-car.png",
-            features: pkg.type ? pkg.type.split(",") : ["Standard service features"]
-          }));
-          setPackages(transformedPackages);
-        } else {
-          setPackages(PACKAGES); // Fallback to mock if no packages in center
+        // Load real packages from backend separately
+        try {
+          const pkgData = await getServicePackagesByCenter(params.stationId, selectedVehicleType ?? undefined);
+          if (pkgData && pkgData.length > 0) {
+            const transformedPackages = pkgData.map((pkg: any) => ({
+              id: pkg.packageId,
+              name: pkg.name,
+              description: pkg.description,
+              price: pkg.basePrice,
+              duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
+              image: "/images/bookings/package-gold-car.png",
+              features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
+            }));
+            setPackages(transformedPackages);
+          } else {
+            setPackages(PACKAGES);
+          }
+        } catch {
+          setPackages(PACKAGES);
         }
       } catch (err) {
         console.warn("Backend fail, fallback to mock:", err);
@@ -155,12 +164,14 @@ export default function StationDetailPage() {
       try {
         setVehiclesLoading(true);
         const data = await getVehicles();
+        setRawApiVehicles(data);
         const transformed: Vehicle[] = data.map((v: ApiVehicle) => ({
           id: v.id,
           brand: v.brand,
-          model: "", // We can add this later
+          model: "",
           licensePlate: v.plateNumber,
-          image: v.imageUrl || "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=200"
+          image: v.imageUrl || "/images/vehicle-placeholder.svg",
+          ...(v.imageUrl ? { imageUrl: v.imageUrl } : {}),
         }));
         setUserVehicles(transformed);
       } catch (err) {
@@ -191,10 +202,43 @@ export default function StationDetailPage() {
     fetchSlots();
   }, [selectedDate, station?.id]);
 
+  // --- Re-fetch packages when vehicle type changes ---
+  useEffect(() => {
+    if (!params.stationId) return;
+    const fetchPackages = async () => {
+      try {
+        const pkgData = await getServicePackagesByCenter(params.stationId, selectedVehicleType ?? undefined);
+        if (pkgData && pkgData.length > 0) {
+          const transformedPackages = pkgData.map((pkg: any) => ({
+            id: pkg.packageId,
+            name: pkg.name,
+            description: pkg.description,
+            price: pkg.basePrice,
+            duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
+            image: "/images/bookings/package-gold-car.png",
+            features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
+          }));
+          setPackages(transformedPackages);
+        } else {
+          setPackages(PACKAGES);
+        }
+      } catch {
+        setPackages(PACKAGES);
+      }
+    };
+    fetchPackages();
+  }, [selectedVehicleType, params.stationId]);
+
   // --- Helpers ---
   const selectedVehicle = useMemo(() => {
     return userVehicles.find(v => v.id === selectedVehicleId) || null;
   }, [selectedVehicleId, userVehicles]);
+
+  const handleVehicleSelect = (id: string) => {
+    setSelectedVehicleId(id);
+    const rawVehicle = rawApiVehicles.find((rv: any) => rv.id === id);
+    setSelectedVehicleType(rawVehicle?.vehicleType ?? null);
+  };
 
   const isValid = useMemo(() => {
     return !!(selectedPackage && selectedDate && selectedTime && selectedVehicleId);
@@ -209,7 +253,16 @@ export default function StationDetailPage() {
 
         // Step 1: Initialize payment on backend
         const formattedDate = format(selectedDate, "yyyy-MM-dd");
-        const paymentId = await initPayment(selectedPackage.id, selectedVehicleId!, formattedDate, selectedTime!, station.id, specialRequest);
+        const initResult = await initPayment(selectedPackage.id, selectedVehicleId!, formattedDate, selectedTime!, station.id, specialRequest);
+
+        if (!initResult.paymentId) {
+          throw new Error(initResult.message || "Booking could not be prepared.");
+        }
+
+        if (!initResult.stripeConnected) {
+          setError(initResult.message || "This branch is not ready for online payments yet. Please complete Stripe Connect onboarding first.");
+          return;
+        }
 
         // Step 2: Save to context and navigate
         setBookingData({
@@ -219,7 +272,7 @@ export default function StationDetailPage() {
           selectedTime,
           selectedVehicle,
           specialRequest,
-          paymentId,
+          paymentId: initResult.paymentId,
         });
 
         router.push("/dashboard/customer/checkout");
@@ -228,7 +281,8 @@ export default function StationDetailPage() {
         if (err.message === "TIME_SLOT_UNAVAILABLE") {
           setError("Sorry, this time slot was just taken. Please select another time.");
         } else {
-          setError("Failed to initialize booking. Please try again.");
+          const message = err.message || "Failed to initialize booking. Please try again.";
+          setError(message);
         }
       } finally {
         setInitLoading(false);
@@ -305,7 +359,7 @@ export default function StationDetailPage() {
                 <VehicleSelector 
                   vehicles={userVehicles} 
                   selectedVehicleId={selectedVehicleId}
-                  onVehicleSelect={setSelectedVehicleId}
+                  onVehicleSelect={handleVehicleSelect}
                 />
               ) : (
                 <div className="p-6 bg-orange-50 border border-orange-100 rounded-2xl text-center space-y-3">
