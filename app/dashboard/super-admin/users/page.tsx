@@ -4,16 +4,10 @@ import { useState, useEffect } from "react";
 import axios from "@/lib/axios";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-<<<<<<< HEAD
-import {
-    FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch,
-    FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter
-=======
 import { 
     FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch, 
     FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter,
     FiChevronLeft, FiChevronRight 
->>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { toast } from "react-toastify";

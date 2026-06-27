@@ -35,20 +35,14 @@ import {
     FiPower,
     FiSearch,
     FiTrash2,
-<<<<<<< HEAD
-    FiExternalLink
-=======
+    FiExternalLink,
     FiBriefcase
->>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 } from "react-icons/fi";
 import { useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
-<<<<<<< HEAD
 import { getStripeConnectStatus, connectStripe } from "@/lib/api";
-=======
 import EmptyState from "@/components/UI/EmptyState";
->>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 
 /**
  * GLOBAL CONSTANTS: Using constants for branding and configuration 
