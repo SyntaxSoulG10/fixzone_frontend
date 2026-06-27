@@ -42,7 +42,6 @@ const ROLE_MENUS: any = {
         { name: 'Managers', icon: FiUsers, href: '/dashboard/company-owner/managers' },
         { name: 'Finance', icon: FiDollarSign, href: '/dashboard/company-owner/finance' },
         { name: 'Customers', icon: FiSmile, href: '/dashboard/company-owner/customers' },
-        { name: 'Notifications', icon: FiBell, href: '/dashboard/company-owner/notifications', badge: true },
         { name: 'Profile', icon: FiUsers, href: '/dashboard/company-owner/profile' },
     ],
     service_manager: [
@@ -51,7 +50,6 @@ const ROLE_MENUS: any = {
         { name: 'Vehicles', icon: FiTruck, href: '/dashboard/service-manager/vehicles' },
         { name: 'Reports', icon: FiFileText, href: '/dashboard/service-manager/reports' },
         { name: 'Analytics', icon: FiPieChart, href: '/dashboard/service-manager/analytics' },
-        { name: 'Notifications', icon: FiBell, href: '/dashboard/service-manager/notifications', badge: true },
         { name: 'MyProfile', icon: FiUser, href: '/dashboard/service-manager/profile' },
     ],
     customer: [

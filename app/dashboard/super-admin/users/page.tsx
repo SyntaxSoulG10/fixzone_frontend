@@ -4,9 +4,16 @@ import { useState, useEffect } from "react";
 import axios from "@/lib/axios";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
+<<<<<<< HEAD
 import {
     FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch,
     FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter
+=======
+import { 
+    FiUsers, FiMail, FiUserCheck, FiUserX, FiSearch, 
+    FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter,
+    FiChevronLeft, FiChevronRight 
+>>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { toast } from "react-toastify";
@@ -113,8 +120,17 @@ export default function UsersPage() {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [sidebarTab, setSidebarTab] = useState<'All' | 'Customer' | 'Owner' | 'Manager'>('All');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, userId: '', userName: '', action: 'Suspended' as 'Active' | 'Suspended' });
+    
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
 
     useEffect(() => { loadUserDatabase(); }, []);
+
+    // Reset pagination when search or filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, sidebarTab]);
 
     // FETCH LOGIC: Pulls entire user base for administrative oversight.
     const loadUserDatabase = async () => {
@@ -187,6 +203,9 @@ export default function UsersPage() {
         }
     ];
 
+    const totalPages = Math.ceil(filtered.length / pageSize);
+    const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     return (
         <div className="space-y-8 pb-10">
             <div className="flex justify-between items-center">
@@ -207,16 +226,43 @@ export default function UsersPage() {
                 <UserSidebarFilters activeTab={sidebarTab} onTabChange={setSidebarTab} />
 
                 <div className="flex-1 p-6 space-y-6">
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div className="relative w-full md:max-w-md">
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div className="relative w-full">
                             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input type="text" placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none" />
                         </div>
-                        <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-500"><FiFilter className="inline mr-2" /> {filtered.length} Users Listed</div>
                     </div>
                     <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                        <Table columns={columns} data={filtered} keyField="id" />
+                        <Table columns={columns} data={paginatedData} keyField="id" />
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filtered.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div className="text-xs font-bold text-slate-500">
+                                Showing {Math.min(filtered.length, (currentPage - 1) * pageSize + 1)}–{Math.min(filtered.length, currentPage * pageSize)} of {filtered.length} users
+                            </div>
+                            <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                    >
+                                        <FiChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-xs font-bold text-slate-700">
+                                        Page {currentPage} of {totalPages || 1}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                    >
+                                        <FiChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

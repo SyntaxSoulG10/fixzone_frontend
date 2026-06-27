@@ -14,6 +14,8 @@ interface ServicePlan {
     isPopular?: boolean; // Changed from highlight to isPopular
     description?: string;
     durationMonths?: number;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export default function SubscriptionPlansPage() {
@@ -180,6 +182,12 @@ export default function SubscriptionPlansPage() {
                                     </div>
                                 ))}
                             </div>
+
+                            {plan.updatedAt && (
+                                <div className="text-[10px] text-slate-400 font-semibold mb-2">
+                                    Last updated: {new Date(plan.updatedAt).toLocaleString()}
+                                </div>
+                            )}
 
                             <div className="pt-6 border-t border-slate-100 flex gap-3">
                                 <button

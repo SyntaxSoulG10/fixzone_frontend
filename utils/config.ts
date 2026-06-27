@@ -8,21 +8,21 @@ const BASE =
 
 export const APP_CONFIG = {
   api: {
-    baseUrl:        `${BASE}/api`,
+    baseUrl: `${BASE}/api`,
     serviceCenters: `${BASE}/api/service-centers`,
-    customers:      `${BASE}/api/customers`,
-    customer:       `${BASE}/api/customer`,        // singular — profile, vehicles, settings
-    managers:       `${BASE}/api/managers`,
+    customers: `${BASE}/api/customers`,
+    customer: `${BASE}/api/customer`,        // singular — profile, vehicles, settings
+    managers: `${BASE}/api/managers`,
     paymentRecords: `${BASE}/api/payment-records`,
-    invoices:       `${BASE}/api/invoices`,
-    analytics:      `${BASE}/api/analytics`,
-    owners:         `${BASE}/api/owners`,
-    superAdmins:    `${BASE}/api/super-admins`,
-    auth:           `${BASE}/api/auth`,
-    bookings:       `${BASE}/api/bookings`,
-    payments:       `${BASE}/api/payments`,
-    subscriptions:  `${BASE}/api/subscriptions`,
-    subPlans:       `${BASE}/api/subscription-plans`,
+    invoices: `${BASE}/api/invoices`,
+    analytics: `${BASE}/api/analytics`,
+    owners: `${BASE}/api/owners`,
+    superAdmins: `${BASE}/api/super-admins`,
+    auth: `${BASE}/api/auth`,
+    bookings: `${BASE}/api/bookings`,
+    payments: `${BASE}/api/payments`,
+    subscriptions: `${BASE}/api/subscriptions`,
+    subPlans: `${BASE}/api/subscription-plans`,
   },
   placeholders: {
     ownerId: "00000000-0000-0000-0000-000000010011",

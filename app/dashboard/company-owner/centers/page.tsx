@@ -35,12 +35,20 @@ import {
     FiPower,
     FiSearch,
     FiTrash2,
+<<<<<<< HEAD
     FiExternalLink
+=======
+    FiBriefcase
+>>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 } from "react-icons/fi";
 import { useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+<<<<<<< HEAD
 import { getStripeConnectStatus, connectStripe } from "@/lib/api";
+=======
+import EmptyState from "@/components/UI/EmptyState";
+>>>>>>> 644f128372f38897fba09519aa4815c50a360dc0
 
 /**
  * GLOBAL CONSTANTS: Using constants for branding and configuration 
@@ -470,13 +478,23 @@ export default function MyCentersPage() {
                 />
             </Box>
 
-            <Grid container spacing={4}>
-                {filtered.map(center => (
-                    <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-                        <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
-                    </Grid>
-                ))}
-            </Grid>
+            {filtered.length === 0 && !isContextLoading ? (
+                <EmptyState 
+                    icon={<FiBriefcase />}
+                    title="No Service Centers"
+                    description="You don't have any service center branches yet. Let's create your first branch to get started."
+                    actionLabel="New Branch"
+                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", manager: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
+                />
+            ) : (
+                <Grid container spacing={4}>
+                    {filtered.map(center => (
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
+                            <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
+                        </Grid>
+                    ))}
+                </Grid>
+            )}
 
             <CenterDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.value })} onSave={handleSave} />
 

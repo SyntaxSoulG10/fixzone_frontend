@@ -29,12 +29,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             // Determine true role from token
             const token = localStorage.getItem("token");
             const currentRole = localStorage.getItem("userRole");
-            
+
             let endpoint = "";
             if (currentRole === "ROLE_COMPANY_OWNER" || currentRole === "OWNER") {
                 endpoint = APP_CONFIG.api.owners + "/current";
             } else if (currentRole === "ROLE_SERVICE_MANAGER") {
-                endpoint = APP_CONFIG.api.managers + "/me";
+                endpoint = APP_CONFIG.api.managers + "/current";
             } else if (currentRole === "ROLE_CUSTOMER") {
                 endpoint = APP_CONFIG.api.customer + "/profile";
             } else if (currentRole === "ROLE_SUPER_ADMIN") {
@@ -104,7 +104,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     const getProfileUrl = () => {
         if (!role) return "/dashboard";
-        
+
         // Robust mapping for dashboard sub-paths
         const roleToPath: Record<string, string> = {
             "ROLE_COMPANY_OWNER": "company-owner",
@@ -118,7 +118,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             "service_manager": "service-manager",
             "super_admin": "super-admin"
         };
-        
+
         const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
         return `/dashboard/${path}/profile`;
     };
@@ -140,7 +140,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     useEffect(() => {
         fetchNotifications();
-        
+
         // Listen to force updates
         const handleForceUpdate = () => fetchNotifications();
         window.addEventListener("forceUpdateNotifications", handleForceUpdate);
@@ -230,10 +230,10 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             "company_owner": "company-owner",
             "service_manager": "service-manager",
         };
-        
+
         const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
         return `/dashboard/${path}/notifications`;
-    };
+    }
 
     const unreadCount = notifications.filter(n => !(n.read !== undefined ? n.read : n.isRead)).length;
 
@@ -295,14 +295,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                                             <div
                                                 key={n.id}
                                                 onClick={() => handleNotificationClick(n)}
-                                                className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer flex gap-2.5 items-start group ${
-                                                    !isNotificationRead ? 'bg-orange-50/20 border-l-2 border-orange-500' : ''
-                                                }`}
+                                                className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer flex gap-2.5 items-start group ${!isNotificationRead ? 'bg-orange-50/20 border-l-2 border-orange-500' : ''
+                                                    }`}
                                             >
-                                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${
-                                                    n.type === 'SUCCESS' ? 'bg-green-500' :
-                                                    n.type === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
-                                                }`} />
+                                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${n.type === 'SUCCESS' ? 'bg-green-500' :
+                                                        n.type === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
+                                                    }`} />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-start mb-0.5">
                                                         <p className={`text-xs truncate ${!isNotificationRead ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'}`}>
@@ -312,7 +310,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                                                             {formatTime(n.createdAt)}
                                                         </span>
                                                     </div>
-                                                    <div 
+                                                    <div
                                                         className="text-xs text-slate-500 line-clamp-2 leading-relaxed [&_img]:hidden [&_.notif-attachment-link]:hidden"
                                                         dangerouslySetInnerHTML={{ __html: n.message }}
                                                     />

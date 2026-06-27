@@ -197,8 +197,8 @@ export default function CustomersPage() {
     const repeatCustomers = customers.filter(c => c.visits > 1).length;
     const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
     
-    // Calculates new customers from the latest month in analytics data
-    const latestGrowth = analyticsData?.customerGrowth?.[analyticsData.customerGrowth.length - 1];
+    const customerGrowthArray = analyticsData?.customerGrowth || [];
+    const latestGrowth = customerGrowthArray[customerGrowthArray.length - 1];
     const newCustomersCount = latestGrowth?.newCustomers || 0;
     const growthPercentage = analyticsData?.jobsChange || "+0%"; // Uses jobs change as a proxy for growth
 
@@ -222,7 +222,7 @@ export default function CustomersPage() {
             </Box>
 
             <Grid container spacing={3} mb={6}>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Customers"
                         count={totalCustomers.toString()}
@@ -235,7 +235,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="New Customers"
                         count={newCustomersCount.toString()}
@@ -248,7 +248,7 @@ export default function CustomersPage() {
                         color="primary"
                     />
                 </Grid>
-                <Grid sx={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Repeat Customers"
                         count={`${repeatRate}%`}

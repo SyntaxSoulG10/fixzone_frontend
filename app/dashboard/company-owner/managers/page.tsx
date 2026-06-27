@@ -172,10 +172,10 @@ export default function ManagersPage() {
     const [formData, setFormData] = useState({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
 
     useEffect(() => { 
-        if (managersData.length > 0 && centersData.length > 0) {
-            mapData(managersData, centersData);
+        if (!contextLoading) {
+            mapData(managersData || [], centersData || []);
         }
-    }, [managersData, centersData]);
+    }, [managersData, centersData, contextLoading]);
 
     const mapData = (mgrData: any[], ctrData: any[]) => {
         setLoading(true);

@@ -91,11 +91,11 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
                 <StatCard
                     title="Total Revenue"
                     count={`Rs. ${stats.totalRevenue.toLocaleString()}`}
-                    percentage={{
+                    percentage={stats.totalRevenue > 0 ? {
                         color: stats.revenueChange.startsWith('+') ? 'success' : 'danger',
                         amount: stats.revenueChange,
                         label: 'vs. last month'
-                    }}
+                    } : undefined}
                     icon={<FiDollarSign />}
                     color="primary"
                 />
@@ -104,7 +104,7 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
                 <StatCard
                     title="Active Centers"
                     count={stats.activeCenters.toString()}
-                    percentage={{ color: 'success', amount: '', label: 'Total registered locations' }}
+                    percentage={stats.activeCenters > 0 ? { color: 'success', amount: '', label: 'Total registered locations' } : undefined}
                     icon={<FiBriefcase />}
                     color="primary"
                 />
@@ -113,11 +113,11 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
                 <StatCard
                     title="Total Customers"
                     count={stats.totalCustomers.toString()}
-                    percentage={{
+                    percentage={stats.totalCustomers > 0 ? {
                         color: 'success',
                         amount: stats.customersChange,
                         label: 'vs. last month'
-                    }}
+                    } : undefined}
                     icon={<FiUsers />}
                     color="primary"
                 />

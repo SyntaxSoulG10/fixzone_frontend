@@ -39,6 +39,7 @@ import { getCompanyAnalytics, getCurrentOwnerAnalytics, AnalyticsData } from "@/
 import { APP_CONFIG } from "@/utils/config";
 import axios from "@/lib/axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import EmptyState from "@/components/UI/EmptyState";
 
 /**
  * Chart display constants.
@@ -216,11 +217,11 @@ export default function AnalyticsPage() {
                         title="Total Revenue"
                         count={`Rs. ${data?.totalRevenue.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
-                        percentage={{
+                        percentage={data?.totalRevenue && data.totalRevenue > 0 ? {
                             color: data?.revenueChange.startsWith('+') ? 'success' : 'danger',
                             amount: data?.revenueChange || '0%',
                             label: 'than last month'
-                        }}
+                        } : undefined}
                         color="success"
                     />
                 </Grid>
@@ -229,11 +230,11 @@ export default function AnalyticsPage() {
                         title="Online Revenue"
                         count={`Rs. ${data?.onlineRevenue.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
-                        percentage={{
+                        percentage={data?.onlineRevenue && data.onlineRevenue > 0 ? {
                             color: 'success',
                             amount: 'Digital',
                             label: 'via Platform'
-                        }}
+                        } : undefined}
                         color="primary"
                     />
                 </Grid>
@@ -242,11 +243,11 @@ export default function AnalyticsPage() {
                         title="Hand Collection"
                         count={`Rs. ${data?.handCollectionRevenue.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
-                        percentage={{
+                        percentage={data?.handCollectionRevenue && data.handCollectionRevenue > 0 ? {
                             color: 'warning',
                             amount: 'Cash',
                             label: 'In-person'
-                        }}
+                        } : undefined}
                         color="warning"
                     />
                 </Grid>
@@ -258,11 +259,11 @@ export default function AnalyticsPage() {
                         title="Total Jobs"
                         count={data?.totalJobs.toString() || '0'}
                         icon={<FiBriefcase />}
-                        percentage={{
+                        percentage={data?.totalJobs && data.totalJobs > 0 ? {
                             color: data?.jobsChange.startsWith('+') ? 'success' : 'danger',
                             amount: data?.jobsChange || '0%',
                             label: 'than last month'
-                        }}
+                        } : undefined}
                         color="primary"
                     />
                 </Grid>
@@ -270,11 +271,11 @@ export default function AnalyticsPage() {
                     <StatCard
                         title="Pending Jobs"
                         count={data?.pendingJobs.toString() || '0'}
-                        percentage={{
+                        percentage={data?.pendingJobs && data.pendingJobs > 0 ? {
                             color: data?.pendingJobsChange.startsWith('-') ? 'success' : 'danger',
                             amount: data?.pendingJobsChange || '0%',
                             label: 'vs. yesterday'
-                        }}
+                        } : undefined}
                         icon={<FiClock />}
                         color="primary"
                     />
@@ -284,17 +285,26 @@ export default function AnalyticsPage() {
                         title="Avg. Job Value"
                         count={`Rs. ${data?.avgJobValue.toLocaleString() || '0'}`}
                         icon={<FiArrowUp />}
-                        percentage={{
+                        percentage={data?.avgJobValue && data.avgJobValue > 0 ? {
                             color: data?.avgJobValueChange.startsWith('+') ? 'success' : 'danger',
                             amount: data?.avgJobValueChange || '0%',
                             label: 'than yesterday'
-                        }}
+                        } : undefined}
                         color="primary"
                     />
                 </Grid>
             </Grid>
 
-            <Grid container spacing={3}>
+            {(!data || (data.totalRevenue === 0 && data.totalJobs === 0)) ? (
+                <Box mt={4}>
+                    <EmptyState 
+                        icon={<FiBriefcase />}
+                        title="No Analytics Data Yet"
+                        description="You haven't completed any jobs or generated revenue yet. Your performance charts and breakdowns will appear here."
+                    />
+                </Box>
+            ) : (
+                <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Box mb={3}>
                         <ChartCard
@@ -446,6 +456,7 @@ export default function AnalyticsPage() {
                     </Card>
                 </Grid>
             </Grid>
+            )}
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>

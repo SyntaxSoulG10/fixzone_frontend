@@ -542,18 +542,33 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 /**
  * DIALOG COMPONENTS: For handling password changes and deactivation.
  */
-function ChangePasswordDialog({ open, onClose }: any) {
+function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
     const [error, setError] = useState("");
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!passwords.current) return setError("Current password is required");
         if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
         if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
         
         setError("");
-        // API call would go here
-        onClose();
+        setIsUpdating(true);
+        try {
+            await axios.post(`${APP_CONFIG.api.auth}/change-password`, {
+                currentPassword: passwords.current,
+                newPassword: passwords.new
+            });
+            onSuccess("Password updated successfully!");
+            setPasswords({ current: "", new: "", confirm: "" });
+            onClose();
+        } catch (error: any) {
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password";
+            setError(msg);
+            onError(msg);
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     return (
@@ -568,14 +583,16 @@ function ChangePasswordDialog({ open, onClose }: any) {
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleUpdate} variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>Update Password</Button>
+                <Button onClick={onClose} disabled={isUpdating}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={isUpdating} variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>
+                    {isUpdating ? <CircularProgress size={20} color="inherit" /> : "Update Password"}
+                </Button>
             </DialogActions>
         </Dialog>
     );
 }
 
-function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivateInput }: any) {
+function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivateInput, onDeactivate, isDeactivating }: any) {
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
             <DialogTitle sx={{ color: 'error.main' }}>Deactivate Account</DialogTitle>
@@ -584,8 +601,10 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
                 <TextField fullWidth placeholder="Type DELETE to confirm" value={deactivateInput} onChange={(e) => setDeactivateInput(e.target.value)} />
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button variant="contained" color="error" disabled={deactivateInput !== "DELETE"}>Deactivate My Account</Button>
+                <Button onClick={onClose} disabled={isDeactivating}>Cancel</Button>
+                <Button variant="contained" color="error" disabled={deactivateInput !== "DELETE" || isDeactivating} onClick={onDeactivate}>
+                    {isDeactivating ? <CircularProgress size={20} color="inherit" /> : "Deactivate My Account"}
+                </Button>
             </DialogActions>
         </Dialog>
     );
@@ -791,13 +810,35 @@ export default function ProfilePage() {
                 {tabValue === 2 && <BillingTab ownerData={ownerData} refreshAll={refreshAll} onMessage={(msg, sev) => { setSnackbarMessage(msg); setSnackbarSeverity(sev); setSnackbarOpen(true); }} />}
             </Box>
 
-            <ChangePasswordDialog open={openPasswordDialog} onClose={() => setOpenPasswordDialog(false)} />
+            <ChangePasswordDialog 
+                open={openPasswordDialog} 
+                onClose={() => setOpenPasswordDialog(false)} 
+                onSuccess={(msg: string) => { setSnackbarMessage(msg); setSnackbarSeverity("success"); setSnackbarOpen(true); }}
+                onError={(msg: string) => { setSnackbarMessage(msg); setSnackbarSeverity("error"); setSnackbarOpen(true); }}
+            />
             
             <DeactivateAccountDialog 
                 open={openDeactivateDialog} 
                 onClose={() => setOpenDeactivateDialog(false)} 
                 deactivateInput={deactivateInput} 
                 setDeactivateInput={setDeactivateInput} 
+                onDeactivate={async () => {
+                    if (deactivateInput !== "DELETE") return;
+                    try {
+                        await axios.delete(`${APP_CONFIG.api.owners}/${userId}`);
+                        setSnackbarMessage("Account deactivated successfully");
+                        setSnackbarSeverity("success");
+                        setSnackbarOpen(true);
+                        setOpenDeactivateDialog(false);
+                        // Log out
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                    } catch (error: any) {
+                        setSnackbarMessage(error.response?.data?.details || "Failed to deactivate account");
+                        setSnackbarSeverity("error");
+                        setSnackbarOpen(true);
+                    }
+                }}
             />
 
             <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
