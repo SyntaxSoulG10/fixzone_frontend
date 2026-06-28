@@ -448,8 +448,19 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
         }
     };
 
-    const statusColors: Record<string, string> = { TRIAL: "#f59e0b", ACTIVE: "#10b981", EXPIRED: "#ef4444" };
+    const statusColors: Record<string, string> = { 
+        TRIAL_ACTIVE: "#f59e0b", 
+        TRIAL_EXPIRED: "#ef4444", 
+        PREMIUM_ACTIVE: "#10b981", 
+        PREMIUM_EXPIRED: "#ef4444",
+        CANCELLED: "#6b7280",
+        TRIAL: "#f59e0b", // Legacy support
+        ACTIVE: "#10b981", // Legacy support
+        EXPIRED: "#ef4444" // Legacy support
+    };
     const statusColor = statusColors[subStatus] || "#6b7280";
+
+    const displayStatus = subStatus.replace('_', ' ');
 
     return (
         <Grid container spacing={3}>
@@ -459,23 +470,27 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                     <Typography variant="h6" fontWeight={700} gutterBottom>Subscription Status</Typography>
                     <Divider sx={{ mb: 2 }} />
                     <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                        <Chip label={subStatus} size="small" sx={{ bgcolor: statusColor, color: '#fff', fontWeight: 700, fontSize: '0.8rem' }} />
+                        <Chip label={displayStatus} size="small" sx={{ bgcolor: statusColor, color: '#fff', fontWeight: 700, fontSize: '0.8rem' }} />
                         {isAutoRenewEnabled && <Chip icon={<FiRefreshCw size={12} />} label="Auto-Renew ON" size="small" variant="outlined" sx={{ color: '#10b981', borderColor: '#10b981' }} />}
                     </Box>
-                    {subStatus === "TRIAL" && trialEnds && (
+                    {(subStatus === "TRIAL_ACTIVE" || subStatus === "TRIAL") && trialEnds && (
                         <Box mb={1}>
                             <Typography variant="body2" color="text.secondary">Trial ends on</Typography>
                             <Typography variant="subtitle1" fontWeight={700} color="#f59e0b">{trialEnds.toLocaleDateString()}</Typography>
                         </Box>
                     )}
-                    {subStatus === "ACTIVE" && nextBilling && (
+                    {(subStatus === "PREMIUM_ACTIVE" || subStatus === "ACTIVE") && nextBilling && (
                         <Box mb={1}>
                             <Typography variant="body2" color="text.secondary">Next billing date</Typography>
                             <Typography variant="subtitle1" fontWeight={700} color="#10b981">{nextBilling.toLocaleDateString()}</Typography>
                         </Box>
                     )}
-                    {subStatus === "EXPIRED" && (
-                        <Typography variant="body2" color="error.main" fontWeight={600}>Your subscription has expired. Please renew to continue using the platform.</Typography>
+                    {(subStatus === "TRIAL_EXPIRED" || subStatus === "PREMIUM_EXPIRED" || subStatus === "EXPIRED") && (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: '#fef2f2', borderRadius: 2, border: '1px solid #fca5a5' }}>
+                            <Typography variant="body2" color="error.main" fontWeight={600}>
+                                Your subscription has expired. Your service centers are currently hidden from customers. Please select a plan below to restore access.
+                            </Typography>
+                        </Box>
                     )}
                 </Card>
             </Grid>

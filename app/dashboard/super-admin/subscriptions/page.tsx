@@ -158,62 +158,46 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Status",
-            accessor: (row: any) => (
-                <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${row.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
-                        'bg-red-50 text-red-700 border-red-200'
+            accessor: (row: any) => {
+                const isActive = row.status === 'PREMIUM_ACTIVE' || row.status === 'TRIAL_ACTIVE' || row.status === 'ACTIVE';
+                const displayStatus = (row.status || 'UNKNOWN').replace('_', ' ');
+                return (
+                    <div className="flex items-center h-full">
+                        <span className={`inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-28 ${
+                            isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
-                        <span className={`w-2 h-2 rounded-full ${row.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                        {row.status}
-                    </span>
-                </div>
-            ),
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                            {displayStatus}
+                        </span>
+                    </div>
+                );
+            },
             cellClassName: "align-middle text-center"
         },
         {
             header: "Auto-Renew",
-            accessor: (row: any) => (
-                <div className="flex items-center h-full">
-                    {row.status === 'ACTIVE' ?
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 min-w-20">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                            <span>On</span>
-                        </div> :
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200 min-w-20">
-                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
-                            <span>Off</span>
-                        </div>}
-                </div>
-            ),
+            accessor: (row: any) => {
+                const isActive = row.status === 'PREMIUM_ACTIVE' || row.status === 'TRIAL_ACTIVE' || row.status === 'ACTIVE';
+                return (
+                    <div className="flex items-center justify-center h-full">
+                        {isActive ?
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 min-w-20">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                <span>On</span>
+                            </div> :
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200 min-w-20">
+                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                <span>Off</span>
+                            </div>}
+                    </div>
+                );
+            },
             cellClassName: "align-middle text-center"
         },
         {
             header: "Actions",
             accessor: (row: any) => (
-                <div className="flex items-center gap-2 h-full">
-
-                    {row.status === 'ACTIVE' ? (
-                        <button
-                            onClick={() => {alert("Are you sure you want to suspend this plan?");
-                                handleStatusUpdate(row.id, 'SUSPENDED')}}
-                            disabled={isUpdating}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50 disabled:opacity-50"
-                            title="Suspend Plan"
-                        >
-                            <FiSlash className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => {alert("Are you sure you want to reactivate this plan?");
-                                handleStatusUpdate(row.id, 'ACTIVE')}}
-                            disabled={isUpdating}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50 disabled:opacity-50"
-                            title="Reactivate Plan"
-                        >
-                            <FiCheckCircle className="w-4 h-4" />
-                        </button>
-                    )}
-
+                <div className="flex items-center justify-center h-full">
                     <button
                         onClick={() => openBillingHistory(row)}
                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200 bg-slate-50"
@@ -407,7 +391,7 @@ export default function SubscriptionsPage() {
                             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                 <Table
                                     columns={billingColumns}
-                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || []}
+                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || MOCK_BILLING_HISTORY["SUB-001"]}
                                     keyField="id"
                                 />
                             </div>
