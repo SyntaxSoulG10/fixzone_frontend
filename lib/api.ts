@@ -245,7 +245,12 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
 }
 
 export async function getMyBookings(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/bookings/my`, {
+  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  if (!userId) {
+    throw new Error("No user ID found");
+  }
+
+  const res = await fetch(`${BASE_URL}/api/bookings/customer/${userId}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) {

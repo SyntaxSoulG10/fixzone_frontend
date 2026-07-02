@@ -7,17 +7,11 @@ import { FaUserCog, FaMoneyBillWave } from "react-icons/fa";
 import { useDashboardData } from "../../../context/DashboardDataContext";
 import { APP_CONFIG } from "../../../utils/config";
 
-const initialInvoices = [
-    { id: 101, amount: 5000 },
-    { id: 102, amount: 6500 },
-    { id: 103, amount: 5000 }, // Total: 16,500
-];
-
 export default function ServiceManagerDashboard() {
-    const { bookingsData, hasDataInitialized, refreshBookings } = useDashboardData();
+    const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData } = useDashboardData();
     const [activeBookings, setActiveBookings] = useState<any[]>([]);
     const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
-    const [todaysInvoices, setTodaysInvoices] = useState(initialInvoices);
+    const [todaysInvoices, setTodaysInvoices] = useState<any[]>([]);
 
     useEffect(() => {
         if (hasDataInitialized) {
@@ -29,8 +23,9 @@ export default function ServiceManagerDashboard() {
             console.log("[Dashboard] Active:", active.length, "Upcoming:", upcoming.length);
             setUpcomingBookings(upcoming);
             setActiveBookings(active);
+            setTodaysInvoices(invoicesData || []);
         }
-    }, [hasDataInitialized, bookingsData]);
+    }, [hasDataInitialized, bookingsData, invoicesData]);
 
     const completedCount = useMemo(() => {
         return bookingsData.filter((b: any) => b.status === "COMPLETED").length;
@@ -41,25 +36,50 @@ export default function ServiceManagerDashboard() {
     }, [activeBookings]);
 
     const totalIncome = useMemo(() => {
-        return todaysInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+        return todaysInvoices.reduce((sum, invoice) => sum + (Number(invoice.total) || Number(invoice.amount) || 0), 0);
     }, [todaysInvoices]);
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
             if (newStatus === "COMPLETED") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/complete`);
+                
+                const booking = activeBookings.find(b => b.bookingId === id);
+                if (booking) {
+                    try {
+                        // Create a real invoice in the database
+                        const manager = managersData?.[0] || {};
+                        const centerId = booking.centerId || manager.managedCenterId || "00000000-0000-0000-0000-000000000001";
+                        const customerId = booking.customerId || "00000000-0000-0000-0000-000000000002";
+                        const amount = booking.estimatedCost ? Number(booking.estimatedCost) : (booking.bookingFee ? Number(booking.bookingFee) : 3500);
+                        
+                        const newInvoice = {
+                            companyCode: "FIX001",
+                            centerId: centerId,
+                            bookingId: booking.bookingId,
+                            issuedToCustomerId: customerId,
+                            subtotal: amount,
+                            tax: 0,
+                            discount: 0,
+                            total: amount,
+                            status: "PAID",
+                            issuedAt: new Date().toISOString(),
+                            dueAt: new Date().toISOString()
+                        };
+                        const invRes = await axios.post(APP_CONFIG.api.invoices, newInvoice);
+                        setTodaysInvoices(prev => [...prev, invRes.data]);
+                        if (refreshInvoices) refreshInvoices();
+                    } catch (invErr) {
+                        console.error("Failed to create real invoice in database", invErr);
+                    }
+                }
             } else if (newStatus === "IN_PROGRESS") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/start-service`);
             } else if (newStatus === "CANCELLED") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/cancel`);
             }
             
-            // Only update local state if request is successful
-            const bookingToUpdate = activeBookings.find(b => b.bookingId === id);
-            if (bookingToUpdate?.status !== "COMPLETED" && newStatus === "COMPLETED") {
-                // Simulate adding a new invoice when a service is newly marked as Done
-                setTodaysInvoices([...todaysInvoices, { id: Date.now(), amount: 3500 }]);
-            }
+            if (refreshBookings) refreshBookings();
             setActiveBookings(activeBookings.map(b => b.bookingId === id ? { ...b, status: newStatus } : b));
         } catch (error) {
             console.error("Failed to update booking status", error);
@@ -71,9 +91,9 @@ export default function ServiceManagerDashboard() {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/start-service`);
             
-            // Only update local state if request is successful
             setUpcomingBookings(upcomingBookings.filter(b => b.bookingId !== booking.bookingId));
             setActiveBookings([...activeBookings, { ...booking, status: "IN_PROGRESS" }]);
+            if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to activate booking", error);
             alert("Error moving booking to active. Please try again.");
@@ -84,9 +104,9 @@ export default function ServiceManagerDashboard() {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/cancel`);
             
-            // Only update local state if request is successful
             setActiveBookings(activeBookings.filter(b => b.bookingId !== booking.bookingId));
             setUpcomingBookings([...upcomingBookings, { ...booking, status: "CANCELLED" }]);
+            if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to deactivate booking", error);
             alert("Error moving booking to upcoming. Please try again.");

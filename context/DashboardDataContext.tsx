@@ -14,12 +14,14 @@ interface DashboardDataContextType {
     ownerData: any | null;
     bookingsData: any[];
     subscriptionsData: any[];
+    invoicesData: any[];
     isLoading: boolean;
     hasDataInitialized: boolean;
     refreshCenters: () => Promise<void>;
     refreshManagers: () => Promise<void>;
     refreshAnalytics: () => Promise<void>;
     refreshBookings: () => Promise<void>;
+    refreshInvoices: () => Promise<void>;
     refreshAll: () => Promise<void>;
 }
 
@@ -41,6 +43,7 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
     const [ownerProfile, setOwnerProfile] = useState<any | null>(null);
     const [bookingsData, setBookingsData] = useState<any[]>([]);
     const [subscriptionsData, setSubscriptionsData] = useState<any[]>([]);
+    const [invoicesData, setInvoicesData] = useState<any[]>([]);
 
     // Lifecycle and loading states
     const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
@@ -66,38 +69,48 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
 
             // Always fetch bookings for manager and customer roles
             if (role === "ROLE_COMPANY_OWNER" || role === "OWNER") {
-                const [ownerRes, centersRes, managersRes, customersRes, analyticsRes] = await Promise.all([
+                const [ownerRes, centersRes, managersRes, customersRes, analyticsRes, invoicesRes] = await Promise.all([
                     axios.get(APP_CONFIG.api.owners + "/current").catch((e) => { console.warn("owners/current failed", e); return { data: null }; }),
                     axios.get(APP_CONFIG.api.serviceCenters + "/current").catch((e) => { console.warn("serviceCenters/current failed", e); return { data: [] }; }),
                     axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.warn("managers/current failed", e); return { data: [] }; }),
                     axios.get(APP_CONFIG.api.customers + "/current").catch((e) => { console.warn("customers/current failed", e); return { data: [] }; }),
                     axios.get(APP_CONFIG.api.analytics + "/current").catch((e) => { console.warn("analytics/current failed", e); return { data: null }; }),
+                    axios.get(APP_CONFIG.api.invoices + "/current").catch((e) => { console.warn("invoices/current failed", e); return { data: [] }; }),
                 ]);
                 setOwnerProfile(ownerRes.data || null);
                 setCentersData(centersRes.data || []);
                 setManagersData(managersRes.data || []);
                 setCustomersData(customersRes.data || []);
                 setAnalyticsData(analyticsRes.data || null);
+                setInvoicesData(invoicesRes.data || []);
             } else if (role === "ROLE_SERVICE_MANAGER") {
-                const [managerRes, bookingsRes] = await Promise.all([
-                    axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.warn("managers/current failed", e); return { data: null }; }),
-                    axios.get(APP_CONFIG.api.bookings).catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
-                ]);
+                const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.warn("managers/current failed", e); return { data: null }; });
                 const mData = managerRes.data;
+                const centerId = mData?.managedCenterId || (Array.isArray(mData) ? mData[0]?.managedCenterId : null);
+
+                const [bookingsRes, invoicesRes] = await Promise.all([
+                    axios.get(centerId ? `${APP_CONFIG.api.bookings}/center/${centerId}` : APP_CONFIG.api.bookings).catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
+                    axios.get(centerId ? `${APP_CONFIG.api.invoices}/center/${centerId}` : APP_CONFIG.api.invoices).catch((e) => { console.warn("invoices fetch failed", e); return { data: [] }; }),
+                ]);
+
                 setManagersData(Array.isArray(mData) ? mData : (mData ? [mData] : []));
                 const bookingsArray = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
-                console.log("[DashboardDataContext] Bookings fetched:", bookingsArray.length);
+                const invoicesArray = Array.isArray(invoicesRes.data) ? invoicesRes.data : [];
+                console.log("[DashboardDataContext] Bookings fetched:", bookingsArray.length, "Invoices fetched:", invoicesArray.length);
                 setBookingsData(bookingsArray);
+                setInvoicesData(invoicesArray);
 
             } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
-                const [analyticsRes, statsRes, subscriptionsRes] = await Promise.all([
+                const [analyticsRes, statsRes, subscriptionsRes, invoicesRes] = await Promise.all([
                     axios.get(APP_CONFIG.api.baseUrl + "/admin/analytics").catch((e) => { console.warn("admin/analytics failed", e); return { data: null }; }),
                     axios.get(APP_CONFIG.api.baseUrl + "/admin/stats").catch((e) => { console.warn("admin/stats failed", e); return { data: null }; }),
                     axios.get(APP_CONFIG.api.baseUrl + "/admin/subscriptions").catch((e) => { console.warn("subscriptions fetch failed", e); return { data: [] }; }),
+                    axios.get(APP_CONFIG.api.invoices).catch((e) => { console.warn("invoices fetch failed", e); return { data: [] }; }),
                 ]);
                 setAnalyticsData(analyticsRes.data || null);
                 setStatsData(statsRes.data || null);
                 setSubscriptionsData(subscriptionsRes.data || []);
+                setInvoicesData(invoicesRes.data || []);
 
             } else if (role === "ROLE_CUSTOMER") {
                 const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -105,11 +118,16 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 // Only fetch bookings — profile is fetched directly by the customer pages
                 if (userId) {
                     try {
-                        const res = await axios.get(`${APP_CONFIG.api.bookings}/customer/${userId}`);
+                        const [res, invRes] = await Promise.all([
+                            axios.get(`${APP_CONFIG.api.bookings}/customer/${userId}`).catch(() => ({ data: [] })),
+                            axios.get(`${APP_CONFIG.api.invoices}/customer/${userId}`).catch(() => ({ data: [] })),
+                        ]);
                         setBookingsData(Array.isArray(res.data) ? res.data : []);
+                        setInvoicesData(Array.isArray(invRes.data) ? invRes.data : []);
                     } catch (e: any) {
                         console.warn("[DashboardDataContext] customer bookings failed:", e?.response?.status, e?.message);
                         setBookingsData([]);
+                        setInvoicesData([]);
                     }
                 }
 
@@ -141,12 +159,41 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 if (!userId) return;
                 const res = await axios.get(`${APP_CONFIG.api.bookings}/customer/${userId}`);
                 setBookingsData(Array.isArray(res.data) ? res.data : []);
+            } else if (role === "ROLE_SERVICE_MANAGER") {
+                const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null }));
+                const centerId = managerRes?.data?.managedCenterId || (Array.isArray(managerRes?.data) ? managerRes?.data[0]?.managedCenterId : null);
+                const res = await axios.get(centerId ? `${APP_CONFIG.api.bookings}/center/${centerId}` : APP_CONFIG.api.bookings);
+                setBookingsData(Array.isArray(res.data) ? res.data : []);
             } else {
                 const res = await axios.get(APP_CONFIG.api.bookings);
                 setBookingsData(Array.isArray(res.data) ? res.data : []);
             }
         } catch (e) {
             console.warn("[DashboardDataContext] refreshBookings failed", e);
+        }
+    }, []);
+
+    const refreshInvoices = useCallback(async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (!token) return;
+        const role = getUserRole(token);
+        try {
+            if (role === "ROLE_CUSTOMER") {
+                const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+                if (!userId) return;
+                const res = await axios.get(`${APP_CONFIG.api.invoices}/customer/${userId}`);
+                setInvoicesData(Array.isArray(res.data) ? res.data : []);
+            } else if (role === "ROLE_SERVICE_MANAGER") {
+                const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null }));
+                const centerId = managerRes?.data?.managedCenterId || (Array.isArray(managerRes?.data) ? managerRes?.data[0]?.managedCenterId : null);
+                const res = await axios.get(centerId ? `${APP_CONFIG.api.invoices}/center/${centerId}` : APP_CONFIG.api.invoices);
+                setInvoicesData(Array.isArray(res.data) ? res.data : []);
+            } else {
+                const res = await axios.get(APP_CONFIG.api.invoices);
+                setInvoicesData(Array.isArray(res.data) ? res.data : []);
+            }
+        } catch (e) {
+            console.warn("[DashboardDataContext] refreshInvoices failed", e);
         }
     }, []);
 
@@ -159,12 +206,14 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         ownerData: ownerProfile,
         bookingsData,
         subscriptionsData,
+        invoicesData,
         isLoading: isInitialLoad,
         hasDataInitialized,
         refreshCenters: async () => { /* Individual refresh logic if needed */ },
         refreshManagers: async () => { /* Individual refresh logic if needed */ },
         refreshAnalytics: async () => { /* Individual refresh logic if needed */ },
         refreshBookings,
+        refreshInvoices,
         refreshAll: refreshAllDashboardData
     };
 
@@ -183,3 +232,4 @@ export const useDashboardData = () => {
     }
     return context;
 };
+
