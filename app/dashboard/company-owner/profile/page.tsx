@@ -22,7 +22,12 @@ import {
     DialogActions,
     LinearProgress,
     Chip,
-    CircularProgress
+    CircularProgress,
+    FormControlLabel,
+    Checkbox,
+    Radio,
+    RadioGroup,
+    FormControl as MuiFormControl
 } from "@mui/material";
 import {
     FiHome,
@@ -36,10 +41,15 @@ import {
     FiX,
     FiCamera,
     FiCreditCard,
-    FiDownload
+    FiDownload,
+    FiExternalLink,
+    FiCheckCircle,
+    FiAlertCircle,
+    FiRefreshCw
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /**
  * Validation constants for profile management.
@@ -360,27 +370,184 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 }
 
 /**
- * Billing and subscription tab component.
+ * BILLING TAB: Real Stripe Connect onboarding + Subscription checkout.
  */
-function BillingTab() {
+function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
+    const [plans, setPlans] = useState<any[]>([]);
+    const [selectedPlan, setSelectedPlan] = useState<string>("");
+    const [autoRenew, setAutoRenew] = useState(false);
+    const [loadingPlans, setLoadingPlans] = useState(true);
+    const [connectLoading, setConnectLoading] = useState(false);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+    const searchParams = useSearchParams();
+
+    const isStripeConnected = ownerData?.stripeOnboardingComplete === true;
+    const subStatus = ownerData?.subscriptionStatus || "TRIAL";
+    const trialEnds = ownerData?.trialEndsAt ? new Date(ownerData.trialEndsAt) : null;
+    const nextBilling = ownerData?.nextBillingDate ? new Date(ownerData.nextBillingDate) : null;
+    const isAutoRenewEnabled = ownerData?.autoRenewEnabled === true;
+
+    useEffect(() => {
+        // Handle Stripe redirect results
+        const subSuccess = searchParams.get("sub_success");
+        const subCanceled = searchParams.get("sub_canceled");
+        const sessionId = searchParams.get("session_id");
+
+        if (subSuccess === "true" && sessionId) {
+            axios.post(APP_CONFIG.api.subscriptions + "/success?session_id=" + sessionId)
+                .then(async () => {
+                    onMessage("Subscription activated successfully!", "success");
+                    await refreshAll();
+                    if (typeof window !== "undefined") {
+                        const newUrl = window.location.pathname + "?tab=billing";
+                        window.history.replaceState(null, "", newUrl);
+                    }
+                })
+                .catch(() => {
+                    onMessage("Failed to verify subscription. Please contact support.", "error");
+                });
+        }
+
+        if (subCanceled === "true") {
+            onMessage("Subscription payment was cancelled. Please select a plan and try again.", "error");
+            if (typeof window !== "undefined") {
+                const newUrl = window.location.pathname + "?tab=billing";
+                window.history.replaceState(null, "", newUrl);
+            }
+        }
+
+        // Fetch plans
+        axios.get(APP_CONFIG.api.subPlans)
+            .then(r => { setPlans(r.data); if (r.data.length > 0) setSelectedPlan(r.data[0].planId); })
+            .catch(() => onMessage("Could not load subscription plans", "error"))
+            .finally(() => setLoadingPlans(false));
+    }, []);
+
+    const handleConnectStripe = async () => {
+        setConnectLoading(true);
+        try {
+            const res = await axios.post(APP_CONFIG.api.payments + "/connect");
+            window.location.href = res.data; // Redirect to Stripe onboarding
+        } catch {
+            onMessage("Failed to generate Stripe link. Please try again.", "error");
+        } finally {
+            setConnectLoading(false);
+        }
+    };
+
+    const handleSubscribe = async () => {
+        if (!selectedPlan) return;
+        setCheckoutLoading(true);
+        try {
+            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan, autoRenew });
+            window.location.href = res.data;
+        } catch {
+            onMessage("Failed to start subscription checkout. Please try again.", "error");
+        } finally {
+            setCheckoutLoading(false);
+        }
+    };
+
+    const statusColors: Record<string, string> = { 
+        TRIAL_ACTIVE: "#f59e0b", 
+        TRIAL_EXPIRED: "#ef4444", 
+        PREMIUM_ACTIVE: "#10b981", 
+        PREMIUM_EXPIRED: "#ef4444",
+        CANCELLED: "#6b7280",
+        TRIAL: "#f59e0b", // Legacy support
+        ACTIVE: "#10b981", // Legacy support
+        EXPIRED: "#ef4444" // Legacy support
+    };
+    const statusColor = statusColors[subStatus] || "#6b7280";
+
+    const displayStatus = subStatus.replace('_', ' ');
+
     return (
         <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 8 }}>
-                <Card sx={{ p: 3, mb: 3 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                        <Box>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom>Current Plan: Professional</Typography>
-                            <Typography variant="body2" color="text.secondary">You are currently on the Professional monthly plan.</Typography>
-                        </Box>
-                        <Chip label="Active" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+            {/* Subscription Status Card */}
+            <Grid size={{ xs: 12, md: 5 }}>
+                <Card sx={{ p: 3, borderRadius: 3, height: '100%' }}>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscription Status</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                        <Chip label={displayStatus} size="small" sx={{ bgcolor: statusColor, color: '#fff', fontWeight: 700, fontSize: '0.8rem' }} />
+                        {isAutoRenewEnabled && <Chip icon={<FiRefreshCw size={12} />} label="Auto-Renew ON" size="small" variant="outlined" sx={{ color: '#10b981', borderColor: '#10b981' }} />}
                     </Box>
-                    <Box mt={3} p={2} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                            <Typography variant="subtitle2" fontWeight="bold">Rs. 15,000.00 / month</Typography>
-                            <Typography variant="caption" color="text.secondary">Next payment: Feb 28, 2026</Typography>
+                    {(subStatus === "TRIAL_ACTIVE" || subStatus === "TRIAL") && trialEnds && (
+                        <Box mb={1}>
+                            <Typography variant="body2" color="text.secondary">Trial ends on</Typography>
+                            <Typography variant="subtitle1" fontWeight={700} color="#f59e0b">{trialEnds.toLocaleDateString()}</Typography>
                         </Box>
-                        <Button variant="contained" size="small" sx={{ bgcolor: '#EA580C', color: 'white', textTransform: 'none', '&:hover': { bgcolor: '#c2410c' } }}>Upgrade Plan</Button>
-                    </Box>
+                    )}
+                    {(subStatus === "PREMIUM_ACTIVE" || subStatus === "ACTIVE") && nextBilling && (
+                        <Box mb={1}>
+                            <Typography variant="body2" color="text.secondary">Next billing date</Typography>
+                            <Typography variant="subtitle1" fontWeight={700} color="#10b981">{nextBilling.toLocaleDateString()}</Typography>
+                        </Box>
+                    )}
+                    {(subStatus === "TRIAL_EXPIRED" || subStatus === "PREMIUM_EXPIRED" || subStatus === "EXPIRED") && (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: '#fef2f2', borderRadius: 2, border: '1px solid #fca5a5' }}>
+                            <Typography variant="body2" color="error.main" fontWeight={600}>
+                                Your subscription has expired. Your service centers are currently hidden from customers. Please select a plan below to restore access.
+                            </Typography>
+                        </Box>
+                    )}
+                </Card>
+            </Grid>
+
+            {/* Subscription Checkout Card */}
+            <Grid size={{ xs: 12, md: 7 }}>
+                <Card sx={{ p: 3, borderRadius: 3 }}>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe / Renew</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    {loadingPlans ? (
+                        <Box display="flex" justifyContent="center" p={3}><CircularProgress size={32} sx={{ color: '#EA580C' }} /></Box>
+                    ) : (
+                        <>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" display="block" mb={1}>Select a Plan</Typography>
+                            <MuiFormControl component="fieldset" fullWidth>
+                                <RadioGroup value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}>
+                                    {plans.map((plan: any) => (
+                                        <Box key={plan.planId} sx={{
+                                            border: `1.5px solid ${selectedPlan === plan.planId ? '#EA580C' : '#e2e8f0'}`,
+                                            borderRadius: 2, p: 2, mb: 1.5,
+                                            bgcolor: selectedPlan === plan.planId ? 'rgba(234,88,12,0.05)' : '#fff',
+                                            cursor: 'pointer', transition: 'all 0.2s'
+                                        }} onClick={() => setSelectedPlan(plan.planId)}>
+                                            <FormControlLabel
+                                                value={plan.planId}
+                                                control={<Radio sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
+                                                label={
+                                                    <Box>
+                                                        <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
+                                                        <Typography variant="body2" color="text.secondary">Rs. {Number(plan.price).toLocaleString()} / {plan.durationMonths} month{plan.durationMonths > 1 ? 's' : ''}</Typography>
+                                                    </Box>
+                                                }
+                                                sx={{ width: '100%', m: 0 }}
+                                            />
+                                        </Box>
+                                    ))}
+                                </RadioGroup>
+                            </MuiFormControl>
+
+                            <FormControlLabel
+                                control={<Checkbox checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
+                                label={<Typography variant="body2">Enable Auto-Renew (save card for future payments)</Typography>}
+                                sx={{ mb: 2, mt: 0.5 }}
+                            />
+
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                disabled={!selectedPlan || checkoutLoading}
+                                onClick={handleSubscribe}
+                                startIcon={checkoutLoading ? <CircularProgress size={16} color="inherit" /> : <FiCreditCard />}
+                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
+                            >
+                                {checkoutLoading ? "Redirecting to Stripe..." : "Proceed to Payment"}
+                            </Button>
+                        </>
+                    )}
                 </Card>
             </Grid>
         </Grid>
@@ -465,7 +632,10 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  */
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
-    const [tabValue, setTabValue] = useState(0);
+    const searchParams = useSearchParams();
+    // Auto-switch to Billing tab when redirected with ?tab=billing
+    const initialTab = searchParams?.get("tab") === "billing" ? 2 : 0;
+    const [tabValue, setTabValue] = useState(initialTab);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
@@ -652,7 +822,7 @@ export default function ProfilePage() {
                     />
                 )}
 
-                {tabValue === 2 && <BillingTab />}
+                {tabValue === 2 && <BillingTab ownerData={ownerData} refreshAll={refreshAll} onMessage={(msg, sev) => { setSnackbarMessage(msg); setSnackbarSeverity(sev); setSnackbarOpen(true); }} />}
             </Box>
 
             <ChangePasswordDialog 

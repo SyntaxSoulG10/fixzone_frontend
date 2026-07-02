@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 export interface Vehicle {
   id: string;
   brand: string;
@@ -18,39 +16,39 @@ interface VehicleSelectorProps {
 
 export default function VehicleSelector({ vehicles, selectedVehicleId, onVehicleSelect }: VehicleSelectorProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Select Vehicle</h3>
-      </div>
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Select Vehicle</h3>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+      <div className="flex flex-col gap-2">
         {vehicles.map((v) => {
           const isSelected = selectedVehicleId === v.id;
-          
           return (
-            <div 
+            <button
               key={v.id}
+              type="button"
               onClick={() => onVehicleSelect(v.id)}
-              className="flex-shrink-0 flex flex-col items-center gap-2 group cursor-pointer"
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                isSelected
+                  ? "border-orange-500 bg-orange-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-orange-300 hover:bg-slate-50"
+              }`}
             >
-              <div className={`relative w-24 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                isSelected 
-                  ? 'border-orange-500 ring-4 ring-orange-50 scale-105' 
-                  : 'border-slate-100 hover:border-orange-200'
-              }`}>
-                <Image
-                  src={v.image}
-                  alt={v.brand}
-                  fill
-                  className="object-cover"
-                />
+              <div className="min-w-0">
+                <p className={`text-sm font-bold truncate ${isSelected ? "text-orange-700" : "text-slate-800"}`}>
+                  {v.brand}{v.model ? ` ${v.model}` : ""}
+                </p>
+                <p className={`text-xs truncate mt-0.5 ${isSelected ? "text-orange-500" : "text-slate-400"}`}>
+                  {v.licensePlate}
+                </p>
               </div>
-              <span className={`text-[10px] font-black tracking-tight uppercase transition-colors ${
-                isSelected ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'
-              }`}>
-                {v.licensePlate}
-              </span>
-            </div>
+              {isSelected && (
+                <span className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+              )}
+            </button>
           );
         })}
       </div>

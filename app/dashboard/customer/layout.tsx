@@ -1,5 +1,5 @@
 "use client";
-import { useRoleGuard } from "../../../utils/useRoleGuard";
+import { useRoleGuard } from "@/utils/useRoleGuard";
 import { FiLoader } from "react-icons/fi";
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {

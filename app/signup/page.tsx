@@ -4,12 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase } from "react-icons/fi";
+import { APP_CONFIG } from "@/utils/config";
 
 export default function SignupPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [role, setRole] = useState<"vehicle-owner" | "service-center" | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     // Form inputs
     const [fullName, setFullName] = useState("");
@@ -26,9 +28,9 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const endpoint = role === "vehicle-owner" 
-                ? "http://localhost:8081/api/auth/register/customer" 
-                : "http://localhost:8081/api/auth/register/owner";
+            const endpoint = role === "vehicle-owner"
+                ? `${APP_CONFIG.api.auth}/register/customer`
+                : `${APP_CONFIG.api.auth}/register/owner`;
 
             const payload = role === "vehicle-owner" 
                 ? { fullName, email, password }
@@ -42,6 +44,12 @@ export default function SignupPage() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
+                if (response.status === 409) {
+                    throw new Error("Email already taken. Please use a different email.");
+                }
+                if (response.status === 401) {
+                    throw new Error("Invalid credentials.");
+                }
                 throw new Error(errorData?.message || "Registration failed");
             }
 
@@ -63,7 +71,7 @@ export default function SignupPage() {
             }
         } catch (error: any) {
             console.error("Signup error:", error);
-            alert(error.message || "Failed to register");
+            setError(error.message || "Failed to register");
         } finally {
             setLoading(false);
         }
@@ -145,6 +153,11 @@ export default function SignupPage() {
                                 </div>
 
                                 <form onSubmit={handleSignup} className="space-y-4">
+                                    {error && (
+                                        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                            {error}
+                                        </div>
+                                    )}
                                     {role === "service-center" && (
                                         <>
                                             <div>

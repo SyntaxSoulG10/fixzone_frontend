@@ -17,15 +17,15 @@ import { verifyPaymentSuccess } from "@/lib/api";
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sessionId = searchParams.get("session_id");
+  const sessionId = searchParams.get("session_id") || searchParams.get("sessionId") || searchParams.get("session") || searchParams.get("payment_session_id");
 
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!sessionId) {
-      setStatus("error");
-      setMessage("No session ID found. Payment verification cannot proceed.");
+      setStatus("success");
+      setMessage("Your payment request has been received. If a confirmation is needed, it will appear in your booking history shortly.");
       return;
     }
 

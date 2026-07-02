@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp, FiX, FiExternalLink } from "react-icons/fi";
+import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp, FiX, FiExternalLink, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { updateSubscriptionStatus } from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -38,6 +38,28 @@ export default function SubscriptionsPage() {
     const [selectedSub, setSelectedSub] = useState<any | null>(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
+
+    // Reset pagination when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
+    const filteredSubs = (subscriptionsData || []).filter((sub: any) => {
+        const q = searchQuery.toLowerCase();
+        return (
+            (sub.companyName || "").toLowerCase().includes(q) ||
+            (sub.id || "").toLowerCase().includes(q) ||
+            (sub.ownerName || "").toLowerCase().includes(q) ||
+            (sub.plan?.name || "").toLowerCase().includes(q) ||
+            (sub.planType || "").toLowerCase().includes(q)
+        );
+    });
+
+    const totalPages = Math.ceil(filteredSubs.length / pageSize);
+    const paginatedSubs = filteredSubs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     console.log("Subscriptions Page Data:", { subscriptionsData, analyticsData });
 
@@ -136,62 +158,46 @@ export default function SubscriptionsPage() {
         },
         {
             header: "Status",
-            accessor: (row: any) => (
-                <div className="flex items-center h-full">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-24 ${row.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
-                        'bg-red-50 text-red-700 border-red-200'
+            accessor: (row: any) => {
+                const isActive = row.status === 'PREMIUM_ACTIVE' || row.status === 'TRIAL_ACTIVE' || row.status === 'ACTIVE';
+                const displayStatus = (row.status || 'UNKNOWN').replace('_', ' ');
+                return (
+                    <div className="flex items-center h-full">
+                        <span className={`inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full text-xs font-bold border min-w-28 ${
+                            isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
-                        <span className={`w-2 h-2 rounded-full ${row.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                        {row.status}
-                    </span>
-                </div>
-            ),
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                            {displayStatus}
+                        </span>
+                    </div>
+                );
+            },
             cellClassName: "align-middle text-center"
         },
         {
             header: "Auto-Renew",
-            accessor: (row: any) => (
-                <div className="flex items-center h-full">
-                    {row.status === 'ACTIVE' ?
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 min-w-20">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                            <span>On</span>
-                        </div> :
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200 min-w-20">
-                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
-                            <span>Off</span>
-                        </div>}
-                </div>
-            ),
+            accessor: (row: any) => {
+                const isActive = row.status === 'PREMIUM_ACTIVE' || row.status === 'TRIAL_ACTIVE' || row.status === 'ACTIVE';
+                return (
+                    <div className="flex items-center justify-center h-full">
+                        {isActive ?
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 min-w-20">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                <span>On</span>
+                            </div> :
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200 min-w-20">
+                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                <span>Off</span>
+                            </div>}
+                    </div>
+                );
+            },
             cellClassName: "align-middle text-center"
         },
         {
             header: "Actions",
             accessor: (row: any) => (
-                <div className="flex items-center gap-2 h-full">
-
-                    {row.status === 'ACTIVE' ? (
-                        <button
-                            onClick={() => {alert("Are you sure you want to suspend this plan?");
-                                handleStatusUpdate(row.id, 'SUSPENDED')}}
-                            disabled={isUpdating}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 bg-slate-50 disabled:opacity-50"
-                            title="Suspend Plan"
-                        >
-                            <FiSlash className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => {alert("Are you sure you want to reactivate this plan?");
-                                handleStatusUpdate(row.id, 'ACTIVE')}}
-                            disabled={isUpdating}
-                            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all border border-transparent hover:border-green-100 bg-slate-50 disabled:opacity-50"
-                            title="Reactivate Plan"
-                        >
-                            <FiCheckCircle className="w-4 h-4" />
-                        </button>
-                    )}
-
+                <div className="flex items-center justify-center h-full">
                     <button
                         onClick={() => openBillingHistory(row)}
                         className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200 bg-slate-50"
@@ -282,33 +288,63 @@ export default function SubscriptionsPage() {
                         <button className="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:shadow-sm hover:border-orange-300 transition-all bg-white hover:-translate-y-0.5">
                             <FiFilter />
                         </button>
-                        <div className="relative flex-1 md:max-w-md group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <FiSearch className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search by station or plan ID..."
-                                className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all text-sm"
-                            />
+                    <div className="relative flex-1 md:max-w-md group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FiSearch className="text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                         </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <Link href="/dashboard/super-admin/subscription-plans">
-                            <Button className="shadow-lg shadow-orange-200">
-                                Create Plan
-                            </Button>
-                        </Link>
+                        <input
+                            type="text"
+                            placeholder="Search by station or plan ID..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all text-sm"
+                        />
                     </div>
                 </div>
+                <div className="flex gap-3">
+                    <Link href="/dashboard/super-admin/subscription-plans">
+                        <Button className="shadow-lg shadow-orange-200">
+                            Create Plan
+                        </Button>
+                    </Link>
+                </div>
+            </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <Table
-                        columns={columns}
-                        data={subscriptionsData}
-                        keyField="id"
-                    />
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <Table
+                    columns={columns}
+                    data={paginatedSubs}
+                    keyField="id"
+                />
+            </div>
+
+            {/* Pagination Controls */}
+            {filteredSubs.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-4">
+                    <div className="text-xs font-bold text-slate-500">
+                        Showing {Math.min(filteredSubs.length, (currentPage - 1) * pageSize + 1)}–{Math.min(filteredSubs.length, currentPage * pageSize)} of {filteredSubs.length} subscriptions
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        >
+                            <FiChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-bold text-slate-700">
+                            Page {currentPage} of {totalPages || 1}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        >
+                            <FiChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
+            )}
             </div>
 
             {/* Billing History Modal */}
@@ -355,7 +391,7 @@ export default function SubscriptionsPage() {
                             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                 <Table
                                     columns={billingColumns}
-                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || []}
+                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || MOCK_BILLING_HISTORY["SUB-001"]}
                                     keyField="id"
                                 />
                             </div>

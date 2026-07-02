@@ -30,7 +30,10 @@ export default function LoginPage() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.message || "Invalid credentials or server error");
+                if (response.status === 401) {
+                    throw new Error("Invalid email or password");
+                }
+                throw new Error(errorData?.details || errorData?.message || "Login failed. Please try again.");
             }
 
             const data = await response.json();

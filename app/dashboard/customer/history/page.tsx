@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
@@ -14,10 +15,12 @@ import {
   FiEdit,
   FiDownload,
   FiAlertCircle,
-  FiDollarSign
+  FiDollarSign,
+  FiPrinter
 } from "react-icons/fi";
 import APP_CONFIG from "@/config";
-import { getBookingsByCustomer, rescheduleBookingAPI, cancelBookingAPI, downloadInvoice, getAvailableSlotsAPI } from "@/lib/api";
+import { getMyBookings, rescheduleBookingAPI, cancelBookingAPI, getAvailableSlotsAPI } from "@/lib/api";
+import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
 
 // Keep dummy bookings as fallback for UI demonstration if no data
 const DUMMY_BOOKINGS = {
@@ -27,10 +30,14 @@ const DUMMY_BOOKINGS = {
 };
 
 export default function MyBookingsPage() {
-  const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('upcoming');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as 'current' | 'upcoming' | 'past') || 'upcoming';
+  const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>(initialTab);
   const [bookings, setBookings] = useState<any>({ current: [], upcoming: [], past: [] });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [invoiceModal, setInvoiceModal] = useState<any>(null);
+  const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null);
 
   // Reschedule Form State
   const [reschedulingBooking, setReschedulingBooking] = useState<any>(null);
@@ -65,19 +72,13 @@ export default function MyBookingsPage() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        console.warn("No userId found in localStorage, using guest view or redirecting...");
-        // Optionally redirect or show a message
-        return;
-      }
-      const data = await getBookingsByCustomer(userId);
-      console.log("Fetched Bookings:", data);
-      
+      const raw = await getMyBookings();
+      const data = await enrichBookingsWithCenterNames(raw);
+
       const categorized = {
-        current: data.filter((b: any) => b.status === "IN_PROGRESS"),
+        current:  data.filter((b: any) => b.status === "IN_PROGRESS"),
         upcoming: data.filter((b: any) => b.status === "CONFIRMED" || b.status === "PENDING_PAYMENT"),
-        past: data.filter((b: any) => b.status === "COMPLETED" || b.status === "CANCELLED" || b.status === "EXPIRED")
+        past:     data.filter((b: any) => b.status === "COMPLETED" || b.status === "CANCELLED" || b.status === "EXPIRED"),
       };
       setBookings(categorized);
     } catch (error) {
@@ -138,8 +139,21 @@ export default function MyBookingsPage() {
     }
   };
 
-  const handleDownloadInvoice = (bookingId: string) => {
-    downloadInvoice(bookingId);
+  const handleDownloadInvoice = async (bookingId: string) => {
+    setInvoiceLoading(bookingId);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/invoices/booking/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Invoice not found');
+      const invoice = await res.json();
+      setInvoiceModal(invoice);
+    } catch (err) {
+      alert('Invoice not available yet. Please try again later.');
+    } finally {
+      setInvoiceLoading(null);
+    }
   };
 
   const tabs = [
@@ -201,14 +215,14 @@ export default function MyBookingsPage() {
     const canCancel = isUpcoming;
 
     return (
-      <div key={bookingId} className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-orange-300 hover:shadow-lg transition-all">
+      <div key={bookingId} className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-red-300 hover:shadow-lg transition-all">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <FiTruck className="w-7 h-7 text-orange-600" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-lg mb-1">{booking.serviceCenterName || "Service Center"}</h3>
+              <h3 className="font-bold text-slate-900 text-xl mb-1">{booking.serviceCenterName || "Service Center"}</h3>
               <p className="text-sm text-slate-500 flex items-center gap-1">
                 <FiMapPin className="w-3 h-3" />
                 {booking.centerAddress || "Station Address"}
@@ -255,7 +269,7 @@ export default function MyBookingsPage() {
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-          <div className="text-lg font-bold text-slate-900">
+          <div className="text-xl font-bold text-slate-900">
             Total: Rs.{booking.estimatedCost + (booking.rescheduleFee || 0)}
           </div>
           
@@ -282,7 +296,7 @@ export default function MyBookingsPage() {
               <Button 
                 onClick={() => handleCancel(bookingId)}
                 disabled={actionLoading === `cancel-${bookingId}`}
-                className="px-4 py-2 text-sm border-2 border-red-300 hover:border-red-400 text-red-600 hover:bg-red-50 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm border-2 border-red-300 hover:border-red-400 text-red-600 hover:bg-orange-50 rounded-lg font-semibold transition-colors flex items-center gap-2"
               >
                 <FiX className="w-4 h-4" />
                 {actionLoading === `cancel-${bookingId}` ? 'Cancelling...' : 'Cancel'}
@@ -292,10 +306,14 @@ export default function MyBookingsPage() {
             {type === 'past' && booking.status === 'COMPLETED' && (
               <Button 
                 onClick={() => handleDownloadInvoice(bookingId)}
-                className="px-4 py-2 text-sm bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={invoiceLoading === bookingId}
+                className="px-4 py-2 text-sm bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-60"
               >
-                <FiDownload className="w-4 h-4" />
-                Invoice
+                {invoiceLoading === bookingId ? (
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Loading...</>
+                ) : (
+                  <><FiDownload className="w-4 h-4" /> Download Invoice</>
+                )}
               </Button>
             )}
           </div>
@@ -312,6 +330,86 @@ export default function MyBookingsPage() {
         title="My Bookings"
         description="View and manage all your service appointments"
       />
+
+      {/* Invoice Preview Modal */}
+      {invoiceModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-6 flex items-start justify-between">
+              <div>
+                <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-1">FixZone</p>
+                <h3 className="text-2xl font-bold text-white">Invoice</h3>
+                <p className="text-slate-400 text-sm mt-1">#{invoiceModal.invoiceId?.slice(0, 8)?.toUpperCase() || 'N/A'}</p>
+              </div>
+              <button onClick={() => setInvoiceModal(null)} className="text-slate-400 hover:text-white transition-colors mt-1">
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-8 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Status</p>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    invoiceModal.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  }`}>{invoiceModal.status || 'PENDING'}</span>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Issued</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {invoiceModal.issuedAt ? new Date(invoiceModal.issuedAt).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Breakdown</p>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  <div className="flex justify-between px-4 py-3">
+                    <span className="text-sm text-slate-600">Subtotal</span>
+                    <span className="text-sm font-semibold text-slate-800">Rs. {Number(invoiceModal.subtotal || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between px-4 py-3">
+                    <span className="text-sm text-slate-600">Tax (8%)</span>
+                    <span className="text-sm font-semibold text-slate-800">Rs. {Number(invoiceModal.tax || 0).toLocaleString()}</span>
+                  </div>
+                  {Number(invoiceModal.discount || 0) > 0 && (
+                    <div className="flex justify-between px-4 py-3">
+                      <span className="text-sm text-emerald-600">Discount</span>
+                      <span className="text-sm font-semibold text-emerald-600">- Rs. {Number(invoiceModal.discount || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between px-4 py-3 bg-orange-50">
+                    <span className="text-base font-bold text-slate-900">Total</span>
+                    <span className="text-base font-bold text-orange-600">Rs. {Number(invoiceModal.total || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 pb-8 flex gap-3">
+              <button
+                onClick={() => setInvoiceModal(null)}
+                className="flex-1 py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                <FiPrinter className="w-4 h-4" />
+                Print / Save PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reschedule Modal */}
       {reschedulingBooking && (
@@ -341,7 +439,7 @@ export default function MyBookingsPage() {
                   <div className="space-y-6">
                     <div className="p-6 bg-red-50 border-2 border-red-100 text-red-700 rounded-2xl text-center">
                       <FiAlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                      <h4 className="font-bold text-lg mb-2">Rescheduling Unavailable</h4>
+                      <h4 className="font-bold text-xl mb-2">Rescheduling Unavailable</h4>
                       <p className="text-sm leading-relaxed">
                         Sorry, you can only reschedule appointments that are at least 3 days away. 
                         Your current booking is on <strong>{reschedulingBooking.bookingDate}</strong>.
@@ -482,7 +580,7 @@ export default function MyBookingsPage() {
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FiAlertCircle className="w-8 h-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No {activeTab} bookings</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">No {activeTab} bookings</h3>
             <p className="text-sm text-slate-500 mb-6">
               {activeTab === 'current' && "You don't have any active service appointments."}
               {activeTab === 'upcoming' && "You don't have any upcoming appointments scheduled."}

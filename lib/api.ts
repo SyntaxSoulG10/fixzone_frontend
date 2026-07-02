@@ -8,8 +8,30 @@ const BASE_URL = APP_CONFIG.API_BASE_URL;
 const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem("token");
-  return token ? { "Authorization": `Bearer ${token}` } : {};
+  if (!token) {
+    console.warn("[getAuthHeaders] No token found in localStorage");
+    return {};
+  }
+  return { "Authorization": `Bearer ${token}` };
 };
+
+const parseErrorMessage = async (res: Response, fallback: string): Promise<string> => {
+  const rawText = await res.text().catch(() => "");
+  if (!rawText) return fallback;
+
+  try {
+    const parsed = JSON.parse(rawText);
+    return parsed?.message || parsed?.error || parsed?.detail || fallback;
+  } catch {
+    return rawText;
+  }
+};
+
+export interface PaymentInitResponse {
+  paymentId: number;
+  stripeConnected: boolean;
+  message?: string | null;
+}
 
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
   const res = await fetch(`${BASE_URL}/api/service-centers`, {
@@ -27,7 +49,7 @@ export async function getServiceCenters(): Promise<ServiceCenter[]> {
 
 export async function getServiceCenterDetails(centerId: string): Promise<any> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
   try {
     const res = await fetch(`${BASE_URL}/api/service-centers/${centerId}`, {
@@ -50,25 +72,18 @@ export async function getServiceCenterDetails(centerId: string): Promise<any> {
   }
 }
 
-export async function getServicePackagesByCenter(centerId: string): Promise<any> {
+export async function getServicePackagesByCenter(centerId: string, vehicleType?: string): Promise<any> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
-
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
   try {
-    // Fixed: Correct endpoint path and removed double slash
-    const res = await fetch(`${BASE_URL}/api/service-packages/center/${centerId}`, {
+    const url = new URL(`${BASE_URL}/api/service-packages/center/${centerId}`);
+    if (vehicleType) url.searchParams.append("vehicleType", vehicleType);
+    const res = await fetch(url.toString(), {
       signal: controller.signal,
-      headers: {
-        ...getAuthHeaders()
-      }
+      headers: { ...getAuthHeaders() },
     });
-
     clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      throw new Error("Failed to load service packages");
-    }
-
+    if (!res.ok) throw new Error("Failed to load service packages");
     return res.json();
   } catch (error) {
     clearTimeout(timeoutId);
@@ -77,7 +92,7 @@ export async function getServicePackagesByCenter(centerId: string): Promise<any>
 }
 
 export async function createPaymentSession(bookingId: number, amount: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/create`, {
+  const res = await fetch(`${BASE_URL}/api/payments/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -99,8 +114,8 @@ export async function createPaymentSession(bookingId: number, amount: number): P
  * Step 1: Initialize a booking session and reserve a slot.
  * Returns the generated paymentId.
  */
-export async function initPayment(servicePackageId: string, vehicleId: string, date: string, timeSlot: string, centerId: string, specialRequest: string = ""): Promise<number> {
-  const res = await fetch(`${BASE_URL}/payments/init`, {
+export async function initPayment(servicePackageId: string, vehicleId: string, date: string, timeSlot: string, centerId: string, specialRequest: string = ""): Promise<PaymentInitResponse> {
+  const res = await fetch(`${BASE_URL}/api/payments/init`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -110,15 +125,33 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
   });
 
   if (!res.ok) {
-    const errorMsg = await res.text();
-    if (res.status === 409 || errorMsg.toLowerCase().includes("unavailable")) {
+    const errorMsg = await parseErrorMessage(res, "Failed to initialize booking session");
+    const normalized = errorMsg.toLowerCase();
+    if (res.status === 409 || normalized.includes("unavailable")) {
       throw new Error("TIME_SLOT_UNAVAILABLE");
     }
-    throw new Error(errorMsg || "Failed to initialize booking session");
+    throw new Error(errorMsg);
   }
 
-  const data = await res.json();
-  return data.paymentId;
+  const rawText = await res.text();
+  if (!rawText) {
+    throw new Error("No response received from payment initialization");
+  }
+
+  try {
+    const data = JSON.parse(rawText);
+    if (typeof data === "number") {
+      return { paymentId: data, stripeConnected: true };
+    }
+
+    return {
+      paymentId: Number(data.paymentId ?? data.payment_id ?? data.id ?? 0),
+      stripeConnected: Boolean(data.stripeConnected ?? data.stripe_connected ?? true),
+      message: data.message ?? data.error ?? null,
+    };
+  } catch {
+    return { paymentId: Number(rawText), stripeConnected: true };
+  }
 }
 
 /**
@@ -126,7 +159,7 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
  * Returns a plain text Stripe Checkout URL.
  */
 export async function executeStripePayment(paymentId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/stripe`, {
+  const res = await fetch(`${BASE_URL}/api/payments/stripe`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -136,16 +169,25 @@ export async function executeStripePayment(paymentId: number): Promise<string> {
   });
 
   if (!res.ok) {
-    const errorMsg = await res.text();
-    throw new Error(errorMsg || "Failed to create Stripe checkout session");
+    const errorMsg = await parseErrorMessage(res, "Failed to create Stripe checkout session");
+    throw new Error(errorMsg);
   }
 
-  // Returns plain text Stripe URL
-  return res.text();
+  const rawText = await res.text();
+  if (!rawText) {
+    throw new Error("No checkout URL was returned");
+  }
+
+  try {
+    const parsed = JSON.parse(rawText);
+    return parsed.checkoutUrl || parsed.checkout_url || parsed.url || parsed.redirectUrl || parsed.redirect_url || rawText;
+  } catch {
+    return rawText;
+  }
 }
 
 export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/success?session_id=${sessionId}`, {
+  const res = await fetch(`${BASE_URL}/api/payments/success?session_id=${sessionId}`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -158,7 +200,7 @@ export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
 }
 
 export async function getPaymentDetails(bookingId: number): Promise<any> {
-  const res = await fetch(`${BASE_URL}/payments/${bookingId}`, {
+  const res = await fetch(`${BASE_URL}/api/payments/status/${bookingId}`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -171,7 +213,7 @@ export async function getPaymentDetails(bookingId: number): Promise<any> {
 }
 
 export async function refundPayment(bookingId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/refund`, {
+  const res = await fetch(`${BASE_URL}/api/payments/refund`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -187,7 +229,7 @@ export async function refundPayment(bookingId: number): Promise<string> {
 }
 
 export async function reschedulePayment(bookingId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/payments/reschedule`, {
+  const res = await fetch(`${BASE_URL}/api/payments/reschedule`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -200,6 +242,18 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
     throw new Error(errorMsg || "Failed to reschedule payment");
   }
   return res.text(); // Should return the new Stripe checkout URL
+}
+
+export async function getMyBookings(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/bookings/my`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "");
+    console.error(`[getMyBookings] ${res.status} ${res.statusText}`, errorBody);
+    throw new Error(`Failed to load my bookings (${res.status})`);
+  }
+  return res.json();
 }
 
 export async function getBookingsByCustomer(customerId: string): Promise<any[]> {
@@ -268,8 +322,7 @@ export async function cancelBookingAPI(bookingId: string): Promise<any> {
 }
 
 export async function downloadInvoice(bookingId: string): Promise<void> {
-  // Try to open invoice directly or fetch it
-  window.open(`${BASE_URL}/api/invoices/booking/${bookingId}/download`, "_blank");
+  window.open(`${BASE_URL}/api/invoices/booking/${bookingId}`, "_blank");
 }
 
 export async function getAvailableSlotsAPI(centerId: string, date: string): Promise<string[]> {
@@ -378,7 +431,9 @@ export async function getNotifications(): Promise<any[]> {
     headers: { ...getAuthHeaders() }
   });
   if (!res.ok) {
-    throw new Error("Failed to load notifications");
+    const errorBody = await res.text().catch(() => "");
+    console.error(`[getNotifications] ${res.status} ${res.statusText}`, errorBody);
+    throw new Error(`Failed to load notifications (${res.status})`);
   }
   return res.json();
 }
@@ -446,4 +501,37 @@ export async function fetchAllUsers(): Promise<any[]> {
     throw new Error("Failed to load users");
   }
   return res.json();
+}
+
+/**
+ * --- Stripe Connect API ---
+ */
+
+/** Returns whether the owner has completed Stripe onboarding. */
+export async function getStripeConnectStatus(): Promise<{ stripeConnected: boolean; message?: string | null }> {
+  const res = await fetch(`${BASE_URL}/api/payments/connect/status`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error("Failed to fetch Stripe connect status");
+  const data = await res.json();
+  return {
+    stripeConnected: Boolean(data?.stripeConnected ?? data?.stripe_connected ?? false),
+    message: data?.message ?? null,
+  };
+}
+
+/** Initiates Stripe Connect onboarding and returns the redirect URL. */
+export async function connectStripe(): Promise<string> {
+  const res = await fetch(`${BASE_URL}/api/payments/connect`, {
+    method: "POST",
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error("Failed to generate Stripe connect link");
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text);
+    return typeof json === "string" ? json : (json.url ?? json);
+  } catch {
+    return text;
+  }
 }
