@@ -55,7 +55,7 @@ export default function DonutStatCard({ title, totalValue, unit, data, subtext }
 
                 {/* Left Side: Donut Chart */}
                 <Box width={{ xs: '100%', md: '50%' }} height={250} position="relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1}>
                         <PieChart>
                             <Pie
                                 data={data}
