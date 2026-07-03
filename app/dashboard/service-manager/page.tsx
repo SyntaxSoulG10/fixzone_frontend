@@ -13,19 +13,57 @@ export default function ServiceManagerDashboard() {
     const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
     const [todaysInvoices, setTodaysInvoices] = useState<any[]>([]);
 
+    const [hiddenFromActive, setHiddenFromActive] = useState<string[]>([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('hiddenActiveBookings');
+        if (saved) setHiddenFromActive(JSON.parse(saved));
+    }, []);
+
+    const hideFromActiveList = (id: string) => {
+        const updated = [...hiddenFromActive, id];
+        setHiddenFromActive(updated);
+        localStorage.setItem('hiddenActiveBookings', JSON.stringify(updated));
+        setActiveBookings(prev => prev.filter(b => b.bookingId !== id));
+    };
+
+    const getBookingDetails = (booking: any) => {
+        let customer = booking.customerName || (booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Unknown');
+        let vehicle = booking.vehicleName || (booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Unknown');
+        let service = booking.packageName || 'Standard Service';
+
+        if (booking.specialRequest && booking.specialRequest.startsWith("Customer: ")) {
+            try {
+                const parts = booking.specialRequest.split(", ");
+                customer = parts[0].replace("Customer: ", "");
+                vehicle = parts[1].replace("Vehicle: ", "");
+                service = parts[2].replace("Service: ", "");
+            } catch(e) {}
+        }
+        return { customer, vehicle, service };
+    };
+
     useEffect(() => {
         if (hasDataInitialized) {
             console.log("[Dashboard] bookingsData received:", bookingsData);
+            const today = new Date().toISOString().split('T')[0];
             const upcoming = bookingsData.filter((b: any) =>
                 b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING"
             );
-            const active = bookingsData.filter((b: any) => b.status === "IN_PROGRESS");
+            
+            // Keep IN_PROGRESS, and today's COMPLETED/CANCELLED in active list until hidden
+            const active = bookingsData.filter((b: any) => 
+                (b.status === "IN_PROGRESS" || 
+                ((b.status === "COMPLETED" || b.status === "CANCELLED") && b.bookingDate === today))
+                && !hiddenFromActive.includes(b.bookingId)
+            );
+            
             console.log("[Dashboard] Active:", active.length, "Upcoming:", upcoming.length);
             setUpcomingBookings(upcoming);
             setActiveBookings(active);
             setTodaysInvoices(invoicesData || []);
         }
-    }, [hasDataInitialized, bookingsData, invoicesData]);
+    }, [hasDataInitialized, bookingsData, invoicesData, hiddenFromActive]);
 
     const completedCount = useMemo(() => {
         return bookingsData.filter((b: any) => b.status === "COMPLETED").length;
@@ -79,8 +117,8 @@ export default function ServiceManagerDashboard() {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/cancel`);
             }
             
+            // We just let the global refresh happen. The new filter logic will keep it in activeBookings.
             if (refreshBookings) refreshBookings();
-            setActiveBookings(activeBookings.map(b => b.bookingId === id ? { ...b, status: newStatus } : b));
         } catch (error) {
             console.error("Failed to update booking status", error);
             alert("Error updating booking status. Please try again.");
@@ -90,26 +128,10 @@ export default function ServiceManagerDashboard() {
     const activateBooking = async (booking: any) => {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/start-service`);
-            
-            setUpcomingBookings(upcomingBookings.filter(b => b.bookingId !== booking.bookingId));
-            setActiveBookings([...activeBookings, { ...booking, status: "IN_PROGRESS" }]);
             if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to activate booking", error);
             alert("Error moving booking to active. Please try again.");
-        }
-    };
-
-    const deactivateBooking = async (booking: any) => {
-        try {
-            await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/cancel`);
-            
-            setActiveBookings(activeBookings.filter(b => b.bookingId !== booking.bookingId));
-            setUpcomingBookings([...upcomingBookings, { ...booking, status: "CANCELLED" }]);
-            if (refreshBookings) refreshBookings();
-        } catch (error) {
-            console.error("Failed to deactivate booking", error);
-            alert("Error moving booking to upcoming. Please try again.");
         }
     };
 
@@ -172,37 +194,29 @@ export default function ServiceManagerDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {activeBookings.map((booking) => (
+                                {activeBookings.map((booking) => {
+                                    const details = getBookingDetails(booking);
+                                    return (
                                     <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900">{booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Unknown'}</td>
-                                        <td className="px-6 py-4">{booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Unknown'}</td>
-                                        <td className="px-6 py-4 font-mono text-xs">{booking.packageName || 'Standard Service'}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
+                                        <td className="px-6 py-4">{details.vehicle}</td>
+                                        <td className="px-6 py-4 font-mono text-xs">{details.service}</td>
                                         <td className="px-6 py-4">
-                                            <select
-                                                value={booking.status}
-                                                onChange={(e) => handleStatusChange(booking.bookingId, e.target.value)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-offset-1 cursor-pointer outline-none ${
-                                                    booking.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800 focus:ring-blue-500' :
-                                                    booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800 focus:ring-green-500' :
-                                                    'bg-red-100 text-red-800 focus:ring-red-500'
-                                                }`}
-                                            >
-                                                <option value="IN_PROGRESS" className="bg-white text-slate-900">In Progress</option>
-                                                <option value="COMPLETED" className="bg-white text-slate-900">Completed</option>
-                                                <option value="CANCELLED" className="bg-white text-slate-900">Cancelled</option>
-                                            </select>
+                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                In Progress
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <button
-                                                onClick={() => deactivateBooking(booking)}
+                                                onClick={() => hideFromActiveList(booking.bookingId)}
                                                 className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                title="Cancel Booking"
+                                                title="Remove from Dashboard"
                                             >
                                                 <FiMinus className="w-4 h-4" />
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )})}
                                 {activeBookings.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
@@ -227,28 +241,20 @@ export default function ServiceManagerDashboard() {
                                     <th className="px-6 py-4 w-1/4">Customer</th>
                                     <th className="px-6 py-4 w-1/4">Vehicle</th>
                                     <th className="px-6 py-4 w-1/4">Service</th>
-                                    <th className="px-6 py-4 w-1/6">Time</th>
-                                    <th className="px-6 py-4 w-1/12 text-center">Action</th>
+                                    <th className="px-6 py-4 w-1/4">Time</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {upcomingBookings.map((booking) => (
+                                {upcomingBookings.map((booking) => {
+                                    const details = getBookingDetails(booking);
+                                    return (
                                     <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900">{booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Unknown'}</td>
-                                        <td className="px-6 py-4">{booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Unknown'}</td>
-                                        <td className="px-6 py-4">{booking.packageName || 'Standard Service'}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
+                                        <td className="px-6 py-4">{details.vehicle}</td>
+                                        <td className="px-6 py-4">{details.service}</td>
                                         <td className="px-6 py-4 text-slate-500">{booking.bookingTime || booking.bookingDate || 'TBD'}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => activateBooking(booking)}
-                                                className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                                title="Start Service"
-                                            >
-                                                <FiPlus className="w-4 h-4" />
-                                            </button>
-                                        </td>
                                     </tr>
-                                ))}
+                                )})}
                                 {upcomingBookings.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
