@@ -3,7 +3,7 @@
 import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
 import { useState, useEffect } from "react";
-import { FiPlus, FiList, FiFileText, FiTrash2, FiSearch, FiPrinter, FiCheckCircle, FiAlertCircle, FiClock } from "react-icons/fi";
+import { FiPlus, FiList, FiFileText, FiTrash2, FiSearch, FiPrinter, FiCheckCircle, FiAlertCircle, FiClock, FiX } from "react-icons/fi";
 import APP_CONFIG from "@/config";
 
 // DTO Interfaces based on backend
@@ -61,6 +61,9 @@ export default function ServiceReportsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
 
+    const [recentReports, setRecentReports] = useState<any[]>([]);
+    const [isLoadingReports, setIsLoadingReports] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<any>(null);
     const fetchRecentInvoices = async () => {
         setIsLoadingInvoices(true);
         try {
@@ -80,9 +83,37 @@ export default function ServiceReportsPage() {
         }
     };
 
+    const fetchRecentReports = async () => {
+        setIsLoadingReports(true);
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
+                headers: token ? { "Authorization": `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const parsedReports = data.map((r: any) => {
+                    let metrics = { revenue: 0, vehiclesServiced: 0, incompleteServices: 0, summary: "" };
+                    try {
+                        if (r.fileContentBase64) {
+                            metrics = JSON.parse(r.fileContentBase64);
+                        }
+                    } catch(e) {}
+                    return { ...r, metrics };
+                });
+                setRecentReports(parsedReports.reverse());
+            }
+        } catch (error) {
+            console.error("Error fetching reports:", error);
+        } finally {
+            setIsLoadingReports(false);
+        }
+    };
+
     useEffect(() => {
         if (view === "list") {
             fetchRecentInvoices();
+            fetchRecentReports();
         }
     }, [view]);
 
@@ -96,18 +127,51 @@ export default function ServiceReportsPage() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("New Report Data:", formData);
-        alert("Report Created! (Check console for data)");
-        setView("list");
-        setFormData({
-            date: new Date().toISOString().split('T')[0],
-            revenue: "",
-            incompleteServices: "",
-            vehiclesServiced: "",
-            summary: ""
-        });
+        try {
+            const token = localStorage.getItem("token");
+            const metrics = {
+                revenue: parseFloat(formData.revenue),
+                vehiclesServiced: parseInt(formData.vehiclesServiced, 10),
+                incompleteServices: parseInt(formData.incompleteServices, 10),
+                summary: formData.summary
+            };
+            const payload = {
+                name: "Daily Operations Report",
+                type: "OPERATIONS",
+                date: formData.date,
+                size: "0",
+                downloadUrl: "",
+                fileContentBase64: JSON.stringify(metrics)
+            };
+            const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert("Report Created!");
+                setView("list");
+                setFormData({
+                    date: new Date().toISOString().split('T')[0],
+                    revenue: "",
+                    incompleteServices: "",
+                    vehiclesServiced: "",
+                    summary: ""
+                });
+                // Fetch reports again to show the newly added report
+                fetchRecentReports();
+            } else {
+                alert("Failed to create report.");
+            }
+        } catch (err) {
+            console.error("Error submitting report:", err);
+            alert("Error creating report");
+        }
     };
 
     // Invoice handlers
@@ -262,39 +326,7 @@ export default function ServiceReportsPage() {
         }
     };
     
-    // Mock data for last 3 days
-    const DAILY_REPORTS = [
-        {
-            id: 1,
-            date: "jan 14, 2026",
-            incompleteServices: 0,
-            metrics: {
-                vehiclesServiced: 12,
-                revenue: 93500.00,
-            },
-            summary: "Busy day with high volume of routine maintenance."
-        },
-        {
-            id: 2,
-            date: "jan 13, 2026",
-            incompleteServices: 2,
-            metrics: {
-                vehiclesServiced: 6,
-                revenue: 52100.00,
-            },
-            summary: "Moderate traffic. Two major repairs completed."
-        },
-        {
-            id: 3,
-            date: "jan 12, 2026",
-            incompleteServices: 0,
-            metrics: {
-                vehiclesServiced: 10,
-                revenue: 82800.00,
-            },
-            summary: "Steady flow of customers. All lanes operational."
-        }
-    ];
+    // Removed Mock DAILY_REPORTS
 
     return (
         <div>
@@ -478,29 +510,37 @@ export default function ServiceReportsPage() {
                                 <FiList className="text-emerald-600" /> Past Operations Reports
                             </h3>
                             <div className="space-y-4 overflow-y-auto pr-2 h-[500px]">
-                                {DAILY_REPORTS.map((report) => (
-                                    <div key={report.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+                                {isLoadingReports ? (
+                                    <div className="text-center text-slate-500 my-auto p-8">Loading reports...</div>
+                                ) : recentReports.length > 0 ? recentReports.map((report) => (
+                                    <div 
+                                        key={report.id} 
+                                        onClick={() => setSelectedReport(report)}
+                                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer"
+                                    >
                                         <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
                                             <div>
                                                 <h3 className="text-base font-bold text-slate-800 uppercase tracking-wide">{report.date}</h3>
                                                 <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                                                    Incomplete: <span className={`font-semibold ${report.incompleteServices > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                                        {report.incompleteServices}
+                                                    Incomplete: <span className={`font-semibold ${report.metrics.incompleteServices > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                        {report.metrics.incompleteServices}
                                                     </span>
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <span className="block text-xl font-bold text-emerald-600">Rs {report.metrics.revenue.toLocaleString()}</span>
+                                                <span className="block text-xl font-bold text-emerald-600">Rs {(report.metrics.revenue || 0).toLocaleString()}</span>
                                                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{report.metrics.vehiclesServiced} Vehicles</span>
                                             </div>
                                         </div>
 
                                         <div>
                                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Daily Summary</h4>
-                                            <p className="text-slate-600 text-sm leading-relaxed">{report.summary}</p>
+                                            <p className="text-slate-600 text-sm leading-relaxed">{report.metrics.summary}</p>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="text-center text-slate-500 my-auto p-8">No reports generated yet.</div>
+                                )}
                             </div>
                         </div>
 
@@ -903,6 +943,52 @@ export default function ServiceReportsPage() {
                         </div>
                     )}
                 </>
+            )}
+            {/* Selected Report Modal */}
+            {selectedReport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-slide-up">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">Operations Report Details</h3>
+                                <p className="text-sm text-slate-500 mt-1">{selectedReport.name} - {selectedReport.date}</p>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedReport(null)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                                    <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Total Revenue</p>
+                                    <p className="text-2xl font-bold text-emerald-900">Rs {(selectedReport.metrics?.revenue || 0).toLocaleString()}</p>
+                                </div>
+                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Vehicles Serviced</p>
+                                    <p className="text-2xl font-bold text-blue-900">{selectedReport.metrics?.vehiclesServiced || 0}</p>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                                <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Incomplete Services</p>
+                                <p className="text-2xl font-bold text-red-900">{selectedReport.metrics?.incompleteServices || 0}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Daily Summary</p>
+                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 text-sm whitespace-pre-wrap">
+                                    {selectedReport.metrics?.summary || "No summary provided."}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                            <Button variant="secondary" onClick={() => setSelectedReport(null)}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
