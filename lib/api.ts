@@ -540,3 +540,11 @@ export async function connectStripe(): Promise<string> {
     return text;
   }
 }
+
+export async function getSubscriptionBillingHistory(subscriptionId: string): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/subscriptions/${subscriptionId}/billing`, {
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) throw new Error("Failed to load billing history");
+  return res.json();
+}
