@@ -30,25 +30,33 @@ export default function ServiceManagerDashboard() {
     const getBookingDetails = (booking: any) => {
         let customer = booking.customerName || (booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Unknown');
         let vehicle = booking.vehicleName || (booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Unknown');
+        let vehicleNumber = "";
         let service = booking.packageName || 'Standard Service';
 
         if (booking.specialRequest && booking.specialRequest.startsWith("Customer: ")) {
             try {
-                const parts = booking.specialRequest.split(", ");
-                customer = parts[0].replace("Customer: ", "");
-                vehicle = parts[1].replace("Vehicle: ", "");
-                service = parts[2].replace("Service: ", "");
+                const cMatch = booking.specialRequest.match(/Customer:\s*([^,]+)/);
+                if (cMatch) customer = cMatch[1].trim();
+                const vMatch = booking.specialRequest.match(/Vehicle:\s*([^,]+)/);
+                if (vMatch) vehicle = vMatch[1].trim();
+                const vnMatch = booking.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
+                if (vnMatch) vehicleNumber = vnMatch[1].trim();
+                const sMatch = booking.specialRequest.match(/Service:\s*([^,]+)/);
+                if (sMatch) service = sMatch[1].trim();
             } catch(e) {}
         }
-        return { customer, vehicle, service };
+        return { customer, vehicle, vehicleNumber, service };
     };
 
     useEffect(() => {
         if (hasDataInitialized) {
             console.log("[Dashboard] bookingsData received:", bookingsData);
-            const today = new Date().toISOString().split('T')[0];
+            const d = new Date();
+            const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            
             const upcoming = bookingsData.filter((b: any) =>
-                b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING"
+                (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING") &&
+                b.bookingDate === today
             );
             
             // Keep IN_PROGRESS, and today's COMPLETED/CANCELLED in active list until hidden
@@ -199,11 +207,21 @@ export default function ServiceManagerDashboard() {
                                     return (
                                     <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
-                                        <td className="px-6 py-4">{details.vehicle}</td>
+                                        <td className="px-6 py-4">
+                                            <div>{details.vehicle}</div>
+                                            {details.vehicleNumber && <div className="text-xs text-slate-400">{details.vehicleNumber}</div>}
+                                        </td>
                                         <td className="px-6 py-4 font-mono text-xs">{details.service}</td>
                                         <td className="px-6 py-4">
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                In Progress
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                booking.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                                                booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                                'bg-slate-100 text-slate-800'
+                                            }`}>
+                                                {booking.status === 'IN_PROGRESS' ? 'In Progress' : 
+                                                 booking.status === 'COMPLETED' ? 'Completed' :
+                                                 booking.status === 'CANCELLED' ? 'Cancelled' : booking.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
@@ -250,7 +268,10 @@ export default function ServiceManagerDashboard() {
                                     return (
                                     <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
-                                        <td className="px-6 py-4">{details.vehicle}</td>
+                                        <td className="px-6 py-4">
+                                            <div>{details.vehicle}</div>
+                                            {details.vehicleNumber && <div className="text-xs text-slate-400">{details.vehicleNumber}</div>}
+                                        </td>
                                         <td className="px-6 py-4">{details.service}</td>
                                         <td className="px-6 py-4 text-slate-500">{booking.bookingTime || booking.bookingDate || 'TBD'}</td>
                                     </tr>
