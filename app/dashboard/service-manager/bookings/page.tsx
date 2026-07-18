@@ -21,13 +21,14 @@ export default function BookingsPage() {
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
-    const [editFormData, setEditFormData] = useState({ date: "", time: "", customer: "", vehicle: "", service: "" });
+    const [editFormData, setEditFormData] = useState({ date: "", time: "", customer: "", vehicle: "", vehicleNumber: "", service: "" });
 
     const [formData, setFormData] = useState({
         date: "",
         time: "",
         customer: "",
         vehicle: "",
+        vehicleNumber: "",
         service: "",
     });
 
@@ -36,6 +37,7 @@ export default function BookingsPage() {
         return bookingsData.map((b: any) => {
             let customer = b.customerName || `Customer ${b.customerId?.substring(0,4) || ''}`;
             let vehicle = b.vehicleName || `Vehicle ${b.vehicleId?.substring(0,4) || ''}`;
+            let vehicleNumber = "";
             let category = b.packageName || "General Service";
 
             let isManagerAdded = false;
@@ -43,10 +45,14 @@ export default function BookingsPage() {
             if (b.specialRequest && b.specialRequest.startsWith("Customer: ")) {
                 isManagerAdded = true;
                 try {
-                    const parts = b.specialRequest.split(", ");
-                    customer = parts[0].replace("Customer: ", "");
-                    vehicle = parts[1].replace("Vehicle: ", "");
-                    category = parts[2].replace("Service: ", "");
+                    const cMatch = b.specialRequest.match(/Customer:\s*([^,]+)/);
+                    if (cMatch) customer = cMatch[1].trim();
+                    const vMatch = b.specialRequest.match(/Vehicle:\s*([^,]+)/);
+                    if (vMatch) vehicle = vMatch[1].trim();
+                    const vnMatch = b.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
+                    if (vnMatch) vehicleNumber = vnMatch[1].trim();
+                    const sMatch = b.specialRequest.match(/Service:\s*([^,]+)/);
+                    if (sMatch) category = sMatch[1].trim();
                 } catch(e) {}
             }
 
@@ -56,7 +62,7 @@ export default function BookingsPage() {
                 customer,
                 vehicle,
                 isManagerAdded,
-                variety: "", 
+                variety: vehicleNumber, 
                 category,
                 time: b.bookingTime ? b.bookingTime.substring(0, 5) : "00:00",
                 date: b.bookingDate, 
@@ -85,7 +91,7 @@ export default function BookingsPage() {
                 vehicleId: "00000000-0000-0000-0000-000000000003", // Fallback Mock ID
                 bookingDate: formData.date,
                 bookingTime: formData.time,
-                specialRequest: `Customer: ${formData.customer}, Vehicle: ${formData.vehicle}, Service: ${formData.service}`,
+                specialRequest: `Customer: ${formData.customer}, Vehicle: ${formData.vehicle}, Vehicle Number: ${formData.vehicleNumber}, Service: ${formData.service}`,
             };
 
             await createBooking(newBookingRequest);
@@ -97,7 +103,7 @@ export default function BookingsPage() {
             }
 
             setView("list");
-            setFormData({ date: "", time: "", customer: "", vehicle: "", service: "" });
+            setFormData({ date: "", time: "", customer: "", vehicle: "", vehicleNumber: "", service: "" });
         } catch (error) {
             console.error("Failed to create booking:", error);
             alert("Failed to create booking. (DB Quota exceeded or invalid data)");
@@ -113,6 +119,7 @@ export default function BookingsPage() {
             time: booking.time || "",
             customer: booking.customer || "",
             vehicle: booking.vehicle || "",
+            vehicleNumber: booking.variety || "",
             service: booking.category || ""
         });
         setIsEditModalOpen(true);
@@ -126,7 +133,7 @@ export default function BookingsPage() {
             const updatePayload = {
                 bookingDate: editFormData.date,
                 bookingTime: editFormData.time,
-                specialRequest: `Customer: ${editFormData.customer}, Vehicle: ${editFormData.vehicle}, Service: ${editFormData.service}`
+                specialRequest: `Customer: ${editFormData.customer}, Vehicle: ${editFormData.vehicle}, Vehicle Number: ${editFormData.vehicleNumber}, Service: ${editFormData.service}`
             };
             await editExistingBooking(editingBookingId, updatePayload);
             alert("Booking updated successfully!");
@@ -413,17 +420,30 @@ export default function BookingsPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">Vehicle</label>
-                            <input
-                                type="text"
-                                name="vehicle"
-                                placeholder="e.g. Toyota Camry"
-                                required
-                                value={formData.vehicle}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Vehicle</label>
+                                <input
+                                    type="text"
+                                    name="vehicle"
+                                    placeholder="e.g. Toyota Camry"
+                                    required
+                                    value={formData.vehicle}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Vehicle Number</label>
+                                <input
+                                    type="text"
+                                    name="vehicleNumber"
+                                    placeholder="e.g. WP ABC-1234"
+                                    value={formData.vehicleNumber}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -465,7 +485,7 @@ export default function BookingsPage() {
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
                         <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50">
                             <h3 className="font-bold text-slate-900 text-lg">Edit Booking Details</h3>
-                            <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <button type="button" onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                                 <FiX size={20} />
                             </button>
                         </div>
@@ -502,14 +522,25 @@ export default function BookingsPage() {
                                 />
                             </div>
                             
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle</label>
-                                <input 
-                                    type="text" required
-                                    value={editFormData.vehicle}
-                                    onChange={e => setEditFormData({...editFormData, vehicle: e.target.value})}
-                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle</label>
+                                    <input 
+                                        type="text" required
+                                        value={editFormData.vehicle}
+                                        onChange={e => setEditFormData({...editFormData, vehicle: e.target.value})}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle No.</label>
+                                    <input 
+                                        type="text"
+                                        value={editFormData.vehicleNumber}
+                                        onChange={e => setEditFormData({...editFormData, vehicleNumber: e.target.value})}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">
