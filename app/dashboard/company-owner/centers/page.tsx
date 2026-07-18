@@ -428,22 +428,24 @@ export default function MyCentersPage() {
             <Box
                 sx={{
                     mb: 4,
-                    p: 2.5,
-                    borderRadius: '1rem',
-                    border: `1px solid ${stripeConnected ? '#bbf7d0' : '#fed7aa'}`,
-                    bgcolor: stripeConnected ? '#f0fdf4' : '#fff7ed',
+                    p: 3,
+                    borderRadius: '1.25rem',
+                    border: '1px solid',
+                    borderColor: stripeConnected ? '#edf2f7' : alpha(BRAND_ORANGE, 0.3),
+                    bgcolor: stripeConnected ? '#ffffff' : alpha(BRAND_ORANGE, 0.04),
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
                     justifyContent: 'space-between',
                     alignItems: { xs: 'flex-start', md: 'center' },
                     gap: 2,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                 }}
             >
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={800} color={stripeConnected ? '#166534' : '#9a2c0c'} textTransform="uppercase" letterSpacing={0.8}>
+                    <Typography variant="subtitle2" fontWeight={800} color={stripeConnected ? '#2d3748' : BRAND_ORANGE} textTransform="uppercase" letterSpacing={0.8}>
                         Stripe payout setup
                     </Typography>
-                    <Typography variant="body2" color={stripeConnected ? '#166534' : '#9a2c0c'} fontWeight={600} sx={{ mt: 0.5 }}>
+                    <Typography variant="body2" color={stripeConnected ? '#718096' : '#2d3748'} fontWeight={600} sx={{ mt: 0.5 }}>
                         {stripeConnected
                             ? 'Your owner account is connected for payouts and online payments.'
                             : 'Complete Stripe Connect to enable online payments for your branches.'}
@@ -451,12 +453,18 @@ export default function MyCentersPage() {
                 </Box>
                 <Button
                     variant="contained"
-                    startIcon={<FiExternalLink size={16} />}
+                    startIcon={<FiExternalLink size={18} />}
                     onClick={handleConnectStripe}
                     disabled={stripeLoading}
-                    sx={{ bgcolor: '#635bff', color: '#fff', '&:hover': { bgcolor: '#4f48e2' }, borderRadius: '0.75rem', textTransform: 'none', fontWeight: 700 }}
+                    sx={{
+                        bgcolor: BRAND_ORANGE, '&:hover': { bgcolor: '#d85618' },
+                        color: '#ffffff', px: 3, py: 1, borderRadius: '0.75rem',
+                        textTransform: 'none', fontSize: '0.95rem', fontWeight: '600',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#a0aec0' }
+                    }}
                 >
-                    {stripeLoading ? 'Opening...' : 'Connect Stripe'}
+                    {stripeLoading ? 'Opening...' : stripeConnected ? 'Stripe Dashboard' : 'Connect Stripe'}
                 </Button>
             </Box>
 
