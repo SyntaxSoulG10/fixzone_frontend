@@ -32,8 +32,13 @@ export default function BookingHeader({ station }: BookingHeaderProps) {
   };
 
   const handleDirection = () => {
-    const query = encodeURIComponent(station.location || station.name);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    const isUrl = station.location && (station.location.startsWith("http://") || station.location.startsWith("https://"));
+    if (isUrl) {
+      window.open(station.location, "_blank");
+    } else {
+      const query = encodeURIComponent(station.location || station.name);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    }
   };
 
   const handleShare = async () => {
