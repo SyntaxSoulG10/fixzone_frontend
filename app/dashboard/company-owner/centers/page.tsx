@@ -133,7 +133,21 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                 <Typography variant="h6" fontWeight="700" color="#2d3748" gutterBottom>{center.name}</Typography>
                 
                 <Box display="flex" flexDirection="column" gap={1.5} mb={3}>
-                    <Box display="flex" alignItems="center" gap={1.5}><FiMapPin color="#a0aec0" /><Typography variant="body2" color="#718096" noWrap>{center.location}</Typography></Box>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        <FiMapPin color="#a0aec0" />
+                        {center.location.startsWith("http://") || center.location.startsWith("https://") ? (
+                            <a 
+                                href={center.location} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ color: BRAND_ORANGE, fontWeight: '600', textDecoration: 'underline', fontSize: '0.875rem' }}
+                            >
+                                View on Map
+                            </a>
+                        ) : (
+                            <Typography variant="body2" color="#718096" noWrap>{center.location}</Typography>
+                        )}
+                    </Box>
                     <Box display="flex" alignItems="center" gap={1.5}><FiUser color="#a0aec0" /><Typography variant="body2" color="#718096">{center.manager}</Typography></Box>
                     <Box display="flex" alignItems="center" gap={1.5}><FiPhone color="#a0aec0" /><Typography variant="body2" color="#718096">{center.phone}</Typography></Box>
                 </Box>
@@ -193,7 +207,7 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
 /**
  * FORM DIALOG: Standardized input for adding or editing center data.
  */
-function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any) {
+function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave, onDetectLocation, detecting }: any) {
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '1.25rem', p: 1 } }}>
             <DialogTitle sx={{ fontWeight: '800', color: '#2d3748' }}>
@@ -202,7 +216,30 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave }: any
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={isEdit ? 2 : 0}>
                     <TextField label="Center Name" name="name" value={formData.name} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
-                    <TextField label="Address" name="location" value={formData.location} onChange={onChange} fullWidth multiline rows={2} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
+                    <Box>
+                        <TextField 
+                            label="Exact Location (Google Maps Link or Address)" 
+                            placeholder="Paste the Google Maps share link (e.g., https://maps.app.goo.gl/...) or type the exact address/coordinates"
+                            name="location" 
+                            value={formData.location} 
+                            onChange={onChange} 
+                            fullWidth 
+                            multiline 
+                            rows={2} 
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
+                        />
+                        <Box display="flex" justifyContent="flex-end" mt={0.5}>
+                            <Button 
+                                size="small" 
+                                onClick={onDetectLocation} 
+                                disabled={detecting}
+                                startIcon={<FiMapPin />}
+                                sx={{ color: BRAND_ORANGE, textTransform: 'none', fontWeight: '600' }}
+                            >
+                                {detecting ? "Detecting location..." : "Detect Current Location"}
+                            </Button>
+                        </Box>
+                    </Box>
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}><TextField label="Phone" name="phone" value={formData.phone} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} /></Grid>
                         <Grid size={{ xs: 6 }}>
@@ -250,6 +287,54 @@ export default function MyCentersPage() {
     const [stripeLoading, setStripeLoading] = useState(false);
 
     const [formData, setFormData] = useState({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
+    const [detecting, setDetecting] = useState(false);
+
+    const handleDetectLocation = () => {
+        if (typeof window === "undefined" || !navigator.geolocation) {
+            setSnackbar({ open: true, message: 'Geolocation is not supported by your browser', severity: 'error' });
+            return;
+        }
+
+        setDetecting(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+                        headers: {
+                            'User-Agent': 'FixZone-Client-Application'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.display_name) {
+                            setFormData(prev => ({ ...prev, location: data.display_name }));
+                            setSnackbar({ open: true, message: 'Location detected successfully!', severity: 'success' });
+                            return;
+                        }
+                    }
+                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
+                    setSnackbar({ open: true, message: 'Location coordinates detected!', severity: 'success' });
+                } catch (error) {
+                    console.error("Reverse geocoding failed", error);
+                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
+                    setSnackbar({ open: true, message: 'Location coordinates detected (address lookup failed)', severity: 'success' });
+                } finally {
+                    setDetecting(false);
+                }
+            },
+            (error) => {
+                console.error("Geolocation error", error);
+                let msg = 'Failed to get your location';
+                if (error.code === error.PERMISSION_DENIED) {
+                    msg = 'Location access denied. Please enable location permissions.';
+                }
+                setSnackbar({ open: true, message: msg, severity: 'error' });
+                setDetecting(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
 
     // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
@@ -336,7 +421,7 @@ export default function MyCentersPage() {
         }
 
         if (!formData.location.trim()) {
-            setSnackbar({ open: true, message: 'Address is required', severity: 'error' });
+            setSnackbar({ open: true, message: 'Exact Location is required', severity: 'error' });
             return;
         }
         
@@ -428,22 +513,24 @@ export default function MyCentersPage() {
             <Box
                 sx={{
                     mb: 4,
-                    p: 2.5,
-                    borderRadius: '1rem',
-                    border: `1px solid ${stripeConnected ? '#bbf7d0' : '#fed7aa'}`,
-                    bgcolor: stripeConnected ? '#f0fdf4' : '#fff7ed',
+                    p: 3,
+                    borderRadius: '1.25rem',
+                    border: '1px solid',
+                    borderColor: stripeConnected ? '#edf2f7' : alpha(BRAND_ORANGE, 0.3),
+                    bgcolor: stripeConnected ? '#ffffff' : alpha(BRAND_ORANGE, 0.04),
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
                     justifyContent: 'space-between',
                     alignItems: { xs: 'flex-start', md: 'center' },
                     gap: 2,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                 }}
             >
                 <Box>
-                    <Typography variant="subtitle2" fontWeight={800} color={stripeConnected ? '#166534' : '#9a2c0c'} textTransform="uppercase" letterSpacing={0.8}>
+                    <Typography variant="subtitle2" fontWeight={800} color={stripeConnected ? '#2d3748' : BRAND_ORANGE} textTransform="uppercase" letterSpacing={0.8}>
                         Stripe payout setup
                     </Typography>
-                    <Typography variant="body2" color={stripeConnected ? '#166534' : '#9a2c0c'} fontWeight={600} sx={{ mt: 0.5 }}>
+                    <Typography variant="body2" color={stripeConnected ? '#718096' : '#2d3748'} fontWeight={600} sx={{ mt: 0.5 }}>
                         {stripeConnected
                             ? 'Your owner account is connected for payouts and online payments.'
                             : 'Complete Stripe Connect to enable online payments for your branches.'}
@@ -451,12 +538,18 @@ export default function MyCentersPage() {
                 </Box>
                 <Button
                     variant="contained"
-                    startIcon={<FiExternalLink size={16} />}
+                    startIcon={<FiExternalLink size={18} />}
                     onClick={handleConnectStripe}
                     disabled={stripeLoading}
-                    sx={{ bgcolor: '#635bff', color: '#fff', '&:hover': { bgcolor: '#4f48e2' }, borderRadius: '0.75rem', textTransform: 'none', fontWeight: 700 }}
+                    sx={{
+                        bgcolor: BRAND_ORANGE, '&:hover': { bgcolor: '#d85618' },
+                        color: '#ffffff', px: 3, py: 1, borderRadius: '0.75rem',
+                        textTransform: 'none', fontSize: '0.95rem', fontWeight: '600',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#a0aec0' }
+                    }}
                 >
-                    {stripeLoading ? 'Opening...' : 'Connect Stripe'}
+                    {stripeLoading ? 'Opening...' : stripeConnected ? 'Stripe Dashboard' : 'Connect Stripe'}
                 </Button>
             </Box>
 
@@ -486,7 +579,7 @@ export default function MyCentersPage() {
                 </Grid>
             )}
 
-            <CenterDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.value })} onSave={handleSave} />
+            <CenterDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.value })} onSave={handleSave} onDetectLocation={handleDetectLocation} detecting={detecting} />
 
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity={snackbar.severity} sx={{ borderRadius: '0.75rem' }}>{snackbar.message}</Alert>

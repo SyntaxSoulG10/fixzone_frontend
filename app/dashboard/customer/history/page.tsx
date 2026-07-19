@@ -19,8 +19,9 @@ import {
   FiPrinter
 } from "react-icons/fi";
 import APP_CONFIG from "@/config";
-import { getMyBookings, rescheduleBookingAPI, cancelBookingAPI, getAvailableSlotsAPI } from "@/lib/api";
+import { getMyBookings, rescheduleBookingAPI, cancelBookingAPI, getAvailableSlotsAPI, getPaymentIdByBooking, executeStripePayment } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
+
 
 // Keep dummy bookings as fallback for UI demonstration if no data
 const DUMMY_BOOKINGS = {
@@ -46,6 +47,8 @@ export default function MyBookingsPage() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (reschedulingBooking && newDate) {
@@ -139,7 +142,30 @@ export default function MyBookingsPage() {
     }
   };
 
+  const handleProceedToPayment = async (bookingId: string) => {
+    try {
+      setPaymentLoading(bookingId);
+      const paymentId = await getPaymentIdByBooking(bookingId);
+      if (!paymentId) {
+        alert("Payment session not found. The slot may have expired. Please book again.");
+        return;
+      }
+      const stripeUrl = await executeStripePayment(paymentId);
+      if (stripeUrl && /^https?:\/\//i.test(stripeUrl)) {
+        window.location.href = stripeUrl;
+      } else {
+        throw new Error("Could not get Stripe checkout URL.");
+      }
+    } catch (err: any) {
+      console.error("Proceed to payment error:", err);
+      alert(err.message || "Failed to start payment. Please try again.");
+    } finally {
+      setPaymentLoading(null);
+    }
+  };
+
   const handleDownloadInvoice = async (bookingId: string) => {
+
     setInvoiceLoading(bookingId);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -313,6 +339,20 @@ export default function MyBookingsPage() {
                   <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Loading...</>
                 ) : (
                   <><FiDownload className="w-4 h-4" /> Download Invoice</>
+                )}
+              </Button>
+            )}
+
+            {booking.status === 'PENDING_PAYMENT' && (
+              <Button 
+                onClick={() => handleProceedToPayment(bookingId)}
+                disabled={paymentLoading === bookingId}
+                className="px-4 py-2 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                {paymentLoading === bookingId ? (
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Processing...</>
+                ) : (
+                  <>Complete Booking</>
                 )}
               </Button>
             )}
