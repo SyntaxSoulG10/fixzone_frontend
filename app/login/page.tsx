@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiLock, FiMail, FiArrowRight } from "react-icons/fi";
+import { FiLock, FiMail, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import { getUserRole, isTokenExpired } from "../../utils/authUtils";
 import APP_CONFIG from "@/config";
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -134,13 +135,20 @@ export default function LoginPage() {
                                             <FiLock className="text-sm" />
                                         </div>
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             required
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="block w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
+                                            className="block w-full pl-9 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
                                             placeholder="••••••••"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showPassword ? <FiEyeOff className="text-sm" /> : <FiEye className="text-sm" />}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -156,9 +164,9 @@ export default function LoginPage() {
                                             Remember me
                                         </label>
                                     </div>
-                                    <a href="#" className="font-medium text-[#FF8C42] hover:text-[#F97316]">
+                                    <Link href="/forgot-password" className="font-medium text-[#FF8C42] hover:text-[#F97316]">
                                         Forgot password?
-                                    </a>
+                                    </Link>
                                 </div>
 
                                 <button
