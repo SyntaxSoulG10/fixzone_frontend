@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiLock, FiEye, FiEyeOff, FiCheck, FiX, FiCheckCircle } from "react-icons/fi";
 import APP_CONFIG from "@/config";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
@@ -227,5 +227,17 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex justify-center items-center font-sans bg-[#1E1E1E]">
+                <div className="w-10 h-10 border-4 border-[#FF8C42]/30 border-t-[#FF8C42] rounded-full animate-spin"></div>
+            </div>
+        }>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
