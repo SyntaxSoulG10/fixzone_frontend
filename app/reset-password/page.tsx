@@ -44,6 +44,7 @@ function ResetPasswordContent() {
     }, [password]);
 
     const isPasswordStrong = Object.values(validations).every(Boolean);
+    const metConditionsCount = Object.values(validations).filter(Boolean).length;
     const doPasswordsMatch = password === confirmPassword && password.length > 0;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -152,25 +153,30 @@ function ResetPasswordContent() {
                                     </div>
 
                                     {/* Password Strength Indicator */}
-                                    <div className="bg-gray-50 p-3 rounded-lg space-y-1 mt-1 border border-gray-100">
-                                        <p className="text-xs font-semibold text-gray-600 mb-2">Password must contain:</p>
-                                        <div className="grid grid-cols-1 gap-1 text-xs">
-                                            <div className={`flex items-center ${validations.length ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {validations.length ? <FiCheck className="mr-1" /> : <FiX className="mr-1" />} At least 8 characters
-                                            </div>
-                                            <div className={`flex items-center ${validations.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {validations.uppercase ? <FiCheck className="mr-1" /> : <FiX className="mr-1" />} One uppercase letter
-                                            </div>
-                                            <div className={`flex items-center ${validations.lowercase ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {validations.lowercase ? <FiCheck className="mr-1" /> : <FiX className="mr-1" />} One lowercase letter
-                                            </div>
-                                            <div className={`flex items-center ${validations.number ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {validations.number ? <FiCheck className="mr-1" /> : <FiX className="mr-1" />} One number
-                                            </div>
-                                            <div className={`flex items-center ${validations.special ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {validations.special ? <FiCheck className="mr-1" /> : <FiX className="mr-1" />} One special character
-                                            </div>
+                                    <div className="mt-2 space-y-3">
+                                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-300 ${metConditionsCount === 5 ? 'bg-green-500' : (metConditionsCount >= 3 ? 'bg-orange-500' : 'bg-red-500')}`}
+                                                style={{ width: `${(metConditionsCount / 5) * 100}%` }}
+                                            ></div>
                                         </div>
+                                        <ul className="text-sm space-y-1 pl-1">
+                                            <li className={`flex items-center gap-2 ${validations.length ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.length ? 'bg-green-600' : 'bg-red-500'}`}></div> At least 8 characters
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.uppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.uppercase ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains an uppercase letter
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.lowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.lowercase ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a lowercase letter
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.number ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.number ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a number
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.special ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.special ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a special character
+                                            </li>
+                                        </ul>
                                     </div>
 
                                     <div>
