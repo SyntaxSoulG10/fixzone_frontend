@@ -154,7 +154,6 @@ export default function SubscriptionsPage() {
                             <div className="font-bold text-slate-800 text-sm leading-snug">{row.companyName}</div>
                             {row.plan?.isPopular && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id?.substring(0, 8)}</div>
                     </div>
                 </div>
             ),

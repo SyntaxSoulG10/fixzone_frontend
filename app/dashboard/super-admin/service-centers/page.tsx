@@ -2,7 +2,7 @@
 
 import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
-import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell, FiExternalLink, FiAlertCircle, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiFilter, FiPlus, FiMapPin, FiBriefcase, FiCheckCircle, FiSlash, FiSearch, FiX, FiFileText, FiClock, FiBell, FiExternalLink, FiAlertCircle, FiChevronLeft, FiChevronRight, FiRefreshCw } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { useState, useEffect } from "react";
 import axios from "@/lib/axios";
@@ -147,7 +147,6 @@ export default function ServiceStationsPage() {
                     </div>
                     <div>
                         <div className="font-bold text-slate-800 text-sm">{row.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono italic">{row.id.substring(0, 13)}...</div>
                     </div>
                 </div>
             )
@@ -221,7 +220,7 @@ export default function ServiceStationsPage() {
                 </div>
                 <div className="flex gap-3">
                      <Button variant="secondary" onClick={fetchStations} className="flex items-center gap-2">
-                        Refresh Data
+                        <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Sync DB
                     </Button>
                 </div>
             </div>

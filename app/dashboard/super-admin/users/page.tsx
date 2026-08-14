@@ -165,7 +165,6 @@ export default function UsersPage() {
                     <img src={`https://ui-avatars.com/api/?name=${row.name}&background=random&color=fff`} className="w-10 h-10 rounded-2xl" alt="avatar" />
                     <div>
                         <div className="font-bold text-slate-800 text-sm">{row.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono italic">{row.id.substring(0, 13)}...</div>
                     </div>
                 </div>
             )

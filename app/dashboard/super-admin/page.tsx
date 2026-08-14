@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -59,6 +59,23 @@ export default function SuperAdminDashboard() {
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [fullName, setFullName] = useState("Super Admin");
+
+    useEffect(() => {
+        const updateName = () => {
+            const storedName = localStorage.getItem("userName") || localStorage.getItem("username") || localStorage.getItem("fullName");
+            if (storedName) {
+                const firstName = storedName.split(' ')[0];
+                setFullName(firstName);
+            }
+        };
+        
+        updateName();
+        
+        // Listen for profile updates from the profile page
+        window.addEventListener('profileUpdated', updateName);
+        return () => window.removeEventListener('profileUpdated', updateName);
+    }, []);
 
     const { analyticsData, statsData, subscriptionsData, isLoading, refreshAll } = useDashboardData();
     const analytics = analyticsData as AnalyticsData | null;
@@ -221,7 +238,7 @@ export default function SuperAdminDashboard() {
 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">Welcome back, Super Admin!</h1>
+                        <h1 className="text-3xl font-bold mb-2">Welcome back, {fullName}!</h1>
                         <p className="text-orange-100/80">Here&apos;s what&apos;s happening with your network today.</p>
                     </div>
                 </div>

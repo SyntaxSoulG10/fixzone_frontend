@@ -27,7 +27,8 @@ export default function SubscriptionPlansPage() {
         name: "",
         price: "",
         features: [""],
-        isPopular: false
+        isPopular: false,
+        durationMonths: 1
     });
 
     useEffect(() => {
@@ -52,7 +53,8 @@ export default function SubscriptionPlansPage() {
             name: "",
             price: "",
             features: [""],
-            isPopular: false
+            isPopular: false,
+            durationMonths: 1
         });
         setIsModalOpen(true);
     };
@@ -63,7 +65,8 @@ export default function SubscriptionPlansPage() {
             name: plan.name,
             price: plan.price.toString(),
             features: plan.features?.length > 0 ? [...plan.features] : [""],
-            isPopular: plan.isPopular || false
+            isPopular: plan.isPopular || false,
+            durationMonths: plan.durationMonths || 1
         });
         setIsModalOpen(true);
     };
@@ -76,7 +79,7 @@ export default function SubscriptionPlansPage() {
             price: parseFloat(formData.price),
             features: formData.features.filter(f => f.trim() !== ""),
             isPopular: formData.isPopular,
-            durationMonths: 1, // Default to monthly
+            durationMonths: formData.durationMonths,
             isActive: true
         };
 
@@ -128,6 +131,16 @@ export default function SubscriptionPlansPage() {
         }));
     };
 
+    const getDurationLabel = (months?: number) => {
+        switch (months) {
+            case 1: return "/mo";
+            case 3: return "/quarter";
+            case 6: return "/half-year";
+            case 12: return "/year";
+            default: return "/mo";
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="h-96 flex flex-col items-center justify-center gap-4">
@@ -168,7 +181,7 @@ export default function SubscriptionPlansPage() {
                                 <h3 className="text-lg font-bold text-slate-800">{plan.name}</h3>
                                 <div className="flex items-baseline gap-1 mt-2">
                                     <span className="text-3xl font-bold text-slate-900">Rs. {plan.price.toLocaleString()}</span>
-                                    <span className="text-slate-500 font-medium">/mo</span>
+                                    <span className="text-slate-500 font-medium">{getDurationLabel(plan.durationMonths)}</span>
                                 </div>
                             </div>
 
@@ -244,17 +257,33 @@ export default function SubscriptionPlansPage() {
                                 />
                             </div>
 
-                            {/* Price */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Price (Rs./month)</label>
-                                <input
-                                    type="number"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
-                                    placeholder="e.g., 15000"
-                                    required
-                                />
+                            {/* Price and Billing Cycle */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Price (Rs.)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.price}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
+                                        placeholder="e.g., 15000"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Billing Cycle</label>
+                                    <select
+                                        value={formData.durationMonths}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, durationMonths: parseInt(e.target.value) }))}
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all bg-white"
+                                    >
+                                        <option value={1}>Monthly (1 month)</option>
+                                        <option value={3}>Quarterly (3 months)</option>
+                                        <option value={6}>Half-Yearly (6 months)</option>
+                                        <option value={12}>Yearly (12 months)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             {/* Highlight Toggle */}
