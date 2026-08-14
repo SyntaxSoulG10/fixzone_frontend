@@ -120,6 +120,7 @@ export default function StationDetailPage() {
           id: data.centerId,
           name: data.name,
           location: data.address || "Unknown Location",
+          googleMapsUrl: data.googleMapsUrl || null,
           image: "/garages/garage01.jpg",
           rating: data.rating || 4.5,
           reviews: data.customerRatings?.length || 0,

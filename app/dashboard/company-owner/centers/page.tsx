@@ -62,6 +62,7 @@ interface ServiceCenterView {
     id: string;
     name: string;
     location: string;
+    googleMapsUrl?: string;
     manager: string;
     phone: string;
     revenue: number;
@@ -133,19 +134,21 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                 <Typography variant="h6" fontWeight="700" color="#2d3748" gutterBottom>{center.name}</Typography>
                 
                 <Box display="flex" flexDirection="column" gap={1.5} mb={3}>
-                    <Box display="flex" alignItems="center" gap={1.5}>
-                        <FiMapPin color="#a0aec0" />
-                        {center.location.startsWith("http://") || center.location.startsWith("https://") ? (
+                    <Box display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0, width: '100%' }}>
+                        <FiMapPin color="#a0aec0" style={{ flexShrink: 0 }} />
+                        <Typography variant="body2" color="#718096" noWrap sx={{ mr: 0.5 }}>
+                            {center.location}
+                        </Typography>
+                        {(center.googleMapsUrl || center.location.startsWith("http://") || center.location.startsWith("https://")) && (
                             <a 
-                                href={center.location} 
+                                href={center.googleMapsUrl || center.location} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                style={{ color: BRAND_ORANGE, fontWeight: '600', textDecoration: 'underline', fontSize: '0.875rem' }}
+                                style={{ color: BRAND_ORANGE, fontWeight: '600', textDecoration: 'underline', fontSize: '0.825rem', flexShrink: 0 }}
+                                title="Open Google Maps"
                             >
-                                View on Map
+                                (Map)
                             </a>
-                        ) : (
-                            <Typography variant="body2" color="#718096" noWrap>{center.location}</Typography>
                         )}
                     </Box>
                     <Box display="flex" alignItems="center" gap={1.5}><FiUser color="#a0aec0" /><Typography variant="body2" color="#718096">{center.manager}</Typography></Box>
@@ -240,6 +243,15 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave, onDet
                             </Button>
                         </Box>
                     </Box>
+                    <TextField 
+                        label="Google Maps Link (Optional)" 
+                        placeholder="Paste the Google Maps share link (e.g., https://maps.app.goo.gl/...)"
+                        name="googleMapsUrl" 
+                        value={formData.googleMapsUrl || ""} 
+                        onChange={onChange} 
+                        fullWidth 
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
+                    />
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}><TextField label="Phone" name="phone" value={formData.phone} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} /></Grid>
                         <Grid size={{ xs: 6 }}>
@@ -286,7 +298,7 @@ export default function MyCentersPage() {
     const [stripeConnected, setStripeConnected] = useState(false);
     const [stripeLoading, setStripeLoading] = useState(false);
 
-    const [formData, setFormData] = useState({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
+    const [formData, setFormData] = useState({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
     const [detecting, setDetecting] = useState(false);
 
     const handleDetectLocation = () => {
@@ -339,6 +351,7 @@ export default function MyCentersPage() {
     // Maps raw centers data from context to the view model
     const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
         id: c.centerId, name: c.name, location: c.address,
+        googleMapsUrl: c.googleMapsUrl || "",
         manager: c.managerName || "N/A", phone: c.contactPhone,
         revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
         mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0,
@@ -435,6 +448,7 @@ export default function MyCentersPage() {
             name: formData.name, address: formData.location, contactPhone: formData.phone,
             isActive: formData.status === 'Active',
             mechanicsCount: formData.mechanics, currentCapacity: formData.capacity,
+            googleMapsUrl: formData.googleMapsUrl,
             ownerId: APP_CONFIG.placeholders.ownerId
         };
         setIsLoading(true);
@@ -479,7 +493,7 @@ export default function MyCentersPage() {
     };
 
     const handleEditClick = (center: ServiceCenterView) => {
-        setFormData({ name: center.name, location: center.location, phone: center.phone, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
+        setFormData({ name: center.name, location: center.location, googleMapsUrl: center.googleMapsUrl || "", phone: center.phone, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
         setSelectedId(center.id);
         setIsEditMode(true);
         setOpenDialog(true);
@@ -506,7 +520,7 @@ export default function MyCentersPage() {
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -567,7 +581,7 @@ export default function MyCentersPage() {
                     title="No Service Centers"
                     description="You don't have any service center branches yet. Let's create your first branch to get started."
                     actionLabel="New Branch"
-                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
+                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
                 />
             ) : (
                 <Grid container spacing={4}>
