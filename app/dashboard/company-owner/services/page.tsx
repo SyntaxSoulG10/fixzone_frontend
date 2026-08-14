@@ -9,6 +9,7 @@ import { APP_CONFIG } from "@/utils/config";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
 import EmptyState from "@/components/UI/EmptyState";
 import { FiLayers } from "react-icons/fi";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
  * Validation and default constants for service packages.
@@ -42,21 +43,23 @@ interface ServicePackage {
  * CARD COMPONENT: Represents a single service package offering.
  * Separates visual layout from list management logic.
  */
-function ServicePackageCard({ pkg, onEdit, onDelete }: { pkg: ServicePackage, onEdit: (pkg: ServicePackage) => void, onDelete: (id: string) => void }) {
+function ServicePackageCard({ pkg, onEdit, onDelete, isExpired }: { pkg: ServicePackage, onEdit: (pkg: ServicePackage) => void, onDelete: (id: string) => void, isExpired: boolean }) {
     return (
         <div className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button
                     onClick={() => onEdit(pkg)}
-                    className="p-2 bg-white text-slate-600 rounded-full shadow-sm hover:text-primary hover:bg-slate-50 border border-slate-100 transition-colors"
-                    title="Edit"
+                    disabled={isExpired}
+                    title={isExpired ? "Upgrade your plan to use this feature" : "Edit"}
+                    className="p-2 bg-white text-slate-600 rounded-full shadow-sm hover:text-primary hover:bg-slate-50 border border-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <FiEdit2 size={16} />
                 </button>
                 <button
                     onClick={() => onDelete(pkg.id)}
-                    className="p-2 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-100 transition-colors"
-                    title="Delete"
+                    disabled={isExpired}
+                    title={isExpired ? "Upgrade your plan to use this feature" : "Delete"}
+                    className="p-2 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <FiTrash2 size={16} />
                 </button>
@@ -484,13 +487,20 @@ export default function ServicesPage() {
         }
     };
 
+    const { ownerData } = useDashboardData();
+    const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
+
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6 relative">
             <PageHeader
                 title="Service Packages"
                 description="Create and manage your service offerings and pricing."
                 action={
-                    <Button onClick={handleOpenCreate}>
+                    <Button 
+                        onClick={handleOpenCreate}
+                        disabled={isExpired}
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""}
+                    >
                         <FiPlus className="mr-2 h-4 w-4" />
                         Create Package
                     </Button>
@@ -520,7 +530,8 @@ export default function ServicesPage() {
                                 key={pkg.id} 
                                 pkg={pkg} 
                                 onEdit={handleOpenEdit} 
-                                onDelete={handleDelete} 
+                                onDelete={handleDelete}
+                                isExpired={isExpired}
                             />
                         ))}
                         <button

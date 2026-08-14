@@ -73,7 +73,7 @@ interface ServiceCenterView {
 /**
  * HEADER COMPONENT: Encapsulates the page title and primary CTA.
  */
-function CentersHeader({ onAdd }: { onAdd: () => void }) {
+function CentersHeader({ onAdd, isExpired }: { onAdd: () => void, isExpired: boolean }) {
     return (
         <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'flex-start' }} gap={3} mb={6} mt={2}>
             <Box>
@@ -87,12 +87,15 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
             <Button
                 variant="contained"
                 onClick={onAdd}
+                disabled={isExpired}
+                title={isExpired ? "Upgrade your plan to use this feature" : ""}
                 startIcon={<FiPlus size={20} />}
                 sx={{
                     bgcolor: BRAND_ORANGE, '&:hover': { bgcolor: '#d85618' },
                     color: '#ffffff', px: 3, py: 1.2, borderRadius: '0.75rem',
                     textTransform: 'none', fontSize: '1rem', fontWeight: '600',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#a0aec0' }
                 }}
             >
                 New Branch
@@ -105,7 +108,7 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
  * CARD COMPONENT: Represents a single service center branch.
  * Extracted to separate visual card layout from list management logic.
  */
-function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
+function CenterCard({ center, onToggleStatus, onEdit, onDelete, isExpired }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any, isExpired: boolean }) {
     const isActive = center.status === 'Active';
     
     return (
@@ -173,17 +176,20 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                 <Box display="flex" justifyContent="space-between" mt={4}>
                     <Button
                         size="small"
+                        disabled={isExpired}
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""}
                         onClick={() => onToggleStatus(center.id, center.status)}
                         startIcon={<FiPower />}
-                        sx={{ color: isActive ? '#e53e3e' : '#1e8e3e', fontWeight: '600', textTransform: 'none' }}
+                        sx={{ color: isActive ? '#e53e3e' : '#1e8e3e', fontWeight: '600', textTransform: 'none', '&.Mui-disabled': { color: '#a0aec0' } }}
                     >
                         {isActive ? 'Disable' : 'Enable'}
                     </Button>
                     <IconButton
                         size="small"
+                        disabled={isExpired}
+                        title={isExpired ? "Upgrade your plan to use this feature" : "Delete Branch"}
                         onClick={() => onDelete(center.id)}
-                        sx={{ color: '#e53e3e', '&:hover': { bgcolor: 'rgba(229, 62, 62, 0.1)' } }}
-                        title="Delete Branch"
+                        sx={{ color: '#e53e3e', '&:hover': { bgcolor: 'rgba(229, 62, 62, 0.1)' }, '&.Mui-disabled': { color: '#a0aec0' } }}
                     >
                         <FiTrash2 />
                     </IconButton>
@@ -191,9 +197,11 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                         <Button
                             variant="outlined"
                             size="small"
+                            disabled={isExpired}
+                            title={isExpired ? "Upgrade your plan to use this feature" : ""}
                             startIcon={<FiEdit2 />}
                             onClick={() => onEdit(center)}
-                            sx={{ color: BRAND_ORANGE, borderColor: BRAND_ORANGE, borderRadius: '0.5rem', '&:hover': { bgcolor: alpha(BRAND_ORANGE, 0.05), borderColor: '#d85618' }, textTransform: 'none' }}
+                            sx={{ color: BRAND_ORANGE, borderColor: BRAND_ORANGE, borderRadius: '0.5rem', '&:hover': { bgcolor: alpha(BRAND_ORANGE, 0.05), borderColor: '#d85618' }, textTransform: 'none', '&.Mui-disabled': { borderColor: '#e2e8f0', color: '#a0aec0' } }}
                         >
                             Edit
                         </Button>
@@ -275,7 +283,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
-    const { centersData, isLoading: isContextLoading, refreshAll } = useDashboardData();
+    const { centersData, ownerData, isLoading: isContextLoading, refreshAll } = useDashboardData();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -502,11 +510,12 @@ export default function MyCentersPage() {
         }
     };
 
+    const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} isExpired={isExpired} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -540,7 +549,8 @@ export default function MyCentersPage() {
                     variant="contained"
                     startIcon={<FiExternalLink size={18} />}
                     onClick={handleConnectStripe}
-                    disabled={stripeLoading}
+                    disabled={stripeLoading || isExpired}
+                    title={isExpired ? "Upgrade your plan to use this feature" : ""}
                     sx={{
                         bgcolor: BRAND_ORANGE, '&:hover': { bgcolor: '#d85618' },
                         color: '#ffffff', px: 3, py: 1, borderRadius: '0.75rem',
@@ -573,7 +583,7 @@ export default function MyCentersPage() {
                 <Grid container spacing={4}>
                     {filtered.map(center => (
                         <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-                            <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
+                            <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} isExpired={isExpired} />
                         </Grid>
                     ))}
                 </Grid>

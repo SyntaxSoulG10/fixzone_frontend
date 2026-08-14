@@ -33,14 +33,8 @@ axiosInstance.interceptors.response.use(
 
     // 402 Payment Required — subscription expired
     if (error.response?.status === 402) {
-      const body = error.response?.data;
-      const isSubscriptionExpired =
-        body?.error === "SUBSCRIPTION_EXPIRED" ||
-        (typeof body === "string" && body.includes("SUBSCRIPTION_EXPIRED"));
-      if (isSubscriptionExpired && typeof window !== "undefined") {
-        // Redirect to billing tab on the profile page
-        window.location.href = "/dashboard/company-owner/profile?tab=billing&sub_expired=true";
-      }
+      // We no longer globally redirect on 402 to prevent infinite redirect loops.
+      // Individual UI components will catch this error and show localized alerts.
     }
 
     return Promise.reject(error);
