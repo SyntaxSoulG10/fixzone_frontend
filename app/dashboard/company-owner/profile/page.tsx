@@ -375,7 +375,7 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
-    const [autoRenew, setAutoRenew] = useState(false);
+    const [autoRenew, setAutoRenew] = useState(true);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -418,7 +418,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 
         // Fetch plans
         axios.get(APP_CONFIG.api.subPlans)
-            .then(r => { setPlans(r.data); if (r.data.length > 0) setSelectedPlan(r.data[0].planId); })
+            .then(r => { setPlans(r.data); if (r.data.length > 0) setSelectedPlan(r.data[0].id); })
             .catch(() => onMessage("Could not load subscription plans", "error"))
             .finally(() => setLoadingPlans(false));
     }, []);
@@ -436,13 +436,21 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
     };
 
     const handleSubscribe = async () => {
-        if (!selectedPlan) return;
+        if (!selectedPlan) {
+            onMessage("Please select a plan first.", "error");
+            return;
+        }
         setCheckoutLoading(true);
         try {
             const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan, autoRenew });
-            window.location.href = res.data;
-        } catch {
-            onMessage("Failed to start subscription checkout. Please try again.", "error");
+            const checkoutUrl = res.data?.checkoutUrl || res.data;
+            if (!checkoutUrl || typeof checkoutUrl !== "string") {
+                throw new Error("Invalid checkout URL received from server.");
+            }
+            window.location.href = checkoutUrl;
+        } catch (err: any) {
+            const msg = err?.response?.data || err?.message || "Failed to start subscription checkout. Please try again.";
+            onMessage(typeof msg === "string" ? msg : JSON.stringify(msg), "error");
         } finally {
             setCheckoutLoading(false);
         }
@@ -508,14 +516,14 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                             <MuiFormControl component="fieldset" fullWidth>
                                 <RadioGroup value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}>
                                     {plans.map((plan: any) => (
-                                        <Box key={plan.planId} sx={{
-                                            border: `1.5px solid ${selectedPlan === plan.planId ? '#EA580C' : '#e2e8f0'}`,
+                                        <Box key={plan.id} sx={{
+                                            border: `1.5px solid ${selectedPlan === plan.id ? '#EA580C' : '#e2e8f0'}`,
                                             borderRadius: 2, p: 2, mb: 1.5,
-                                            bgcolor: selectedPlan === plan.planId ? 'rgba(234,88,12,0.05)' : '#fff',
+                                            bgcolor: selectedPlan === plan.id ? 'rgba(234,88,12,0.05)' : '#fff',
                                             cursor: 'pointer', transition: 'all 0.2s'
-                                        }} onClick={() => setSelectedPlan(plan.planId)}>
+                                        }} onClick={() => setSelectedPlan(plan.id)}>
                                             <FormControlLabel
-                                                value={plan.planId}
+                                                value={plan.id}
                                                 control={<Radio sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
                                                 label={
                                                     <Box>

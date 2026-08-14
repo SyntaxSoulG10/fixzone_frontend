@@ -83,11 +83,12 @@ export default function BookServicePage() {
       console.log("[BookServicePage] Response data:", data);
 
       const list: ServiceCenter[] = Array.isArray(data) ? data : [];
+      const approvedList = list.filter(c => c.status?.toUpperCase() === "APPROVED");
 
-      if (list.length === 0) {
+      if (approvedList.length === 0) {
         setFetchState("empty");
       } else {
-        setCenters(list);
+        setCenters(approvedList);
         setFetchState("success");
       }
     } catch (err) {

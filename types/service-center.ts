@@ -8,5 +8,6 @@ export type ServiceCenter = {
   rating: number | null;
   isActive: boolean | null;
   supportedVehicleBrands: string[] | null;
+  status?: string | null;
 };
 

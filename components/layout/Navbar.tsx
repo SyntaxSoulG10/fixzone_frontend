@@ -180,8 +180,23 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 fetchNotifications();
             }
             setIsNotificationsOpen(false);
+
+            const roleToPath: Record<string, string> = {
+                "ROLE_COMPANY_OWNER": "company-owner",
+                "OWNER": "company-owner",
+                "ROLE_SERVICE_MANAGER": "service-manager",
+                "ROLE_CUSTOMER": "customer",
+                "CUSTOMER": "customer",
+                "company_owner": "company-owner",
+                "service_manager": "service-manager",
+                "customer": "customer"
+            };
+            const basePath = roleToPath[role || "customer"] || "customer";
+
             if (n.targetUrl) {
                 router.push(n.targetUrl);
+            } else {
+                router.push(`/dashboard/${basePath}/notifications/${n.id}`);
             }
         } catch (error) {
             console.error("Failed to handle notification click:", error);
@@ -219,16 +234,18 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     const getNotificationsPageUrl = () => {
         if (!role) return "";
-        // Super admin and customer don't have a dedicated notifications page tab
+        // Super admin doesn't have a dedicated notifications page tab
         if (role === "ROLE_SUPER_ADMIN" || role === "super_admin") return "";
-        if (role === "ROLE_CUSTOMER" || role === "CUSTOMER" || role === "customer") return "";
 
         const roleToPath: Record<string, string> = {
             "ROLE_COMPANY_OWNER": "company-owner",
             "OWNER": "company-owner",
             "ROLE_SERVICE_MANAGER": "service-manager",
+            "ROLE_CUSTOMER": "customer",
+            "CUSTOMER": "customer",
             "company_owner": "company-owner",
             "service_manager": "service-manager",
+            "customer": "customer",
         };
 
         const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');

@@ -100,12 +100,15 @@ export default function CustomerDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Guest");
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("token");
     const storedName = localStorage.getItem("fullName");
     if (storedName) setUserName(storedName);
+    const storedPic = localStorage.getItem("profilePictureUrl");
+    if (storedPic) setProfilePictureUrl(storedPic);
 
     const fetchProfile = async () => {
       try {
@@ -117,6 +120,10 @@ export default function CustomerDashboard() {
           const fullName = data.fullName || `${data.firstName} ${data.secondName}`;
           setUserName(fullName);
           localStorage.setItem("fullName", fullName);
+          if (data.profilePictureUrl) {
+            setProfilePictureUrl(data.profilePictureUrl);
+            localStorage.setItem("profilePictureUrl", data.profilePictureUrl);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -168,7 +175,7 @@ export default function CustomerDashboard() {
   const upcomingConfirmed = bookings
     .filter((b) => {
       const s = (b.status || "").toUpperCase();
-      return s === "CONFIRMED";
+      return s === "CONFIRMED" || s === "PENDING_PAYMENT";
     })
     .sort((a, z) => {
       const ta = new Date(a.bookingTime ? `${a.bookingDate}T${a.bookingTime}` : a.bookingDate).getTime() || 0;
@@ -180,7 +187,7 @@ export default function CustomerDashboard() {
 
   const activeBookingsCount = bookings.filter((b) => {
     const s = (b.status || "").toUpperCase();
-    return s === "CONFIRMED" || s === "IN_PROGRESS";
+    return s === "CONFIRMED" || s === "IN_PROGRESS" || s === "PENDING_PAYMENT";
   }).length;
 
   const completedCount = bookings.filter((b) => (b.status || "").toUpperCase() === "COMPLETED").length;
@@ -253,9 +260,11 @@ export default function CustomerDashboard() {
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             {/* avatar */}
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg shadow-orange-500/30 shrink-0">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg shadow-orange-500/30 shrink-0 overflow-hidden">
               {loading ? (
                 <span className="w-6 h-6 rounded-full bg-white/20 animate-pulse inline-block" />
+              ) : profilePictureUrl ? (
+                <img src={profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 getInitials(userName)
               )}
@@ -511,7 +520,7 @@ export default function CustomerDashboard() {
                 return (
                   <Link
                     key={n.id || i}
-                    href="/dashboard/customer/notifications"
+                    href={`/dashboard/customer/notifications/${n.id}`}
                     className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all hover:shadow-sm ${
                       !isRead
                         ? "bg-orange-50/60 border-orange-200 hover:border-orange-300"

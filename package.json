@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:vitest": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -47,6 +49,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.0",
+    "jest": "^30.4.2",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "5.9.3",
