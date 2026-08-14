@@ -36,7 +36,8 @@ import {
     FiSearch,
     FiTrash2,
     FiExternalLink,
-    FiBriefcase
+    FiBriefcase,
+    FiClock
 } from "react-icons/fi";
 import { useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
@@ -54,6 +55,13 @@ const DEFAULT_CAPACITY = 0;
 const MIN_CENTER_NAME_LENGTH = 3;
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+    const hour = Math.floor(i / 2);
+    const minute = i % 2 === 0 ? "00" : "30";
+    const hourStr = hour.toString().padStart(2, "0");
+    return `${hourStr}:${minute}`;
+});
+
 /**
  * DATA MODELS: Strict interfaces ensure type safety and 
  * predictable data handling between API and UI.
@@ -69,6 +77,7 @@ interface ServiceCenterView {
     status: "Active" | "Inactive";
     mechanics: number;
     capacity: number;
+    openingHours: string;
 }
 
 /**
@@ -153,6 +162,14 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                     </Box>
                     <Box display="flex" alignItems="center" gap={1.5}><FiUser color="#a0aec0" /><Typography variant="body2" color="#718096">{center.manager}</Typography></Box>
                     <Box display="flex" alignItems="center" gap={1.5}><FiPhone color="#a0aec0" /><Typography variant="body2" color="#718096">{center.phone}</Typography></Box>
+                    {center.openingHours && (
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                            <FiClock color="#a0aec0" />
+                            <Typography variant="body2" color="#718096">
+                                {center.openingHours}
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
 
                 <Divider sx={{ my: 2.5 }} />
@@ -252,6 +269,43 @@ function CenterDialog({ open, onClose, isEdit, formData, onChange, onSave, onDet
                         fullWidth 
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
                     />
+                    <Box display="flex" gap={2} alignItems="center">
+                        <FormControl fullWidth required>
+                            <InputLabel id="open-time-label">Open From</InputLabel>
+                            <Select
+                                labelId="open-time-label"
+                                label="Open From"
+                                name="openTime"
+                                value={formData.openTime || "08:00"}
+                                onChange={onChange}
+                                sx={{ borderRadius: '0.75rem' }}
+                            >
+                                {TIME_OPTIONS.map((time) => (
+                                    <MenuItem key={time} value={time}>
+                                        {time}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Typography variant="body1" color="#718096" fontWeight="600">to</Typography>
+                        <FormControl fullWidth required>
+                            <InputLabel id="close-time-label">Open Until</InputLabel>
+                            <Select
+                                labelId="close-time-label"
+                                label="Open Until"
+                                name="closeTime"
+                                value={formData.closeTime || "18:00"}
+                                onChange={onChange}
+                                sx={{ borderRadius: '0.75rem' }}
+                            >
+                                {TIME_OPTIONS.map((time) => (
+                                    <MenuItem key={time} value={time}>
+                                        {time}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 6 }}><TextField label="Phone" name="phone" value={formData.phone} onChange={onChange} fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} /></Grid>
                         <Grid size={{ xs: 6 }}>
@@ -298,7 +352,7 @@ export default function MyCentersPage() {
     const [stripeConnected, setStripeConnected] = useState(false);
     const [stripeLoading, setStripeLoading] = useState(false);
 
-    const [formData, setFormData] = useState({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
+    const [formData, setFormData] = useState({ name: "", location: "", googleMapsUrl: "", phone: "", openTime: "08:00", closeTime: "18:00", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY });
     const [detecting, setDetecting] = useState(false);
 
     const handleDetectLocation = () => {
@@ -355,6 +409,7 @@ export default function MyCentersPage() {
         manager: c.managerName || "N/A", phone: c.contactPhone,
         revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
         mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0,
+        openingHours: c.openingHours || "",
     }));
 
     useEffect(() => { 
@@ -437,6 +492,16 @@ export default function MyCentersPage() {
             setSnackbar({ open: true, message: 'Exact Location is required', severity: 'error' });
             return;
         }
+
+        if (!formData.openTime || !formData.closeTime) {
+            setSnackbar({ open: true, message: 'Opening and closing times are required', severity: 'error' });
+            return;
+        }
+
+        if (formData.openTime >= formData.closeTime) {
+            setSnackbar({ open: true, message: 'Closing time must be after opening time', severity: 'error' });
+            return;
+        }
         
         // Basic phone validation (digits and min length)
         if (!PHONE_REGEX.test(formData.phone.replace(/\s/g, ''))) {
@@ -446,6 +511,7 @@ export default function MyCentersPage() {
 
         const payload = { 
             name: formData.name, address: formData.location, contactPhone: formData.phone,
+            openingHours: `${formData.openTime} - ${formData.closeTime}`,
             isActive: formData.status === 'Active',
             mechanicsCount: formData.mechanics, currentCapacity: formData.capacity,
             googleMapsUrl: formData.googleMapsUrl,
@@ -493,7 +559,16 @@ export default function MyCentersPage() {
     };
 
     const handleEditClick = (center: ServiceCenterView) => {
-        setFormData({ name: center.name, location: center.location, googleMapsUrl: center.googleMapsUrl || "", phone: center.phone, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
+        let openT = "08:00";
+        let closeT = "18:00";
+        if (center.openingHours && center.openingHours.includes(" - ")) {
+            const parts = center.openingHours.split(" - ");
+            if (parts.length === 2) {
+                openT = parts[0].trim();
+                closeT = parts[1].trim();
+            }
+        }
+        setFormData({ name: center.name, location: center.location, googleMapsUrl: center.googleMapsUrl || "", phone: center.phone, openTime: openT, closeTime: closeT, status: center.status, mechanics: center.mechanics, capacity: center.capacity });
         setSelectedId(center.id);
         setIsEditMode(true);
         setOpenDialog(true);
@@ -520,7 +595,7 @@ export default function MyCentersPage() {
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
-            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+            <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", openTime: "08:00", closeTime: "18:00", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
@@ -581,7 +656,7 @@ export default function MyCentersPage() {
                     title="No Service Centers"
                     description="You don't have any service center branches yet. Let's create your first branch to get started."
                     actionLabel="New Branch"
-                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
+                    onAction={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", openTime: "08:00", closeTime: "18:00", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }}
                 />
             ) : (
                 <Grid container spacing={4}>
