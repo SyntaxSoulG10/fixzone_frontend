@@ -9,5 +9,6 @@ export type ServiceCenter = {
   isActive: boolean | null;
   supportedVehicleBrands: string[] | null;
   status?: string | null;
+  googleMapsUrl?: string | null;
 };
 

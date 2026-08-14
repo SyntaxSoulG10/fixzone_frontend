@@ -106,6 +106,7 @@ export default function BookServicePage() {
     id: c.centerId,
     name: c.name,
     location: c.address ?? "Unknown",
+    googleMapsUrl: c.googleMapsUrl ?? null,
     image: "/garages/garage01.jpg",
     services: c.supportedVehicleBrands ?? [],
     openStatus: c.isActive ? computeOpenStatus(c.openingHours) : "Closed",
@@ -249,10 +250,22 @@ export default function BookServicePage() {
                       {station.name}
                     </h3>
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <FiMapPin className="w-4 h-4 text-slate-400" />
-                        <span>{station.location}</span>
-                      </div>
+                      {station.googleMapsUrl ? (
+                        <a 
+                          href={station.googleMapsUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 hover:underline font-semibold"
+                        >
+                          <FiMapPin className="w-4 h-4 text-orange-500 shrink-0" />
+                          <span className="truncate">{station.location}</span>
+                        </a>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <FiMapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{station.location}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {station.services.slice(0, 2).map((service, idx) => (
