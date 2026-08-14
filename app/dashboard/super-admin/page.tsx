@@ -1,11 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FiUsers, FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiCheckCircle } from "react-icons/fi";
+import { useState } from "react";
+import { FiBriefcase, FiDollarSign, FiUserCheck, FiX, FiDownload, FiCheckCircle, FiTrendingUp } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import {
+    Grid,
+    Box,
+    Typography,
+    Button,
+    ToggleButton,
+    ToggleButtonGroup,
+} from "@mui/material";
+import StatCard from "@/components/dashboard/StatCard";
+import ChartCard from "@/components/dashboard/ChartCard";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    Legend,
+} from "recharts";
 
 // Interfaces for type safety
 interface RevenueBar {
@@ -42,24 +64,21 @@ export default function SuperAdminDashboard() {
     const analytics = analyticsData as AnalyticsData | null;
     const loading = isLoading;
 
-
-
-    // Transform analytics data for the graph
-    const getGraphData = () => {
-        if (!analytics) return { total: 0, labels: [], values: [], amounts: [] };
-        
+    // Transform analytics data for charts (Recharts format)
+    const getChartData = () => {
+        if (!analytics) return [];
         const source = view === 'weekly' ? analytics.weeklyRevenue : analytics.monthlyRevenue;
-        return {
-            total: source.reduce((acc: number, curr: RevenueBar) => acc + curr.amount, 0),
-            labels: source.map((d: RevenueBar) => d.label),
-            values: source.map((d: RevenueBar) => d.percentage),
-            amounts: source.map((d: RevenueBar) => d.amount)
-        };
+        return source.map((d: RevenueBar) => ({
+            name: d.label,
+            revenue: d.amount,
+            percentage: d.percentage,
+        }));
     };
 
-    const currentData = getGraphData();
+    const chartData = getChartData();
+    const totalRevenue = chartData.reduce((acc: number, curr: any) => acc + curr.revenue, 0);
 
-    // Mapping for Summary Metrics
+    // Mapping for Summary Metrics (used in PDF report)
     const summaryMetrics = analytics ? [
         { 
             label: "Total Revenue", 
@@ -79,8 +98,6 @@ export default function SuperAdminDashboard() {
             change: `${analytics.subscriptionChange} growth` 
         },
     ] : [];
-
-    // const topStations = analytics?.topStations || []; // Redundant fallback - using context values directly
 
     const generatePDF = () => {
         const doc = new jsPDF();
@@ -196,8 +213,6 @@ export default function SuperAdminDashboard() {
         }, 1000);
     };
 
-
-
     return (
         <div className="space-y-8 relative">
             {/* Friendly Welcome Banner (Gradient) */}
@@ -212,115 +227,215 @@ export default function SuperAdminDashboard() {
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Stats Grid — MUI StatCard components */}
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Service Stations"
+                        count={analytics?.totalServiceCenters?.toString() || '0'}
+                        icon={<FiBriefcase />}
+                        percentage={analytics?.pendingRegistrations ? {
+                            color: 'warning',
+                            amount: `${analytics.pendingRegistrations}`,
+                            label: 'pending review'
+                        } : undefined}
+                        color="primary"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Platform Revenue"
+                        count={loading ? "..." : `Rs. ${analytics?.totalPlatformRevenue?.toLocaleString() || '0'}`}
+                        icon={<FiDollarSign />}
+                        percentage={analytics?.revenueChange ? {
+                            color: analytics.revenueChange.startsWith('+') ? 'success' : 'danger',
+                            amount: analytics.revenueChange,
+                            label: 'overall growth'
+                        } : undefined}
+                        color="success"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <StatCard
+                        title="Total Platform Users"
+                        count={statsData?.totalUsers?.toString() || '0'}
+                        icon={<FiUserCheck />}
+                        percentage={{
+                            color: 'info',
+                            amount: 'All',
+                            label: 'across all roles'
+                        }}
+                        color="primary"
+                    />
+                </Grid>
+            </Grid>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
-                    <div className="w-12 h-12 bg-orange-50 group-hover:bg-orange-600 transition-colors duration-300 rounded-full flex items-center justify-center text-orange-600 group-hover:text-white mb-3">
-                        <FiBriefcase className="text-xl" />
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Service Stations</h3>
-                    <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">{analytics?.totalServiceCenters || 0}</span>
-                    </div>
-                    <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">{analytics?.pendingRegistrations || 0} pending review</span>
+            {/* Charts Section — Dual Chart Layout */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+                <div>
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
+                        Subscription Revenue Performance
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Track your {view} subscription revenue trends
+                    </Typography>
                 </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
-                    <div className="w-12 h-12 bg-orange-50 group-hover:bg-orange-600 transition-colors duration-300 rounded-full flex items-center justify-center text-orange-600 group-hover:text-white mb-3">
-                        <FiDollarSign className="text-xl" />
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Platform Revenue</h3>
-                    <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">
-                            {loading ? "..." : `Rs ${analytics?.totalPlatformRevenue.toLocaleString() || 0}`}
-                        </span>
-                    </div>
-                    <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
-                        {analytics?.revenueChange || "0%"} overall
-                    </span>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-100 group cursor-pointer text-center flex flex-col items-center">
-                    <div className="w-12 h-12 bg-orange-50 group-hover:bg-orange-600 transition-colors duration-300 rounded-full flex items-center justify-center text-orange-600 group-hover:text-white mb-3">
-                        <FiUserCheck className="text-xl" />
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-500 group-hover:text-slate-700">Total Platform Users</h3>
-                    <div className="mt-2 mb-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">{statsData?.totalUsers || 0}</span>
-                    </div>
-                    <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">Across all roles</span>
-                </div>
-            </div>
-
-            {/* Main Graph Area */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                <div className="mb-6 flex justify-between items-end">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800">Subscription Revenue Performance</h3>
-                        <p className="text-sm text-slate-500">Track your {view} subscription revenue</p>
-                    </div>
-                    <button
+                <Box display="flex" alignItems="center" gap={2}>
+                    <ToggleButtonGroup
+                        value={view}
+                        exclusive
+                        onChange={(_, val) => val && setView(val)}
+                        size="small"
+                        sx={{
+                            '& .MuiToggleButton-root': {
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                fontSize: '0.8rem',
+                                px: 2.5,
+                                borderColor: '#e2e8f0',
+                                '&.Mui-selected': {
+                                    bgcolor: '#EA580C',
+                                    color: '#fff',
+                                    '&:hover': { bgcolor: '#c2410c' }
+                                }
+                            }
+                        }}
+                    >
+                        <ToggleButton value="weekly">Weekly</ToggleButton>
+                        <ToggleButton value="monthly">Monthly</ToggleButton>
+                    </ToggleButtonGroup>
+                    <Button
+                        variant="outlined"
+                        size="small"
                         onClick={() => setIsReportOpen(true)}
-                        className="text-sm font-semibold text-orange-600 hover:text-orange-700 border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            borderColor: '#EA580C',
+                            color: '#EA580C',
+                            borderRadius: 2,
+                            '&:hover': { bgcolor: 'rgba(234,88,12,0.05)', borderColor: '#c2410c' }
+                        }}
                     >
                         View Report
-                    </button>
-                </div>
+                    </Button>
+                </Box>
+            </Box>
 
-                {/* The Graph Card */}
-                <div className="bg-linear-to-br from-[#FF8C60] to-[#E86C4A] rounded-2xl p-8 text-white shadow-xl shadow-orange-200 relative overflow-hidden group">
-                    {/* Background decorations */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/5 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
-
-                    <div className="flex justify-between items-start mb-12 relative z-10">
-                        <div>
-                            <p className="text-orange-100 text-sm font-medium mb-1">Subscription Revenue</p>
-                            <h2 className="text-4xl font-bold font-mono tracking-tight">Rs {currentData.total.toLocaleString()}</h2>
-                        </div>
-                        <div className="flex bg-black/10 backdrop-blur-sm rounded-lg p-1 border border-white/10">
-                            <button
-                                onClick={() => setView('weekly')}
-                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'weekly' ? 'bg-white text-orange-600 shadow-sm' : 'text-white/70 hover:text-white'}`}
-                            >
-                                Weekly
-                            </button>
-                            <button
-                                onClick={() => setView('monthly')}
-                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'monthly' ? 'bg-white text-orange-600 shadow-sm' : 'text-white/70 hover:text-white'}`}
-                            >
-                                Monthly
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="relative h-48 flex items-end justify-between gap-4 px-2 z-10">
-                        {/* Bars */}
-                        {currentData.values.map((h: number, i: number) => (
-                            <div key={i} className="flex flex-col items-center gap-3 group/bar w-full h-full justify-end">
-                                <div className="relative w-full h-full flex items-end justify-center">
-                                    <div
-                                        className="w-full max-w-3 md:max-w-10 bg-white/30 hover:bg-white rounded-t-lg transition-all duration-300 ease-out cursor-pointer relative group-hover/bar:scale-y-105 origin-bottom"
-                                        style={{ height: `${h}%` }}
+            <Grid container spacing={3}>
+                {/* Revenue Bar Chart */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Box mb={3}>
+                        <ChartCard
+                            title="Revenue Overview"
+                            description={
+                                <Box display="flex" alignItems="center">
+                                    <Typography variant="button" fontWeight="bold" color="success.main">
+                                        Rs {totalRevenue.toLocaleString()}
+                                    </Typography>
+                                    <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
+                                        total {view} revenue
+                                    </Typography>
+                                </Box>
+                            }
+                            date={`updated just now`}
+                            color="primary"
+                            chart={
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={chartData}
+                                        margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
                                     >
-                                        {/* Tooltip */}
-                                        <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl transition-all transform translate-y-2 group-hover/bar:translate-y-0 pointer-events-none whitespace-nowrap z-20">
-                                            Rs {currentData.amounts[i].toLocaleString()}
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span className="text-xs text-white/60 font-medium uppercase tracking-wider">
-                                    {currentData.labels[i]}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                        <XAxis
+                                            dataKey="name"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tick={{ fill: '#fff', opacity: 0.8 }}
+                                            angle={-45}
+                                            textAnchor="end"
+                                        />
+                                        <YAxis
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickFormatter={(value) => `Rs ${(value / 1000).toFixed(0)}k`}
+                                            tick={{ fill: '#fff', opacity: 0.8 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            itemStyle={{ color: '#1e293b' }}
+                                            formatter={(value: number | undefined) => [`Rs ${(value ?? 0).toLocaleString()}`, 'Revenue']}
+                                        />
+                                        <Bar dataKey="revenue" name="Revenue" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            }
+                        />
+                    </Box>
+                </Grid>
 
-
+                {/* Subscription Trend Line Chart */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Box mb={3}>
+                        <ChartCard
+                            title="Subscription Trend"
+                            description={
+                                <Box display="flex" alignItems="center">
+                                    <Typography variant="button" fontWeight="bold" color={analytics?.subscriptionChange?.startsWith('+') ? "success.main" : "error.main"}>
+                                        {analytics?.subscriptionChange || '0%'}
+                                    </Typography>
+                                    <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
+                                        subscription growth
+                                    </Typography>
+                                </Box>
+                            }
+                            date={`${view} trend`}
+                            color="primary"
+                            chart={
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart
+                                        data={chartData}
+                                        margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                        <XAxis
+                                            dataKey="name"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tick={{ fill: '#fff', opacity: 0.8 }}
+                                            angle={-45}
+                                            textAnchor="end"
+                                        />
+                                        <YAxis
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickFormatter={(value) => `Rs ${(value / 1000).toFixed(0)}k`}
+                                            tick={{ fill: '#fff', opacity: 0.8 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            itemStyle={{ color: '#1e293b' }}
+                                            formatter={(value: number | undefined) => [`Rs ${(value ?? 0).toLocaleString()}`, 'Revenue']}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            stroke="#ffffff"
+                                            strokeWidth={3}
+                                            dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                            activeDot={{ r: 6, stroke: '#fff' }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            }
+                        />
+                    </Box>
+                </Grid>
+            </Grid>
 
             {/* Report Modal */}
             {isReportOpen && (

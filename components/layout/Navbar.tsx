@@ -45,9 +45,14 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 const response = await axios.get(endpoint);
                 if (response.data) {
                     const data = response.data;
+                    
+                    // Check local storage for overrides (since profile page saves it there currently)
+                    const localProfileImage = localStorage.getItem("adminProfileImage") || localStorage.getItem("profileImage") || null;
+                    const localUserName = localStorage.getItem("userName") || localStorage.getItem("fullName") || null;
+                    
                     setUserData({
-                        fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName || ''}`.trim() : 'User'),
-                        profilePictureUrl: data.profilePictureUrl
+                        fullName: localUserName || data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName || ''}`.trim() : 'User'),
+                        profilePictureUrl: localProfileImage || data.profilePictureUrl
                     });
                 }
             }
@@ -406,7 +411,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                                     <FiUser className="text-slate-400" /> My Profile
                                 </Link>
                                 <Link
-                                    href="/settings"
+                                    href={`${getProfileUrl()}?tab=account`}
                                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
                                 >
                                     <FiSettings className="text-slate-400" /> Settings

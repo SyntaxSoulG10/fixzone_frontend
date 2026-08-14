@@ -641,8 +641,9 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
     const searchParams = useSearchParams();
-    // Auto-switch to Billing tab when redirected with ?tab=billing
-    const initialTab = searchParams?.get("tab") === "billing" ? 2 : 0;
+    // Auto-switch to correct tab when redirected with ?tab=billing or ?tab=account
+    const tabParam = searchParams?.get("tab");
+    const initialTab = tabParam === "billing" ? 2 : tabParam === "account" ? 1 : 0;
     const [tabValue, setTabValue] = useState(initialTab);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
