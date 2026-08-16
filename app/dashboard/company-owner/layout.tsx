@@ -4,30 +4,38 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { FiLoader, FiAlertTriangle } from "react-icons/fi";
 import { Suspense } from "react";
 
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button as MuiButton } from "@mui/material";
+
 function SubscriptionExpiredModal() {
     const router = useRouter();
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center space-y-6">
-                <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                        <FiAlertTriangle className="w-8 h-8 text-red-500" />
-                    </div>
+        <Dialog 
+            open={true}
+            PaperProps={{ sx: { borderRadius: '1.5rem', p: 1, maxWidth: 400, width: '100%', textAlign: 'center' } }}
+        >
+            <div className="h-2 rounded-t-full bg-red-500"></div>
+            <DialogTitle sx={{ pt: 3, fontWeight: 'bold' }}>
+                <div className="w-16 h-16 mx-auto mb-3 bg-red-50 rounded-2xl flex items-center justify-center text-2xl text-red-500">
+                    <FiAlertTriangle className="w-8 h-8" />
                 </div>
-                <div className="space-y-2">
-                    <h2 className="text-xl font-black text-slate-900">Subscription Expired</h2>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                        Your subscription has expired. Please upgrade your plan to continue using FixZone.
-                    </p>
-                </div>
-                <button
+                Subscription Expired
+            </DialogTitle>
+            <DialogContent sx={{ px: 3 }}>
+                <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+                    Your subscription has expired. Please upgrade your plan to continue using FixZone.
+                </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 1, justifyContent: 'center' }}>
+                <MuiButton
+                    fullWidth
+                    variant="contained"
                     onClick={() => router.push("/dashboard/company-owner/profile?tab=billing")}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                    sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, py: 1.5, borderRadius: '0.75rem', fontWeight: 'bold', textTransform: 'none' }}
                 >
                     Upgrade Now
-                </button>
-            </div>
-        </div>
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
     );
 }
 

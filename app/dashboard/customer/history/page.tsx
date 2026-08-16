@@ -18,6 +18,19 @@ import {
   FiDollarSign,
   FiPrinter
 } from "react-icons/fi";
+import { 
+  Snackbar, 
+  Alert, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  Typography, 
+  IconButton, 
+  Box 
+} from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 import APP_CONFIG from "@/config";
 import { getMyBookings, rescheduleBookingAPI, cancelBookingAPI, getAvailableSlotsAPI, getPaymentIdByBooking, executeStripePayment } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
@@ -39,6 +52,12 @@ export default function MyBookingsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [invoiceModal, setInvoiceModal] = useState<any>(null);
   const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; bookingId: string }>({ isOpen: false, bookingId: '' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   // Reschedule Form State
   const [reschedulingBooking, setReschedulingBooking] = useState<any>(null);
@@ -48,7 +67,6 @@ export default function MyBookingsPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
-
 
   useEffect(() => {
     if (reschedulingBooking && newDate) {
@@ -68,11 +86,7 @@ export default function MyBookingsPage() {
     }
   }, [reschedulingBooking, newDate]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setLoading(true);
     try {
       const raw = await getMyBookings();
@@ -89,7 +103,11 @@ export default function MyBookingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
 
   const handleRescheduleSubmit = async () => {
     if (!reschedulingBooking || !newDate || !newTime) return;
@@ -97,10 +115,6 @@ export default function MyBookingsPage() {
     try {
       setActionLoading(`reschedule-${reschedulingBooking.bookingId}`);
       
-      console.log("🎯 TASK 3 & 6: RESCHEDULE DEBUG");
-      console.log("URL:", `${APP_CONFIG.API_BASE_URL}/api/bookings/${reschedulingBooking.bookingId}/reschedule`);
-      console.log("Payload:", { newDate, newTime });
-
       const response = await rescheduleBookingAPI(reschedulingBooking.bookingId, newDate, newTime);
       
       if (response && response.error) {
@@ -108,8 +122,7 @@ export default function MyBookingsPage() {
         return;
       }
 
-      console.log("Full API Response:", response);
-      alert("Booking rescheduled successfully!");
+      showSnackbar("Booking rescheduled successfully!", "success");
       
       setReschedulingBooking(null);
       setNewDate("");
@@ -124,19 +137,15 @@ export default function MyBookingsPage() {
   };
 
   const handleCancel = async (bookingId: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
-
     try {
       setActionLoading(`cancel-${bookingId}`);
-      console.log("🎯 TASK 2: CANCEL DEBUG");
-      console.log("URL:", `${APP_CONFIG.API_BASE_URL}/api/bookings/${bookingId}/cancel`);
-
       await cancelBookingAPI(bookingId);
-      alert("Booking cancelled successfully.");
+      showSnackbar("Booking cancelled successfully.", "info");
       fetchBookings();
+      setCancelModal({ isOpen: false, bookingId: '' });
     } catch (error: any) {
       console.error("Cancel Error:", error);
-      alert(error.message || "Failed to cancel booking");
+      showSnackbar(error.message || "Failed to cancel booking", "error");
     } finally {
       setActionLoading(null);
     }
@@ -147,7 +156,7 @@ export default function MyBookingsPage() {
       setPaymentLoading(bookingId);
       const paymentId = await getPaymentIdByBooking(bookingId);
       if (!paymentId) {
-        alert("Payment session not found. The slot may have expired. Please book again.");
+        showSnackbar("Payment session not found. The slot may have expired. Please book again.", "warning");
         return;
       }
       const stripeUrl = await executeStripePayment(paymentId);
@@ -158,14 +167,13 @@ export default function MyBookingsPage() {
       }
     } catch (err: any) {
       console.error("Proceed to payment error:", err);
-      alert(err.message || "Failed to start payment. Please try again.");
+      showSnackbar(err.message || "Failed to start payment. Please try again.", "error");
     } finally {
       setPaymentLoading(null);
     }
   };
 
   const handleDownloadInvoice = async (bookingId: string) => {
-
     setInvoiceLoading(bookingId);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -176,7 +184,7 @@ export default function MyBookingsPage() {
       const invoice = await res.json();
       setInvoiceModal(invoice);
     } catch (err) {
-      alert('Invoice not available yet. Please try again later.');
+      showSnackbar("Invoice not available yet. Please try again later.", "info");
     } finally {
       setInvoiceLoading(null);
     }
@@ -320,7 +328,7 @@ export default function MyBookingsPage() {
             
             {canCancel && (
               <Button 
-                onClick={() => handleCancel(bookingId)}
+                onClick={() => setCancelModal({ isOpen: true, bookingId })}
                 disabled={actionLoading === `cancel-${bookingId}`}
                 className="px-4 py-2 text-sm border-2 border-red-300 hover:border-red-400 text-red-600 hover:bg-orange-50 rounded-lg font-semibold transition-colors flex items-center gap-2"
               >
@@ -371,10 +379,16 @@ export default function MyBookingsPage() {
         description="View and manage all your service appointments"
       />
 
-      {/* Invoice Preview Modal */}
-      {invoiceModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
+      {/* Invoice Preview MUI Dialog */}
+      <Dialog 
+        open={Boolean(invoiceModal)} 
+        onClose={() => setInvoiceModal(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '1.5rem', overflow: 'hidden' } }}
+      >
+        {invoiceModal && (
+          <>
             {/* Header */}
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-6 flex items-start justify-between">
               <div>
@@ -382,14 +396,14 @@ export default function MyBookingsPage() {
                 <h3 className="text-2xl font-bold text-white">Invoice</h3>
                 <p className="text-slate-400 text-sm mt-1">#{invoiceModal.invoiceId?.slice(0, 8)?.toUpperCase() || 'N/A'}</p>
               </div>
-              <button onClick={() => setInvoiceModal(null)} className="text-slate-400 hover:text-white transition-colors mt-1">
+              <IconButton onClick={() => setInvoiceModal(null)} sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}>
                 <FiX className="w-6 h-6" />
-              </button>
+              </IconButton>
             </div>
 
             {/* Body */}
-            <div className="p-8 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <DialogContent sx={{ p: 4, spaceY: 3 }}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-slate-50 rounded-xl p-4">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Status</p>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -429,152 +443,163 @@ export default function MyBookingsPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </DialogContent>
 
             {/* Footer */}
-            <div className="px-8 pb-8 flex gap-3">
-              <button
+            <DialogActions sx={{ px: 4, pb: 4, gap: 2 }}>
+              <Button
                 onClick={() => setInvoiceModal(null)}
-                className="flex-1 py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+                variant="secondary"
+                className="flex-1 py-3"
               >
                 Close
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => window.print()}
-                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                variant="primary"
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 flex items-center justify-center gap-2"
               >
                 <FiPrinter className="w-4 h-4" />
                 Print / Save PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
-      {/* Reschedule Modal */}
-      {reschedulingBooking && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-slate-900">Reschedule Booking</h3>
-              <button onClick={() => { setReschedulingBooking(null); setRescheduleError(null); }} className="text-slate-400 hover:text-slate-600">
-                <FiX className="w-6 h-6" />
-              </button>
-            </div>
+      {/* Reschedule MUI Dialog */}
+      <Dialog
+        open={Boolean(reschedulingBooking)}
+        onClose={() => { setReschedulingBooking(null); setRescheduleError(null); }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '1.5rem', p: 1 } }}
+      >
+        {reschedulingBooking && (
+          <>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' }}>
+              Reschedule Booking
+              <IconButton onClick={() => { setReschedulingBooking(null); setRescheduleError(null); }} size="small">
+                <FiX />
+              </IconButton>
+            </DialogTitle>
 
-            {(() => {
-              // Ensure we parse the date string (e.g. "2026-04-26") as local time
-              const [year, month, day] = reschedulingBooking.bookingDate.split('-').map(Number);
-              const bookingDate = new Date(year, month - 1, day);
-              
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              
-              const diffTime = bookingDate.getTime() - today.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              const tooLate = diffDays < 3;
+            <DialogContent sx={{ px: 3, py: 2 }}>
+              {(() => {
+                // Ensure we parse the date string (e.g. "2026-04-26") as local time
+                const [year, month, day] = reschedulingBooking.bookingDate.split('-').map(Number);
+                const bookingDate = new Date(year, month - 1, day);
+                
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                const diffTime = bookingDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const tooLate = diffDays < 3;
 
-              if (tooLate) {
-                return (
-                  <div className="space-y-6">
-                    <div className="p-6 bg-red-50 border-2 border-red-100 text-red-700 rounded-2xl text-center">
-                      <FiAlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                      <h4 className="font-bold text-xl mb-2">Rescheduling Unavailable</h4>
-                      <p className="text-sm leading-relaxed">
-                        Sorry, you can only reschedule appointments that are at least 3 days away. 
-                        Your current booking is on <strong>{reschedulingBooking.bookingDate}</strong>.
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => setReschedulingBooking(null)}
-                      className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="space-y-4">
-                  {rescheduleError && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-3 animate-shake">
-                      <FiAlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <p>{rescheduleError}</p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">New Date</label>
-                    <input 
-                      type="date" 
-                      value={newDate}
-                      min={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      className="w-full p-3 rounded-xl border-2 border-slate-200 focus:border-orange-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Available Time Slots</label>
-                    {loadingSlots ? (
-                      <div className="flex items-center justify-center py-4">
-                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    ) : availableSlots.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {availableSlots.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setNewTime(slot)}
-                            className={`
-                              py-2 text-sm font-semibold rounded-xl border-2 transition-all
-                              ${newTime === slot 
-                                ? 'bg-orange-500 border-orange-500 text-white shadow-md' 
-                                : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-orange-200'}
-                            `}
-                          >
-                            {slot.substring(0, 5)}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                        <p className="text-sm text-slate-400">
-                          {newDate ? "No slots available for this date" : "Select a date to see slots"}
+                if (tooLate) {
+                  return (
+                    <div className="space-y-6 my-2">
+                      <div className="p-6 bg-red-50 border-2 border-red-100 text-red-700 rounded-2xl text-center">
+                        <FiAlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                        <h4 className="font-bold text-xl mb-2">Rescheduling Unavailable</h4>
+                        <p className="text-sm leading-relaxed">
+                          Sorry, you can only reschedule appointments that are at least 3 days away. 
+                          Your current booking is on <strong>{reschedulingBooking.bookingDate}</strong>.
                         </p>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-                    <p className="text-xs text-orange-800 leading-relaxed text-center font-bold">
-                      <FiAlertCircle className="inline mr-1" />
-                      Maximum 3 reschedules allowed per booking.
-                    </p>
-                  </div>
+                      <Button 
+                        onClick={() => setReschedulingBooking(null)}
+                        className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  );
+                }
 
-                  <div className="flex gap-3 pt-4">
-                    <Button 
-                      onClick={() => { setReschedulingBooking(null); setRescheduleError(null); }}
-                      className="flex-1 px-6 py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleRescheduleSubmit}
-                      disabled={!newDate || !newTime || actionLoading !== null}
-                      className="flex-1 px-6 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 disabled:bg-slate-300"
-                    >
-                      {actionLoading ? 'Updating...' : 'Confirm'}
-                    </Button>
+                return (
+                  <div className="space-y-4 my-2">
+                    {rescheduleError && (
+                      <Alert severity="error" sx={{ borderRadius: '0.75rem', mb: 2 }}>
+                        {rescheduleError}
+                      </Alert>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">New Date</label>
+                      <input 
+                        type="date" 
+                        value={newDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setNewDate(e.target.value)}
+                        className="w-full p-3 rounded-xl border-2 border-slate-200 focus:border-orange-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Available Time Slots</label>
+                      {loadingSlots ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : availableSlots.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {availableSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setNewTime(slot)}
+                              className={`
+                                py-2 text-sm font-semibold rounded-xl border-2 transition-all
+                                ${newTime === slot 
+                                  ? 'bg-orange-500 border-orange-500 text-white shadow-md' 
+                                  : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-orange-200'}
+                              `}
+                            >
+                              {slot.substring(0, 5)}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                          <p className="text-sm text-slate-400">
+                            {newDate ? "No slots available for this date" : "Select a date to see slots"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                      <p className="text-xs text-orange-800 leading-relaxed text-center font-bold">
+                        <FiAlertCircle className="inline mr-1" />
+                        Maximum 3 reschedules allowed per booking.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+                );
+              })()}
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 3, gap: 1.5 }}>
+              <Button 
+                onClick={() => { setReschedulingBooking(null); setRescheduleError(null); }}
+                variant="secondary"
+                className="flex-1 py-3"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRescheduleSubmit}
+                disabled={!newDate || !newTime || actionLoading !== null}
+                variant="primary"
+                className="flex-1 py-3 bg-orange-600 hover:bg-orange-700"
+              >
+                {actionLoading ? 'Updating...' : 'Confirm'}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
         <div className="flex gap-2">
@@ -634,6 +659,27 @@ export default function MyBookingsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Booking Confirmation MUI Dialog */}
+      <ConfirmDialog
+        open={cancelModal.isOpen}
+        onClose={() => setCancelModal({ isOpen: false, bookingId: '' })}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel this appointment? This action cannot be undone."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        variant="danger"
+        isLoading={actionLoading !== null}
+        onConfirm={() => handleCancel(cancelModal.bookingId)}
+      />
+
+      <FeedbackSnackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        severity={snackbar.severity}
+        message={snackbar.message}
+        onClose={() => setSnackbar({ ...snackbar, open: false })} 
+      />
     </div>
   );
 }

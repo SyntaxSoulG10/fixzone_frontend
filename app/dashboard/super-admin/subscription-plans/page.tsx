@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { FiCheck, FiEdit2, FiPlus, FiTrash, FiX, FiLoader } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import { getSubscriptionPlans, createSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from "@/lib/api";
-import { toast } from "react-hot-toast";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 
 interface ServicePlan {
     id: string; // Changed from number to string for UUIDs
@@ -23,12 +25,19 @@ export default function SubscriptionPlansPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<ServicePlan | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string, name: string }>({ isOpen: false, id: '', name: '' });
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
     const [formData, setFormData] = useState({
         name: "",
         price: "",
         features: [""],
         isPopular: false
     });
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
 
     useEffect(() => {
         fetchPlans();
@@ -40,7 +49,7 @@ export default function SubscriptionPlansPage() {
             const data = await getSubscriptionPlans();
             setPlans(data);
         } catch (error: any) {
-            toast.error(error.message || "Failed to load subscription plans");
+            showSnackbar(error.message || "Failed to load subscription plans", "error");
         } finally {
             setIsLoading(false);
         }
@@ -71,39 +80,53 @@ export default function SubscriptionPlansPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Basic validation
+        if (!formData.name || !formData.price) {
+            showSnackbar("Please fill in all required fields", "warning");
+            return;
+        }
+
+        const validFeatures = formData.features.filter(f => f.trim() !== "");
+        if (validFeatures.length === 0) {
+            showSnackbar("Please add at least one feature", "warning");
+            return;
+        }
+
         const planData = {
             name: formData.name,
             price: parseFloat(formData.price),
-            features: formData.features.filter(f => f.trim() !== ""),
+            features: validFeatures,
             isPopular: formData.isPopular,
             durationMonths: 1, // Default to monthly
             isActive: true
         };
 
+        setIsSubmitting(true);
         try {
             if (editingPlan) {
                 await updateSubscriptionPlan(editingPlan.id, planData);
-                toast.success("Plan updated successfully");
+                showSnackbar("Plan updated successfully", "success");
             } else {
                 await createSubscriptionPlan(planData);
-                toast.success("Plan created successfully");
+                showSnackbar("Plan created successfully", "success");
             }
             setIsModalOpen(false);
             fetchPlans(); // Refresh the list
         } catch (error: any) {
-            toast.error(error.message || "Operation failed");
+            showSnackbar(error.message || "Operation failed", "error");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this plan?")) {
-            try {
-                await deleteSubscriptionPlan(id);
-                toast.success("Plan deleted successfully");
-                fetchPlans();
-            } catch (error: any) {
-                toast.error(error.message || "Failed to delete plan");
-            }
+        try {
+            await deleteSubscriptionPlan(id);
+            showSnackbar("Plan deleted successfully", "success");
+            fetchPlans();
+            setDeleteModal({ isOpen: false, id: '', name: '' });
+        } catch (error: any) {
+            showSnackbar(error.message || "Failed to delete plan", "error");
         }
     };
 
@@ -197,7 +220,7 @@ export default function SubscriptionPlansPage() {
                                     <FiEdit2 className="w-3.5 h-3.5" /> Edit Plan
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(plan.id)}
+                                    onClick={() => setDeleteModal({ isOpen: true, id: plan.id, name: plan.name })}
                                     className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 transition-all"
                                     title="Delete Plan"
                                 >
@@ -209,121 +232,143 @@ export default function SubscriptionPlansPage() {
                 </div>
             )}
 
-            {/* Create/Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800">
-                                    {editingPlan ? "Edit Plan" : "Create New Plan"}
-                                </h3>
-                                <p className="text-sm text-slate-500">
-                                    {editingPlan ? "Update plan details and features" : "Add a new subscription tier"}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                                <FiX className="text-xl" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
-                            {/* Plan Name */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Plan Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
-                                    placeholder="e.g., Premium"
-                                    required
-                                />
-                            </div>
-
-                            {/* Price */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Price (Rs./month)</label>
-                                <input
-                                    type="number"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
-                                    placeholder="e.g., 15000"
-                                    required
-                                />
-                            </div>
-
-                            {/* Highlight Toggle */}
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="isPopular"
-                                    checked={formData.isPopular}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, isPopular: e.target.checked }))}
-                                    className="w-4 h-4 text-orange-600 border-slate-300 rounded focus:ring-orange-500"
-                                />
-                                <label htmlFor="isPopular" className="text-sm font-semibold text-slate-700">
-                                    Mark as Popular Plan
-                                </label>
-                            </div>
-
-                            {/* Features */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Features</label>
-                                <div className="space-y-2">
-                                    {formData.features.map((feature, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={feature}
-                                                onChange={(e) => updateFeature(index, e.target.value)}
-                                                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
-                                                placeholder="e.g., Unlimited Managers"
-                                            />
-                                            {formData.features.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeFeature(index)}
-                                                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <FiX />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={addFeature}
-                                        className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-2"
-                                    >
-                                        <FiPlus /> Add Feature
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                className="px-4 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shadow-sm"
-                            >
-                                {editingPlan ? "Update Plan" : "Create Plan"}
-                            </button>
-                        </div>
+            {/* Create/Edit MUI Dialog */}
+            <Dialog
+                open={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.25rem', overflow: 'hidden' } }}
+            >
+                <DialogTitle sx={{ p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <Typography variant="h6" fontWeight="bold" color="#0f172a">
+                            {editingPlan ? "Edit Plan" : "Create New Plan"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {editingPlan ? "Update plan details and features" : "Add a new subscription tier"}
+                        </Typography>
                     </div>
-                </div>
-            )}
+                    <IconButton onClick={() => setIsModalOpen(false)} size="small">
+                        <FiX />
+                    </IconButton>
+                </DialogTitle>
+
+                <form onSubmit={handleSubmit}>
+                    <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        {/* Plan Name */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Plan Name</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
+                                placeholder="e.g., Premium"
+                                required
+                            />
+                        </div>
+
+                        {/* Price */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Price (Rs./month)</label>
+                            <input
+                                type="number"
+                                value={formData.price}
+                                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
+                                placeholder="e.g., 15000"
+                                required
+                            />
+                        </div>
+
+                        {/* Highlight Toggle */}
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="isPopular"
+                                checked={formData.isPopular}
+                                onChange={(e) => setFormData(prev => ({ ...prev, isPopular: e.target.checked }))}
+                                className="w-4 h-4 text-orange-600 border-slate-300 rounded focus:ring-orange-500"
+                            />
+                            <label htmlFor="isPopular" className="text-sm font-semibold text-slate-700">
+                                Mark as Popular Plan
+                            </label>
+                        </div>
+
+                        {/* Features */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Features</label>
+                            <div className="space-y-2">
+                                {formData.features.map((feature, index) => (
+                                    <div key={index} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={feature}
+                                            onChange={(e) => updateFeature(index, e.target.value)}
+                                            className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all"
+                                            placeholder="e.g., Unlimited Managers"
+                                        />
+                                        {formData.features.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeFeature(index)}
+                                                className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <FiX />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={addFeature}
+                                    className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-2 mt-1"
+                                >
+                                    <FiPlus /> Add Feature
+                                </button>
+                            </div>
+                        </div>
+                    </DialogContent>
+
+                    <DialogActions sx={{ p: 3, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc', gap: 1.5 }}>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setIsModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? "Saving..." : (editingPlan ? "Update Plan" : "Create Plan")}
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* Delete Plan Confirmation Dialog */}
+            <ConfirmDialog 
+                open={deleteModal.isOpen} 
+                onClose={() => setDeleteModal({ isOpen: false, id: '', name: '' })}
+                title="Delete Subscription Plan?"
+                message={<>Are you sure you want to delete <strong style={{ color: '#0f172a' }}>{deleteModal.name}</strong>? Existing subscribers might be affected.</>}
+                confirmText="Delete Plan"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={() => handleDelete(deleteModal.id)}
+            />
+
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={4000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </div>
     );
 }

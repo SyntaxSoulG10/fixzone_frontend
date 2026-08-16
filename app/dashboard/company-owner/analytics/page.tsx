@@ -17,6 +17,7 @@ import {
     Snackbar,
     Alert
 } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
 import ChartCard from "@/components/dashboard/ChartCard";
@@ -458,11 +459,13 @@ export default function AnalyticsPage() {
             </Grid>
             )}
 
-            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={6000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </Box>
     );
 }

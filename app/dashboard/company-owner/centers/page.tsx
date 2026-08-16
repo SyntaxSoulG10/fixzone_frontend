@@ -26,6 +26,8 @@ import {
     InputAdornment,
     alpha
 } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 import {
     FiMapPin,
     FiPhone,
@@ -672,14 +674,15 @@ export default function MyCentersPage() {
         setOpenDialog(true);
     };
 
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string, name: string }>({ isOpen: false, id: '', name: '' });
+
     const handleDelete = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this service center? This will also remove its service packages and invoices.")) return;
-        
         setIsLoading(true);
         try {
             await axios.delete(`${APP_CONFIG.api.serviceCenters}/${id}`);
             setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
             await refreshAll();
+            setDeleteModal({ isOpen: false, id: '', name: '' });
         } catch (e: any) {
             const data = e.response?.data;
             const errorMsg = typeof data === 'string' ? data : (data?.message || 'Delete operation failed');
@@ -771,7 +774,12 @@ export default function MyCentersPage() {
                 <Grid container spacing={4}>
                     {filtered.map(center => (
                         <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={center.id}>
-                            <CenterCard center={center} onToggleStatus={handleToggleStatus} onEdit={handleEditClick} onDelete={handleDelete} />
+                            <CenterCard 
+                                center={center} 
+                                onToggleStatus={handleToggleStatus} 
+                                onEdit={handleEditClick} 
+                                onDelete={(id: string) => setDeleteModal({ isOpen: true, id, name: center.name })} 
+                            />
                         </Grid>
                     ))}
                 </Grid>
@@ -779,9 +787,25 @@ export default function MyCentersPage() {
 
             <CenterDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.value })} onSave={handleSave} onDetectLocation={handleDetectLocation} detecting={detecting} />
 
-            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} sx={{ borderRadius: '0.75rem' }}>{snackbar.message}</Alert>
-            </Snackbar>
+            {/* Delete Center Confirmation Dialog */}
+            <ConfirmDialog
+                open={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: '', name: '' })}
+                title="Delete Service Center?"
+                message={<>Are you sure you want to delete <strong style={{ color: '#0f172a' }}>{deleteModal.name}</strong>? This will also remove all its service packages and history.</>}
+                confirmText="Delete Center"
+                cancelText="Keep Center"
+                variant="danger"
+                isLoading={isLoading}
+                onConfirm={() => handleDelete(deleteModal.id)}
+            />
+
+            <FeedbackSnackbar
+                open={snackbar.open}
+                message={snackbar.message}
+                severity={snackbar.severity}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+            />
         </Box>
     );
 }

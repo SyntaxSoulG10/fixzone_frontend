@@ -5,6 +5,8 @@ import PageHeader from "@/components/UI/PageHeader";
 import { useState, useEffect } from "react";
 import { FiPlus, FiList, FiFileText, FiTrash2, FiSearch, FiPrinter, FiCheckCircle, FiAlertCircle, FiClock, FiX } from "react-icons/fi";
 import APP_CONFIG from "@/config";
+import { Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Typography } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 // DTO Interfaces based on backend
 interface BookingResponseDTO {
@@ -32,6 +34,12 @@ interface InvoiceRequestDTO {
 
 export default function ServiceReportsPage() {
     const [view, setView] = useState<"list" | "create-report" | "generate-invoice">("list");
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
+
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
         revenue: "",
@@ -154,7 +162,7 @@ export default function ServiceReportsPage() {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
-                alert("Report Created!");
+                showSnackbar("Report Created successfully!", "success");
                 setView("list");
                 setFormData({
                     date: new Date().toISOString().split('T')[0],
@@ -166,11 +174,11 @@ export default function ServiceReportsPage() {
                 // Fetch reports again to show the newly added report
                 fetchRecentReports();
             } else {
-                alert("Failed to create report.");
+                showSnackbar("Failed to create report.", "error");
             }
         } catch (err) {
             console.error("Error submitting report:", err);
-            alert("Error creating report");
+            showSnackbar("Error creating report", "error");
         }
     };
 
@@ -219,7 +227,7 @@ export default function ServiceReportsPage() {
     const handlePrint = () => {
         const printContent = document.getElementById("printable-invoice");
         if (!printContent) {
-            alert("Invoice content not found.");
+            showSnackbar("Invoice content not found.", "warning");
             return;
         }
         
@@ -277,13 +285,13 @@ export default function ServiceReportsPage() {
             `);
             printWindow.document.close();
         } else {
-            alert("Please allow pop-ups to print the invoice.");
+            showSnackbar("Please allow pop-ups to print the invoice.", "warning");
         }
     };
 
     const handleGenerateInvoice = async () => {
         if (!bookingDetails) {
-            alert("Please fetch booking details first.");
+            showSnackbar("Please fetch booking details first.", "warning");
             return;
         }
 
@@ -316,11 +324,11 @@ export default function ServiceReportsPage() {
                 throw new Error("Failed to generate invoice");
             }
             
-            alert("Invoice successfully generated and saved!");
+            showSnackbar("Invoice successfully generated and saved!", "success");
             setView("list"); // Return to list view to see it
         } catch (error) {
             console.error("Error generating invoice:", error);
-            alert("Failed to generate invoice. Please try again.");
+            showSnackbar("Failed to generate invoice. Please try again.", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -944,52 +952,63 @@ export default function ServiceReportsPage() {
                     )}
                 </>
             )}
-            {/* Selected Report Modal */}
-            {selectedReport && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-slide-up">
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
+            {/* Selected Report MUI Dialog */}
+            <Dialog
+                open={Boolean(selectedReport)}
+                onClose={() => setSelectedReport(null)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.25rem', overflow: 'hidden' } }}
+            >
+                {selectedReport && (
+                    <>
+                        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Operations Report Details</h3>
-                                <p className="text-sm text-slate-500 mt-1">{selectedReport.name} - {selectedReport.date}</p>
+                                <Typography variant="h6" fontWeight="bold" color="#0f172a">Operations Report Details</Typography>
+                                <Typography variant="caption" color="text.secondary">{selectedReport.name} - {selectedReport.date}</Typography>
                             </div>
-                            <button 
-                                onClick={() => setSelectedReport(null)}
-                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
+                            <IconButton onClick={() => setSelectedReport(null)} size="small">
                                 <FiX className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-6">
+                            </IconButton>
+                        </DialogTitle>
+                        <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                                     <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Total Revenue</p>
                                     <p className="text-2xl font-bold text-emerald-900">Rs {(selectedReport.metrics?.revenue || 0).toLocaleString()}</p>
                                 </div>
-                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                                     <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Vehicles Serviced</p>
                                     <p className="text-2xl font-bold text-blue-900">{selectedReport.metrics?.vehiclesServiced || 0}</p>
                                 </div>
                             </div>
-                            <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <div className="p-4 bg-red-50 rounded-xl border border-red-100">
                                 <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Incomplete Services</p>
                                 <p className="text-2xl font-bold text-red-900">{selectedReport.metrics?.incompleteServices || 0}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Daily Summary</p>
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 text-sm whitespace-pre-wrap">
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 text-sm whitespace-pre-wrap">
                                     {selectedReport.metrics?.summary || "No summary provided."}
                                 </div>
                             </div>
-                        </div>
-                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        </DialogContent>
+                        <DialogActions sx={{ p: 2.5, px: 3, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
                             <Button variant="secondary" onClick={() => setSelectedReport(null)}>
                                 Close
                             </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={4000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </div>
     );
 }
