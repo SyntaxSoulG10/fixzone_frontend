@@ -360,7 +360,7 @@ export default function SuperAdminDashboard() {
                             color="primary"
                             chart={
                                 <div style={{ width: '100%', height: 200 }}>
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <BarChart
                                         data={chartData}
                                         margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
@@ -415,7 +415,7 @@ export default function SuperAdminDashboard() {
                             color="primary"
                             chart={
                                 <div style={{ width: '100%', height: 200 }}>
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <LineChart
                                         data={subscriberData}
                                         margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
