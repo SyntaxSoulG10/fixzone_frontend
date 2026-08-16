@@ -6,7 +6,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton, Grid, Box, Button, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import StatCard from "@/components/dashboard/StatCard";
+import ChartCard from "@/components/dashboard/ChartCard";
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, LineChart, Line } from "recharts";
 
 // Interfaces for type safety
 interface RevenueBar {
