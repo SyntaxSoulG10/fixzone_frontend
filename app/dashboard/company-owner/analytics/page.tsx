@@ -322,6 +322,7 @@ export default function AnalyticsPage() {
                             date={`updated at ${data?.updatedAt || 'just now'}`}
                             color="primary"
                             chart={
+                                <div style={{ width: '100%', height: 200 }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
                                         data={data?.revenueOverview || []}
@@ -356,6 +357,7 @@ export default function AnalyticsPage() {
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>
@@ -369,6 +371,7 @@ export default function AnalyticsPage() {
                             date="last 6 months"
                             color="primary"
                             chart={
+                                <div style={{ width: '100%', height: 200 }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                         data={data?.customerGrowth || []}
@@ -396,6 +399,7 @@ export default function AnalyticsPage() {
                                         <Bar dataKey="activeCustomers" name="Active" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>

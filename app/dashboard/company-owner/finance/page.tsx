@@ -269,6 +269,7 @@ export default function FinancePage() {
                 date="Last updated just now"
                 color="primary"
                 chart={
+                    <div style={{ width: '100%', height: 200 }}>
                     <ResponsiveContainer width="100%" height="100%" >
                         <LineChart data={financeData.growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
@@ -279,6 +280,7 @@ export default function FinancePage() {
                             <Line type="monotone" dataKey="amount" name="Total Revenue" stroke="#fff" strokeWidth={3} dot={{ r: 4 }} />
                         </LineChart>
                     </ResponsiveContainer>
+                    </div>
                 }
             />
             </Box>
@@ -301,6 +303,7 @@ export default function FinancePage() {
                     date="Real-time performance data"
                     color="warning"
                     chart={
+                        <div style={{ width: '100%', height: 200 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={financeData.revenueByCenter} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
@@ -309,6 +312,7 @@ export default function FinancePage() {
                                 <Bar dataKey="revenue" fill="#fff" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
+                        </div>
                     }
                 />
             </Box>

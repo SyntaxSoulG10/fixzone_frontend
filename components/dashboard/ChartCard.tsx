@@ -54,7 +54,7 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
                     overflow: 'hidden'
                 }}
             >
-                <Box height="100%" width="100%">
+                <Box sx={{ height: '100%', minHeight: 200, width: '100%' }}>
                     {chart}
                 </Box>
             </Box>
