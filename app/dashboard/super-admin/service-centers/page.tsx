@@ -21,7 +21,6 @@ import {
     Button as MuiButton 
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
-import ConfirmDialog from "@/components/UI/ConfirmDialog";
 
 interface Station {
     id: string;
@@ -47,7 +46,7 @@ export default function ServiceStationsPage() {
     const [rejectionMode, setRejectionMode] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [processingAction, setProcessingAction] = useState(false);
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' as 'SUSPENDED' | 'APPROVED' });
+
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
     
     // Pagination State
@@ -462,21 +461,6 @@ export default function ServiceStationsPage() {
                     </>
                 )}
             </Dialog>
-
-            {/* Status Change Confirmation MUI Dialog */}
-            <ConfirmDialog
-                open={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' })}
-                title={`${confirmModal.action === 'SUSPENDED' ? 'Suspend' : 'Reactivate'} Service Center?`}
-                message={<>Are you sure you want to {confirmModal.action === 'SUSPENDED' ? 'suspend' : 'reactivate'} <strong style={{ color: '#0f172a' }}>{confirmModal.stationName}</strong>?</>}
-                confirmText={confirmModal.action === 'SUSPENDED' ? 'Suspend Center' : 'Reactivate Center'}
-                cancelText="Cancel"
-                variant={confirmModal.action === 'SUSPENDED' ? 'danger' : 'success'}
-                onConfirm={() => {
-                    handleUpdateStatus(confirmModal.stationId, confirmModal.action);
-                    setConfirmModal({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' });
-                }}
-            />
 
             <FeedbackSnackbar 
                 open={snackbar.open} 
