@@ -40,48 +40,6 @@ function computeOpenStatus(openingHours: string | null): string {
 
 type FetchState = "loading" | "success" | "empty" | "unauthorized" | "error";
 
-const DEFAULT_CENTERS: ServiceCenter[] = [
-  {
-    centerId: "11111111-1111-1111-1111-111111111111",
-    ownerId: null,
-    name: "Raja Motors - Colombo HQ",
-    address: "123 Galle Road, Colombo 03",
-    contactPhone: "+94112000001",
-    openingHours: "08:00 - 18:00",
-    rating: 4.8,
-    isActive: true,
-    status: "APPROVED",
-    supportedVehicleBrands: ["Toyota", "Honda", "Nissan", "Suzuki"],
-    googleMapsUrl: "https://maps.google.com/?q=Colombo"
-  },
-  {
-    centerId: "11111111-1111-1111-1111-111111111112",
-    ownerId: null,
-    name: "Raja Motors - Kandy Branch",
-    address: "45 Peradeniya Road, Kandy",
-    contactPhone: "+94812000002",
-    openingHours: "08:30 - 17:30",
-    rating: 4.7,
-    isActive: true,
-    status: "APPROVED",
-    supportedVehicleBrands: ["Toyota", "Nissan", "Mitsubishi", "Hyundai"],
-    googleMapsUrl: "https://maps.google.com/?q=Kandy"
-  },
-  {
-    centerId: "11111111-1111-1111-1111-111111111113",
-    ownerId: null,
-    name: "Raja Motors - Galle Hub",
-    address: "78 Matara Road, Galle",
-    contactPhone: "+94912000003",
-    openingHours: "08:00 - 18:00",
-    rating: 4.9,
-    isActive: true,
-    status: "APPROVED",
-    supportedVehicleBrands: ["Toyota", "Honda", "Kia", "Suzuki"],
-    googleMapsUrl: "https://maps.google.com/?q=Galle"
-  }
-];
-
 export default function BookServicePage() {
   const router = useRouter();
   const [fetchState, setFetchState] = useState<FetchState>("loading");
@@ -162,17 +120,18 @@ export default function BookServicePage() {
         if (validCenters.length > 0) {
           setCenters(validCenters);
           setFetchState("success");
-          return;
+        } else {
+          setCenters([]);
+          setFetchState("empty");
         }
+      } else {
+        setCenters([]);
+        setFetchState("error");
       }
-
-      // Fallback if backend returned empty
-      setCenters(DEFAULT_CENTERS);
-      setFetchState("success");
     } catch (err) {
-      console.warn("[BookServicePage] Fetch error, using default centers:", err);
-      setCenters(DEFAULT_CENTERS);
-      setFetchState("success");
+      console.error("[BookServicePage] Fetch error:", err);
+      setCenters([]);
+      setFetchState("error");
     }
   };
 

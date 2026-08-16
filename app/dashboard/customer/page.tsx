@@ -135,7 +135,7 @@ export default function CustomerDashboard() {
 
     if (token) fetchProfile();
 
-    // Fetch Service Centers
+    // Fetch Service Centers dynamically from backend
     fetch(`${APP_CONFIG.API_BASE_URL}/api/service-centers`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
@@ -146,65 +146,11 @@ export default function CustomerDashboard() {
           const status = (c.status || "").toUpperCase();
           return status !== "SUSPENDED" && status !== "REJECTED" && c.isActive !== false;
         });
-        if (valid.length > 0) {
-          setServiceCenters(valid);
-        } else {
-          setServiceCenters([
-            {
-              centerId: "11111111-1111-1111-1111-111111111111",
-              name: "Raja Motors - Colombo HQ",
-              address: "123 Galle Road, Colombo 03",
-              openingHours: "08:00 - 18:00",
-              rating: 4.8,
-              supportedVehicleBrands: ["Toyota", "Honda", "Nissan", "Suzuki"],
-            },
-            {
-              centerId: "11111111-1111-1111-1111-111111111112",
-              name: "Raja Motors - Kandy Branch",
-              address: "45 Peradeniya Road, Kandy",
-              openingHours: "08:30 - 17:30",
-              rating: 4.7,
-              supportedVehicleBrands: ["Toyota", "Nissan", "Mitsubishi", "Hyundai"],
-            },
-            {
-              centerId: "11111111-1111-1111-1111-111111111113",
-              name: "Raja Motors - Galle Hub",
-              address: "78 Matara Road, Galle",
-              openingHours: "08:00 - 18:00",
-              rating: 4.9,
-              supportedVehicleBrands: ["Toyota", "Honda", "Kia", "Suzuki"],
-            }
-          ]);
-        }
+        setServiceCenters(valid);
       })
       .catch((err) => {
-        console.warn("Service centers fetch error, fallback to defaults:", err);
-        setServiceCenters([
-          {
-            centerId: "11111111-1111-1111-1111-111111111111",
-            name: "Raja Motors - Colombo HQ",
-            address: "123 Galle Road, Colombo 03",
-            openingHours: "08:00 - 18:00",
-            rating: 4.8,
-            supportedVehicleBrands: ["Toyota", "Honda", "Nissan", "Suzuki"],
-          },
-          {
-            centerId: "11111111-1111-1111-1111-111111111112",
-            name: "Raja Motors - Kandy Branch",
-            address: "45 Peradeniya Road, Kandy",
-            openingHours: "08:30 - 17:30",
-            rating: 4.7,
-            supportedVehicleBrands: ["Toyota", "Nissan", "Mitsubishi", "Hyundai"],
-          },
-          {
-            centerId: "11111111-1111-1111-1111-111111111113",
-            name: "Raja Motors - Galle Hub",
-            address: "78 Matara Road, Galle",
-            openingHours: "08:00 - 18:00",
-            rating: 4.9,
-            supportedVehicleBrands: ["Toyota", "Honda", "Kia", "Suzuki"],
-          }
-        ]);
+        console.error("Service centers fetch error:", err);
+        setServiceCenters([]);
       });
 
     if (userId) {
