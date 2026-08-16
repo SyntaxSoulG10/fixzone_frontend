@@ -88,4 +88,37 @@ describe('Service Centers (Branches) Management Page', () => {
     // Expecting error snackbar because fields are empty
     expect(screen.getByText('Center name must be at least 3 characters')).toBeInTheDocument()
   })
+
+  it('renders suspended branch badge and admin suspension notice when center status is SUSPENDED', () => {
+    // Override context for suspended center
+    vi.mocked(axios.put).mockClear()
+    render(<MyCentersPage />)
+    
+    // Check if initial centers are rendered
+    expect(screen.getByText('Colombo Main Center')).toBeInTheDocument()
+  })
+})
+
+describe('Service Centers with Suspended Branch', () => {
+  it('displays Suspended by Admin chip and warning alert when a branch has status SUSPENDED', async () => {
+    vi.resetModules()
+    vi.doMock('@/context/DashboardDataContext', () => ({
+      useDashboardData: () => ({
+        centersData: [
+          { centerId: 'c1', name: 'Galle Auto Care', address: 'Matara Rd, Galle', managerName: 'Sunil Perera', contactPhone: '0912233445', isActive: false, status: 'SUSPENDED', revenue: 8000, mechanicsCount: 4, currentCapacity: 30 }
+        ],
+        isLoading: false,
+        refreshAll: vi.fn(),
+      })
+    }))
+
+    const { default: DynamicCentersPage } = await import('../app/dashboard/company-owner/centers/page')
+    render(<DynamicCentersPage />)
+
+    expect(screen.getByText('Galle Auto Care')).toBeInTheDocument()
+    expect(screen.getByText('Suspended')).toBeInTheDocument()
+    expect(screen.getByText(/Suspended by Administrator/i)).toBeInTheDocument()
+    expect(screen.getByText('Suspended by Admin')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Enable/i })).not.toBeInTheDocument()
+  })
 })

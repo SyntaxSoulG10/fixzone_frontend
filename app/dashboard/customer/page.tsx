@@ -10,9 +10,11 @@ import {
   FiPlus,
   FiClock,
   FiZap,
+  FiMapPin,
+  FiStar,
 } from "react-icons/fi";
 import BookingCard from "@/components/bookings/BookingCard";
-import { getMyBookings, getNotifications } from "@/lib/api";
+import { getMyBookings, getNotifications, getServiceCenters } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
 import APP_CONFIG from "@/config";
 type Booking = {

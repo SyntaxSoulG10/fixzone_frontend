@@ -34,7 +34,7 @@ export interface PaymentInitResponse {
 }
 
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
-  const res = await fetch(`${BASE_URL}/api/service-centers`, {
+  const res = await fetch(`${BASE_URL}/api/service-centers?size=100`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -44,7 +44,9 @@ export async function getServiceCenters(): Promise<ServiceCenter[]> {
     throw new Error("Failed to load service centers");
   }
 
-  return res.json();
+  const data = await res.json();
+  const list: ServiceCenter[] = Array.isArray(data) ? data : (data.content || data.data || []);
+  return list;
 }
 
 export async function getServiceCenterDetails(centerId: string): Promise<any> {

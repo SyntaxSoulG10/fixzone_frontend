@@ -73,8 +73,10 @@ function UserSidebarFilters({ activeTab, onTabChange }: any) {
     );
 }
 
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
+
 /**
- * CONFIRMATION MODAL: Safety component for destructive or sensitive status changes.
+ * CONFIRMATION MODAL: Safety component for destructive or sensitive status changes using ConfirmDialog.
  */
 function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) {
     const [reason, setReason] = useState("");

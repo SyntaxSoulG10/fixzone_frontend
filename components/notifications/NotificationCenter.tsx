@@ -57,15 +57,13 @@ export default function NotificationCenter() {
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this notification?")) {
-            try {
-                await deleteNotification(id);
-                toast.success("Notification deleted");
-                fetchNotifications();
-                window.dispatchEvent(new CustomEvent("forceUpdateNotifications"));
-            } catch (error) {
-                toast.error("Failed to delete notification");
-            }
+        try {
+            await deleteNotification(id);
+            toast.success("Notification deleted");
+            fetchNotifications();
+            window.dispatchEvent(new CustomEvent("forceUpdateNotifications"));
+        } catch (error) {
+            toast.error("Failed to delete notification");
         }
     };
 

@@ -12,6 +12,7 @@ import {
     Snackbar,
     Alert
 } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import { useTheme } from "@mui/material/styles";
 import {
     FiUsers,
@@ -282,11 +283,13 @@ export default function CustomersPage() {
                 />
             </Card>
 
-            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={6000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </Box>
     );
 }

@@ -6,28 +6,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import {
-    Grid,
-    Box,
-    Typography,
-    Button,
-    ToggleButton,
-    ToggleButtonGroup,
-} from "@mui/material";
-import StatCard from "@/components/dashboard/StatCard";
-import ChartCard from "@/components/dashboard/ChartCard";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    LineChart,
-    Line,
-    Legend,
-} from "recharts";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton } from "@mui/material";
 
 // Interfaces for type safety
 interface RevenueBar {
@@ -477,90 +456,94 @@ export default function SuperAdminDashboard() {
                 </Grid>
             </Grid>
 
-            {/* Report Modal */}
-            {isReportOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800">System Performance Report</h3>
-                                <p className="text-sm text-slate-500">Generated on {new Date().toLocaleDateString()}</p>
-                            </div>
-                            <button onClick={() => setIsReportOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-                                <FiX className="text-xl" />
-                            </button>
-                        </div>
+            {/* Report MUI Dialog */}
+            <Dialog 
+                open={isReportOpen} 
+                onClose={() => setIsReportOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.25rem', overflow: 'hidden' } }}
+            >
+                <DialogTitle sx={{ p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <Typography variant="h6" fontWeight="bold" color="#0f172a">System Performance Report</Typography>
+                        <Typography variant="caption" color="text.secondary">Generated on {new Date().toLocaleDateString()}</Typography>
+                    </div>
+                    <IconButton onClick={() => setIsReportOpen(false)} size="small">
+                        <FiX className="text-xl" />
+                    </IconButton>
+                </DialogTitle>
 
-                        <div className="p-6 space-y-6">
-                            {/* Key Metrics Summary */}
-                            <div className="grid grid-cols-3 gap-4">
-                                {summaryMetrics.map((metric: any, i: number) => (
-                                    <div key={i} className={`p-4 rounded-xl border ${i === 0 ? 'bg-orange-50 border-orange-100' : i === 1 ? 'bg-blue-50 border-blue-100' : 'bg-purple-50 border-purple-100'}`}>
-                                        <p className={`text-xs font-semibold uppercase ${i === 0 ? 'text-orange-600' : i === 1 ? 'text-blue-600' : 'text-purple-600'}`}>{metric.label}</p>
-                                        <p className="text-xl font-bold text-slate-800 mt-1">{metric.value}</p>
-                                        <p className={`text-xs font-medium mt-1 ${i === 1 ? 'text-slate-500' : 'text-green-600'}`}>{metric.change}</p>
-                                    </div>
-                                ))}
+                <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {/* Key Metrics Summary */}
+                    <div className="grid grid-cols-3 gap-4">
+                        {summaryMetrics.map((metric: any, i: number) => (
+                            <div key={i} className={`p-4 rounded-xl border ${i === 0 ? 'bg-orange-50 border-orange-100' : i === 1 ? 'bg-blue-50 border-blue-100' : 'bg-purple-50 border-purple-100'}`}>
+                                <p className={`text-xs font-semibold uppercase ${i === 0 ? 'text-orange-600' : i === 1 ? 'text-blue-600' : 'text-purple-600'}`}>{metric.label}</p>
+                                <p className="text-xl font-bold text-slate-800 mt-1">{metric.value}</p>
+                                <p className={`text-xs font-medium mt-1 ${i === 1 ? 'text-slate-500' : 'text-green-600'}`}>{metric.change}</p>
                             </div>
+                        ))}
+                    </div>
 
-                            {/* Top Performing Stations Table */}
-                            <div>
-                                <h4 className="font-bold text-slate-800 mb-3 text-sm">Top Performing Stations</h4>
-                                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-4 py-3 font-medium">Station Name</th>
-                                                <th className="px-4 py-3 font-medium">Revenue</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {(analytics?.topStations || []).map((station: TopStation, i: number) => (
-                                                <tr key={i}>
-                                                    <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{station.formattedRevenue}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                            <button
-                                onClick={() => setIsReportOpen(false)}
-                                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={handleDownload}
-                                disabled={isDownloading || showSuccess}
-                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm flex items-center gap-2 transition-all ${isDownloading ? 'bg-slate-400 cursor-not-allowed' :
-                                    showSuccess ? 'bg-green-500 hover:bg-green-600' :
-                                        'bg-orange-600 hover:bg-orange-700 hover:shadow-md'
-                                    }`}
-                            >
-                                {isDownloading ? (
-                                    <>
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                        Generating...
-                                    </>
-                                ) : showSuccess ? (
-                                    <>
-                                        <FiCheckCircle /> Downloaded!
-                                    </>
-                                ) : (
-                                    <>
-                                        <FiDownload /> Download PDF
-                                    </>
-                                )}
-                            </button>
+                    {/* Top Performing Stations Table */}
+                    <div>
+                        <h4 className="font-bold text-slate-800 mb-3 text-sm">Top Performing Stations</h4>
+                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium">Station Name</th>
+                                        <th className="px-4 py-3 font-medium">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {(analytics?.topStations || []).map((station: TopStation, i: number) => (
+                                        <tr key={i}>
+                                            <td className="px-4 py-3 font-medium text-slate-700">{station.name}</td>
+                                            <td className="px-4 py-3 text-slate-600">{station.formattedRevenue}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            )}
+                </DialogContent>
+
+                <DialogActions sx={{ p: 2.5, px: 3, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc', gap: 1.5 }}>
+                    <button
+                        onClick={() => setIsReportOpen(false)}
+                        className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                        Close
+                    </button>
+                    <button
+                        onClick={handleDownload}
+                        disabled={isDownloading || showSuccess}
+                        className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm flex items-center gap-2 transition-all ${isDownloading ? 'bg-slate-400 cursor-not-allowed' :
+                            showSuccess ? 'bg-green-500 hover:bg-green-600' :
+                                'bg-orange-600 hover:bg-orange-700 hover:shadow-md'
+                            }`}
+                    >
+                        {isDownloading ? (
+                            <>
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                Generating...
+                            </>
+                        ) : showSuccess ? (
+                            <>
+                                <FiCheckCircle className="text-lg" />
+                                Downloaded!
+                            </>
+                        ) : (
+                            <>
+                                <FiDownload className="text-lg" />
+                                Download PDF
+                            </>
+                        )}
+                    </button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }

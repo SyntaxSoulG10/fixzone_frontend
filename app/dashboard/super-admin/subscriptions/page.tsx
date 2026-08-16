@@ -9,6 +9,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 import { updateSubscriptionStatus, getSubscriptionBillingHistory } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import Button from "@/components/UI/Button";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton } from "@mui/material";
 
 interface BillingRecord {
     id: string;
@@ -383,30 +384,33 @@ export default function SubscriptionsPage() {
             )}
             </div>
 
-            {/* Billing History Modal */}
-            {isHistoryModalOpen && selectedSub && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <div className="flex items-center gap-4">
+            {/* Billing History MUI Dialog */}
+            <Dialog 
+                open={Boolean(isHistoryModalOpen && selectedSub)} 
+                onClose={() => setIsHistoryModalOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.5rem', overflow: 'hidden' } }}
+            >
+                {selectedSub && (
+                    <>
+                        <DialogTitle sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
                                     <FiFileText className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-800">Billing History</h3>
-                                    <p className="text-sm text-slate-500">{selectedSub.companyName} • {selectedSub.plan?.name || selectedSub.planType} Plan</p>
+                                    <Typography variant="h6" fontWeight="bold" color="#0f172a">Billing History</Typography>
+                                    <Typography variant="caption" color="text.secondary">{selectedSub.companyName} • {selectedSub.plan?.name || selectedSub.planType} Plan</Typography>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsHistoryModalOpen(false)}
-                                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-all"
-                            >
+                            <IconButton onClick={() => setIsHistoryModalOpen(false)} size="small">
                                 <FiX className="text-xl" />
-                            </button>
-                        </div>
+                            </IconButton>
+                        </DialogTitle>
 
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="mb-6 grid grid-cols-3 gap-4">
+                        <DialogContent sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</p>
                                     <p className={`text-sm font-bold flex items-center gap-1.5 ${
@@ -447,25 +451,26 @@ export default function SubscriptionsPage() {
                                     <div className="p-8 text-center text-slate-500 font-medium">No billing history available.</div>
                                 )}
                             </div>
-                        </div>
+                        </DialogContent>
 
-                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                            <p className="text-xs text-slate-400 italic">Showing last 12 months record.</p>
+                        <DialogActions sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="caption" color="text.secondary" fontStyle="italic">Showing last 12 months record.</Typography>
                             <div className="flex gap-3">
-                                <button onClick={handleExportCSV} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-all">
+                                <Button variant="secondary" onClick={handleExportCSV} className="px-4 py-2">
                                     Export CSV
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     onClick={() => setIsHistoryModalOpen(false)}
-                                    className="px-6 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all shadow-md"
+                                    className="px-6 py-2 bg-slate-900 hover:bg-slate-800"
                                 >
                                     Done
-                                </button>
+                                </Button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
         </div>
     );
 }

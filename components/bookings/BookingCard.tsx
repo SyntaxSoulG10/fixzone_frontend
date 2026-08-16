@@ -195,7 +195,7 @@ export default function BookingCard(props: BookingCardProps) {
             )}
 
             {canReschedule ? (
-              <button onClick={onReschedule} className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2">
+              <button onClick={onReschedule} className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2">
                 <FiEdit className="w-4 h-4" />
                 Reschedule
               </button>
@@ -204,9 +204,14 @@ export default function BookingCard(props: BookingCardProps) {
             ) : null}
 
             {canCancel && (
-              <button onClick={onCancel} disabled={actionLoading?.startsWith('cancel-')} className="px-4 py-2 text-sm border-2 border-red-300 hover:border-red-400 text-red-600 hover:bg-orange-50 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                <FiX className="w-4 h-4" />
-                {actionLoading ? 'Processing...' : 'Cancel'}
+              <button 
+                type="button"
+                onClick={onCancel} 
+                disabled={actionLoading?.startsWith('cancel-')} 
+                className="px-4 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 rounded-lg font-semibold transition-all flex items-center gap-2"
+              >
+                <FiX className="w-4 h-4 text-red-600" />
+                <span>{actionLoading ? 'Processing...' : 'Cancel'}</span>
               </button>
             )}
 
