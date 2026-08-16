@@ -6,12 +6,18 @@ import { FiTool, FiClock, FiCalendar, FiCheckCircle, FiPlus, FiMinus, FiLoader }
 import { FaUserCog, FaMoneyBillWave } from "react-icons/fa";
 import { useDashboardData } from "../../../context/DashboardDataContext";
 import { APP_CONFIG } from "../../../utils/config";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 export default function ServiceManagerDashboard() {
     const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData } = useDashboardData();
     const [activeBookings, setActiveBookings] = useState<any[]>([]);
     const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
     const [todaysInvoices, setTodaysInvoices] = useState<any[]>([]);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
 
     const [hiddenFromActive, setHiddenFromActive] = useState<string[]>([]);
 
@@ -129,17 +135,18 @@ export default function ServiceManagerDashboard() {
             if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to update booking status", error);
-            alert("Error updating booking status. Please try again.");
+            showSnackbar("Error updating booking status. Please try again.", "error");
         }
     };
 
     const activateBooking = async (booking: any) => {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/start-service`);
+            showSnackbar("Service started successfully!", "success");
             if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to activate booking", error);
-            alert("Error moving booking to active. Please try again.");
+            showSnackbar("Error moving booking to active. Please try again.", "error");
         }
     };
 
@@ -288,6 +295,14 @@ export default function ServiceManagerDashboard() {
                     </div>
                 </div>
             </div>
+
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={4000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </div>
     );
 }

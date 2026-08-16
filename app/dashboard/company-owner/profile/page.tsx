@@ -29,6 +29,7 @@ import {
     RadioGroup,
     FormControl as MuiFormControl
 } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import {
     FiHome,
     FiSettings,
@@ -524,7 +525,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                                         }} onClick={() => setSelectedPlan(plan.id)}>
                                             <FormControlLabel
                                                 value={plan.id}
-                                                control={<Radio sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
+                                                control={<Radio value={plan.id} onChange={() => setSelectedPlan(plan.id)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
                                                 label={
                                                     <Box>
                                                         <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
@@ -865,9 +866,13 @@ export default function ProfilePage() {
                 }}
             />
 
-            <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
-            </Snackbar>
+            <FeedbackSnackbar 
+                open={snackbarOpen} 
+                autoHideDuration={4000} 
+                severity={snackbarSeverity as any}
+                message={snackbarMessage}
+                onClose={() => setSnackbarOpen(false)} 
+            />
         </ProfileHeader >
     );
 }

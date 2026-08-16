@@ -1,9 +1,10 @@
 "use client";
 import { useRoleGuard } from "../../../utils/useRoleGuard";
 import { useDashboardData } from "../../../context/DashboardDataContext";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FiLoader, FiAlertTriangle, FiArrowRight } from "react-icons/fi";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button as MuiButton } from "@mui/material";
 
 function SubscriptionExpiredBanner() {
     const router = useRouter();
@@ -27,9 +28,61 @@ function SubscriptionExpiredBanner() {
     );
 }
 
+function SubscriptionExpiredModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const router = useRouter();
+    return (
+        <Dialog 
+            open={open}
+            onClose={onClose}
+            PaperProps={{ sx: { borderRadius: '1.25rem', p: 1, maxWidth: 400, width: '100%', textAlign: 'center' } }}
+        >
+            <DialogTitle sx={{ pt: 3, fontWeight: 'bold' }}>
+                <div className="w-14 h-14 mx-auto mb-2 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-2xl">
+                    <FiAlertTriangle className="w-7 h-7" />
+                </div>
+                Subscription Expired
+            </DialogTitle>
+            <DialogContent sx={{ px: 3 }}>
+                <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+                    Your subscription plan has expired. Please upgrade or renew your plan to unlock all features.
+                </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 1, gap: 1.5 }}>
+                <MuiButton
+                    fullWidth
+                    variant="outlined"
+                    onClick={onClose}
+                    sx={{ py: 1.25, borderRadius: '0.75rem', fontWeight: 600, textTransform: 'none', color: '#64748b', borderColor: '#cbd5e1' }}
+                >
+                    Dismiss
+                </MuiButton>
+                <MuiButton
+                    fullWidth
+                    variant="contained"
+                    onClick={() => {
+                        onClose();
+                        router.push("/dashboard/company-owner/profile?tab=billing");
+                    }}
+                    sx={{ bgcolor: '#ea580c', '&:hover': { bgcolor: '#c2410c' }, py: 1.25, borderRadius: '0.75rem', fontWeight: 'bold', textTransform: 'none' }}
+                >
+                    Upgrade Now
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
 function LayoutContent({ children }: { children: React.ReactNode }) {
     const { isLoading: isRoleLoading, isAuthorized } = useRoleGuard(['ROLE_COMPANY_OWNER', 'OWNER']);
     const { ownerData } = useDashboardData();
+    const searchParams = useSearchParams();
+    const [modalOpen, setModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (searchParams?.get("sub_expired") === "true") {
+            setModalOpen(true);
+        }
+    }, [searchParams]);
 
     if (isRoleLoading || !isAuthorized) {
         return (
@@ -46,6 +99,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex flex-col min-h-screen">
             {isExpired && <SubscriptionExpiredBanner />}
+            <SubscriptionExpiredModal open={modalOpen} onClose={() => setModalOpen(false)} />
             <div className="flex-1 relative">
                 <Suspense fallback={
                     <div className="flex justify-center p-8">
@@ -60,5 +114,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function CompanyOwnerLayout({ children }: { children: React.ReactNode }) {
-    return <LayoutContent>{children}</LayoutContent>;
+    return (
+        <Suspense fallback={<div className="flex justify-center p-8"><FiLoader className="w-8 h-8 text-orange-600 animate-spin" /></div>}>
+            <LayoutContent>{children}</LayoutContent>
+        </Suspense>
+    );
 }

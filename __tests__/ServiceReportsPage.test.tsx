@@ -169,9 +169,7 @@ describe('Service Manager Reports & Invoice Page', () => {
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(alertMock).toHaveBeenCalledWith('Report Created!')
+      expect(screen.getByText(/Report Created successfully!/i)).toBeInTheDocument()
     })
-    
-    alertMock.mockRestore()
   })
 })

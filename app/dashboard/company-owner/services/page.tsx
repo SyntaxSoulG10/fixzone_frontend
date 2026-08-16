@@ -3,17 +3,56 @@
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/UI/PageHeader";
 import Button from "@/components/UI/Button";
-import { FiPlus, FiEdit2, FiTrash2, FiClock, FiCheck, FiX, FiSave } from "react-icons/fi";
+import { 
+    FiPlus, 
+    FiEdit2, 
+    FiTrash2, 
+    FiClock, 
+    FiCheck, 
+    FiX, 
+    FiSave, 
+    FiLayers,
+    FiMapPin, 
+    FiPackage, 
+    FiDollarSign, 
+    FiTag 
+} from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
-import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
+import { 
+    Snackbar, 
+    Alert, 
+    CircularProgress,
+    Dialog, 
+    DialogTitle, 
+    DialogContent, 
+    DialogActions, 
+    TextField, 
+    FormControl, 
+    InputLabel, 
+    Select, 
+    MenuItem, 
+    Box, 
+    Typography, 
+    IconButton, 
+    Chip, 
+    InputAdornment, 
+    Grid, 
+    Divider, 
+    Switch, 
+    FormControlLabel,
+    Button as MuiButton,
+    alpha
+} from "@mui/material";
 import EmptyState from "@/components/UI/EmptyState";
-import { FiLayers } from "react-icons/fi";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
  * Validation and default constants for service packages.
  */
+const BRAND_ORANGE = "#f3651c";
 const MIN_PACKAGE_NAME_LENGTH = 3;
 const MIN_PRICE = 0;
 const MAX_PRICE = 1000000;
@@ -22,6 +61,16 @@ const MAX_DURATION = 1440; // 24 hours
 const MIN_DESC_LENGTH = 10;
 const DEFAULT_PRICE = 0;
 const DEFAULT_DURATION = 30;
+
+const POPULAR_FEATURE_SUGGESTIONS = [
+    "Oil & Filter Change",
+    "Comprehensive Engine Diagnostics",
+    "Brake System Inspection",
+    "Wheel Alignment & Balancing",
+    "Fluid Top-up & Check",
+    "Battery Health Test",
+    "Full Interior & Exterior Wash"
+];
 
 /**
  * Interface defining the structure of a service package.
@@ -116,7 +165,7 @@ function ServicePackageCard({ pkg, onEdit, onDelete, isExpired }: { pkg: Service
 }
 
 /**
- * FORM DIALOG: Standardized input for adding or editing service packages.
+ * FORM DIALOG: Standardized, premium dialog for adding or editing service packages.
  */
 function ServicePackageDialog({ 
     isEditing, 
@@ -129,163 +178,393 @@ function ServicePackageDialog({
     handleCloseModal, 
     isSaving 
 }: any) {
+    const [newFeatureText, setNewFeatureText] = useState("");
+
+    const featuresList = featuresInput
+        ? featuresInput.split("\n").map((f: string) => f.trim()).filter((f: string) => f.length > 0)
+        : [];
+
+    const addFeature = (feat: string) => {
+        const trimmed = feat.trim();
+        if (!trimmed) return;
+        if (!featuresList.includes(trimmed)) {
+            const updated = [...featuresList, trimmed];
+            setFeaturesInput(updated.join("\n"));
+        }
+        setNewFeatureText("");
+    };
+
+    const removeFeature = (indexToRemove: number) => {
+        const updated = featuresList.filter((_: any, idx: number) => idx !== indexToRemove);
+        setFeaturesInput(updated.join("\n"));
+    };
+
+    const handleFeatureKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addFeature(newFeatureText);
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
-                    <h2 className="text-xl font-bold text-slate-900">
-                        {isEditing ? `Edit ${currentPackage.name}` : "Create New Package"}
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={handleCloseModal}
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-                    >
-                        <FiX size={20} />
-                    </button>
-                </div>
+        <Dialog 
+            open={true} 
+            onClose={handleCloseModal} 
+            maxWidth="md" 
+            fullWidth
+            PaperProps={{ 
+                sx: { 
+                    borderRadius: '1.5rem', 
+                    p: 0.5,
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    overflow: 'hidden'
+                } 
+            }}
+        >
+            {/* Header */}
+            <DialogTitle sx={{ p: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                    <Box sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '0.875rem',
+                        bgcolor: alpha(BRAND_ORANGE, 0.12),
+                        color: BRAND_ORANGE,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.25rem'
+                    }}>
+                        <FiPackage />
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" fontWeight="800" color="#1e293b" sx={{ fontSize: '1.25rem', lineHeight: 1.2 }}>
+                            {isEditing ? `Edit Package: ${currentPackage.name || ''}` : "Create New Package"}
+                        </Typography>
+                        <Typography variant="caption" color="#64748b" sx={{ fontSize: '0.825rem' }}>
+                            {isEditing ? "Update your package details, pricing, and inclusions." : "Define pricing, duration, and inclusions for this service offering."}
+                        </Typography>
+                    </Box>
+                </Box>
+                <IconButton 
+                    onClick={handleCloseModal} 
+                    disabled={isSaving}
+                    sx={{ color: '#94a3b8', '&:hover': { bgcolor: '#f1f5f9', color: '#475569' } }}
+                >
+                    <FiX size={20} />
+                </IconButton>
+            </DialogTitle>
 
-                <form onSubmit={handleSave} className="p-6 space-y-6">
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">Service Center</label>
-                            <select
-                                required
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
-                                value={currentPackage.centerId}
+            <Divider />
+
+            <form onSubmit={handleSave}>
+                <DialogContent sx={{ p: 3.5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {/* Basic Info Section */}
+                    <Box display="flex" flexDirection="column" gap={2.5}>
+                        <FormControl fullWidth required>
+                            <InputLabel id="service-center-select-label">Service Center Branch</InputLabel>
+                            <Select
+                                labelId="service-center-select-label"
+                                label="Service Center Branch"
+                                value={currentPackage.centerId || ""}
                                 onChange={e => setCurrentPackage({ ...currentPackage, centerId: e.target.value })}
+                                startAdornment={
+                                    <InputAdornment position="start" sx={{ pl: 0.5 }}>
+                                        <FiMapPin color={BRAND_ORANGE} />
+                                    </InputAdornment>
+                                }
+                                sx={{ borderRadius: '0.875rem' }}
                             >
-                                <option value="" disabled>Select a center</option>
-                                {centers.map((center: any) => (
-                                    <option key={center.id} value={center.id}>{center.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">Package Name</label>
-                            <input
-                                type="text"
-                                required
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                placeholder="e.g. Gold Service"
-                                value={currentPackage.name}
-                                onChange={e => setCurrentPackage({ ...currentPackage, name: e.target.value })}
-                            />
-                        </div>
+                                {centers.length === 0 ? (
+                                    <MenuItem value="" disabled>No service centers available</MenuItem>
+                                ) : (
+                                    centers.map((center: any) => (
+                                        <MenuItem key={center.id} value={center.id}>
+                                            {center.name}
+                                        </MenuItem>
+                                    ))
+                                )}
+                            </Select>
+                        </FormControl>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700">Price (Rs.)</label>
-                                <input
+                        <TextField
+                            label="Package Name"
+                            required
+                            fullWidth
+                            placeholder="e.g. Master Engine Tune-Up & Fluid Overhaul"
+                            value={currentPackage.name || ""}
+                            onChange={e => setCurrentPackage({ ...currentPackage, name: e.target.value })}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiTag color="#94a3b8" />
+                                    </InputAdornment>
+                                )
+                            }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.875rem' } }}
+                        />
+
+                        {/* Pricing & Duration 2-column Grid */}
+                        <Grid container spacing={2.5}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Price (LKR)"
                                     type="number"
                                     required
-                                    min={MIN_PRICE}
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    fullWidth
+                                    inputProps={{ min: MIN_PRICE, step: "0.01" }}
                                     placeholder="0.00"
                                     value={currentPackage.price || ""}
                                     onChange={e => {
                                         const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
                                         setCurrentPackage({ ...currentPackage, price: val });
                                     }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <Typography fontWeight="800" color={BRAND_ORANGE} sx={{ fontSize: '0.9rem' }}>
+                                                    Rs.
+                                                </Typography>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.875rem' } }}
                                 />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700">Estimated Duration (mins)</label>
-                                <input
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Estimated Duration (Minutes)"
                                     type="number"
                                     required
-                                    min={MIN_DURATION}
-                                    step="5"
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    fullWidth
+                                    inputProps={{ min: MIN_DURATION, step: "5" }}
                                     placeholder="30"
                                     value={currentPackage.duration || ""}
                                     onChange={e => {
                                         const val = e.target.value === "" ? 0 : parseInt(e.target.value);
                                         setCurrentPackage({ ...currentPackage, duration: val });
                                     }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <FiClock color="#94a3b8" />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <Typography variant="caption" color="#64748b" fontWeight="600">
+                                                    mins
+                                                </Typography>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.875rem' } }}
                                 />
-                            </div>
-                        </div>
+                            </Grid>
+                        </Grid>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">Description</label>
-                            <textarea
-                                required
-                                rows={2}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                                placeholder="Brief description of the service package..."
-                                value={currentPackage.description}
-                                onChange={e => setCurrentPackage({ ...currentPackage, description: e.target.value })}
+                        <TextField
+                            label="Service Description"
+                            required
+                            fullWidth
+                            multiline
+                            rows={3}
+                            placeholder="Provide a detailed summary of what is covered under this service package for vehicle owners..."
+                            value={currentPackage.description || ""}
+                            onChange={e => setCurrentPackage({ ...currentPackage, description: e.target.value })}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.875rem' } }}
+                        />
+                    </Box>
+
+                    {/* Features Section with Chip Builder */}
+                    <Box sx={{
+                        p: 2.5,
+                        borderRadius: '1rem',
+                        bgcolor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2
+                    }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                                <Typography variant="subtitle2" fontWeight="700" color="#1e293b">
+                                    Package Inclusions & Features
+                                </Typography>
+                                <Typography variant="caption" color="#64748b">
+                                    Add individual checklist items that customers will receive with this package.
+                                </Typography>
+                            </Box>
+                            <Chip 
+                                label={`${featuresList.length} items`} 
+                                size="small" 
+                                sx={{ bgcolor: alpha(BRAND_ORANGE, 0.1), color: BRAND_ORANGE, fontWeight: '700' }} 
                             />
-                        </div>
+                        </Box>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">Status</label>
-                            <div className="flex items-center space-x-4 pt-2">
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="status"
-                                        className="text-primary focus:ring-primary"
-                                        checked={currentPackage.isActive}
-                                        onChange={() => setCurrentPackage({ ...currentPackage, isActive: true })}
-                                    />
-                                    <span className="text-sm text-slate-600">Active</span>
-                                </label>
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="status"
-                                        className="text-primary focus:ring-primary"
-                                        checked={!currentPackage.isActive}
-                                        onChange={() => setCurrentPackage({ ...currentPackage, isActive: false })}
-                                    />
-                                    <span className="text-sm text-slate-600">Inactive</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <div className="flex justify-between">
-                                <label className="text-sm font-medium text-slate-700">Features</label>
-                                <span className="text-xs text-slate-400">One feature per line</span>
-                            </div>
-                            <textarea
-                                required
-                                rows={5}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono text-sm"
-                                placeholder="- Oil change&#10;- Filter replacement&#10;- Tire check"
-                                value={featuresInput}
-                                onChange={e => setFeaturesInput(e.target.value)}
+                        {/* Add Feature input */}
+                        <Box display="flex" gap={1.5}>
+                            <TextField
+                                size="small"
+                                fullWidth
+                                placeholder="Type a feature item (e.g. Spark Plug Replacement) and press Add or Enter"
+                                value={newFeatureText}
+                                onChange={e => setNewFeatureText(e.target.value)}
+                                onKeyDown={handleFeatureKeyDown}
+                                sx={{ 
+                                    bgcolor: '#ffffff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } 
+                                }}
                             />
-                        </div>
-                    </div>
+                            <MuiButton
+                                variant="contained"
+                                onClick={() => addFeature(newFeatureText)}
+                                disabled={!newFeatureText.trim()}
+                                startIcon={<FiPlus />}
+                                sx={{
+                                    bgcolor: BRAND_ORANGE,
+                                    '&:hover': { bgcolor: '#d85618' },
+                                    color: '#ffffff',
+                                    borderRadius: '0.75rem',
+                                    px: 2.5,
+                                    textTransform: 'none',
+                                    fontWeight: '700',
+                                    flexShrink: 0
+                                }}
+                            >
+                                Add
+                            </MuiButton>
+                        </Box>
 
-                    <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={handleCloseModal}
-                            disabled={isSaving}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSaving}
-                        >
-                            {isSaving ? (
-                                <CircularProgress size={20} color="inherit" className="mr-2" />
-                            ) : (
-                                <FiSave className="mr-2" />
-                            )}
-                            {isEditing ? "Save Changes" : "Create Package"}
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                        {/* Feature Chips */}
+                        {featuresList.length > 0 ? (
+                            <Box display="flex" flexWrap="wrap" gap={1} pt={0.5}>
+                                {featuresList.map((feat: string, idx: number) => (
+                                    <Chip
+                                        key={idx}
+                                        label={feat}
+                                        onDelete={() => removeFeature(idx)}
+                                        icon={<FiCheck color={BRAND_ORANGE} size={14} />}
+                                        sx={{
+                                            bgcolor: '#ffffff',
+                                            border: '1px solid #cbd5e1',
+                                            fontWeight: '600',
+                                            borderRadius: '0.625rem',
+                                            py: 2,
+                                            '& .MuiChip-label': { color: '#334155' }
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="#94a3b8" fontStyle="italic">
+                                No features added yet. Add at least one feature item below or select from quick suggestions.
+                            </Typography>
+                        )}
+
+                        {/* Quick Add Suggestions */}
+                        <Box pt={1}>
+                            <Typography variant="caption" fontWeight="700" color="#64748b" display="block" mb={1}>
+                                Quick Suggestions:
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={0.75}>
+                                {POPULAR_FEATURE_SUGGESTIONS.map((sug, i) => (
+                                    <Chip
+                                        key={i}
+                                        label={`+ ${sug}`}
+                                        size="small"
+                                        clickable
+                                        onClick={() => addFeature(sug)}
+                                        sx={{
+                                            bgcolor: '#ffffff',
+                                            color: '#475569',
+                                            border: '1px dashed #cbd5e1',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '500',
+                                            '&:hover': { bgcolor: alpha(BRAND_ORANGE, 0.08), borderColor: BRAND_ORANGE, color: BRAND_ORANGE }
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    {/* Status Toggle Card */}
+                    <Box sx={{
+                        p: 2,
+                        borderRadius: '1rem',
+                        bgcolor: currentPackage.isActive ? '#f0fdf4' : '#f8fafc',
+                        border: '1px solid',
+                        borderColor: currentPackage.isActive ? '#bbf7d0' : '#e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight="700" color={currentPackage.isActive ? '#166534' : '#475569'}>
+                                {currentPackage.isActive ? "Active Service Package" : "Inactive Draft Package"}
+                            </Typography>
+                            <Typography variant="caption" color={currentPackage.isActive ? '#15803d' : '#64748b'}>
+                                {currentPackage.isActive 
+                                    ? "Visible to customers for online booking and service requests." 
+                                    : "Hidden from customer view. Can be enabled anytime."}
+                            </Typography>
+                        </Box>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={Boolean(currentPackage.isActive)}
+                                    onChange={e => setCurrentPackage({ ...currentPackage, isActive: e.target.checked })}
+                                    sx={{
+                                        '& .MuiSwitch-switchBase.Mui-checked': { color: BRAND_ORANGE },
+                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: BRAND_ORANGE }
+                                    }}
+                                />
+                            }
+                            label=""
+                        />
+                    </Box>
+                </DialogContent>
+
+                <Divider />
+
+                <DialogActions sx={{ p: 3, px: 3.5, gap: 1.5 }}>
+                    <MuiButton
+                        onClick={handleCloseModal}
+                        disabled={isSaving}
+                        sx={{
+                            color: '#64748b',
+                            fontWeight: '600',
+                            textTransform: 'none',
+                            borderRadius: '0.75rem',
+                            px: 3
+                        }}
+                    >
+                        Cancel
+                    </MuiButton>
+                    <MuiButton
+                        type="submit"
+                        variant="contained"
+                        disabled={isSaving}
+                        startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : <FiSave />}
+                        sx={{
+                            bgcolor: BRAND_ORANGE,
+                            '&:hover': { bgcolor: '#d85618' },
+                            color: '#ffffff',
+                            borderRadius: '0.75rem',
+                            px: 4,
+                            py: 1.2,
+                            textTransform: 'none',
+                            fontWeight: '700',
+                            boxShadow: '0 4px 6px -1px rgba(243, 101, 28, 0.25)',
+                            '&.Mui-disabled': { bgcolor: '#cbd5e1', color: '#94a3b8' }
+                        }}
+                    >
+                        {isSaving ? "Saving Package..." : isEditing ? "Save Changes" : "Create Package"}
+                    </MuiButton>
+                </DialogActions>
+            </form>
+        </Dialog>
     );
 }
 
@@ -474,16 +753,17 @@ export default function ServicesPage() {
         }
     };
 
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string, name: string }>({ isOpen: false, id: '', name: '' });
+
     const handleDelete = async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this service package?")) {
-            try {
-                await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
-                showSnackbar("Service package deleted");
-                fetchPackages();
-            } catch (error: any) {
-                console.error("Error deleting service package:", error);
-                showSnackbar(error.response?.data?.message || "Failed to delete service package", "error");
-            }
+        try {
+            await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
+            showSnackbar("Service package deleted successfully");
+            fetchPackages();
+            setDeleteModal({ isOpen: false, id: '', name: '' });
+        } catch (error: any) {
+            console.error("Error deleting service package:", error);
+            showSnackbar(error.response?.data?.message || "Failed to delete service package", "error");
         }
     };
 
@@ -530,7 +810,7 @@ export default function ServicesPage() {
                                 key={pkg.id} 
                                 pkg={pkg} 
                                 onEdit={handleOpenEdit} 
-                                onDelete={handleDelete}
+                                onDelete={(id: string) => setDeleteModal({ isOpen: true, id, name: pkg.name })} 
                                 isExpired={isExpired}
                             />
                         ))}
@@ -561,21 +841,25 @@ export default function ServicesPage() {
                 />
             )}
 
-            <Snackbar 
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                open={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: '', name: '' })}
+                title="Delete Service Package?"
+                message={<>Are you sure you want to delete <strong style={{ color: '#0f172a' }}>{deleteModal.name}</strong>? This action cannot be undone.</>}
+                confirmText="Delete Package"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={() => handleDelete(deleteModal.id)}
+            />
+
+            <FeedbackSnackbar 
                 open={snackbar.open} 
                 autoHideDuration={6000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert 
-                    onClose={() => setSnackbar({ ...snackbar, open: false })} 
-                    severity={snackbar.severity} 
-                    variant="filled" 
-                    sx={{ width: '100%', borderRadius: '12px' }}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+            />
         </div>
     );
 }

@@ -29,6 +29,8 @@ import {
     CircularProgress,
     alpha
 } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTheme } from "@mui/material/styles";
 import {
@@ -40,6 +42,7 @@ import {
     FiLock
 } from "react-icons/fi";
 import { APP_CONFIG } from "@/utils/config";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
  * Validation and default constants for managers.
@@ -153,8 +156,6 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
     );
 }
 
-import { useDashboardData } from "@/context/DashboardDataContext";
-
 /**
  * MAIN COMPONENT: Orchestrates the display and lifecycle of manager accounts.
  */
@@ -246,6 +247,19 @@ export default function ManagersPage() {
         }
     };
 
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string }>({ isOpen: false, id: '' });
+
+    const handleDeleteManager = async (id: string) => {
+        try {
+            await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
+            await refreshAll();
+            setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
+            setDeleteModal({ isOpen: false, id: '' });
+        } catch (e: any) {
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Delete failed', severity: 'error' });
+        }
+    };
+
     const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>;
@@ -261,15 +275,47 @@ export default function ManagersPage() {
                         InputProps={{ startAdornment: <InputAdornment position="start"><FiSearch /></InputAdornment> }} sx={{ minWidth: 250 }} />
                 </Box>
                 <Box sx={{ height: 600, width: '100%' }}>
-                    <DataGrid rows={filtered} columns={getManagerColumns(theme, (m: any) => { setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); setSelectedId(m.id); setIsEditMode(true); setOpenDialog(true); }, handleToggleStatus, async (id: string) => { if(confirm("Delete?")) { await axios.delete(`${APP_CONFIG.api.managers}/${id}`); await refreshAll(); } }, isExpired)} pageSizeOptions={[5, 10]} disableRowSelectionOnClick rowHeight={80} />
+                    <DataGrid 
+                        rows={filtered} 
+                        columns={getManagerColumns(
+                            theme, 
+                            (m: any) => { 
+                                setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); 
+                                setSelectedId(m.id); 
+                                setIsEditMode(true); 
+                                setOpenDialog(true); 
+                            }, 
+                            handleToggleStatus, 
+                            (id: string) => setDeleteModal({ isOpen: true, id }),
+                            isExpired
+                        )} 
+                        pageSizeOptions={[5, 10]} 
+                        disableRowSelectionOnClick 
+                        rowHeight={80} 
+                    />
                 </Box>
             </Card>
 
             <ManagerDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })} onSave={handleSave} centers={centersList} />
 
-            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
-            </Snackbar>
+            {/* Delete Manager Dialog */}
+            <ConfirmDialog 
+                open={deleteModal.isOpen} 
+                onClose={() => setDeleteModal({ isOpen: false, id: '' })}
+                title="Delete Manager Account?"
+                message="Are you sure you want to remove this manager account? This action cannot be undone."
+                confirmText="Delete Manager"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={() => handleDeleteManager(deleteModal.id)}
+            />
+
+            <FeedbackSnackbar
+                open={snackbar.open}
+                message={snackbar.message}
+                severity={snackbar.severity}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+            />
         </Box>
     );
 }
