@@ -14,7 +14,7 @@ import {
   FiStar,
 } from "react-icons/fi";
 import BookingCard from "@/components/bookings/BookingCard";
-import { getMyBookings, getNotifications } from "@/lib/api";
+import { getMyBookings, getNotifications, getServiceCenters } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
 import APP_CONFIG from "@/config";
 type Booking = {
@@ -136,13 +136,9 @@ export default function CustomerDashboard() {
     if (token) fetchProfile();
 
     // Fetch Service Centers dynamically from backend
-    fetch(`${APP_CONFIG.API_BASE_URL}/api/service-centers`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        const list = Array.isArray(data) ? data : [];
-        const valid = list.filter((c: any) => {
+    getServiceCenters()
+      .then((list) => {
+        const valid = (list || []).filter((c: any) => {
           const status = (c.status || "").toUpperCase();
           return status !== "SUSPENDED" && status !== "REJECTED" && c.isActive !== false;
         });

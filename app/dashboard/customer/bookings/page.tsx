@@ -61,28 +61,8 @@ export default function BookServicePage() {
   };
 
   const isPaymentReady = (center: PaymentReadyCenter) => {
-    const flags = [
-      center.paymentEnabled,
-      center.stripeConnected,
-      center.stripeConnectEnabled,
-      center.canAcceptPayments,
-    ] as Array<boolean | string | null | undefined>;
-
-    const hasPositiveFlag = flags.some((flag) => {
-      const normalized = String(flag).toLowerCase();
-      return flag === true || normalized === "true";
-    });
-
-    const hasOnlyNegativeFlags =
-      flags.length > 0 &&
-      flags.every((flag) => {
-        const normalized = String(flag).toLowerCase();
-        return flag === false || normalized === "false" || flag == null || normalized === "null" || normalized === "undefined";
-      });
-
-    if (hasPositiveFlag) return true;
-    if (hasOnlyNegativeFlags) return false;
-    return true;
+    // Centers are bookable unless explicitly deactivated
+    return center.isActive !== false;
   };
 
   const loadCenters = async (lat?: number, lng?: number, radius?: number) => {
@@ -90,9 +70,9 @@ export default function BookServicePage() {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     try {
-      let url = `${APP_CONFIG.API_BASE_URL}/api/service-centers`;
+      let url = `${APP_CONFIG.API_BASE_URL}/api/service-centers?size=100`;
       if (lat !== undefined && lng !== undefined && radius !== undefined) {
-        url = `${APP_CONFIG.API_BASE_URL}/api/service-centers/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
+        url = `${APP_CONFIG.API_BASE_URL}/api/service-centers/nearby?lat=${lat}&lng=${lng}&radius=${radius}&size=100`;
       }
 
       const res = await fetch(url, {
