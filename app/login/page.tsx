@@ -20,7 +20,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/login`, {
+            const response = await fetch(`/api/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -38,45 +38,36 @@ export default function LoginPage() {
 
             const data = await response.json();
             
-            let tokenToSave = null;
-            if (data.token) {
-                tokenToSave = data.token;
-                localStorage.setItem("token", data.token);
-                
-                // Keep teammate's localStorage additions if they exist in the response
-                if (data.role) localStorage.setItem("role", data.role);
-                if (data.role) localStorage.setItem("userRole", data.role);
-                if (data.userId) localStorage.setItem("userId", data.userId);
-                if (data.fullName) localStorage.setItem("fullName", data.fullName);
+            // The Next.js API route sets the HttpOnly cookie for the token.
+            // We just need to handle the user data and redirect.
+            if (data.role) localStorage.setItem("role", data.role);
+            if (data.role) localStorage.setItem("userRole", data.role);
+            if (data.userId) localStorage.setItem("userId", data.userId);
+            if (data.fullName) localStorage.setItem("fullName", data.fullName);
 
-                if (tokenToSave) {
-                    if (isTokenExpired(tokenToSave)) {
-                        throw new Error("Received an expired token");
-                    }
-                    const role = getUserRole(tokenToSave);
-                    switch (role) {
-                        case "ROLE_SERVICE_MANAGER":
-                            router.push("/dashboard/service-manager");
-                            break;
-                        case "ROLE_SUPER_ADMIN":
-                            router.push("/dashboard/super-admin");
-                            break;
-                        case "ROLE_COMPANY_OWNER":
-                        case "OWNER":
-                            router.push("/dashboard/company-owner");
-                            break;
-                        case "ROLE_CUSTOMER":
-                            router.push("/dashboard/customer");
-                            break;
-                        default:
-                            router.push("/dashboard/customer"); // fallback
-                    }
-                } else {
-                    throw new Error("No token received from server");
+            const role = data.role || data.userRole;
+            
+            if (role) {
+                switch (role) {
+                    case "ROLE_SERVICE_MANAGER":
+                        router.push("/dashboard/service-manager");
+                        break;
+                    case "ROLE_SUPER_ADMIN":
+                        router.push("/dashboard/super-admin");
+                        break;
+                    case "ROLE_COMPANY_OWNER":
+                    case "OWNER":
+                        router.push("/dashboard/company-owner");
+                        break;
+                    case "ROLE_CUSTOMER":
+                    case "CUSTOMER":
+                        router.push("/dashboard/customer");
+                        break;
+                    default:
+                        router.push("/dashboard/customer"); // fallback
                 }
-            } else if (typeof data === 'string') {
-                tokenToSave = data;
-                localStorage.setItem("token", data);
+            } else {
+                // If role isn't returned, fallback
                 router.push("/dashboard");
             }
             

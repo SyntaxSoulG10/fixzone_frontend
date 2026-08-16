@@ -4,15 +4,16 @@ import APP_CONFIG from "../config";
 // Use centralized configuration
 const BASE_URL = APP_CONFIG.API_BASE_URL;
 
-// Helper to get auth headers
+// Helper to get auth headers (now rely on cookies via credentials: "include")
 const getAuthHeaders = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem("token");
-  if (!token) {
-    console.warn("[getAuthHeaders] No token found in localStorage");
-    return {};
-  }
-  return { "Authorization": `Bearer ${token}` };
+  return {};
+};
+
+const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
+  return fetch(url, {
+    ...init,
+    credentials: "include" // crucial for Option B
+  });
 };
 
 const parseErrorMessage = async (res: Response, fallback: string): Promise<string> => {
@@ -34,7 +35,7 @@ export interface PaymentInitResponse {
 }
 
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
-  const res = await fetch(`${BASE_URL}/api/service-centers`, {
+  const res = await customFetch(`${BASE_URL}/api/service-centers`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -52,7 +53,7 @@ export async function getServiceCenterDetails(centerId: string): Promise<any> {
   const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
   try {
-    const res = await fetch(`${BASE_URL}/api/service-centers/${centerId}`, {
+    const res = await customFetch(`${BASE_URL}/api/service-centers/${centerId}`, {
       signal: controller.signal,
       headers: {
         ...getAuthHeaders()
@@ -78,7 +79,7 @@ export async function getServicePackagesByCenter(centerId: string, vehicleType?:
   try {
     const url = new URL(`${BASE_URL}/api/service-packages/center/${centerId}`);
     if (vehicleType) url.searchParams.append("vehicleType", vehicleType);
-    const res = await fetch(url.toString(), {
+    const res = await customFetch(url.toString(), {
       signal: controller.signal,
       headers: { ...getAuthHeaders() },
     });
@@ -92,7 +93,7 @@ export async function getServicePackagesByCenter(centerId: string, vehicleType?:
 }
 
 export async function createPaymentSession(bookingId: number, amount: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/create`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -115,7 +116,7 @@ export async function createPaymentSession(bookingId: number, amount: number): P
  * Returns the generated paymentId.
  */
 export async function initPayment(servicePackageId: string, vehicleId: string, date: string, timeSlot: string, centerId: string, specialRequest: string = ""): Promise<PaymentInitResponse> {
-  const res = await fetch(`${BASE_URL}/api/payments/init`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/init`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -159,7 +160,7 @@ export async function initPayment(servicePackageId: string, vehicleId: string, d
  * Returns a plain text Stripe Checkout URL.
  */
 export async function executeStripePayment(paymentId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/stripe`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/stripe`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -187,7 +188,7 @@ export async function executeStripePayment(paymentId: number): Promise<string> {
 }
 
 export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/success?session_id=${sessionId}`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/success?session_id=${sessionId}`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -200,7 +201,7 @@ export async function verifyPaymentSuccess(sessionId: string): Promise<string> {
 }
 
 export async function getPaymentDetails(bookingId: number): Promise<any> {
-  const res = await fetch(`${BASE_URL}/api/payments/status/${bookingId}`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/status/${bookingId}`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -213,7 +214,7 @@ export async function getPaymentDetails(bookingId: number): Promise<any> {
 }
 
 export async function refundPayment(bookingId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/refund`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/refund`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -229,7 +230,7 @@ export async function refundPayment(bookingId: number): Promise<string> {
 }
 
 export async function reschedulePayment(bookingId: number): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/reschedule`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/reschedule`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -250,7 +251,7 @@ export async function getMyBookings(): Promise<any[]> {
     throw new Error("No user ID found");
   }
 
-  const res = await fetch(`${BASE_URL}/api/bookings/customer/${userId}`, {
+  const res = await customFetch(`${BASE_URL}/api/bookings/customer/${userId}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) {
@@ -262,7 +263,7 @@ export async function getMyBookings(): Promise<any[]> {
 }
 
 export async function getBookingsByCustomer(customerId: string): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/bookings/customer/${customerId}`, {
+  const res = await customFetch(`${BASE_URL}/api/bookings/customer/${customerId}`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -274,7 +275,7 @@ export async function getBookingsByCustomer(customerId: string): Promise<any[]> 
 }
 
 export async function getAllBookings(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/bookings`, {
+  const res = await customFetch(`${BASE_URL}/api/bookings`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -290,7 +291,7 @@ export async function rescheduleBookingAPI(bookingId: string, newDate: string, n
   url.searchParams.append("newDate", newDate);
   url.searchParams.append("newTime", newTime);
 
-  const res = await fetch(url.toString(), {
+  const res = await customFetch(url.toString(), {
     method: "PUT",
     headers: {
       ...getAuthHeaders()
@@ -312,7 +313,7 @@ export async function rescheduleBookingAPI(bookingId: string, newDate: string, n
 }
 
 export async function cancelBookingAPI(bookingId: string): Promise<any> {
-  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/cancel`, {
+  const res = await customFetch(`${BASE_URL}/api/bookings/${bookingId}/cancel`, {
     method: "PUT",
     headers: {
       ...getAuthHeaders()
@@ -335,7 +336,7 @@ export async function getAvailableSlotsAPI(centerId: string, date: string): Prom
   url.searchParams.append("centerId", centerId);
   url.searchParams.append("date", date);
 
-  const res = await fetch(url.toString(), {
+  const res = await customFetch(url.toString(), {
     headers: {
       ...getAuthHeaders()
     }
@@ -356,7 +357,7 @@ export async function fetchSubscriptions(status?: string): Promise<any[]> {
     url.searchParams.append("status", status);
   }
 
-  const res = await fetch(url.toString(), {
+  const res = await customFetch(url.toString(), {
     headers: {
       ...getAuthHeaders()
     }
@@ -371,7 +372,7 @@ export async function fetchSubscriptions(status?: string): Promise<any[]> {
 
 // Subscription Plans API
 export async function getSubscriptionPlans(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/subscription-plans`, {
+  const res = await customFetch(`${BASE_URL}/api/subscription-plans`, {
     headers: { ...getAuthHeaders() }
   });
   if (!res.ok) throw new Error("Failed to load subscription plans");
@@ -379,7 +380,7 @@ export async function getSubscriptionPlans(): Promise<any[]> {
 }
 
 export async function createSubscriptionPlan(plan: any): Promise<any> {
-  const res = await fetch(`${BASE_URL}/api/subscription-plans`, {
+  const res = await customFetch(`${BASE_URL}/api/subscription-plans`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -392,7 +393,7 @@ export async function createSubscriptionPlan(plan: any): Promise<any> {
 }
 
 export async function updateSubscriptionPlan(id: string, plan: any): Promise<any> {
-  const res = await fetch(`${BASE_URL}/api/subscription-plans/${id}`, {
+  const res = await customFetch(`${BASE_URL}/api/subscription-plans/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -405,7 +406,7 @@ export async function updateSubscriptionPlan(id: string, plan: any): Promise<any
 }
 
 export async function deleteSubscriptionPlan(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/subscription-plans/${id}`, {
+  const res = await customFetch(`${BASE_URL}/api/subscription-plans/${id}`, {
     method: "DELETE",
     headers: { ...getAuthHeaders() }
   });
@@ -416,7 +417,7 @@ export async function updateSubscriptionStatus(subscriptionId: string, status: s
   const url = new URL(`${BASE_URL}/api/admin/subscriptions/${subscriptionId}/status`);
   url.searchParams.append("status", status);
 
-  const res = await fetch(url.toString(), {
+  const res = await customFetch(url.toString(), {
     method: "PATCH",
     headers: {
       ...getAuthHeaders()
@@ -432,7 +433,7 @@ export async function updateSubscriptionStatus(subscriptionId: string, status: s
 }
 
 export async function getNotifications(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/notifications`, {
+  const res = await customFetch(`${BASE_URL}/api/notifications`, {
     headers: { ...getAuthHeaders() }
   });
   if (!res.ok) {
@@ -444,7 +445,7 @@ export async function getNotifications(): Promise<any[]> {
 }
 
 export async function markNotificationAsRead(id: string): Promise<any> {
-  const res = await fetch(`${BASE_URL}/api/notifications/${id}/read`, {
+  const res = await customFetch(`${BASE_URL}/api/notifications/${id}/read`, {
     method: "PATCH",
     headers: { ...getAuthHeaders() }
   });
@@ -455,7 +456,7 @@ export async function markNotificationAsRead(id: string): Promise<any> {
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/notifications/read-all`, {
+  const res = await customFetch(`${BASE_URL}/api/notifications/read-all`, {
     method: "POST",
     headers: { ...getAuthHeaders() }
   });
@@ -465,7 +466,7 @@ export async function markAllNotificationsAsRead(): Promise<void> {
 }
 
 export async function deleteNotification(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/notifications/${id}`, {
+  const res = await customFetch(`${BASE_URL}/api/notifications/${id}`, {
     method: "DELETE",
     headers: { ...getAuthHeaders() }
   });
@@ -475,7 +476,7 @@ export async function deleteNotification(id: string): Promise<void> {
 }
 
 export async function broadcastCustomNotification(payload: { title: string, message: string, type: string, targetRole: string, targetUrl?: string, targetUserId?: string }): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/admin/notifications/broadcast`, {
+  const res = await customFetch(`${BASE_URL}/api/admin/notifications/broadcast`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -489,7 +490,7 @@ export async function broadcastCustomNotification(payload: { title: string, mess
 }
 
 export async function fetchAdminNotifications(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/admin/notifications`, {
+  const res = await customFetch(`${BASE_URL}/api/admin/notifications`, {
     headers: { ...getAuthHeaders() }
   });
   if (!res.ok) {
@@ -499,7 +500,7 @@ export async function fetchAdminNotifications(): Promise<any[]> {
 }
 
 export async function fetchAllUsers(): Promise<any[]> {
-  const res = await fetch(`${BASE_URL}/api/admin/users`, {
+  const res = await customFetch(`${BASE_URL}/api/admin/users`, {
     headers: { ...getAuthHeaders() }
   });
   if (!res.ok) {
@@ -514,7 +515,7 @@ export async function fetchAllUsers(): Promise<any[]> {
 
 /** Returns whether the owner has completed Stripe onboarding. */
 export async function getStripeConnectStatus(): Promise<{ stripeConnected: boolean; message?: string | null }> {
-  const res = await fetch(`${BASE_URL}/api/payments/connect/status`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/connect/status`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) throw new Error("Failed to fetch Stripe connect status");
@@ -527,7 +528,7 @@ export async function getStripeConnectStatus(): Promise<{ stripeConnected: boole
 
 /** Initiates Stripe Connect onboarding and returns the redirect URL. */
 export async function connectStripe(): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/payments/connect`, {
+  const res = await customFetch(`${BASE_URL}/api/payments/connect`, {
     method: "POST",
     headers: { ...getAuthHeaders() },
   });
