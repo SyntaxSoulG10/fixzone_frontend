@@ -120,15 +120,7 @@ export default function ServiceStationsPage() {
         }
     };
 
-    const handleUpdateStatus = async (id: string, status: string) => {
-        try {
-            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${id}/status?status=${status}`);
-            toast.success(`Station status updated to ${status}`);
-            fetchStations();
-        } catch (error) {
-            toast.error("Failed to update status");
-        }
-    };
+
 
     const openReviewModal = (station: Station) => {
         setSelectedStation(station);
@@ -183,26 +175,12 @@ export default function ServiceStationsPage() {
         {
 
 
-            header: "Actions",
+            header: "View",
             accessor: (row: Station) => (
                 <div className="flex items-center gap-2">
-                    {row.status === 'Active' ? (
-                        <button onClick={() => {
-                            alert("Are you sure you want to suspend this service center?");
-                            handleUpdateStatus(row.id, 'SUSPENDED');
-                        }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Suspend"><FiSlash /></button>
-                    ) : (
-
-
-
-
-
-                        <button onClick={() => {
-                                alert("Are you sure you want to re-activate this service center?");
-                                handleUpdateStatus(row.id, 'APPROVED');}}className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reactivate"><FiCheckCircle /></button>
-                    )}
-                    <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details"><FiFileText /></button>
-                    
+                    <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
+                        <FiFileText />
+                    </button>
                 </div>
             )
         }
