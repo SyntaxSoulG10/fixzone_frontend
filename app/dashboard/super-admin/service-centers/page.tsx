@@ -47,20 +47,32 @@ export default function ServiceStationsPage() {
         try {
             setLoading(true);
             const response = await axios.get(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers`);
-            const transformed = response.data.map((s: any) => ({
-                id: s.centerId || s.id,
-                name: s.name,
-                owner: s.ownerName || (s.ownerId ? `Owner: ${s.ownerId.substring(0,8)}` : 'Unknown Owner'),
-                location: s.address || 'Not Specified',
-                bookings: 0,
-                revenue: "Rs 0",
-                status: s.status === 'APPROVED' ? 'Active' : s.status === 'PENDING' ? 'Pending' : s.status === 'REJECTED' ? 'Rejected' : 'Suspended',
-                plan: s.plan || 'Standard',
-                businessRegUrl: s.businessRegUrl,
-                nicUrl: s.nicUrl,
-                taxIdUrl: s.taxIdUrl,
-                rejectionReason: s.rejectionReason
-            }));
+            const transformed = response.data.map((s: any) => {
+                const rawStatus = String(s.status ?? '').toUpperCase();
+                const isActive = s.isActive !== false && rawStatus !== 'SUSPENDED';
+                const normalizedStatus = rawStatus === 'APPROVED' && isActive
+                    ? 'Active'
+                    : rawStatus === 'PENDING'
+                        ? 'Pending'
+                        : rawStatus === 'REJECTED'
+                            ? 'Rejected'
+                            : 'Suspended';
+
+                return {
+                    id: s.centerId || s.id,
+                    name: s.name,
+                    owner: s.ownerName || (s.ownerId ? `Owner: ${s.ownerId.substring(0,8)}` : 'Unknown Owner'),
+                    location: s.address || 'Not Specified',
+                    bookings: 0,
+                    revenue: "Rs 0",
+                    status: normalizedStatus,
+                    plan: s.plan || 'Standard',
+                    businessRegUrl: s.businessRegUrl,
+                    nicUrl: s.nicUrl,
+                    taxIdUrl: s.taxIdUrl,
+                    rejectionReason: s.rejectionReason
+                };
+            });
             setStations(transformed);
         } catch (error) {
             console.error("Error fetching stations:", error);
