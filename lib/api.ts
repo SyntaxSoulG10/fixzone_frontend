@@ -35,7 +35,7 @@ export interface PaymentInitResponse {
 }
 
 export async function getServiceCenters(): Promise<ServiceCenter[]> {
-  const res = await customFetch(`${BASE_URL}/api/service-centers`, {
+  const res = await customFetch(`${BASE_URL}/api/service-centers?size=100`, {
     headers: {
       ...getAuthHeaders()
     }
@@ -45,7 +45,9 @@ export async function getServiceCenters(): Promise<ServiceCenter[]> {
     throw new Error("Failed to load service centers");
   }
 
-  return res.json();
+  const data = await res.json();
+  const list: ServiceCenter[] = Array.isArray(data) ? data : (data.content || data.data || []);
+  return list;
 }
 
 export async function getServiceCenterDetails(centerId: string): Promise<any> {
@@ -244,6 +246,24 @@ export async function reschedulePayment(bookingId: number): Promise<string> {
   }
   return res.text(); // Should return the new Stripe checkout URL
 }
+
+/**
+ * Finds the internal payment ID for a PENDING_PAYMENT booking UUID.
+ * Used by the "Proceed to Payment" button in the bookings history page.
+ */
+export async function getPaymentIdByBooking(bookingUUID: string): Promise<number | null> {
+  const res = await fetch(`${BASE_URL}/api/payments/by-booking/${bookingUUID}`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const errorMsg = await res.text();
+    throw new Error(errorMsg || "Failed to find payment for booking");
+  }
+  const data = await res.json();
+  return data.paymentId ?? null;
+}
+
 
 export async function getMyBookings(): Promise<any[]> {
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -540,4 +560,12 @@ export async function connectStripe(): Promise<string> {
   } catch {
     return text;
   }
+}
+
+export async function getSubscriptionBillingHistory(subscriptionId: string): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/api/subscriptions/${subscriptionId}/billing`, {
+    headers: { ...getAuthHeaders() }
+  });
+  if (!res.ok) throw new Error("Failed to load billing history");
+  return res.json();
 }

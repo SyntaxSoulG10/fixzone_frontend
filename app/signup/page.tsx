@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase, FiCheck, FiX } from "react-icons/fi";
 import { APP_CONFIG } from "@/utils/config";
 
 export default function SignupPage() {
@@ -21,9 +21,41 @@ export default function SignupPage() {
     const [companyName, setCompanyName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
 
+    const [validations, setValidations] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+    });
+
+    useEffect(() => {
+        setValidations({
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        });
+    }, [password]);
+
+    const isPasswordStrong = Object.values(validations).every(Boolean);
+    const metConditionsCount = Object.values(validations).filter(Boolean).length;
+    const doPasswordsMatch = password === confirmPassword && password.length > 0;
+
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!role) return;
+
+        if (!isPasswordStrong) {
+            setError("Please ensure your password meets all requirements.");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
 
         setLoading(true);
 
@@ -245,10 +277,37 @@ export default function SignupPage() {
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 required
-                                                className="block w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
+                                                className={`block w-full pl-9 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm ${password.length > 0 && !isPasswordStrong ? 'border-red-300' : 'border-gray-200'}`}
                                                 placeholder="••••••••"
                                             />
                                         </div>
+                                    </div>
+
+                                    {/* Password Strength Indicator */}
+                                    <div className="mt-2 space-y-3">
+                                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-300 ${metConditionsCount === 5 ? 'bg-green-500' : (metConditionsCount >= 3 ? 'bg-orange-500' : 'bg-red-500')}`}
+                                                style={{ width: `${(metConditionsCount / 5) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        <ul className="text-sm space-y-1 pl-1">
+                                            <li className={`flex items-center gap-2 ${validations.length ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.length ? 'bg-green-600' : 'bg-red-500'}`}></div> At least 8 characters
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.uppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.uppercase ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains an uppercase letter
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.lowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.lowercase ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a lowercase letter
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.number ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.number ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a number
+                                            </li>
+                                            <li className={`flex items-center gap-2 ${validations.special ? 'text-green-600' : 'text-red-500'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${validations.special ? 'bg-green-600' : 'bg-red-500'}`}></div> Contains a special character
+                                            </li>
+                                        </ul>
                                     </div>
 
                                     <div>
@@ -263,10 +322,16 @@ export default function SignupPage() {
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 required
-                                                className="block w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm"
+                                                className={`block w-full pl-9 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm ${confirmPassword.length > 0 && !doPasswordsMatch ? 'border-red-300' : (confirmPassword.length > 0 && doPasswordsMatch ? 'border-green-300' : 'border-gray-200')}`}
                                                 placeholder="••••••••"
                                             />
                                         </div>
+                                        {confirmPassword.length > 0 && !doPasswordsMatch && (
+                                            <p className="mt-1 text-xs text-red-500">Passwords do not match</p>
+                                        )}
+                                        {confirmPassword.length > 0 && doPasswordsMatch && (
+                                            <p className="mt-1 text-xs text-green-600 flex items-center"><FiCheck className="mr-1" /> Passwords match</p>
+                                        )}
                                     </div>
 
                                     <div className="pt-4 flex items-center justify-between gap-3">
@@ -281,7 +346,7 @@ export default function SignupPage() {
                                         <button
                                             type="submit"
                                             id="btn-submit"
-                                            disabled={loading}
+                                            disabled={loading || !isPasswordStrong || !doPasswordsMatch}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-lg shadow-orange-200 text-white bg-[#FF8C42] hover:bg-[#F97316] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8C42] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm"
                                         >
                                             {loading ? (

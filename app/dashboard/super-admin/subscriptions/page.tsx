@@ -6,9 +6,10 @@ import Table from "@/components/UI/Table";
 import StatCard from "@/components/dashboard/StatCard";
 import { FiActivity, FiClock, FiSearch, FiFilter, FiDownload, FiCreditCard, FiBell, FiSlash, FiFileText, FiCheckCircle, FiTrendingUp, FiX, FiExternalLink, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import { updateSubscriptionStatus } from "@/lib/api";
+import { updateSubscriptionStatus, getSubscriptionBillingHistory } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import Button from "@/components/UI/Button";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton } from "@mui/material";
 
 interface BillingRecord {
     id: string;
@@ -18,26 +19,17 @@ interface BillingRecord {
     method: string;
 }
 
-const MOCK_BILLING_HISTORY: Record<string, BillingRecord[]> = {
-    "SUB-001": [
-        { id: "INV-2024-001", date: "Jan 15, 2024", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
-        { id: "INV-2023-012", date: "Dec 15, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
-        { id: "INV-2023-011", date: "Nov 15, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 4242" },
-    ],
-    "SUB-002": [
-        { id: "INV-2024-002", date: "Feb 01, 2024", amount: "Rs. 9,900", status: "Paid", method: "MasterCard **** 8888" },
-        { id: "INV-2024-001", date: "Jan 01, 2024", amount: "Rs. 9,900", status: "Paid", method: "MasterCard **** 8888" },
-    ],
-    "SUB-003": [
-        { id: "INV-2024-001", date: "Dec 10, 2023", amount: "Rs. 19,900", status: "Paid", method: "Visa **** 1111" },
-    ]
-};
+
 
 export default function SubscriptionsPage() {
     const { subscriptionsData, analyticsData, refreshAll } = useDashboardData();
     const [selectedSub, setSelectedSub] = useState<any | null>(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
+    const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [totalPaid, setTotalPaid] = useState(0);
+    const [lastPaymentDate, setLastPaymentDate] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 5;
@@ -88,9 +80,64 @@ export default function SubscriptionsPage() {
 
 
 
-    const openBillingHistory = (sub: any) => {
+    const openBillingHistory = async (sub: any) => {
         setSelectedSub(sub);
         setIsHistoryModalOpen(true);
+        setIsBillingLoading(true);
+        setBillingHistory([]);
+        try {
+            const data = await getSubscriptionBillingHistory(sub.id);
+            const formattedData = data.map((item: any) => ({
+                id: item.invoiceId,
+                date: new Date(item.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                amount: `Rs. ${item.amount.toLocaleString()}`,
+                status: item.status,
+                method: item.method
+            }));
+            setBillingHistory(formattedData);
+            
+            const total = data.reduce((sum: number, item: any) => sum + item.amount, 0);
+            setTotalPaid(total);
+            
+            if (data.length > 0) {
+                setLastPaymentDate(new Date(data[0].paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
+            } else {
+                setLastPaymentDate(null);
+            }
+        } catch (error) {
+            toast.error("Failed to load billing history");
+        } finally {
+            setIsBillingLoading(false);
+        }
+    };
+
+    const handleExportCSV = () => {
+        if (!billingHistory || billingHistory.length === 0) {
+            toast.error("No billing data to export");
+            return;
+        }
+        
+        const headers = ["Invoice ID", "Date", "Amount", "Status", "Payment Method"];
+        
+        const csvRows = [
+            headers.join(","),
+            ...billingHistory.map(row => 
+                [row.id, `"${row.date}"`, `"${row.amount}"`, row.status, `"${row.method}"`].join(",")
+            )
+        ];
+        
+        const csvContent = csvRows.join("\n");
+        
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `billing-history-${selectedSub?.companyName?.replace(/\s+/g, '-').toLowerCase() || 'export'}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success("CSV exported successfully");
     };
 
     const columns = [
@@ -108,7 +155,6 @@ export default function SubscriptionsPage() {
                             <div className="font-bold text-slate-800 text-sm leading-snug">{row.companyName}</div>
                             {row.plan?.isPopular && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded-full tracking-wide">PRO</span>}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">#{row.id?.substring(0, 8)}</div>
                     </div>
                 </div>
             ),
@@ -238,15 +284,6 @@ export default function SubscriptionsPage() {
                 </span>
             ),
             cellClassName: "align-middle text-center"
-        },
-        {
-            header: "Action",
-            accessor: (row: BillingRecord) => (
-                <button className="text-slate-400 hover:text-orange-500 transition-colors p-1" title="Download Invoice">
-                    <FiDownload className="w-4 h-4" />
-                </button>
-            ),
-            cellClassName: "align-middle text-center"
         }
     ];
 
@@ -347,73 +384,93 @@ export default function SubscriptionsPage() {
             )}
             </div>
 
-            {/* Billing History Modal */}
-            {isHistoryModalOpen && selectedSub && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <div className="flex items-center gap-4">
+            {/* Billing History MUI Dialog */}
+            <Dialog 
+                open={Boolean(isHistoryModalOpen && selectedSub)} 
+                onClose={() => setIsHistoryModalOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.5rem', overflow: 'hidden' } }}
+            >
+                {selectedSub && (
+                    <>
+                        <DialogTitle sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
                                     <FiFileText className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-800">Billing History</h3>
-                                    <p className="text-sm text-slate-500">{selectedSub.stationName} • {selectedSub.plan} Plan</p>
+                                    <Typography variant="h6" fontWeight="bold" color="#0f172a">Billing History</Typography>
+                                    <Typography variant="caption" color="text.secondary">{selectedSub.companyName} • {selectedSub.plan?.name || selectedSub.planType} Plan</Typography>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsHistoryModalOpen(false)}
-                                className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-all"
-                            >
+                            <IconButton onClick={() => setIsHistoryModalOpen(false)} size="small">
                                 <FiX className="text-xl" />
-                            </button>
-                        </div>
+                            </IconButton>
+                        </DialogTitle>
 
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="mb-6 grid grid-cols-3 gap-4">
+                        <DialogContent sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</p>
-                                    <p className="text-sm font-bold text-green-600 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                        Active
+                                    <p className={`text-sm font-bold flex items-center gap-1.5 ${
+                                        selectedSub.status === 'PREMIUM_ACTIVE' || selectedSub.status === 'ACTIVE' 
+                                            ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            selectedSub.status === 'PREMIUM_ACTIVE' || selectedSub.status === 'ACTIVE'
+                                                ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                                        }`}></span>
+                                        {(selectedSub.status || 'UNKNOWN').replace('_', ' ')}
                                     </p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
-                                    <p className="text-sm font-bold text-slate-800">Rs. 59,700</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {totalPaid > 0 ? `Rs. ${totalPaid.toLocaleString()}` : 'Rs. 0'}
+                                    </p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Last Payment</p>
-                                    <p className="text-sm font-bold text-slate-800">Jan 15, 2024</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {lastPaymentDate || 'N/A'}
+                                    </p>
                                 </div>
                             </div>
 
                             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                                <Table
-                                    columns={billingColumns}
-                                    data={MOCK_BILLING_HISTORY[selectedSub.id] || MOCK_BILLING_HISTORY["SUB-001"]}
-                                    keyField="id"
-                                />
+                                {isBillingLoading ? (
+                                    <div className="p-8 text-center text-slate-500 font-medium">Loading billing history...</div>
+                                ) : billingHistory.length > 0 ? (
+                                    <Table
+                                        columns={billingColumns}
+                                        data={billingHistory}
+                                        keyField="id"
+                                    />
+                                ) : (
+                                    <div className="p-8 text-center text-slate-500 font-medium">No billing history available.</div>
+                                )}
                             </div>
-                        </div>
+                        </DialogContent>
 
-                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                            <p className="text-xs text-slate-400 italic">Showing last 12 months record.</p>
+                        <DialogActions sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="caption" color="text.secondary" fontStyle="italic">Showing last 12 months record.</Typography>
                             <div className="flex gap-3">
-                                <button className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-all">
+                                <Button variant="secondary" onClick={handleExportCSV} className="px-4 py-2">
                                     Export CSV
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     onClick={() => setIsHistoryModalOpen(false)}
-                                    className="px-6 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all shadow-md"
+                                    className="px-6 py-2 bg-slate-900 hover:bg-slate-800"
                                 >
                                     Done
-                                </button>
+                                </Button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
         </div>
     );
 }

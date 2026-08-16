@@ -3,7 +3,6 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
-import PageHeader from "@/components/UI/PageHeader";
 import BookingHeader from "@/components/bookings/BookingHeader";
 import PackageCard, { Package } from "@/components/bookings/PackageCard";
 import DatePicker from "@/components/bookings/DatePicker";
@@ -63,7 +62,7 @@ const TIME_SLOTS: TimeSlot[] = [
 
 // Vehicles will be fetched from API
 
-const STATIONS_MOCK = [
+const STATIONS_MOCK: StationDetail[] = [
   { 
     id: "11111111-1111-1111-1111-111111111111", 
     name: "Janaka Motors HQ", 
@@ -71,9 +70,41 @@ const STATIONS_MOCK = [
     image: "/garages/garage01.jpg", 
     rating: 4.8, 
     reviews: 120,
-    openStatus: "Open until 7:00 PM"
+    openStatus: "Open until 7:00 PM",
+    contactPhone: null,
+    openingHours: null,
+    paymentReady: true,
+    paymentStatusMessage: "Online payment is enabled for this branch."
   },
 ];
+
+type StationDetail = {
+  id: string;
+  name: string;
+  location: string;
+  image: string;
+  rating: number;
+  reviews: number;
+  openStatus: string;
+  contactPhone: string | null;
+  openingHours: string | null;
+  paymentReady: boolean;
+  paymentStatusMessage: string;
+};
+
+type BackendPackage = {
+  packageId?: string;
+  name?: string;
+  description?: string;
+  basePrice?: number;
+  estimatedDurationMins?: number;
+  type?: string | null;
+};
+
+type BackendVehicle = {
+  id?: string;
+  vehicleType?: string | null;
+};
 
 export default function StationDetailPage() {
   const params = useParams() as { stationId: string };
@@ -81,7 +112,7 @@ export default function StationDetailPage() {
   const { setBookingData } = useBooking();
 
   // --- Data State ---
-  const [station, setStation] = useState<any>(null);
+  const [station, setStation] = useState<StationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [initLoading, setInitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +126,7 @@ export default function StationDetailPage() {
   const [selectedVehicleType, setSelectedVehicleType] = useState<string | null>(null);
   const [specialRequest, setSpecialRequest] = useState("");
   const [userVehicles, setUserVehicles] = useState<Vehicle[]>([]);
-  const [rawApiVehicles, setRawApiVehicles] = useState<any[]>([]);
+  const [rawApiVehicles, setRawApiVehicles] = useState<BackendVehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
 
@@ -115,17 +146,43 @@ export default function StationDetailPage() {
         setLoading(true);
         const data = await getServiceCenterDetails(params.stationId);
         
-        // Transform backend data to match UI components
+        // Transform backend data to match UI components.
+        // Some service centers may report mixed legacy flags, so a center should remain
+        // payment-ready when any positive readiness signal is true and only be blocked
+        // when all known payment flags are explicitly false.
+        const paymentFlags = [
+          data.paymentEnabled,
+          data.stripeConnected,
+          data.stripeConnectEnabled,
+          data.canAcceptPayments,
+        ] as Array<boolean | string | null | undefined>;
+        const hasPositiveFlag = paymentFlags.some((flag) => {
+          const normalized = String(flag).toLowerCase();
+          return flag === true || normalized === "true";
+        });
+        const hasOnlyNegativeFlags =
+          paymentFlags.length > 0 &&
+          paymentFlags.every((flag) => {
+            const normalized = String(flag).toLowerCase();
+            return flag === false || normalized === "false" || flag == null || normalized === "null" || normalized === "undefined";
+          });
+        const paymentReady = hasPositiveFlag ? true : !hasOnlyNegativeFlags;
+
         const transformedStation = {
           id: data.centerId,
           name: data.name,
           location: data.address || "Unknown Location",
+          googleMapsUrl: data.googleMapsUrl || null,
           image: "/garages/garage01.jpg",
           rating: data.rating || 4.5,
           reviews: data.customerRatings?.length || 0,
           openStatus: "Contact center for hours",
           contactPhone: data.contactPhone || null,
           openingHours: data.openingHours || null,
+          paymentReady,
+          paymentStatusMessage: paymentReady
+            ? "Online payment is enabled for this branch."
+            : "This branch is active but is not yet accepting online payments. Please contact the service center or choose another branch.",
         };
         
         setStation(transformedStation);
@@ -134,11 +191,11 @@ export default function StationDetailPage() {
         try {
           const pkgData = await getServicePackagesByCenter(params.stationId, selectedVehicleType ?? undefined);
           if (pkgData && pkgData.length > 0) {
-            const transformedPackages = pkgData.map((pkg: any) => ({
-              id: pkg.packageId,
-              name: pkg.name,
-              description: pkg.description,
-              price: pkg.basePrice,
+            const transformedPackages = pkgData.map((pkg: BackendPackage) => ({
+              id: pkg.packageId ?? "",
+              name: pkg.name ?? "Service Package",
+              description: pkg.description ?? "Standard service package",
+              price: pkg.basePrice ?? 0,
               duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
               image: "/images/bookings/package-gold-car.png",
               features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
@@ -209,11 +266,11 @@ export default function StationDetailPage() {
       try {
         const pkgData = await getServicePackagesByCenter(params.stationId, selectedVehicleType ?? undefined);
         if (pkgData && pkgData.length > 0) {
-          const transformedPackages = pkgData.map((pkg: any) => ({
-            id: pkg.packageId,
-            name: pkg.name,
-            description: pkg.description,
-            price: pkg.basePrice,
+          const transformedPackages = pkgData.map((pkg: BackendPackage) => ({
+            id: pkg.packageId ?? "",
+            name: pkg.name ?? "Service Package",
+            description: pkg.description ?? "Standard service package",
+            price: pkg.basePrice ?? 0,
             duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
             image: "/images/bookings/package-gold-car.png",
             features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
@@ -227,7 +284,7 @@ export default function StationDetailPage() {
       }
     };
     fetchPackages();
-  }, [selectedVehicleType, params.stationId]);
+  }, [params.stationId, selectedVehicleType]);
 
   // --- Helpers ---
   const selectedVehicle = useMemo(() => {
@@ -236,7 +293,7 @@ export default function StationDetailPage() {
 
   const handleVehicleSelect = (id: string) => {
     setSelectedVehicleId(id);
-    const rawVehicle = rawApiVehicles.find((rv: any) => rv.id === id);
+    const rawVehicle = rawApiVehicles.find((rv: BackendVehicle) => rv.id === id);
     setSelectedVehicleType(rawVehicle?.vehicleType ?? null);
   };
 
@@ -246,6 +303,11 @@ export default function StationDetailPage() {
 
   // Handle proceed to checkout
   const handleProceed = async () => {
+    if (!station?.paymentReady) {
+      setError("This branch is active but is not accepting online payments yet. Please choose a different service center.");
+      return;
+    }
+
     if (isValid && selectedPackage && selectedDate && selectedTime) {
       try {
         setInitLoading(true);
@@ -276,12 +338,12 @@ export default function StationDetailPage() {
         });
 
         router.push("/dashboard/customer/checkout");
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Initialization error:", err);
-        if (err.message === "TIME_SLOT_UNAVAILABLE") {
+        const message = err instanceof Error ? err.message : "Failed to initialize booking. Please try again.";
+        if (message === "TIME_SLOT_UNAVAILABLE") {
           setError("Sorry, this time slot was just taken. Please select another time.");
         } else {
-          const message = err.message || "Failed to initialize booking. Please try again.";
           setError(message);
         }
       } finally {
@@ -316,6 +378,12 @@ export default function StationDetailPage() {
           <BookingHeader station={station} />
 
           {/* Package Selection */}
+          {!station?.paymentReady && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+              {station?.paymentStatusMessage || "This branch is not accepting online payments yet."}
+            </div>
+          )}
+
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-black text-slate-800">Available Packages</h2>
@@ -327,7 +395,7 @@ export default function StationDetailPage() {
                   key={pkg.id} 
                   pkg={pkg} 
                   isSelected={selectedPackage?.id === pkg.id}
-                  onSelect={setSelectedPackage}
+                  onSelect={station?.paymentReady ? setSelectedPackage : () => undefined}
                 />
               ))}
             </div>
@@ -341,6 +409,12 @@ export default function StationDetailPage() {
             
             <div className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-10">
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">Book Your Service</h2>
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 font-medium">
+                  {error}
+                </div>
+              )}
               
               <DatePicker 
                 selectedDate={selectedDate} 
@@ -363,7 +437,7 @@ export default function StationDetailPage() {
                 />
               ) : (
                 <div className="p-6 bg-orange-50 border border-orange-100 rounded-2xl text-center space-y-3">
-                  <p className="text-sm font-medium text-orange-800">You don't have any vehicles yet.</p>
+                  <p className="text-sm font-medium text-orange-800">You don&apos;t have any vehicles yet.</p>
                   <Link href="/dashboard/customer/profile">
                     <button className="text-xs font-bold text-orange-600 hover:underline">
                       + Add a vehicle to your profile

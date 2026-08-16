@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { FiCalendar, FiCheckCircle, FiClock, FiList, FiPlus, FiChevronLeft, FiChevronRight, FiEdit2, FiX } from "react-icons/fi";
 import { createBooking, editExistingBooking } from "@/services/bookingService";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 // Helper to format date to YYYY-MM-DD in local time
 const formatYMD = (date: Date) => {
@@ -17,6 +19,11 @@ export default function BookingsPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -95,7 +102,7 @@ export default function BookingsPage() {
             };
 
             await createBooking(newBookingRequest);
-            alert("Booking Created successfully!");
+            showSnackbar("Booking Created successfully!", "success");
             
             // Refresh global context data so the dashboard and other components update immediately
             if (refreshBookings) {
@@ -106,7 +113,7 @@ export default function BookingsPage() {
             setFormData({ date: "", time: "", customer: "", vehicle: "", vehicleNumber: "", service: "" });
         } catch (error) {
             console.error("Failed to create booking:", error);
-            alert("Failed to create booking. (DB Quota exceeded or invalid data)");
+            showSnackbar("Failed to create booking. (DB Quota exceeded or invalid data)", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -136,14 +143,14 @@ export default function BookingsPage() {
                 specialRequest: `Customer: ${editFormData.customer}, Vehicle: ${editFormData.vehicle}, Vehicle Number: ${editFormData.vehicleNumber}, Service: ${editFormData.service}`
             };
             await editExistingBooking(editingBookingId, updatePayload);
-            alert("Booking updated successfully!");
+            showSnackbar("Booking updated successfully!", "success");
             if (refreshBookings) {
                 await refreshBookings();
             }
             setIsEditModalOpen(false);
         } catch (error) {
             console.error("Failed to update booking:", error);
-            alert("Failed to update booking.");
+            showSnackbar("Failed to update booking.", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -479,92 +486,104 @@ export default function BookingsPage() {
                 </div>
             )}
 
-            {/* Edit Booking Modal */}
-            {isEditModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
-                        <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50">
-                            <h3 className="font-bold text-slate-900 text-lg">Edit Booking Details</h3>
-                            <button type="button" onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                                <FiX size={20} />
-                            </button>
+            {/* Edit Booking MUI Dialog */}
+            <Dialog 
+                open={isEditModalOpen} 
+                onClose={() => setIsEditModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: '1.25rem', overflow: 'hidden' } }}
+            >
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', fontWeight: 'bold' }}>
+                    Edit Booking Details
+                    <IconButton onClick={() => setIsEditModalOpen(false)} size="small">
+                        <FiX />
+                    </IconButton>
+                </DialogTitle>
+                
+                <form onSubmit={handleEditSubmit}>
+                    <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-600 uppercase">Date</label>
+                                <input 
+                                    type="date" required
+                                    value={editFormData.date}
+                                    onChange={e => setEditFormData({...editFormData, date: e.target.value})}
+                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-600 uppercase">Time</label>
+                                <input 
+                                    type="time" required
+                                    value={editFormData.time}
+                                    onChange={e => setEditFormData({...editFormData, time: e.target.value})}
+                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
                         </div>
                         
-                        <form onSubmit={handleEditSubmit} className="p-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-600 uppercase">Date</label>
-                                    <input 
-                                        type="date" required
-                                        value={editFormData.date}
-                                        onChange={e => setEditFormData({...editFormData, date: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-600 uppercase">Time</label>
-                                    <input 
-                                        type="time" required
-                                        value={editFormData.time}
-                                        onChange={e => setEditFormData({...editFormData, time: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-                            </div>
-                            
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-600 uppercase">Customer Name</label>
+                            <input 
+                                type="text" required
+                                value={editFormData.customer}
+                                onChange={e => setEditFormData({...editFormData, customer: e.target.value})}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-600 uppercase">Customer Name</label>
+                                <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle</label>
                                 <input 
                                     type="text" required
-                                    value={editFormData.customer}
-                                    onChange={e => setEditFormData({...editFormData, customer: e.target.value})}
+                                    value={editFormData.vehicle}
+                                    onChange={e => setEditFormData({...editFormData, vehicle: e.target.value})}
                                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle</label>
-                                    <input 
-                                        type="text" required
-                                        value={editFormData.vehicle}
-                                        onChange={e => setEditFormData({...editFormData, vehicle: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle No.</label>
-                                    <input 
-                                        type="text"
-                                        value={editFormData.vehicleNumber}
-                                        onChange={e => setEditFormData({...editFormData, vehicleNumber: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle No.</label>
+                                <input 
+                                    type="text"
+                                    value={editFormData.vehicleNumber}
+                                    onChange={e => setEditFormData({...editFormData, vehicleNumber: e.target.value})}
+                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                />
                             </div>
+                        </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-600 uppercase">Service</label>
-                                <input 
-                                    type="text" required
-                                    value={editFormData.service}
-                                    onChange={e => setEditFormData({...editFormData, service: e.target.value})}
-                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            
-                            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100 mt-5">
-                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary-hover rounded-lg shadow-sm transition-colors disabled:opacity-50">
-                                    {isSubmitting ? "Saving..." : "Save Changes"}
-                                </button>
-                            </div>
-                        </form>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-600 uppercase">Service</label>
+                            <input 
+                                type="text" required
+                                value={editFormData.service}
+                                onChange={e => setEditFormData({...editFormData, service: e.target.value})}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                    </DialogContent>
+                    
+                    <div className="p-3 px-4 flex justify-end gap-2 border-t border-slate-100 bg-slate-50">
+                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200">
+                            Cancel
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-sm font-medium bg-orange-600 text-white hover:bg-orange-700 rounded-lg shadow-sm transition-colors disabled:opacity-50">
+                            {isSubmitting ? "Saving..." : "Save Changes"}
+                        </button>
                     </div>
-                </div>
-            )}
+                </form>
+            </Dialog>
+
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={4000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </div>
     );
 }

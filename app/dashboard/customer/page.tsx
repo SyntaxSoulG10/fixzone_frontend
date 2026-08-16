@@ -10,9 +10,11 @@ import {
   FiPlus,
   FiClock,
   FiZap,
+  FiMapPin,
+  FiStar,
 } from "react-icons/fi";
 import BookingCard from "@/components/bookings/BookingCard";
-import { getMyBookings, getNotifications } from "@/lib/api";
+import { getMyBookings, getNotifications, getServiceCenters } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
 import APP_CONFIG from "@/config";
 type Booking = {
@@ -98,14 +100,18 @@ export default function CustomerDashboard() {
   const [selectedDate, setSelectedDate] = useState(today.getDate());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [serviceCenters, setServiceCenters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Guest");
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("token");
     const storedName = localStorage.getItem("fullName");
     if (storedName) setUserName(storedName);
+    const storedPic = localStorage.getItem("profilePictureUrl");
+    if (storedPic) setProfilePictureUrl(storedPic);
 
     const fetchProfile = async () => {
       try {
@@ -117,6 +123,10 @@ export default function CustomerDashboard() {
           const fullName = data.fullName || `${data.firstName} ${data.secondName}`;
           setUserName(fullName);
           localStorage.setItem("fullName", fullName);
+          if (data.profilePictureUrl) {
+            setProfilePictureUrl(data.profilePictureUrl);
+            localStorage.setItem("profilePictureUrl", data.profilePictureUrl);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -124,6 +134,20 @@ export default function CustomerDashboard() {
     };
 
     if (token) fetchProfile();
+
+    // Fetch Service Centers dynamically from backend
+    getServiceCenters()
+      .then((list) => {
+        const valid = (list || []).filter((c: any) => {
+          const status = (c.status || "").toUpperCase();
+          return status !== "SUSPENDED" && status !== "REJECTED" && c.isActive !== false;
+        });
+        setServiceCenters(valid);
+      })
+      .catch((err) => {
+        console.error("Service centers fetch error:", err);
+        setServiceCenters([]);
+      });
 
     if (userId) {
       getMyBookings()
@@ -168,7 +192,7 @@ export default function CustomerDashboard() {
   const upcomingConfirmed = bookings
     .filter((b) => {
       const s = (b.status || "").toUpperCase();
-      return s === "CONFIRMED";
+      return s === "CONFIRMED" || s === "PENDING_PAYMENT";
     })
     .sort((a, z) => {
       const ta = new Date(a.bookingTime ? `${a.bookingDate}T${a.bookingTime}` : a.bookingDate).getTime() || 0;
@@ -180,7 +204,7 @@ export default function CustomerDashboard() {
 
   const activeBookingsCount = bookings.filter((b) => {
     const s = (b.status || "").toUpperCase();
-    return s === "CONFIRMED" || s === "IN_PROGRESS";
+    return s === "CONFIRMED" || s === "IN_PROGRESS" || s === "PENDING_PAYMENT";
   }).length;
 
   const completedCount = bookings.filter((b) => (b.status || "").toUpperCase() === "COMPLETED").length;
@@ -253,9 +277,11 @@ export default function CustomerDashboard() {
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             {/* avatar */}
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg shadow-orange-500/30 shrink-0">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg shadow-orange-500/30 shrink-0 overflow-hidden">
               {loading ? (
                 <span className="w-6 h-6 rounded-full bg-white/20 animate-pulse inline-block" />
+              ) : profilePictureUrl ? (
+                <img src={profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 getInitials(userName)
               )}
@@ -392,6 +418,84 @@ export default function CustomerDashboard() {
         </div>
       </section>
 
+      {/* ── Available Service Centers ─────────────────────── */}
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <SectionHeader
+          icon={<FiMapPin className="w-5 h-5" />}
+          title="Service Centers"
+          subtitle="Explore authorized maintenance hubs and book your appointment"
+          action={<ViewAllLink href="/dashboard/customer/bookings" label="View all centers" />}
+        />
+
+        <div className="p-5">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SkeletonBlock className="h-44" />
+              <SkeletonBlock className="h-44" />
+              <SkeletonBlock className="h-44" />
+            </div>
+          ) : serviceCenters.length === 0 ? (
+            <div className="py-10 text-center text-slate-400">
+              <FiMapPin className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+              <p className="text-sm font-medium">No service centers currently available.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {serviceCenters.slice(0, 6).map((center: any) => (
+                <div
+                  key={center.centerId || center.id}
+                  className="group relative bg-slate-50 hover:bg-white rounded-xl p-5 border border-slate-200 hover:border-orange-300 transition-all duration-200 hover:shadow-md flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors line-clamp-1 text-base">
+                        {center.name}
+                      </h3>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        ⭐ {center.rating || "4.8"}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-2 line-clamp-1">
+                      <FiMapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      {center.address || "Authorized Branch"}
+                    </p>
+
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
+                      <FiClock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{center.openingHours || "08:00 - 18:00"}</span>
+                    </div>
+
+                    {center.supportedVehicleBrands && center.supportedVehicleBrands.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {center.supportedVehicleBrands.slice(0, 3).map((brand: string, idx: number) => (
+                          <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 bg-white border border-slate-200 rounded-md text-slate-600">
+                            {brand}
+                          </span>
+                        ))}
+                        {center.supportedVehicleBrands.length > 3 && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 text-slate-400">
+                            +{center.supportedVehicleBrands.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/dashboard/customer/bookings/${center.centerId || center.id}`}
+                    className="w-full inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm group-hover:shadow"
+                  >
+                    <span>Book Service</span>
+                    <FiChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* ── Calendar + Notifications ───────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
@@ -511,7 +615,7 @@ export default function CustomerDashboard() {
                 return (
                   <Link
                     key={n.id || i}
-                    href="/dashboard/customer/notifications"
+                    href={`/dashboard/customer/notifications/${n.id}`}
                     className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all hover:shadow-sm ${
                       !isRead
                         ? "bg-orange-50/60 border-orange-200 hover:border-orange-300"

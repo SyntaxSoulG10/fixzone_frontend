@@ -57,15 +57,13 @@ export default function NotificationCenter() {
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this notification?")) {
-            try {
-                await deleteNotification(id);
-                toast.success("Notification deleted");
-                fetchNotifications();
-                window.dispatchEvent(new CustomEvent("forceUpdateNotifications"));
-            } catch (error) {
-                toast.error("Failed to delete notification");
-            }
+        try {
+            await deleteNotification(id);
+            toast.success("Notification deleted");
+            fetchNotifications();
+            window.dispatchEvent(new CustomEvent("forceUpdateNotifications"));
+        } catch (error) {
+            toast.error("Failed to delete notification");
         }
     };
 
@@ -142,8 +140,15 @@ export default function NotificationCenter() {
                 console.error(error);
             }
         }
+        const pathname = window.location.pathname;
+        const parts = pathname.split('/');
+        const dashboardIndex = parts.indexOf('dashboard');
+        const rolePart = dashboardIndex !== -1 && parts.length > dashboardIndex + 1 ? parts[dashboardIndex + 1] : "customer";
+
         if (n.targetUrl) {
             router.push(n.targetUrl);
+        } else {
+            router.push(`/dashboard/${rolePart}/notifications/${n.id}`);
         }
     };
 

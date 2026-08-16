@@ -6,6 +6,8 @@ import {
   refundPayment, 
   reschedulePayment 
 } from "@/lib/api";
+import { Alert } from "@mui/material";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 
 interface PaymentManagerProps {
   bookingId: number;
@@ -15,7 +17,8 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   useEffect(() => {
     fetchStatus();
@@ -37,16 +40,16 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
   };
 
   const handleRefund = async () => {
-    if (!confirm("Are you sure you want to cancel and receive a 20% refund?")) return;
-    
     try {
       setActionLoading(true);
       setMessage(null);
       await refundPayment(bookingId);
       setMessage({ text: "20% refunded successfully", type: 'success' });
       await fetchStatus(); // Reload status
+      setShowConfirmModal(false);
     } catch (err: any) {
       setMessage({ text: err.message || "Refund failed", type: 'error' });
+      setShowConfirmModal(false);
     } finally {
       setActionLoading(false);
     }
@@ -93,15 +96,18 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
       </div>
 
       {message && (
-        <div className={`p-3 rounded text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+        <Alert 
+          severity={message.type} 
+          sx={{ borderRadius: '10px', fontWeight: 500 }}
+        >
           {message.text}
-        </div>
+        </Alert>
       )}
 
       {paymentStatus === 'PAID' && (
         <div className="flex gap-4 pt-4 border-t">
           <button
-            onClick={handleRefund}
+            onClick={() => setShowConfirmModal(true)}
             disabled={actionLoading}
             className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors"
           >
@@ -117,6 +123,19 @@ export default function PaymentManager({ bookingId }: PaymentManagerProps) {
           </button>
         </div>
       )}
+
+      {/* Refund/Cancel Confirmation Modal */}
+      <ConfirmDialog
+        open={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Cancel and Refund Booking?"
+        message="Are you sure you want to cancel this booking? You will receive a 20% refund based on the cancellation policy."
+        confirmText="Confirm & Refund (20%)"
+        cancelText="Back"
+        variant="danger"
+        isLoading={actionLoading}
+        onConfirm={handleRefund}
+      />
     </div>
   );
 }

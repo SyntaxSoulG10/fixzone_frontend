@@ -8,5 +8,18 @@ export type ServiceCenter = {
   rating: number | null;
   isActive: boolean | null;
   supportedVehicleBrands: string[] | null;
+  status?: string | null;
+  googleMapsUrl?: string | null;
+  paymentEnabled?: boolean | null;
+  stripeConnected?: boolean | null;
+  stripeConnectEnabled?: boolean | null;
+  canAcceptPayments?: boolean | null;
+  latitude?: number;
+  longitude?: number;
+  servicePackages?: {
+    packageId: string;
+    name: string;
+    type: string | null;
+    vehicleType: string | null;
+  }[];
 };
-

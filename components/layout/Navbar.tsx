@@ -45,9 +45,14 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 const response = await axios.get(endpoint);
                 if (response.data) {
                     const data = response.data;
+                    
+                    // Check local storage for overrides (since profile page saves it there currently)
+                    const localProfileImage = localStorage.getItem("adminProfileImage") || localStorage.getItem("profileImage") || null;
+                    const localUserName = localStorage.getItem("userName") || localStorage.getItem("fullName") || null;
+                    
                     setUserData({
-                        fullName: data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName || ''}`.trim() : 'User'),
-                        profilePictureUrl: data.profilePictureUrl
+                        fullName: localUserName || data.fullName || data.companyName || (data.firstName ? `${data.firstName} ${data.secondName || ''}`.trim() : 'User'),
+                        profilePictureUrl: localProfileImage || data.profilePictureUrl
                     });
                 }
             }
@@ -180,8 +185,23 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 fetchNotifications();
             }
             setIsNotificationsOpen(false);
+
+            const roleToPath: Record<string, string> = {
+                "ROLE_COMPANY_OWNER": "company-owner",
+                "OWNER": "company-owner",
+                "ROLE_SERVICE_MANAGER": "service-manager",
+                "ROLE_CUSTOMER": "customer",
+                "CUSTOMER": "customer",
+                "company_owner": "company-owner",
+                "service_manager": "service-manager",
+                "customer": "customer"
+            };
+            const basePath = roleToPath[role || "customer"] || "customer";
+
             if (n.targetUrl) {
                 router.push(n.targetUrl);
+            } else {
+                router.push(`/dashboard/${basePath}/notifications/${n.id}`);
             }
         } catch (error) {
             console.error("Failed to handle notification click:", error);
@@ -219,16 +239,18 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
     const getNotificationsPageUrl = () => {
         if (!role) return "";
-        // Super admin and customer don't have a dedicated notifications page tab
+        // Super admin doesn't have a dedicated notifications page tab
         if (role === "ROLE_SUPER_ADMIN" || role === "super_admin") return "";
-        if (role === "ROLE_CUSTOMER" || role === "CUSTOMER" || role === "customer") return "";
 
         const roleToPath: Record<string, string> = {
             "ROLE_COMPANY_OWNER": "company-owner",
             "OWNER": "company-owner",
             "ROLE_SERVICE_MANAGER": "service-manager",
+            "ROLE_CUSTOMER": "customer",
+            "CUSTOMER": "customer",
             "company_owner": "company-owner",
             "service_manager": "service-manager",
+            "customer": "customer",
         };
 
         const path = roleToPath[role] || role.toLowerCase().replace('role_', '').replace(/_/g, '-');
@@ -389,7 +411,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                                     <FiUser className="text-slate-400" /> My Profile
                                 </Link>
                                 <Link
-                                    href="/settings"
+                                    href={`${getProfileUrl()}?tab=account`}
                                     className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
                                 >
                                     <FiSettings className="text-slate-400" /> Settings

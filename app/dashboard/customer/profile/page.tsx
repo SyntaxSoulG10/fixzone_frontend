@@ -732,18 +732,42 @@ export default function CustomerProfilePage() {
                   type="button"
                   role="switch"
                   aria-checked={settings.notificationsOn}
-                  onClick={() =>
-                    setSettings((prev) => ({ ...prev, notificationsOn: !prev.notificationsOn }))
-                  }
-                  className={`w-12 h-6 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${
+                  onClick={async () => {
+                    if (!settings.notificationsOn) {
+                      if ("Notification" in window) {
+                        if (Notification.permission === "granted") {
+                          setSettings((prev) => ({ ...prev, notificationsOn: true }));
+                        } else if (Notification.permission !== "denied") {
+                          const permission = await Notification.requestPermission();
+                          if (permission === "granted") {
+                            setSettings((prev) => ({ ...prev, notificationsOn: true }));
+                          } else {
+                            setSettingsError("Notification permission denied by browser.");
+                            setTimeout(() => setSettingsError(""), 3000);
+                          }
+                        } else {
+                          setSettingsError("Notification permission denied. Please enable it in your browser settings.");
+                          setTimeout(() => setSettingsError(""), 4000);
+                        }
+                      } else {
+                        setSettingsError("This browser does not support desktop notifications.");
+                        setTimeout(() => setSettingsError(""), 3000);
+                      }
+                    } else {
+                      setSettings((prev) => ({ ...prev, notificationsOn: false }));
+                    }
+                  }}
+                  className={`w-14 h-8 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${
                     settings.notificationsOn ? "bg-orange-500" : "bg-slate-200"
                   }`}
                 >
                   <span
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                    className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all flex items-center justify-center ${
                       settings.notificationsOn ? "left-7" : "left-1"
                     }`}
-                  />
+                  >
+                    {settings.notificationsOn && <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
+                  </span>
                 </button>
               </div>
 

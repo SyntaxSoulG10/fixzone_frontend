@@ -11,6 +11,8 @@ import {
   FiSearch,
   FiAlertTriangle,
   FiRefreshCw,
+  FiFilter,
+  FiX
 } from "react-icons/fi";
 import Button from "@/components/UI/Button";
 import type { ServiceCenter } from "@/types/service-center";
@@ -38,33 +40,44 @@ function computeOpenStatus(openingHours: string | null): string {
 
 type FetchState = "loading" | "success" | "empty" | "unauthorized" | "error";
 
-// ─── component ──────────────────────────────────────────────────────────────
-
 export default function BookServicePage() {
   const router = useRouter();
   const [fetchState, setFetchState] = useState<FetchState>("loading");
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadCenters = async () => {
-    setFetchState("loading");
-    setCenters([]);
+  // Filters State
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeDistance, setActiveDistance] = useState<string | null>(null);
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [activeAvailability, setActiveAvailability] = useState<string | null>(null);
 
+  type PaymentReadyCenter = Partial<ServiceCenter> & {
+    paymentEnabled?: boolean | null;
+    stripeConnected?: boolean | null;
+    stripeConnectEnabled?: boolean | null;
+    canAcceptPayments?: boolean | null;
+  };
+
+  const isPaymentReady = (center: PaymentReadyCenter) => {
+    // Centers are bookable unless explicitly deactivated
+    return center.isActive !== false;
+  };
+
+  const loadCenters = async (lat?: number, lng?: number, radius?: number) => {
+    setFetchState("loading");
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    if (!token) {
-      console.warn("[BookServicePage] No token found — redirecting to login");
-      router.push("/login");
-      return;
-    }
-
     try {
-      const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/service-centers`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let url = `${APP_CONFIG.API_BASE_URL}/api/service-centers?size=100`;
+      if (lat !== undefined && lng !== undefined && radius !== undefined) {
+        url = `${APP_CONFIG.API_BASE_URL}/api/service-centers/nearby?lat=${lat}&lng=${lng}&radius=${radius}&size=100`;
+      }
 
-      // Log full response info for debugging
-      console.log(`[BookServicePage] GET /api/service-centers → status ${res.status}`);
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
       if (res.status === 401) {
         console.warn("[BookServicePage] 401 Unauthorized — redirecting to login");
@@ -72,26 +85,32 @@ export default function BookServicePage() {
         return;
       }
 
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        console.error(`[BookServicePage] Error response body:`, body);
-        setFetchState("error");
-        return;
-      }
+      if (res.ok) {
+        const data = await res.json();
+        const actualData = data.content || data;
+        const list: ServiceCenter[] = Array.isArray(actualData) ? actualData : [];
+        const validCenters = list.filter((c) => {
+          const status = (c.status || "").toUpperCase();
+          if (status === "SUSPENDED" || status === "REJECTED" || c.isActive === false) {
+            return false;
+          }
+          return isPaymentReady(c);
+        });
 
-      const data = await res.json();
-      console.log("[BookServicePage] Response data:", data);
-
-      const list: ServiceCenter[] = Array.isArray(data) ? data : [];
-
-      if (list.length === 0) {
-        setFetchState("empty");
+        if (validCenters.length > 0) {
+          setCenters(validCenters);
+          setFetchState("success");
+        } else {
+          setCenters([]);
+          setFetchState("empty");
+        }
       } else {
-        setCenters(list);
-        setFetchState("success");
+        setCenters([]);
+        setFetchState("error");
       }
     } catch (err) {
-      console.error("[BookServicePage] Fetch threw an exception:", err);
+      console.error("[BookServicePage] Fetch error:", err);
+      setCenters([]);
       setFetchState("error");
     }
   };
@@ -101,20 +120,160 @@ export default function BookServicePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleApplyFilters = () => {
+    setIsFilterOpen(false);
+      if (activeDistance) {
+        let radius = 50;
+        if (activeDistance === "2km") radius = 2;
+        else if (activeDistance === "5km") radius = 5;
+        else if (activeDistance === "10km") radius = 10;
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            loadCenters(position.coords.latitude, position.coords.longitude, radius);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            alert("Location access denied. Falling back to default list.");
+            setActiveDistance(null);
+            loadCenters();
+          }
+        );
+      } else {
+        alert("Geolocation not supported.");
+        setActiveDistance(null);
+        loadCenters();
+      }
+    } else {
+      // If no distance filter, just reload normal centers
+      loadCenters();
+    }
+  };
+
+  const handleClearAll = () => {
+    setActiveDistance(null);
+    setSelectedVehicles([]);
+    setSelectedServices([]);
+    setActiveAvailability(null);
+  };
+
+  // Derive filter options dynamically with fallbacks for casing and alternate fields
+  let availableVehicles = Array.from(new Set(
+    centers.flatMap(c => {
+      const pkgVehicles = c.servicePackages?.flatMap(p => {
+        const raw = p as Partial<{ vehicleType?: unknown; vehicletype?: unknown; VehicleType?: unknown; specification?: unknown; specifications?: unknown; vehicleCategory?: unknown; vehicle?: unknown; name?: string; type?: string; title?: string; }>;
+        const v = raw.vehicleType ?? raw.vehicletype ?? raw.VehicleType ?? raw.specification ?? raw.specifications ?? raw.vehicleCategory ?? raw.vehicle;
+        if (Array.isArray(v)) return v.filter((item): item is string => typeof item === 'string');
+        if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean);
+        if (v && typeof v === 'object') {
+          const named = v as Record<string, unknown>;
+          const label = typeof named.name === 'string' ? named.name : typeof named.type === 'string' ? named.type : typeof named.title === 'string' ? named.title : '';
+          return label ? [label] : [];
+        }
+        return [];
+      }) || [];
+      const centerBrands = c.supportedVehicleBrands || [];
+      return [...pkgVehicles, ...centerBrands];
+    }).filter(Boolean)
+  )) as string[];
+
+  if (availableVehicles.length === 0) {
+    // Fallback if backend data is empty or missing vehicle properties
+    availableVehicles = ["CAR", "BIKE", "VAN", "TRUCK"];
+  }
+
+  const availableServices = Array.from(new Set(centers.flatMap(c => c.servicePackages?.map(p => p.type) || []).filter(Boolean))) as string[];
+
+  const distanceOptions = ["Nearby", "2km", "5km", "10km"];
+  const availabilityOptions = ["Open Now", "24/7", "Available Today"];
+
   const stations = centers.map((c) => ({
     id: c.centerId,
     name: c.name,
     location: c.address ?? "Unknown",
+    googleMapsUrl: c.googleMapsUrl ?? null,
     image: "/garages/garage01.jpg",
     services: c.supportedVehicleBrands ?? [],
-    openStatus: c.isActive ? computeOpenStatus(c.openingHours) : "Closed",
+    openStatus: c.isActive !== false ? computeOpenStatus(c.openingHours) : "Closed",
   }));
 
-  const filtered = stations.filter(
-    (s) =>
-      searchQuery === "" ||
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isAvailable = (s: typeof stations[0], c: ServiceCenter) => {
+    if (!activeAvailability) return true;
+    if (activeAvailability === "Open Now") return s.openStatus === "Open Now";
+    if (activeAvailability === "24/7") {
+      const oh = c.openingHours?.replace(/\s/g, "") || "";
+      return oh === "00:00-24:00" || oh === "00:00-23:59" || oh === "0:00-24:00";
+    }
+    if (activeAvailability === "Available Today") {
+      if (!c.openingHours) return false;
+      try {
+        const parts = c.openingHours.replace(/\s/g, "").split("-");
+        if (parts.length !== 2) return false;
+        const end = parts[1];
+        const [eh, em] = end.split(":").map(Number);
+        const now = new Date();
+        const cur = now.getHours() * 60 + now.getMinutes();
+        return cur < eh * 60 + (em || 0);
+      } catch { return false; }
+    }
+    return true;
+  };
+
+  const filtered = stations.filter((s) => {
+    const center = centers.find(c => c.centerId === s.id);
+    if (!center) return false;
+
+    // search query
+    if (searchQuery !== "" && !s.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+    // availability
+    if (!isAvailable(s, center)) return false;
+
+    // vehicle & service types: a station matches if at least ONE package matches both active filters
+    const hasVehicleFilter = selectedVehicles.length > 0;
+    const hasServiceFilter = selectedServices.length > 0;
+
+    if (hasVehicleFilter || hasServiceFilter) {
+      const matchesPackage = center.servicePackages?.some(p => {
+        const raw = p as Partial<{ vehicleType?: unknown; vehicletype?: unknown; VehicleType?: unknown; specification?: unknown; specifications?: unknown; vehicleCategory?: unknown; vehicle?: unknown; name?: string; type?: string; title?: string; }>;
+        const vRaw = raw.vehicleType ?? raw.vehicletype ?? raw.VehicleType ?? raw.specification ?? raw.specifications ?? raw.vehicleCategory ?? raw.vehicle;
+        let pVehicles: string[] = [];
+        if (Array.isArray(vRaw)) pVehicles = vRaw.filter((value): value is string => typeof value === 'string');
+        else if (typeof vRaw === 'string') pVehicles = vRaw.split(',').map(str => str.trim()).filter(Boolean);
+        else if (vRaw && typeof vRaw === 'object') {
+          const named = vRaw as Record<string, unknown>;
+          const label = typeof named.name === 'string' ? named.name : typeof named.type === 'string' ? named.type : typeof named.title === 'string' ? named.title : '';
+          if (label) pVehicles = [label];
+        }
+
+        if (pVehicles.length === 0) pVehicles = center.supportedVehicleBrands || [];
+
+        const packageMatchesVehicle = !hasVehicleFilter || pVehicles.some(v =>
+          selectedVehicles.some(sv => v.toLowerCase() === sv.toLowerCase() || v.toLowerCase().includes(sv.toLowerCase()) || sv.toLowerCase().includes(v.toLowerCase()))
+        );
+        const packageMatchesService = !hasServiceFilter || (!!p.type && selectedServices.includes(p.type));
+
+        return packageMatchesVehicle && packageMatchesService;
+      });
+
+      if (!matchesPackage) return false;
+    }
+
+    return true;
+  });
+
+  const activeFiltersCount = (activeDistance ? 1 : 0) + (activeAvailability ? 1 : 0) + selectedVehicles.length + selectedServices.length;
+
+  const removeFilter = (type: string, val?: string) => {
+    if (type === "distance") {
+      setActiveDistance(null);
+      setTimeout(() => loadCenters(), 0);
+    }
+    if (type === "availability") setActiveAvailability(null);
+    if (type === "vehicle" && val) setSelectedVehicles(prev => prev.filter(v => v !== val));
+    if (type === "service" && val) setSelectedServices(prev => prev.filter(s => s !== val));
+  };
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
@@ -124,23 +283,66 @@ export default function BookServicePage() {
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-10 md:px-10 md:py-12 shadow-xl">
         <div className="pointer-events-none absolute -top-10 -right-10 w-56 h-56 rounded-full bg-orange-500/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-20 w-40 h-40 rounded-full bg-blue-500/10 blur-2xl" />
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
+        <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          <div className="flex-1">
             <p className="text-xs font-semibold text-orange-400 uppercase tracking-widest mb-2">Service Stations</p>
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1">Book a Service</h1>
             <p className="text-sm text-slate-400">Choose from our network of trusted service stations near you</p>
           </div>
-          <div className="w-full md:w-96">
-            <div className="relative">
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search service stations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all backdrop-blur-sm text-sm"
-              />
+          <div className="w-full md:w-96 space-y-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search service stations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all backdrop-blur-sm text-sm"
+                />
+              </div>
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className="relative flex items-center justify-center bg-white/10 border border-white/10 text-white px-4 rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm"
+              >
+                <FiFilter className="w-5 h-5" />
+                {activeFiltersCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
             </div>
+
+            {/* Active Chips */}
+            {activeFiltersCount > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {activeDistance && (
+                  <div className="flex items-center gap-1 bg-orange-500/20 text-orange-300 px-2 py-1 rounded-md text-xs font-medium border border-orange-500/30">
+                    Dist: {activeDistance}
+                    <button onClick={() => removeFilter("distance")}><FiX className="w-3 h-3 hover:text-white" /></button>
+                  </div>
+                )}
+                {activeAvailability && (
+                  <div className="flex items-center gap-1 bg-blue-500/20 text-blue-300 px-2 py-1 rounded-md text-xs font-medium border border-blue-500/30">
+                    {activeAvailability}
+                    <button onClick={() => removeFilter("availability")}><FiX className="w-3 h-3 hover:text-white" /></button>
+                  </div>
+                )}
+                {selectedVehicles.map(v => (
+                  <div key={v} className="flex items-center gap-1 bg-white/10 text-slate-300 px-2 py-1 rounded-md text-xs font-medium border border-white/20">
+                    {v}
+                    <button onClick={() => removeFilter("vehicle", v)}><FiX className="w-3 h-3 hover:text-white" /></button>
+                  </div>
+                ))}
+                {selectedServices.map(s => (
+                  <div key={s} className="flex items-center gap-1 bg-white/10 text-slate-300 px-2 py-1 rounded-md text-xs font-medium border border-white/20">
+                    {s}
+                    <button onClick={() => removeFilter("service", s)}><FiX className="w-3 h-3 hover:text-white" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -207,7 +409,7 @@ export default function BookServicePage() {
           <h3 className="text-xl font-bold text-slate-900 mb-2">Failed to load service centers</h3>
           <p className="text-sm text-slate-500 mb-6">Please try again.</p>
           <button
-            onClick={loadCenters}
+            onClick={() => loadCenters()}
             className="inline-flex items-center gap-2 px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
           >
             <FiRefreshCw className="w-4 h-4" /> Retry
@@ -248,10 +450,22 @@ export default function BookServicePage() {
                       {station.name}
                     </h3>
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <FiMapPin className="w-4 h-4 text-slate-400" />
-                        <span>{station.location}</span>
-                      </div>
+                      {station.googleMapsUrl ? (
+                        <a 
+                          href={station.googleMapsUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 hover:underline font-semibold"
+                        >
+                          <FiMapPin className="w-4 h-4 text-orange-500 shrink-0" />
+                          <span className="truncate">{station.location}</span>
+                        </a>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <FiMapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{station.location}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {station.services.slice(0, 2).map((service, idx) => (
@@ -285,17 +499,111 @@ export default function BookServicePage() {
                 <FiMapPin className="w-8 h-8 text-slate-400" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">No stations match your search</h3>
-              <p className="text-sm text-slate-500 mb-6">Try a different name.</p>
+              <p className="text-sm text-slate-500 mb-6">Try adjusting your filters or search.</p>
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearAll}
                 className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
               >
-                Clear Search
+                Clear Filters
               </button>
             </div>
           )}
         </>
       )}
+
+      {/* Filter Bottom Sheet Modal */}
+      {isFilterOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Filter</h2>
+              <button onClick={() => setIsFilterOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Distance */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Distance</h3>
+                <div className="flex flex-wrap gap-2">
+                  {distanceOptions.map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => setActiveDistance(prev => prev === opt ? null : opt)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeDistance === opt ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Availability */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Availability</h3>
+                <div className="flex flex-wrap gap-2">
+                  {availabilityOptions.map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => setActiveAvailability(prev => prev === opt ? null : opt)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeAvailability === opt ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vehicle Types */}
+              {availableVehicles.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-3">Vehicle Type</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {availableVehicles.map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedVehicles(prev => prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt])}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedVehicles.includes(opt) ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Service Types */}
+              {availableServices.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-3">Service Type</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {availableServices.map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedServices(prev => prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt])}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedServices.includes(opt) ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+              <button onClick={handleClearAll} className="text-sm font-medium text-slate-500 hover:text-slate-700 underline">
+                Clear All
+              </button>
+              <button onClick={handleApplyFilters} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-sm transition-colors">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

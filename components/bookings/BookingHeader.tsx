@@ -8,6 +8,7 @@ interface BookingHeaderProps {
   station: {
     name: string;
     location: string;
+    googleMapsUrl?: string | null;
     image: string;
     rating?: number;
     reviews?: number;
@@ -32,9 +33,9 @@ export default function BookingHeader({ station }: BookingHeaderProps) {
   };
 
   const handleDirection = () => {
-    const isUrl = station.location && (station.location.startsWith("http://") || station.location.startsWith("https://"));
-    if (isUrl) {
-      window.open(station.location, "_blank");
+    const mapsLink = station.googleMapsUrl || (station.location && (station.location.startsWith("http://") || station.location.startsWith("https://")) ? station.location : null);
+    if (mapsLink) {
+      window.open(mapsLink, "_blank");
     } else {
       const query = encodeURIComponent(station.location || station.name);
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
@@ -83,10 +84,22 @@ export default function BookingHeader({ station }: BookingHeaderProps) {
             {station.name}
           </h1>
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 text-slate-300 text-sm">
-            <div className="flex items-center gap-1.5">
-              <FiMapPin className="text-orange-500" />
-              <span>{station.location}</span>
-            </div>
+            {station.googleMapsUrl || (station.location && (station.location.startsWith("http://") || station.location.startsWith("https://"))) ? (
+              <a
+                href={station.googleMapsUrl || station.location}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-white hover:underline transition-colors font-medium text-orange-400"
+              >
+                <FiMapPin className="text-orange-500 shrink-0" />
+                <span>{station.location}</span>
+              </a>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <FiMapPin className="text-orange-500 shrink-0" />
+                <span>{station.location}</span>
+              </div>
+            )}
             {station.openingHours && (
               <div className="flex items-center gap-1.5">
                 <FiClock className="text-orange-400" />

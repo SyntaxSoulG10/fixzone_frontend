@@ -6,6 +6,7 @@ import PageHeader from "@/components/UI/PageHeader";
 import { FiPlus, FiUser, FiTool, FiX, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { useDashboardData } from "../../../../context/DashboardDataContext";
 import * as bookingService from "../../../../services/bookingService";
+import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 // Type for a lane
 interface LaneVehicle {
@@ -27,6 +28,11 @@ export default function ServiceLaneManagePage() {
     
     const [lanes, setLanes] = useState<Lane[]>([]);
     const [isClient, setIsClient] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
 
     useEffect(() => {
         setIsClient(true);
@@ -111,7 +117,7 @@ export default function ServiceLaneManagePage() {
             
         } catch (error) {
             console.error("Failed to start service", error);
-            alert("Error starting service.");
+            showSnackbar("Error starting service.", "error");
         }
     };
 
@@ -119,10 +125,11 @@ export default function ServiceLaneManagePage() {
         try {
             await bookingService.completeBooking(bookingId);
             emptyLane(laneId);
+            showSnackbar("Service completed successfully!", "success");
             if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to complete booking", error);
-            alert("Error completing service.");
+            showSnackbar("Error completing service.", "error");
         }
     };
 
@@ -130,10 +137,11 @@ export default function ServiceLaneManagePage() {
         try {
             await bookingService.cancelBooking(bookingId);
             emptyLane(laneId);
+            showSnackbar("Service cancelled.", "info");
             if (refreshBookings) refreshBookings();
         } catch (error) {
             console.error("Failed to cancel booking", error);
-            alert("Error cancelling service.");
+            showSnackbar("Error cancelling service.", "error");
         }
     };
 
@@ -309,6 +317,14 @@ export default function ServiceLaneManagePage() {
                     </div>
                 ))}
             </div>
+
+            <FeedbackSnackbar 
+                open={snackbar.open} 
+                autoHideDuration={4000} 
+                severity={snackbar.severity}
+                message={snackbar.message}
+                onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            />
         </div>
     );
 }

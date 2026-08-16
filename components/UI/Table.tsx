@@ -30,7 +30,7 @@ export default function Table({ columns, data, keyField = 'id', emptyMessage = '
                 <tbody className="divide-y divide-slate-100">
                     {data.length > 0 ? (
                         data.map((row, index) => (
-                            <tr key={row[keyField] || `row-${index}`} className="hover:bg-slate-50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                            <tr key={`${row[keyField] ?? 'row'}-${index}`} className="hover:bg-slate-50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                                 {columns.map((col, idx) => (
                                     <td key={idx} className={`px-6 py-4 ${col.cellClassName || ''}`}>
                                         {col.accessor(row)}

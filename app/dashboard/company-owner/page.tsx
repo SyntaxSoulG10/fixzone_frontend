@@ -11,7 +11,8 @@ import {
     Tabs,
     Tab,
     Card,
-    CircularProgress
+    CircularProgress,
+    Alert
 } from "@mui/material";
 
 import StatCard from "@/components/dashboard/StatCard";
@@ -28,6 +29,7 @@ import {
     FiFileText,
     FiArrowRight,
     FiLayers,
+    FiAlertTriangle,
 } from "react-icons/fi";
 
 /**
@@ -169,11 +171,12 @@ export default function CompanyOwnerDashboard() {
     } = useDashboardData();
 
     const companyName = ownerData?.companyName || "Company Dashboard";
+    const hasSuspendedCenters = centers.some((c: any) => (c.status || '').toUpperCase() === 'SUSPENDED');
     
     // Derived statistics from context data
     const statistics: DashboardStatistics = {
         totalRevenue: analytics?.totalRevenue || 0,
-        activeCenters: centers.filter((c: any) => c.isActive).length,
+        activeCenters: centers.filter((c: any) => c.isActive && (c.status || '').toUpperCase() !== 'SUSPENDED' && (c.status || '').toUpperCase() !== 'REJECTED' && (c.status || '').toUpperCase() !== 'PENDING').length,
         totalCustomers: customers.length,
         revenueChange: analytics?.revenueChange || "+0%",
         jobsChange: analytics?.jobsChange || "+0%",
@@ -195,6 +198,16 @@ export default function CompanyOwnerDashboard() {
     return (
         <Box pb={3}>
             <DashboardHeader companyName={companyName} />
+
+            {hasSuspendedCenters && (
+                <Alert 
+                    severity="error" 
+                    icon={<FiAlertTriangle size={20} />}
+                    sx={{ mb: 4, borderRadius: '1rem', fontWeight: 600, border: '1px solid #fca5a5' }}
+                >
+                    Notice: One or more of your service center branches are currently suspended by the platform administrator. Suspended locations are deactivated and hidden from customer searches. Please check your service centers or notifications for details.
+                </Alert>
+            )}
             
             <StatsGrid stats={statistics} />
 

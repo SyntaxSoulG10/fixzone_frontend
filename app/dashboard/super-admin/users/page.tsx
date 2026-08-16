@@ -73,34 +73,26 @@ function UserSidebarFilters({ activeTab, onTabChange }: any) {
     );
 }
 
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
+
 /**
- * CONFIRMATION MODAL: Safety component for destructive or sensitive status changes.
+ * CONFIRMATION MODAL: Safety component for destructive or sensitive status changes using ConfirmDialog.
  */
 function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) {
-    if (!isOpen) return null;
+    if (!isOpen || !user) return null;
     const isSuspending = action === 'Suspended';
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className={`h-2 ${isSuspending ? 'bg-orange-500' : 'bg-green-500'}`}></div>
-                <div className="p-8 text-center space-y-6">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl ${isSuspending ? 'bg-orange-50 text-orange-500' : 'bg-green-50 text-green-500'}`}>
-                        {isSuspending ? <FiUserX /> : <FiUserCheck />}
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-900">{action} User?</h3>
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Are you sure you want to {action.toLowerCase()} <span className="font-bold text-slate-800">{user.name}</span>?
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button onClick={onCancel} className="px-6 py-3 text-sm font-bold text-black bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">Cancel</button>
-                        <button onClick={onConfirm} className={`px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all shadow-lg ${isSuspending ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-100' : 'bg-green-600 hover:bg-green-700 shadow-green-100'}`}>Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <ConfirmDialog
+            open={isOpen}
+            onClose={onCancel}
+            title={`${action} User?`}
+            message={<>Are you sure you want to {action.toLowerCase()} <strong style={{ color: '#0f172a' }}>{user.name}</strong>?</>}
+            confirmText={isSuspending ? 'Suspend User' : 'Activate User'}
+            cancelText="Cancel"
+            variant={isSuspending ? 'warning' : 'success'}
+            onConfirm={onConfirm}
+        />
     );
 }
 
@@ -165,7 +157,6 @@ export default function UsersPage() {
                     <img src={`https://ui-avatars.com/api/?name=${row.name}&background=random&color=fff`} className="w-10 h-10 rounded-2xl" alt="avatar" />
                     <div>
                         <div className="font-bold text-slate-800 text-sm">{row.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono italic">{row.id.substring(0, 13)}...</div>
                     </div>
                 </div>
             )
