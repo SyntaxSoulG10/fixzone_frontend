@@ -37,7 +37,9 @@ import {
     FiTrash2,
     FiExternalLink,
     FiBriefcase,
-    FiClock
+    FiClock,
+    FiAlertTriangle,
+    FiSlash
 } from "react-icons/fi";
 import { useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
@@ -74,7 +76,8 @@ interface ServiceCenterView {
     manager: string;
     phone: string;
     revenue: number;
-    status: "Active" | "Inactive";
+    status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected";
+    rawStatus: string;
     mechanics: number;
     capacity: number;
     openingHours: string;
@@ -117,30 +120,80 @@ function CentersHeader({ onAdd }: { onAdd: () => void }) {
  */
 function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: ServiceCenterView, onToggleStatus: any, onEdit: any, onDelete: any }) {
     const isActive = center.status === 'Active';
+    const isSuspended = center.status === 'Suspended';
+    const isPending = center.status === 'Pending';
+    const isRejected = center.status === 'Rejected';
+
+    const getStatusChipStyle = () => {
+        if (isSuspended) return { bgcolor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' };
+        if (isPending) return { bgcolor: '#fef3c7', color: '#d97706', border: '1px solid #fcd34d' };
+        if (isRejected) return { bgcolor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' };
+        if (isActive) return { bgcolor: '#e6f4ea', color: '#1e8e3e', border: '1px solid #a6f4c5' };
+        return { bgcolor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' };
+    };
     
     return (
         <Card sx={{
-            position: 'relative', borderRadius: '1.25rem', border: '1px solid #edf2f7',
+            position: 'relative', borderRadius: '1.25rem', border: isSuspended ? '1.5px solid #fca5a5' : '1px solid #edf2f7',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', overflow: 'visible',
             transition: 'transform 0.2s ease-in-out', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }
         }}>
             {/* Branch Badge */}
             <Box sx={{
                 position: 'absolute', top: -20, left: 24, width: 56, height: 56,
-                bgcolor: BRAND_ORANGE, color: '#fff', borderRadius: '0.875rem',
+                bgcolor: isSuspended ? '#ef4444' : BRAND_ORANGE, color: '#fff', borderRadius: '0.875rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.5rem', fontWeight: '800', boxShadow: '0 4px 6px rgba(243, 101, 28, 0.3)', zIndex: 1
+                fontSize: '1.5rem', fontWeight: '800', boxShadow: isSuspended ? '0 4px 6px rgba(239, 68, 68, 0.3)' : '0 4px 6px rgba(243, 101, 28, 0.3)', zIndex: 1
             }}>
                 {center.name.charAt(0)}
             </Box>
 
             <Chip label={center.status} size="small" sx={{
                 position: 'absolute', top: 16, right: 16, fontWeight: '700', borderRadius: '0.5rem',
-                bgcolor: isActive ? '#e6f4ea' : '#fee2e2', color: isActive ? '#1e8e3e' : '#dc2626'
+                ...getStatusChipStyle()
             }} />
 
             <Box p={3} pt={6}>
                 <Typography variant="h6" fontWeight="700" color="#2d3748" gutterBottom>{center.name}</Typography>
+
+                {isSuspended && (
+                    <Box sx={{
+                        mt: 1, mb: 2, p: 1.5, borderRadius: '0.75rem',
+                        bgcolor: '#fee2e2', border: '1px solid #fca5a5',
+                        display: 'flex', alignItems: 'center', gap: 1
+                    }}>
+                        <FiAlertTriangle color="#dc2626" size={18} style={{ flexShrink: 0 }} />
+                        <Typography variant="caption" color="#b91c1c" fontWeight={600} lineHeight={1.3}>
+                            Suspended by Administrator. This branch is deactivated and hidden across the platform.
+                        </Typography>
+                    </Box>
+                )}
+
+                {isPending && (
+                    <Box sx={{
+                        mt: 1, mb: 2, p: 1.5, borderRadius: '0.75rem',
+                        bgcolor: '#fef3c7', border: '1px solid #fcd34d',
+                        display: 'flex', alignItems: 'center', gap: 1
+                    }}>
+                        <FiClock color="#d97706" size={18} style={{ flexShrink: 0 }} />
+                        <Typography variant="caption" color="#b45309" fontWeight={600} lineHeight={1.3}>
+                            Pending Review. Awaiting platform administrator approval.
+                        </Typography>
+                    </Box>
+                )}
+
+                {isRejected && (
+                    <Box sx={{
+                        mt: 1, mb: 2, p: 1.5, borderRadius: '0.75rem',
+                        bgcolor: '#fee2e2', border: '1px solid #fca5a5',
+                        display: 'flex', alignItems: 'center', gap: 1
+                    }}>
+                        <FiSlash color="#dc2626" size={18} style={{ flexShrink: 0 }} />
+                        <Typography variant="caption" color="#b91c1c" fontWeight={600} lineHeight={1.3}>
+                            Registration Rejected. Contact administrator support.
+                        </Typography>
+                    </Box>
+                )}
                 
                 <Box display="flex" flexDirection="column" gap={1.5} mb={3}>
                     <Box display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0, width: '100%' }}>
@@ -190,15 +243,41 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                     </Grid>
                 </Grid>
 
-                <Box display="flex" justifyContent="space-between" mt={4}>
-                    <Button
-                        size="small"
-                        onClick={() => onToggleStatus(center.id, center.status)}
-                        startIcon={<FiPower />}
-                        sx={{ color: isActive ? '#e53e3e' : '#1e8e3e', fontWeight: '600', textTransform: 'none' }}
-                    >
-                        {isActive ? 'Disable' : 'Enable'}
-                    </Button>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mt={4}>
+                    {isSuspended ? (
+                        <Chip
+                            icon={<FiSlash size={14} color="#dc2626" />}
+                            label="Suspended by Admin"
+                            size="small"
+                            sx={{
+                                bgcolor: '#fee2e2',
+                                color: '#dc2626',
+                                fontWeight: '700',
+                                borderRadius: '0.5rem',
+                                border: '1px solid #fca5a5'
+                            }}
+                        />
+                    ) : isPending || isRejected ? (
+                        <Chip
+                            label={center.status}
+                            size="small"
+                            sx={{
+                                bgcolor: isPending ? '#fef3c7' : '#fee2e2',
+                                color: isPending ? '#d97706' : '#b91c1c',
+                                fontWeight: '700',
+                                borderRadius: '0.5rem'
+                            }}
+                        />
+                    ) : (
+                        <Button
+                            size="small"
+                            onClick={() => onToggleStatus(center.id, center.status)}
+                            startIcon={<FiPower />}
+                            sx={{ color: isActive ? '#e53e3e' : '#1e8e3e', fontWeight: '600', textTransform: 'none' }}
+                        >
+                            {isActive ? 'Disable' : 'Enable'}
+                        </Button>
+                    )}
                     <IconButton
                         size="small"
                         onClick={() => onDelete(center.id)}
@@ -219,7 +298,7 @@ function CenterCard({ center, onToggleStatus, onEdit, onDelete }: { center: Serv
                         </Button>
                     </Box>
                 </Box>
-                </Box>
+            </Box>
         </Card>
     );
 }
@@ -403,14 +482,36 @@ export default function MyCentersPage() {
     };
 
     // Maps raw centers data from context to the view model
-    const centersList: ServiceCenterView[] = centersData.map((c: any) => ({
-        id: c.centerId, name: c.name, location: c.address,
-        googleMapsUrl: c.googleMapsUrl || "",
-        manager: c.managerName || "N/A", phone: c.contactPhone,
-        revenue: c.revenue || 0, status: c.isActive ? "Active" : "Inactive",
-        mechanics: c.mechanicsCount || 0, capacity: c.currentCapacity || 0,
-        openingHours: c.openingHours || "",
-    }));
+    const centersList: ServiceCenterView[] = centersData.map((c: any) => {
+        let status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected" = "Active";
+        const normalizedStatus = (c.status || "").toUpperCase();
+        if (normalizedStatus === "SUSPENDED") {
+            status = "Suspended";
+        } else if (normalizedStatus === "PENDING") {
+            status = "Pending";
+        } else if (normalizedStatus === "REJECTED") {
+            status = "Rejected";
+        } else if (!c.isActive) {
+            status = "Inactive";
+        } else {
+            status = "Active";
+        }
+
+        return {
+            id: c.centerId,
+            name: c.name,
+            location: c.address,
+            googleMapsUrl: c.googleMapsUrl || "",
+            manager: c.managerName || "N/A",
+            phone: c.contactPhone,
+            revenue: c.revenue || 0,
+            status,
+            rawStatus: c.status || "",
+            mechanics: c.mechanicsCount || 0,
+            capacity: c.currentCapacity || 0,
+            openingHours: c.openingHours || "",
+        };
+    });
 
     useEffect(() => { 
         if (centersData.length === 0) refreshAll(); 
@@ -482,19 +583,12 @@ export default function MyCentersPage() {
     };
 
     const handleSave = async () => {
-        // Validates input fields before submission
-        if (!formData.name.trim() || formData.name.length < MIN_CENTER_NAME_LENGTH) {
+        if (!formData.name || formData.name.trim().length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
-
-        if (!formData.location.trim()) {
-            setSnackbar({ open: true, message: 'Exact Location is required', severity: 'error' });
-            return;
-        }
-
-        if (!formData.openTime || !formData.closeTime) {
-            setSnackbar({ open: true, message: 'Opening and closing times are required', severity: 'error' });
+        if (!formData.location) {
+            setSnackbar({ open: true, message: 'Address/Location is required', severity: 'error' });
             return;
         }
 
@@ -542,6 +636,10 @@ export default function MyCentersPage() {
     const handleToggleStatus = async (id: string, current: string) => {
         const center = centersData.find((c: any) => c.centerId === id);
         if (!center) return;
+        if ((center.status || '').toUpperCase() === 'SUSPENDED') {
+            setSnackbar({ open: true, message: 'This branch is suspended by the administrator and cannot be modified.', severity: 'error' });
+            return;
+        }
         setIsLoading(true);
         try {
             await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, {
@@ -592,10 +690,21 @@ export default function MyCentersPage() {
     };
 
     const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
+    const hasSuspendedCenters = centersList.some(c => c.status === 'Suspended');
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
             <CentersHeader onAdd={() => { setIsEditMode(false); setFormData({ name: "", location: "", googleMapsUrl: "", phone: "", openTime: "08:00", closeTime: "18:00", status: "Active", mechanics: DEFAULT_MECHANICS, capacity: DEFAULT_CAPACITY }); setOpenDialog(true); }} />
+
+            {hasSuspendedCenters && (
+                <Alert 
+                    severity="error" 
+                    icon={<FiAlertTriangle size={20} />} 
+                    sx={{ mb: 4, borderRadius: '1rem', fontWeight: 600, border: '1px solid #fca5a5' }}
+                >
+                    Warning: One or more of your service center branches have been suspended by the platform administrator. Suspended branches are inactive and hidden from customer searches. Please check your notifications or contact administrator support.
+                </Alert>
+            )}
 
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: alpha(BRAND_ORANGE, 0.1), '& .MuiLinearProgress-bar': { bgcolor: BRAND_ORANGE } }} />}
 
