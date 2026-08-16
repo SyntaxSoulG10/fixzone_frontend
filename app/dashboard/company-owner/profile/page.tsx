@@ -376,7 +376,7 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
-    const [autoRenew, setAutoRenew] = useState(true);
+    const [autoRenew, setAutoRenew] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -419,7 +419,12 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 
         // Fetch plans
         axios.get(APP_CONFIG.api.subPlans)
-            .then(r => { setPlans(r.data); if (r.data.length > 0) setSelectedPlan(r.data[0].id); })
+            .then(r => { 
+                setPlans(r.data); 
+                if (r.data && r.data.length > 0) {
+                    setSelectedPlan(r.data[0].id || r.data[0].planId || "");
+                }
+            })
             .catch(() => onMessage("Could not load subscription plans", "error"))
             .finally(() => setLoadingPlans(false));
     }, []);
@@ -516,26 +521,29 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                             <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" display="block" mb={1}>Select a Plan</Typography>
                             <MuiFormControl component="fieldset" fullWidth>
                                 <RadioGroup value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}>
-                                    {plans.map((plan: any) => (
-                                        <Box key={plan.id} sx={{
-                                            border: `1.5px solid ${selectedPlan === plan.id ? '#EA580C' : '#e2e8f0'}`,
-                                            borderRadius: 2, p: 2, mb: 1.5,
-                                            bgcolor: selectedPlan === plan.id ? 'rgba(234,88,12,0.05)' : '#fff',
-                                            cursor: 'pointer', transition: 'all 0.2s'
-                                        }} onClick={() => setSelectedPlan(plan.id)}>
-                                            <FormControlLabel
-                                                value={plan.id}
-                                                control={<Radio value={plan.id} onChange={() => setSelectedPlan(plan.id)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
-                                                label={
-                                                    <Box>
-                                                        <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
-                                                        <Typography variant="body2" color="text.secondary">Rs. {Number(plan.price).toLocaleString()} / {plan.durationMonths} month{plan.durationMonths > 1 ? 's' : ''}</Typography>
-                                                    </Box>
-                                                }
-                                                sx={{ width: '100%', m: 0 }}
-                                            />
-                                        </Box>
-                                    ))}
+                                    {plans.map((plan: any) => {
+                                        const planId = plan.id || plan.planId;
+                                        return (
+                                            <Box key={planId} sx={{
+                                                border: `1.5px solid ${selectedPlan === planId ? '#EA580C' : '#e2e8f0'}`,
+                                                borderRadius: 2, p: 2, mb: 1.5,
+                                                bgcolor: selectedPlan === planId ? 'rgba(234,88,12,0.05)' : '#fff',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }} onClick={() => setSelectedPlan(planId)}>
+                                                <FormControlLabel
+                                                    value={planId}
+                                                    control={<Radio value={planId} checked={selectedPlan === planId} onChange={() => setSelectedPlan(planId)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
+                                                    label={
+                                                        <Box>
+                                                            <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
+                                                            <Typography variant="body2" color="text.secondary">Rs. {Number(plan.price).toLocaleString()} / {plan.durationMonths} month{plan.durationMonths > 1 ? 's' : ''}</Typography>
+                                                        </Box>
+                                                    }
+                                                    sx={{ width: '100%', m: 0 }}
+                                                />
+                                            </Box>
+                                        );
+                                    })}
                                 </RadioGroup>
                             </MuiFormControl>
 

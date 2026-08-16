@@ -34,7 +34,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { FiDownload, FiFileText, FiSearch, FiFilter, FiCheckCircle, FiEye, FiTrash2, FiUpload } from "react-icons/fi";
 import { getAllReports, createReport, deleteReport, ReportItem } from "@/services/reportService";
-import { toast, Toaster } from "react-hot-toast";
+import FeedbackSnackbar, { SeverityType } from "@/components/UI/FeedbackSnackbar";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -90,6 +90,21 @@ export default function ReportsPage() {
     const [previewMode, setPreviewMode] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+    
+    // Snackbar Feedback State
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: SeverityType;
+    }>({
+        open: false,
+        message: "",
+        severity: "success"
+    });
+
+    const showSnackbar = (message: string, severity: SeverityType = "success") => {
+        setSnackbar({ open: true, message, severity });
+    };
     
     // Native PDF Preview States
     const [previewGenerating, setPreviewGenerating] = useState(false);
@@ -158,7 +173,7 @@ export default function ReportsPage() {
             setReports(sortedData);
         } catch (error) {
             console.error("Failed to fetch reports:", error);
-            toast.error("Failed to load reports");
+            showSnackbar("Failed to load reports", "error");
         } finally {
             setLoading(false);
         }
@@ -171,7 +186,7 @@ export default function ReportsPage() {
         // Fallback to extension check if mime type is missing on Windows
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf');
         if (!isPdf) {
-            toast.error("Please upload a valid PDF file.");
+            showSnackbar("Please upload a valid PDF file.", "warning");
             event.target.value = '';
             return;
         }
@@ -181,26 +196,20 @@ export default function ReportsPage() {
             const base64 = e.target?.result as string;
             
             try {
-                const promise = createReport({
+                showSnackbar("Uploading document...", "info");
+                await createReport({
                     name: file.name.replace(/\.pdf$/i, ''),
                     type: 'External',
                     fileContentBase64: base64,
                     size: (file.size / 1024 / 1024).toFixed(2) + " MB"
                 } as any);
                 
-                toast.promise(promise, {
-                    loading: 'Uploading document...',
-                    success: 'Document uploaded successfully!',
-                    error: (err: any) => {
-                        const backendMsg = err?.response?.data?.message || err?.response?.data?.error || err.message;
-                        return `Upload failed: ${backendMsg}`;
-                    }
-                });
-                
-                await promise;
+                showSnackbar("Document uploaded successfully!", "success");
                 fetchReports();
-            } catch(err) {
+            } catch(err: any) {
                 console.error(err);
+                const backendMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Upload failed";
+                showSnackbar(`Upload failed: ${backendMsg}`, "error");
             }
         };
         reader.readAsDataURL(file);
@@ -217,14 +226,14 @@ export default function ReportsPage() {
                 window.open(url, '_blank');
             } catch(e) {
                 console.error("PDF View Error: ", e);
-                toast.error("Failed to load PDF.");
+                showSnackbar("Failed to load PDF.", "error");
             }
         } else if (row.downloadUrl && row.downloadUrl.startsWith('http')) {
             window.open(row.downloadUrl, '_blank');
         } else if (row.type === 'External') {
-            toast.error("PDF content is missing or corrupted in the database.");
+            showSnackbar("PDF content is missing or corrupted in the database.", "error");
         } else {
-            const loadingToastId = toast.loading("Generating document...");
+            showSnackbar("Generating document preview...", "info");
             
             setTimeout(() => {
                 const isFinancial = row.type === 'Financial';
@@ -246,11 +255,10 @@ export default function ReportsPage() {
                 try {
                     const doc = generatePDFDoc(mockReportObj, undefined, mockData);
                     const url = doc.output('bloburl').toString();
-                    toast.dismiss(loadingToastId);
                     window.open(url, '_blank');
                 } catch(e) {
                     console.error(e);
-                    toast.error("Failed to generate PDF.", { id: loadingToastId });
+                    showSnackbar("Failed to generate PDF.", "error");
                 }
             }, 300);
         }
@@ -490,7 +498,7 @@ export default function ReportsPage() {
                 pdfDocRef.current.save(filename);
             }
             
-            toast.success("Report generated and downloaded successfully!");
+            showSnackbar("Report generated and downloaded successfully!", "success");
             
             // Clean up
             setOpenDialog(false);
@@ -510,7 +518,7 @@ export default function ReportsPage() {
             await fetchReports();
         } catch (error) {
             console.error("Failed to generate report", error);
-            toast.error("Failed to generate report. Please try again.");
+            showSnackbar("Failed to generate report. Please try again.", "error");
         } finally {
             setGenerating(false);
             setTimeout(() => {
@@ -627,9 +635,10 @@ export default function ReportsPage() {
                                     a.href = url;
                                     a.download = `${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
                                     a.click();
+                                    showSnackbar(`Downloaded ${params.row.name}!`, "success");
                                 } catch (e) {
                                     console.error("Download Error: ", e);
-                                    toast.error("Failed to download PDF.");
+                                    showSnackbar("Failed to download PDF.", "error");
                                 }
                                 return;
                             }
@@ -640,11 +649,12 @@ export default function ReportsPage() {
                                 a.target = '_blank';
                                 a.download = `${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
                                 a.click();
+                                showSnackbar(`Downloaded ${params.row.name}!`, "success");
                                 return;
                             }
                             
                             if (params.row.type === 'External') {
-                                toast.error("PDF content is missing or corrupted in the database.");
+                                showSnackbar("PDF content is missing or corrupted in the database.", "error");
                                 return;
                             }
                             const isFinancial = params.row.type === 'Financial';
@@ -673,23 +683,15 @@ export default function ReportsPage() {
                                 sections: ["Executive Summary", "Key Metrics", "Detailed Data Table"]
                             };
 
-                            const promise = new Promise<void>((resolve, reject) => {
-                                setTimeout(() => {
-                                    try {
-                                        const doc = generatePDFDoc(mockReportObj, undefined, mockData);
-                                        doc.save(`${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
-                                        resolve();
-                                    } catch (e) {
-                                        reject(e);
-                                    }
-                                }, 800);
-                            });
-                            
-                            toast.promise(promise, {
-                                loading: `Retrieving ${params.row.name}...`,
-                                success: `Downloaded ${params.row.name}!`,
-                                error: 'Error downloading report.',
-                            });
+                            try {
+                                showSnackbar(`Preparing ${params.row.name}...`, "info");
+                                const doc = generatePDFDoc(mockReportObj, undefined, mockData);
+                                doc.save(`${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
+                                showSnackbar(`Downloaded ${params.row.name}!`, "success");
+                            } catch (e) {
+                                console.error("Error downloading report:", e);
+                                showSnackbar("Error downloading report.", "error");
+                            }
                         }}
                     >
                         <FiDownload />
@@ -722,7 +724,12 @@ export default function ReportsPage() {
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Box pb={3}>
-                <Toaster position="bottom-right" />
+                <FeedbackSnackbar
+                    open={snackbar.open}
+                    message={snackbar.message}
+                    severity={snackbar.severity}
+                    onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+                />
                 <Box mb={4} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2}>
                     <Box>
                         <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
@@ -1083,10 +1090,10 @@ export default function ReportsPage() {
                             try {
                                 setDeleteDialogOpen(false);
                                 await deleteReport(reportToDelete);
-                                toast.success("Report deleted successfully");
+                                showSnackbar("Report deleted successfully", "success");
                                 fetchReports();
                             } catch (error) {
-                                toast.error("Failed to delete report");
+                                showSnackbar("Failed to delete report", "error");
                             } finally {
                                 setReportToDelete(null);
                             }
