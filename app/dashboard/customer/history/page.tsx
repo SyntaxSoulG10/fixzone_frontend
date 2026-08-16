@@ -246,7 +246,7 @@ export default function MyBookingsPage() {
     
     const isTooLateToReschedule = diffDays < 3;
     const canReschedule = isUpcoming && (booking.rescheduleCount || 0) < 3 && !isTooLateToReschedule;
-    const canCancel = (isUpcoming || type === 'current') && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED';
+    const canCancel = isUpcoming;
 
     return (
       <div key={bookingId} className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-red-300 hover:shadow-lg transition-all">
@@ -315,28 +315,26 @@ export default function MyBookingsPage() {
             )}
 
             {canReschedule ? (
-              <button 
-                type="button"
+              <Button 
                 onClick={() => setReschedulingBooking(booking)}
-                className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
               >
-                <FiEdit className="w-4 h-4 text-white" />
+                <FiEdit className="w-4 h-4" />
                 Reschedule
-              </button>
+              </Button>
             ) : isUpcoming && !isTooLateToReschedule && (booking.rescheduleCount || 0) >= 3 ? (
               <span className="text-[10px] font-bold text-slate-400 self-center mr-2">Max reschedules reached</span>
             ) : null}
             
             {canCancel && (
-              <button 
-                type="button"
+              <Button 
                 onClick={() => setCancelModal({ isOpen: true, bookingId })}
                 disabled={actionLoading === `cancel-${bookingId}`}
-                className="px-4 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 rounded-lg font-semibold transition-all flex items-center gap-2"
+                className="px-4 py-2 text-sm border-2 border-red-300 hover:border-red-400 text-red-600 hover:bg-orange-50 rounded-lg font-semibold transition-colors flex items-center gap-2"
               >
-                <FiX className="w-4 h-4 text-red-600" />
-                <span>{actionLoading === `cancel-${bookingId}` ? 'Cancelling...' : 'Cancel'}</span>
-              </button>
+                <FiX className="w-4 h-4" />
+                {actionLoading === `cancel-${bookingId}` ? 'Cancelling...' : 'Cancel'}
+              </Button>
             )}
             
             {type === 'past' && booking.status === 'COMPLETED' && (

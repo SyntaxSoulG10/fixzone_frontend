@@ -6,7 +6,6 @@ export const useRoleGuard = (allowedRoles: string[]) => {
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const rolesKey = allowedRoles.join(',');
 
     useEffect(() => {
         const checkAuth = () => {
@@ -25,19 +24,14 @@ export const useRoleGuard = (allowedRoles: string[]) => {
                 return;
             }
 
-            // 3. Check user role with robust fallback to localStorage
-            const storedRole = typeof window !== "undefined" ? (localStorage.getItem("role") || localStorage.getItem("userRole")) : null;
-            const userRole = getUserRole(token) || storedRole;
-            
-            const normalizedAllowed = allowedRoles.map(r => r.toUpperCase().replace(/^ROLE_/, ''));
-            const normalizedRole = userRole ? userRole.toUpperCase().replace(/^ROLE_/, '') : '';
-            const hasAccess = isAuthorized || (userRole && (allowedRoles.includes(userRole) || normalizedAllowed.includes(normalizedRole)));
-
-            if (!hasAccess) {
-                if (normalizedRole === "SERVICE_MANAGER") router.push("/dashboard/service-manager");
-                else if (normalizedRole === "SUPER_ADMIN") router.push("/dashboard/super-admin");
-                else if (normalizedRole === "COMPANY_OWNER" || normalizedRole === "OWNER") router.push("/dashboard/company-owner");
-                else if (normalizedRole === "CUSTOMER") router.push("/dashboard/customer");
+            // 3. Check user role
+            const userRole = getUserRole(token);
+            if (!userRole || !allowedRoles.includes(userRole)) {
+                // If wrong role, redirect to their own dashboard or login
+                if (userRole === "ROLE_SERVICE_MANAGER") router.push("/dashboard/service-manager");
+                else if (userRole === "ROLE_SUPER_ADMIN" || userRole === "SUPER_ADMIN") router.push("/dashboard/super-admin");
+                else if (userRole === "ROLE_COMPANY_OWNER" || userRole === "OWNER") router.push("/dashboard/company-owner");
+                else if (userRole === "ROLE_CUSTOMER") router.push("/dashboard/customer");
                 else router.push("/login");
                 return;
             }
@@ -48,7 +42,7 @@ export const useRoleGuard = (allowedRoles: string[]) => {
         };
 
         checkAuth();
-    }, [router, rolesKey]);
+    }, [router, allowedRoles]);
 
     return { isAuthorized, isLoading };
 };
