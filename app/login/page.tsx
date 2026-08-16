@@ -41,6 +41,7 @@ export default function LoginPage() {
             
             // The Next.js API route sets the HttpOnly cookie for the token.
             // We just need to handle the user data and redirect.
+            if (data.token) localStorage.setItem("token", data.token);
             if (data.role) localStorage.setItem("role", data.role);
             if (data.role) localStorage.setItem("userRole", data.role);
             if (data.userId) localStorage.setItem("userId", data.userId);

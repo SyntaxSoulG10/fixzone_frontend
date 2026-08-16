@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { decodeJwt } from 'jose';
+
+function decodeJwt(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = atob(base64);
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
@@ -19,7 +31,7 @@ export function middleware(request: NextRequest) {
       const payload = decodeJwt(token);
       
       // Check expiration
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
+      if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         const response = NextResponse.redirect(loginUrl);

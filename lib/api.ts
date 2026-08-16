@@ -453,15 +453,22 @@ export async function updateSubscriptionStatus(subscriptionId: string, status: s
 }
 
 export async function getNotifications(): Promise<any[]> {
-  const res = await customFetch(`${BASE_URL}/api/notifications`, {
-    headers: { ...getAuthHeaders() }
-  });
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    console.error(`[getNotifications] ${res.status} ${res.statusText}`, errorBody);
-    throw new Error(`Failed to load notifications (${res.status})`);
+  try {
+    const res = await customFetch(`${BASE_URL}/api/notifications`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return [];
+      }
+      const errorBody = await res.text().catch(() => "");
+      console.error(`[getNotifications] ${res.status} ${res.statusText}`, errorBody);
+      return [];
+    }
+    return res.json();
+  } catch (err) {
+    return [];
   }
-  return res.json();
 }
 
 export async function markNotificationAsRead(id: string): Promise<any> {

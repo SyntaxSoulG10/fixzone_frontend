@@ -36,20 +36,24 @@ export async function POST(request: Request) {
     
     // If backend doesn't return role but it's in the token, we can decode it here and add it to safeData
     try {
-      const { decodeJwt } = require('jose');
-      const payload = decodeJwt(token);
-      if (!safeData.role && payload.role) {
-        safeData.role = payload.role;
-      }
-      if (!safeData.userId && payload.userId) {
-        safeData.userId = payload.userId;
-      }
-      if (!safeData.fullName && payload.sub) {
-        safeData.fullName = payload.sub; // Or whatever holds the name
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
+        if (!safeData.role && payload.role) {
+          safeData.role = payload.role;
+        }
+        if (!safeData.userId && payload.userId) {
+          safeData.userId = payload.userId;
+        }
+        if (!safeData.fullName && payload.sub) {
+          safeData.fullName = payload.sub;
+        }
       }
     } catch(e) {}
 
-    const nextResponse = NextResponse.json(safeData);
+    const nextResponse = NextResponse.json({ ...safeData, token });
 
     // Set the HttpOnly cookie
     nextResponse.cookies.set({
