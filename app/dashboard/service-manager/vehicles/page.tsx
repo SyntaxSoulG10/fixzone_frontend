@@ -160,7 +160,7 @@ export default function ServiceLaneManagePage() {
             />
 
             <div className="flex justify-end mb-6">
-                <Button className="flex items-center gap-2" onClick={handleAddLane}>
+                <Button className="flex items-center gap-2 !bg-orange-600 !text-white !hover:bg-orange-700" onClick={handleAddLane}>
                     <FiPlus /> Add Lane
                 </Button>
             </div>
@@ -255,7 +255,7 @@ export default function ServiceLaneManagePage() {
                                         }}
                                         className="w-full h-full min-h-[200px] flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-primary hover:bg-slate-100/50 rounded-lg transition-colors group"
                                     >
-                                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-orange-600/10 group-hover:text-orange-600 transition-colors">
                                             <FiPlus className="text-2xl" />
                                         </div>
                                         <span className="font-medium">+ Add to service</span>
@@ -284,7 +284,7 @@ export default function ServiceLaneManagePage() {
                                                             <div 
                                                                 key={b.bookingId}
                                                                 onClick={() => setSelectedBookingId(b.bookingId)}
-                                                                className={`p-2 border-b border-slate-100 last:border-0 cursor-pointer transition-colors text-sm ${isSelected ? 'bg-primary/10 border-primary/20' : 'hover:bg-slate-50'}`}
+                                                                className={`p-2 border-b border-slate-100 last:border-0 cursor-pointer transition-colors text-sm ${isSelected ? 'bg-orange-600/10 border-orange-600/20' : 'hover:bg-slate-50'}`}
                                                             >
                                                                 <div className="font-medium text-slate-800">{b.customerName || `Cust ${b.customerId?.substring(0,6)}`}</div>
                                                                 <div className="text-slate-500 text-xs mt-0.5">{b.bookingTime} - {b.packageName}</div>
@@ -298,7 +298,7 @@ export default function ServiceLaneManagePage() {
                                                 <button
                                                     onClick={() => handleAddToService(lane.id)}
                                                     disabled={!selectedBookingId}
-                                                    className="flex-1 bg-primary text-white text-sm font-medium py-1.5 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="flex-1 bg-orange-600 text-white text-sm font-medium py-1.5 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     Assign
                                                 </button>

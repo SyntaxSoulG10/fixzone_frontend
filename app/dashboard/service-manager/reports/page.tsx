@@ -373,7 +373,7 @@ export default function ServiceReportsPage() {
                             </div>
                             <Button
                                 variant="primary"
-                                className="w-full flex justify-center items-center gap-2 mt-auto"
+                                className="w-full flex justify-center items-center gap-2 mt-auto !bg-orange-600 !hover:bg-orange-700 !text-white border-0"
                                 onClick={() => setView("generate-invoice")}
                             >
                                 <FiPlus /> Generate Invoice
@@ -391,7 +391,7 @@ export default function ServiceReportsPage() {
                             </div>
                             <Button
                                 variant="primary"
-                                className="w-full flex justify-center items-center gap-2 mt-auto"
+                                className="w-full flex justify-center items-center gap-2 mt-auto !bg-orange-600 !hover:bg-orange-700 !text-white border-0"
                                 onClick={() => setView("create-report")}
                             >
                                 <FiPlus /> Create Today Report
@@ -494,7 +494,7 @@ export default function ServiceReportsPage() {
                                                 <button
                                                     key={number}
                                                     onClick={() => setCurrentPage(number)}
-                                                    className={`px-2 py-1 text-xs rounded border ${currentPage === number ? 'bg-primary text-white border-primary shadow-sm' : 'border-slate-300 text-slate-700 hover:bg-white bg-white shadow-sm'}`}
+                                                    className={`px-2 py-1 text-xs rounded border ${currentPage === number ? 'bg-orange-600 text-white border-orange-600 shadow-sm' : 'border-slate-300 text-slate-700 hover:bg-white bg-white shadow-sm'}`}
                                                 >
                                                     {number}
                                                 </button>
@@ -657,7 +657,7 @@ export default function ServiceReportsPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium transition-colors shadow-sm"
+                                        className="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors shadow-sm"
                                     >
                                         Create Report
                                     </button>
