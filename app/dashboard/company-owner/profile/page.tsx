@@ -51,13 +51,13 @@ import {
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { useRouter, useSearchParams } from "next/navigation";
+import { isValidEmail } from "@/utils/helpers";
 
 /**
  * Validation constants for profile management.
  */
 const MIN_COMPANY_NAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
@@ -73,6 +73,7 @@ interface ProfileHeaderProps {
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     companyName: string;
     isSaving: boolean;
+    onSaveProfile?: () => void;
 }
 
 interface ProfileInfoCardProps {
@@ -99,7 +100,8 @@ function ProfileHeader({
     profileImage, 
     onProfileImageChange, 
     companyName,
-    isSaving
+    isSaving,
+    onSaveProfile
 }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
@@ -209,7 +211,7 @@ function ProfileHeader({
                             variant="contained"
                             disabled={isSaving}
                             startIcon={isSaving ? <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}><CircularProgress size={16} color="inherit" /></Box> : <FiSave />}
-                            onClick={() => (window as any).handleGlobalSave()}
+                            onClick={onSaveProfile}
                             sx={{
                                 bgcolor: '#EA580C',
                                 color: 'white',
@@ -256,27 +258,34 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 <Box>
-                    {Object.keys(info).map((label) => (
-                        <Box key={label} display="flex" py={1} pr={2} alignItems="center">
-                            <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
-                                {label}:
-                            </Typography>
-                            {isEditing ? (
-                                <TextField
-                                    variant="standard"
-                                    fullWidth
-                                    value={info[label]}
-                                    onChange={(e) => onChange(label, e.target.value)}
-                                    size="small"
-                                    sx={{ ml: 1 }}
-                                />
-                            ) : (
-                                <Typography variant="button" fontWeight="regular" color="text.secondary">
-                                    &nbsp;{info[label]}
+                    {Object.keys(info).map((label) => {
+                        const isEmailField = label === "Email" || label.toLowerCase().includes("email");
+                        const isEmailInvalid = isEmailField && Boolean(info[label]) && !isValidEmail(info[label].trim());
+                        return (
+                            <Box key={label} display="flex" py={1} pr={2} alignItems="center">
+                                <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
+                                    {label}:
                                 </Typography>
-                            )}
-                        </Box>
-                    ))}
+                                {isEditing ? (
+                                    <TextField
+                                        variant="standard"
+                                        fullWidth
+                                        type={isEmailField ? "email" : "text"}
+                                        value={info[label]}
+                                        onChange={(e) => onChange(label, e.target.value)}
+                                        error={isEmailInvalid}
+                                        helperText={isEmailInvalid ? "Please enter a valid, real email (dummy domains like example.com are not allowed)" : ""}
+                                        size="small"
+                                        sx={{ ml: 1 }}
+                                    />
+                                ) : (
+                                    <Typography variant="button" fontWeight="regular" color="text.secondary">
+                                        &nbsp;{info[label]}
+                                    </Typography>
+                                )}
+                            </Box>
+                        );
+                    })}
                     <Box display="flex" py={1} pr={2} mt={1} flexDirection="column" gap={1}>
                         <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>Social:</Typography>
                         {isEditing ? (
@@ -376,7 +385,6 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
-    const [autoRenew, setAutoRenew] = useState(true);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -419,7 +427,12 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 
         // Fetch plans
         axios.get(APP_CONFIG.api.subPlans)
-            .then(r => { setPlans(r.data); if (r.data.length > 0) setSelectedPlan(r.data[0].id); })
+            .then(r => { 
+                setPlans(r.data); 
+                if (r.data && r.data.length > 0) {
+                    setSelectedPlan(r.data[0].id || r.data[0].planId || "");
+                }
+            })
             .catch(() => onMessage("Could not load subscription plans", "error"))
             .finally(() => setLoadingPlans(false));
     }, []);
@@ -443,7 +456,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
         }
         setCheckoutLoading(true);
         try {
-            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan, autoRenew });
+            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan });
             const checkoutUrl = res.data?.checkoutUrl || res.data;
             if (!checkoutUrl || typeof checkoutUrl !== "string") {
                 throw new Error("Invalid checkout URL received from server.");
@@ -507,7 +520,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
             {/* Subscription Checkout Card */}
             <Grid size={{ xs: 12, md: 7 }}>
                 <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe / Renew</Typography>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe</Typography>
                     <Divider sx={{ mb: 2 }} />
                     {loadingPlans ? (
                         <Box display="flex" justifyContent="center" p={3}><CircularProgress size={32} sx={{ color: '#EA580C' }} /></Box>
@@ -516,34 +529,31 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                             <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" display="block" mb={1}>Select a Plan</Typography>
                             <MuiFormControl component="fieldset" fullWidth>
                                 <RadioGroup value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}>
-                                    {plans.map((plan: any) => (
-                                        <Box key={plan.id} sx={{
-                                            border: `1.5px solid ${selectedPlan === plan.id ? '#EA580C' : '#e2e8f0'}`,
-                                            borderRadius: 2, p: 2, mb: 1.5,
-                                            bgcolor: selectedPlan === plan.id ? 'rgba(234,88,12,0.05)' : '#fff',
-                                            cursor: 'pointer', transition: 'all 0.2s'
-                                        }} onClick={() => setSelectedPlan(plan.id)}>
-                                            <FormControlLabel
-                                                value={plan.id}
-                                                control={<Radio value={plan.id} onChange={() => setSelectedPlan(plan.id)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
-                                                label={
-                                                    <Box>
-                                                        <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
-                                                        <Typography variant="body2" color="text.secondary">Rs. {Number(plan.price).toLocaleString()} / {plan.durationMonths} month{plan.durationMonths > 1 ? 's' : ''}</Typography>
-                                                    </Box>
-                                                }
-                                                sx={{ width: '100%', m: 0 }}
-                                            />
-                                        </Box>
-                                    ))}
+                                    {plans.map((plan: any) => {
+                                        const planId = plan.id || plan.planId;
+                                        return (
+                                            <Box key={planId} sx={{
+                                                border: `1.5px solid ${selectedPlan === planId ? '#EA580C' : '#e2e8f0'}`,
+                                                borderRadius: 2, p: 2, mb: 1.5,
+                                                bgcolor: selectedPlan === planId ? 'rgba(234,88,12,0.05)' : '#fff',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }} onClick={() => setSelectedPlan(planId)}>
+                                                <FormControlLabel
+                                                    value={planId}
+                                                    control={<Radio value={planId} checked={selectedPlan === planId} onChange={() => setSelectedPlan(planId)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
+                                                    label={
+                                                        <Box>
+                                                            <Typography variant="subtitle1" fontWeight={700}>{plan.name}</Typography>
+                                                            <Typography variant="body2" color="text.secondary">Rs. {Number(plan.price).toLocaleString()} / {plan.durationMonths} month{plan.durationMonths > 1 ? 's' : ''}</Typography>
+                                                        </Box>
+                                                    }
+                                                    sx={{ width: '100%', m: 0 }}
+                                                />
+                                            </Box>
+                                        );
+                                    })}
                                 </RadioGroup>
                             </MuiFormControl>
-
-                            <FormControlLabel
-                                control={<Checkbox checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
-                                label={<Typography variant="body2">Enable Auto-Renew (save card for future payments)</Typography>}
-                                sx={{ mb: 2, mt: 0.5 }}
-                            />
 
                             <Button
                                 variant="contained"
@@ -551,7 +561,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                                 disabled={!selectedPlan || checkoutLoading}
                                 onClick={handleSubscribe}
                                 startIcon={checkoutLoading ? <CircularProgress size={16} color="inherit" /> : <FiCreditCard />}
-                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
+                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, mt: 1, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
                             >
                                 {checkoutLoading ? "Redirecting to Stripe..." : "Proceed to Payment"}
                             </Button>
@@ -714,8 +724,8 @@ export default function ProfilePage() {
             return;
         }
 
-        if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
-            setSnackbarMessage("Please enter a valid company email");
+        if (profileData["Email"] && !isValidEmail(profileData["Email"].trim())) {
+            setSnackbarMessage("Please enter a valid, real company email address (dummy domains like example.com are not allowed)");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
@@ -810,6 +820,7 @@ export default function ProfilePage() {
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
             isSaving={isSaving}
+            onSaveProfile={handleSaveProfile}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (
