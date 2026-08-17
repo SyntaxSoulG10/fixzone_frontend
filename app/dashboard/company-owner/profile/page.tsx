@@ -51,13 +51,13 @@ import {
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
 import { useRouter, useSearchParams } from "next/navigation";
+import { isValidEmail } from "@/utils/helpers";
 
 /**
  * Validation constants for profile management.
  */
 const MIN_COMPANY_NAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[0-9+]{10,15}$/;
 
 /**
@@ -73,6 +73,7 @@ interface ProfileHeaderProps {
     onProfileImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     companyName: string;
     isSaving: boolean;
+    onSaveProfile?: () => void;
 }
 
 interface ProfileInfoCardProps {
@@ -99,7 +100,8 @@ function ProfileHeader({
     profileImage, 
     onProfileImageChange, 
     companyName,
-    isSaving
+    isSaving,
+    onSaveProfile
 }: ProfileHeaderProps) {
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
@@ -209,7 +211,7 @@ function ProfileHeader({
                             variant="contained"
                             disabled={isSaving}
                             startIcon={isSaving ? <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}><CircularProgress size={16} color="inherit" /></Box> : <FiSave />}
-                            onClick={() => (window as any).handleGlobalSave()}
+                            onClick={onSaveProfile}
                             sx={{
                                 bgcolor: '#EA580C',
                                 color: 'white',
@@ -256,27 +258,34 @@ function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, 
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 <Box>
-                    {Object.keys(info).map((label) => (
-                        <Box key={label} display="flex" py={1} pr={2} alignItems="center">
-                            <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
-                                {label}:
-                            </Typography>
-                            {isEditing ? (
-                                <TextField
-                                    variant="standard"
-                                    fullWidth
-                                    value={info[label]}
-                                    onChange={(e) => onChange(label, e.target.value)}
-                                    size="small"
-                                    sx={{ ml: 1 }}
-                                />
-                            ) : (
-                                <Typography variant="button" fontWeight="regular" color="text.secondary">
-                                    &nbsp;{info[label]}
+                    {Object.keys(info).map((label) => {
+                        const isEmailField = label === "Email" || label.toLowerCase().includes("email");
+                        const isEmailInvalid = isEmailField && Boolean(info[label]) && !isValidEmail(info[label].trim());
+                        return (
+                            <Box key={label} display="flex" py={1} pr={2} alignItems="center">
+                                <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
+                                    {label}:
                                 </Typography>
-                            )}
-                        </Box>
-                    ))}
+                                {isEditing ? (
+                                    <TextField
+                                        variant="standard"
+                                        fullWidth
+                                        type={isEmailField ? "email" : "text"}
+                                        value={info[label]}
+                                        onChange={(e) => onChange(label, e.target.value)}
+                                        error={isEmailInvalid}
+                                        helperText={isEmailInvalid ? "Please enter a valid, real email (dummy domains like example.com are not allowed)" : ""}
+                                        size="small"
+                                        sx={{ ml: 1 }}
+                                    />
+                                ) : (
+                                    <Typography variant="button" fontWeight="regular" color="text.secondary">
+                                        &nbsp;{info[label]}
+                                    </Typography>
+                                )}
+                            </Box>
+                        );
+                    })}
                     <Box display="flex" py={1} pr={2} mt={1} flexDirection="column" gap={1}>
                         <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>Social:</Typography>
                         {isEditing ? (
@@ -722,8 +731,8 @@ export default function ProfilePage() {
             return;
         }
 
-        if (profileData["Email"] && !EMAIL_REGEX.test(profileData["Email"])) {
-            setSnackbarMessage("Please enter a valid company email");
+        if (profileData["Email"] && !isValidEmail(profileData["Email"].trim())) {
+            setSnackbarMessage("Please enter a valid, real company email address (dummy domains like example.com are not allowed)");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
@@ -818,6 +827,7 @@ export default function ProfilePage() {
             onProfileImageChange={handleProfileImageChange}
             companyName={profileData["Company Name"]}
             isSaving={isSaving}
+            onSaveProfile={handleSaveProfile}
         >
             <Box mt={5} mb={3}>
                 {tabValue === 0 && (

@@ -43,12 +43,12 @@ import {
 } from "react-icons/fi";
 import { APP_CONFIG } from "@/utils/config";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import { isValidEmail } from "@/utils/helpers";
 
 /**
  * Validation and default constants for managers.
  */
 const MIN_MANAGER_NAME_LENGTH = 3;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * DATA MODELS: Defining strict types for managers and centers 
@@ -72,7 +72,7 @@ interface CenterAPIResponse { centerId: string; name: string; }
  * TABLE COLUMNS: Defining the table structure outside the component 
  * reduces complexity and improves rendering performance.
  */
-const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any, isExpired: boolean): GridColDef[] => [
+const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any, onResend: any, isExpired: boolean): GridColDef[] => [
     {
         field: 'name', headerName: 'Name', flex: 2, minWidth: 250,
         renderCell: (p: GridRenderCellParams) => (
@@ -96,18 +96,47 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
         )
     },
     {
-        field: 'status', headerName: 'Status', flex: 1,
-        renderCell: (p: GridRenderCellParams) => <Chip label={p.value} size="small" sx={{ fontWeight: 'bold', bgcolor: p.value === 'Active' ? '#E6F4EA' : '#FCE8E6', color: p.value === 'Active' ? '#1E8E3E' : '#C5221F' }} />
+        field: 'status', headerName: 'Status', flex: 1.2, minWidth: 150,
+        renderCell: (p: GridRenderCellParams) => {
+            const isInvited = p.value === 'INVITED' || p.value === 'Pending';
+            const isActive = p.value === 'Active';
+            return (
+                <Chip 
+                    label={isInvited ? "Pending Invite" : (isActive ? "Active" : "Inactive")} 
+                    size="small" 
+                    sx={{ 
+                        fontWeight: 'bold', 
+                        bgcolor: isInvited ? '#FEF3C7' : (isActive ? '#E6F4EA' : '#F1F5F9'), 
+                        color: isInvited ? '#D97706' : (isActive ? '#1E8E3E' : '#64748B') 
+                    }} 
+                />
+            );
+        }
     },
     {
-        field: 'actions', headerName: 'Actions', flex: 1.5, minWidth: 220, align: 'right', sortable: false,
-        renderCell: (p: GridRenderCellParams) => (
-            <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end">
-                <Button size="small" variant="outlined" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
-                <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
-                <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 /></IconButton>
-            </Box>
-        )
+        field: 'actions', headerName: 'Actions', flex: 2, minWidth: 260, align: 'right', sortable: false,
+        renderCell: (p: GridRenderCellParams) => {
+            const isInvited = p.row.status === 'INVITED' || p.row.status === 'Pending';
+            return (
+                <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end">
+                    {isInvited && (
+                        <Button 
+                            size="small" 
+                            variant="outlined" 
+                            color="primary"
+                            disabled={isExpired} 
+                            onClick={() => onResend(p.row.id)}
+                            sx={{ textTransform: 'none', borderRadius: 1.5 }}
+                        >
+                            Resend
+                        </Button>
+                    )}
+                    <Button size="small" variant="outlined" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
+                    <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} disabled={isExpired || isInvited} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
+                    <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 /></IconButton>
+                </Box>
+            );
+        }
     }
 ];
 
@@ -129,12 +158,16 @@ function ManagersHeader({ onAdd, isExpired }: { onAdd: () => void, isExpired: bo
 /**
  * DIALOG COMPONENT: Standardized form dialog for managing manager data.
  */
-function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers }: any) {
+function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers, dialogError }: any) {
+    const isEmailInvalid = Boolean(formData.email) && !isValidEmail(formData.email.trim());
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
             <DialogTitle sx={{ fontWeight: 'bold' }}>{isEdit ? "Edit Manager Access" : "Add New Manager"}</DialogTitle>
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
+                    {dialogError && (
+                        <Alert severity="error" sx={{ borderRadius: 2 }}>{dialogError}</Alert>
+                    )}
                     <TextField label="Full Name" name="name" value={formData.name} onChange={onChange} fullWidth required />
                     <FormControl fullWidth required>
                         <InputLabel>Assign Center</InputLabel>
@@ -142,7 +175,18 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
                             {centers.map((c: any) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                         </Select>
                     </FormControl>
-                    <TextField label="Email (Login ID)" name="email" value={formData.email} onChange={onChange} fullWidth />
+                    <TextField 
+                        label="Email (Login ID)" 
+                        name="email" 
+                        type="email" 
+                        placeholder="manager@gmail.com"
+                        value={formData.email} 
+                        onChange={onChange} 
+                        error={isEmailInvalid}
+                        helperText={isEmailInvalid ? "Please enter a valid, real email address (e.g. manager@gmail.com, dummy domains like example.com are not allowed)" : ""}
+                        fullWidth 
+                        required 
+                    />
                     {!isEdit && (
                         <FormControlLabel control={<Checkbox checked={formData.sendInvite} onChange={onChange} name="sendInvite" color="primary" />} label="Send Email Invitation" />
                     )}
@@ -171,6 +215,7 @@ export default function ManagersPage() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [dialogError, setDialogError] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
 
     useEffect(() => { 
@@ -193,19 +238,27 @@ export default function ManagersPage() {
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
+    const handleFormChange = (e: any) => {
+        setDialogError(null);
+        setFormData({ ...formData, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+    };
+
     const handleSave = async () => {
         // Form Validation
         if (!formData.name.trim() || formData.name.length < MIN_MANAGER_NAME_LENGTH) {
+            setDialogError(`Full name must be at least ${MIN_MANAGER_NAME_LENGTH} characters`);
             setSnackbar({ open: true, message: `Full name must be at least ${MIN_MANAGER_NAME_LENGTH} characters`, severity: 'error' });
             return;
         }
         
-        if (!formData.email.trim() || !EMAIL_REGEX.test(formData.email)) {
-            setSnackbar({ open: true, message: 'Please enter a valid email address', severity: 'error' });
+        if (!formData.email.trim() || !isValidEmail(formData.email.trim())) {
+            setDialogError('Please enter a valid, real email address (dummy domains like example.com are not allowed)');
+            setSnackbar({ open: true, message: 'Please enter a valid, real email address', severity: 'error' });
             return;
         }
         
         if (!formData.center) {
+            setDialogError('Please assign a service center');
             setSnackbar({ open: true, message: 'Please assign a service center', severity: 'error' });
             return;
         }
@@ -214,7 +267,7 @@ export default function ManagersPage() {
         if (!center) return;
         const payload = { 
             fullName: formData.name, 
-            email: formData.email, 
+            email: formData.email.trim().toLowerCase(), 
             managedCenterId: center.centerId, 
             status: formData.status, 
             sendInvite: formData.sendInvite 
@@ -228,18 +281,28 @@ export default function ManagersPage() {
                 setSnackbar({ open: true, message: 'New manager account created and invite sent!', severity: 'success' });
             }
             setOpenDialog(false);
+            setDialogError(null);
             await refreshAll();
         } catch (e: any) { 
             const errorMsg = e.response?.data?.message || 'Operation failed';
+            setDialogError(errorMsg);
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
         }
     };
 
     const handleToggleStatus = async (id: string, current: string) => {
         try {
-            await axios.put(`${APP_CONFIG.api.managers}/${id}`, { 
-                status: current === 'Active' ? 'Inactive' : 'Active' 
-            });
+            const manager = managers.find(m => m.id === id);
+            const targetStatus = current === 'Active' ? 'Inactive' : 'Active';
+            const payload = manager ? {
+                fullName: manager.name,
+                email: manager.email,
+                managedCenterId: manager.centerId,
+                status: targetStatus
+            } : {
+                status: targetStatus
+            };
+            await axios.put(`${APP_CONFIG.api.managers}/${id}`, payload);
             await refreshAll();
             setSnackbar({ open: true, message: `Manager account ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
         } catch (e: any) { 
@@ -260,13 +323,22 @@ export default function ManagersPage() {
         }
     };
 
+    const handleResendInvite = async (id: string) => {
+        try {
+            await axios.post(`${APP_CONFIG.api.managers}/${id}/resend-invite`);
+            setSnackbar({ open: true, message: 'Invitation email resent successfully!', severity: 'success' });
+        } catch (e: any) {
+            setSnackbar({ open: true, message: e.response?.data?.message || 'Failed to resend invitation', severity: 'error' });
+        }
+    };
+
     const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>;
 
     return (
         <Box pb={3}>
-            <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
+            <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setDialogError(null); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
 
             <Card sx={{ borderRadius: 3 }}>
                 <Box p={2} display="flex" justifyContent="space-between" alignItems="center">
@@ -281,12 +353,14 @@ export default function ManagersPage() {
                             theme, 
                             (m: any) => { 
                                 setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); 
+                                setDialogError(null);
                                 setSelectedId(m.id); 
                                 setIsEditMode(true); 
                                 setOpenDialog(true); 
                             }, 
                             handleToggleStatus, 
                             (id: string) => setDeleteModal({ isOpen: true, id }),
+                            handleResendInvite,
                             isExpired
                         )} 
                         pageSizeOptions={[5, 10]} 
@@ -296,7 +370,16 @@ export default function ManagersPage() {
                 </Box>
             </Card>
 
-            <ManagerDialog open={openDialog} onClose={() => setOpenDialog(false)} isEdit={isEditMode} formData={formData} onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })} onSave={handleSave} centers={centersList} />
+            <ManagerDialog 
+                open={openDialog} 
+                onClose={() => { setOpenDialog(false); setDialogError(null); }} 
+                isEdit={isEditMode} 
+                formData={formData} 
+                onChange={handleFormChange} 
+                onSave={handleSave} 
+                centers={centersList} 
+                dialogError={dialogError}
+            />
 
             {/* Delete Manager Dialog */}
             <ConfirmDialog 
