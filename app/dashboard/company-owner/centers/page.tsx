@@ -430,7 +430,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
-    const { centersData, ownerData, isLoading: isContextLoading, refreshAll } = useDashboardData();
+    const { centersData, ownerData, isLoading: isContextLoading, refreshCenters, refreshAll } = useDashboardData();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -491,41 +491,45 @@ export default function MyCentersPage() {
         );
     };
 
-    // Maps raw centers data from context to the view model
-    const centersList: ServiceCenterView[] = centersData.map((c: any) => {
-        let status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected" = "Active";
-        const normalizedStatus = (c.status || "").toUpperCase();
-        if (normalizedStatus === "SUSPENDED") {
-            status = "Suspended";
-        } else if (normalizedStatus === "PENDING") {
-            status = "Pending";
-        } else if (normalizedStatus === "REJECTED") {
-            status = "Rejected";
-        } else if (!c.isActive) {
-            status = "Inactive";
-        } else {
-            status = "Active";
-        }
+    const [centers, setCenters] = useState<ServiceCenterView[]>([]);
 
-        return {
-            id: c.centerId,
-            name: c.name,
-            location: c.address,
-            googleMapsUrl: c.googleMapsUrl || "",
-            manager: c.managerName || "N/A",
-            phone: c.contactPhone,
-            revenue: c.revenue || 0,
-            status,
-            rawStatus: c.status || "",
-            mechanics: c.mechanicsCount || 0,
-            capacity: c.currentCapacity || 0,
-            openingHours: c.openingHours || "",
-        };
-    });
+    useEffect(() => {
+        const mapped: ServiceCenterView[] = centersData.map((c: any) => {
+            let status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected" = "Active";
+            const normalizedStatus = (c.status || "").toUpperCase();
+            if (normalizedStatus === "SUSPENDED") {
+                status = "Suspended";
+            } else if (normalizedStatus === "PENDING") {
+                status = "Pending";
+            } else if (normalizedStatus === "REJECTED") {
+                status = "Rejected";
+            } else if (!c.isActive) {
+                status = "Inactive";
+            } else {
+                status = "Active";
+            }
+
+            return {
+                id: c.centerId,
+                name: c.name,
+                location: c.address,
+                googleMapsUrl: c.googleMapsUrl || "",
+                manager: c.managerName || "N/A",
+                phone: c.contactPhone,
+                revenue: c.revenue || 0,
+                status,
+                rawStatus: c.status || "",
+                mechanics: c.mechanicsCount || 0,
+                capacity: c.currentCapacity || 0,
+                openingHours: c.openingHours || "",
+            };
+        });
+        setCenters(mapped);
+    }, [centersData]);
 
     useEffect(() => { 
-        if (centersData.length === 0) refreshAll(); 
-    }, [centersData.length, refreshAll]);
+        if (centersData.length === 0) refreshCenters(); 
+    }, [centersData.length, refreshCenters]);
 
     const refreshStripeStatus = async () => {
         try {
@@ -621,6 +625,21 @@ export default function MyCentersPage() {
             googleMapsUrl: formData.googleMapsUrl,
             ownerId: APP_CONFIG.placeholders.ownerId
         };
+        
+        // Optimistic update for edit mode
+        if (isEditMode && selectedId) {
+            setCenters(prev => prev.map(c => c.id === selectedId ? {
+                ...c,
+                name: formData.name,
+                location: formData.location,
+                googleMapsUrl: formData.googleMapsUrl,
+                phone: formData.phone,
+                openingHours: `${formData.openTime} - ${formData.closeTime}`,
+                status: formData.status as any
+            } : c));
+        }
+
+        setOpenDialog(false);
         setIsLoading(true);
         try {
             if (isEditMode && selectedId) {
@@ -630,39 +649,41 @@ export default function MyCentersPage() {
                 await axios.post(APP_CONFIG.api.serviceCenters, payload);
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
-            
-            // Refreshes global data after changes
-            await refreshAll();
-            setOpenDialog(false);
+            refreshCenters();
         } catch (e: any) { 
             const data = e.response?.data;
             const errorMsg = typeof data === 'string' ? data : (data?.message || 'Save operation failed');
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
+            refreshCenters();
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleToggleStatus = async (id: string, current: string) => {
-        const center = centersData.find((c: any) => c.centerId === id);
+        const center = centers.find(c => c.id === id);
         if (!center) return;
         if ((center.status || '').toUpperCase() === 'SUSPENDED') {
             setSnackbar({ open: true, message: 'This branch is suspended by the administrator and cannot be modified.', severity: 'error' });
             return;
         }
-        setIsLoading(true);
+        
+        const nextStatus = current === 'Active' ? 'Inactive' : 'Active';
+        // Optimistic instant toggle (0ms)
+        setCenters(prev => prev.map(c => c.id === id ? { ...c, status: nextStatus } : c));
+        setSnackbar({ open: true, message: `Branch is now ${nextStatus === 'Active' ? 'Enabled' : 'Disabled'}`, severity: 'success' });
+
         try {
             await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, {
-                ...center, isActive: current !== 'Active', ownerId: APP_CONFIG.placeholders.ownerId
+                ...center, isActive: nextStatus === 'Active', ownerId: APP_CONFIG.placeholders.ownerId
             });
-            await refreshAll();
-            setSnackbar({ open: true, message: `Branch is now ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
+            refreshCenters();
         } catch (e: any) { 
+            // Revert on error
+            setCenters(prev => prev.map(c => c.id === id ? { ...c, status: current as any } : c));
             const data = e.response?.data;
             const errorMsg = typeof data === 'string' ? data : (data?.message || 'Status update failed');
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -685,24 +706,29 @@ export default function MyCentersPage() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string, name: string }>({ isOpen: false, id: '', name: '' });
 
     const handleDelete = async (id: string) => {
-        setIsLoading(true);
+        const centerToDelete = centers.find(c => c.id === id);
+        // Optimistic instant remove (0ms)
+        setCenters(prev => prev.filter(c => c.id !== id));
+        setDeleteModal({ isOpen: false, id: '', name: '' });
+        setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
+
         try {
             await axios.delete(`${APP_CONFIG.api.serviceCenters}/${id}`);
-            setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
-            await refreshAll();
-            setDeleteModal({ isOpen: false, id: '', name: '' });
+            refreshCenters();
         } catch (e: any) {
+            // Revert on error
+            if (centerToDelete) {
+                setCenters(prev => [...prev, centerToDelete]);
+            }
             const data = e.response?.data;
             const errorMsg = typeof data === 'string' ? data : (data?.message || 'Delete operation failed');
             setSnackbar({ open: true, message: errorMsg, severity: 'error' });
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
-    const filtered = centersList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const hasSuspendedCenters = centersList.some(c => c.status === 'Suspended');
+    const filtered = centers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase()));
+    const hasSuspendedCenters = centers.some(c => c.status === 'Suspended');
 
     return (
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>

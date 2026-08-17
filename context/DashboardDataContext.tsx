@@ -197,6 +197,33 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         }
     }, []);
 
+    const refreshManagers = useCallback(async () => {
+        try {
+            const res = await axios.get(APP_CONFIG.api.managers + "/current");
+            setManagersData(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+        } catch (e) {
+            console.warn("[DashboardDataContext] refreshManagers failed", e);
+        }
+    }, []);
+
+    const refreshCenters = useCallback(async () => {
+        try {
+            const res = await axios.get(APP_CONFIG.api.serviceCenters + "/current");
+            setCentersData(res.data || []);
+        } catch (e) {
+            console.warn("[DashboardDataContext] refreshCenters failed", e);
+        }
+    }, []);
+
+    const refreshAnalytics = useCallback(async () => {
+        try {
+            const res = await axios.get(APP_CONFIG.api.analytics + "/current");
+            setAnalyticsData(res.data || null);
+        } catch (e) {
+            console.warn("[DashboardDataContext] refreshAnalytics failed", e);
+        }
+    }, []);
+
     const contextValue: DashboardDataContextType = {
         centersData,
         managersData,
@@ -209,9 +236,9 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         invoicesData,
         isLoading: isInitialLoad,
         hasDataInitialized,
-        refreshCenters: async () => { /* Individual refresh logic if needed */ },
-        refreshManagers: async () => { /* Individual refresh logic if needed */ },
-        refreshAnalytics: async () => { /* Individual refresh logic if needed */ },
+        refreshCenters,
+        refreshManagers,
+        refreshAnalytics,
         refreshBookings,
         refreshInvoices,
         refreshAll: refreshAllDashboardData

@@ -214,7 +214,22 @@ export default function CompanyOwnerDashboard() {
             {/* TAB SECTION: Separates Overview metrics from Performance charts. */}
             <Box mb={4}>
                 <Box borderBottom={1} borderColor="divider" mb={3}>
-                    <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} textColor="primary" indicatorColor="primary">
+                    <Tabs 
+                        value={activeTab} 
+                        onChange={(_, val) => setActiveTab(val)} 
+                        textColor="primary" 
+                        indicatorColor="primary"
+                        sx={{
+                            '& .MuiTabs-indicator': { backgroundColor: '#ea580c', height: 3, borderRadius: '3px 3px 0 0' },
+                            '& .MuiTab-root': { 
+                                textTransform: 'none', 
+                                fontWeight: 700,
+                                fontSize: '0.95rem',
+                                color: '#64748b', 
+                                '&.Mui-selected': { color: '#ea580c' } 
+                            }
+                        }}
+                    >
                         <Tab label="Overview" value="overview" icon={<FiGrid />} iconPosition="start" />
                         <Tab label="Performance" value="performance" icon={<FiBarChart2 />} iconPosition="start" />
                     </Tabs>
@@ -231,10 +246,10 @@ export default function CompanyOwnerDashboard() {
                     <QuickActionBtn title="Service Reports" icon={<FiFileText size={24} />} href="/dashboard/company-owner/reports" color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <QuickActionBtn title="Create Service Center" icon={<FiPlus size={24} />} href="/dashboard/company-owner/centers" color="default" />
+                    <QuickActionBtn title="Manage Service Centers" icon={<FiPlus size={24} />} href="/dashboard/company-owner/centers" color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <QuickActionBtn title="Manage Services" icon={<FiLayers size={24} />} href="/dashboard/company-owner/services" color="default" />
+                    <QuickActionBtn title="Manage Services" icon={<FiLayers size={24} />} href="/dashboard/company-owner/services" color="primary" />
                 </Grid>
             </Grid>
         </Box>

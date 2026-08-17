@@ -211,7 +211,7 @@ export default function BookingsPage() {
                     {view === "list" ? (
                         <button
                             onClick={() => setView("new-booking")}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
                         >
                             <FiPlus /> New Booking
                         </button>
@@ -270,7 +270,7 @@ export default function BookingsPage() {
                                                 key={day}
                                                 onClick={() => handleDateSelect(day)}
                                                 className={`aspect-square flex items-center justify-center rounded-md transition-colors 
-                                                    ${selected ? 'bg-primary text-white font-bold shadow-sm' : 
+                                                    ${selected ? 'bg-orange-600 text-white font-bold shadow-sm' : 
                                                       today ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200' : 
                                                       'hover:bg-slate-100 text-slate-600'}`}
                                             >
@@ -477,7 +477,7 @@ export default function BookingsPage() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium transition-colors shadow-sm disabled:opacity-50"
+                                className="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors shadow-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? "Creating..." : "Create Booking"}
                             </button>
