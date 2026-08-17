@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase, FiCheck, FiX } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiArrowRight, FiArrowLeft, FiPhone, FiBriefcase, FiCheck, FiX, FiUpload } from "react-icons/fi";
 import { APP_CONFIG } from "@/utils/config";
 
 export default function SignupPage() {
@@ -29,6 +29,52 @@ export default function SignupPage() {
         special: false
     });
 
+    // Document state
+    const [documents, setDocuments] = useState({
+        brDocument: { file: null as File | null, base64: "", name: "", error: "" },
+        taxDocument: { file: null as File | null, base64: "", name: "", error: "" },
+        nicDocument: { file: null as File | null, base64: "", name: "", error: "" }
+    });
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: 'brDocument' | 'taxDocument' | 'nicDocument') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            setDocuments(prev => ({ ...prev, [docType]: { ...prev[docType], error: "Invalid file type. Please upload PDF, JPG, or PNG." } }));
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            setDocuments(prev => ({ ...prev, [docType]: { ...prev[docType], error: "File too large. Maximum size is 50MB." } }));
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                setDocuments(prev => ({
+                    ...prev,
+                    [docType]: { file, base64: reader.result as string, name: file.name, error: "" }
+                }));
+            };
+            reader.onerror = () => {
+                setDocuments(prev => ({ ...prev, [docType]: { ...prev[docType], error: "Failed to read file." } }));
+            };
+        } catch (err) {
+            setDocuments(prev => ({ ...prev, [docType]: { ...prev[docType], error: "Error uploading file." } }));
+        }
+    };
+
+    const removeFile = (docType: 'brDocument' | 'taxDocument' | 'nicDocument') => {
+        setDocuments(prev => ({
+            ...prev,
+            [docType]: { file: null, base64: "", name: "", error: "" }
+        }));
+    };
+
+
     useEffect(() => {
         setValidations({
             length: password.length >= 8,
@@ -43,8 +89,14 @@ export default function SignupPage() {
     const metConditionsCount = Object.values(validations).filter(Boolean).length;
     const doPasswordsMatch = password === confirmPassword && password.length > 0;
 
-    const handleSignup = async (e: React.FormEvent) => {
+    const proceedToDocuments = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isPasswordStrong || !doPasswordsMatch) return;
+        setStep(3);
+    };
+
+    const handleSignup = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!role) return;
 
         if (!isPasswordStrong) {
@@ -57,6 +109,13 @@ export default function SignupPage() {
             return;
         }
 
+        if (role === "service-center") {
+            if (!documents.brDocument.base64 || !documents.taxDocument.base64 || !documents.nicDocument.base64) {
+                setError("Please upload all required documents to proceed.");
+                return;
+            }
+        }
+
         setLoading(true);
 
         try {
@@ -66,7 +125,12 @@ export default function SignupPage() {
 
             const payload = role === "vehicle-owner" 
                 ? { fullName, email, password }
-                : { fullName, email, password, companyName, companyNumber: phoneNumber };
+                : { 
+                    fullName, email, password, companyName, companyNumber: phoneNumber,
+                    businessRegUrl: documents.brDocument.base64,
+                    taxIdUrl: documents.taxDocument.base64,
+                    nicUrl: documents.nicDocument.base64
+                };
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -99,7 +163,8 @@ export default function SignupPage() {
             if (data.role === "ROLE_CUSTOMER") {
                 router.push("/dashboard/customer");
             } else {
-                router.push("/dashboard/company-owner");
+                // For new owners, they must wait for approval, so redirect to verification page
+                router.push("/verification");
             }
         } catch (error: any) {
             console.error("Signup error:", error);
@@ -344,7 +409,8 @@ export default function SignupPage() {
                                             Back
                                         </button>
                                         <button
-                                            type="submit"
+                                            type={role === "service-center" ? "button" : "submit"}
+                                            onClick={role === "service-center" ? proceedToDocuments : undefined}
                                             id="btn-submit"
                                             disabled={loading || !isPasswordStrong || !doPasswordsMatch}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-lg shadow-orange-200 text-white bg-[#FF8C42] hover:bg-[#F97316] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8C42] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm"
@@ -352,7 +418,7 @@ export default function SignupPage() {
                                             {loading ? (
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             ) : (
-                                                <>Create Account <FiArrowRight /></>
+                                                <>{role === "service-center" ? "Continue" : "Create Account"} <FiArrowRight /></>
                                             )}
                                         </button>
                                     </div>
@@ -361,6 +427,117 @@ export default function SignupPage() {
                                     <p className="text-gray-500 text-sm">
                                         Already have an account? <Link href="/login" className="text-[#FF8C42] hover:underline font-bold">Log in</Link>
                                     </p>
+                                </div>
+                            </div>
+                        )}
+                        {step === 3 && role === "service-center" && (
+                            <div className="w-full max-w-md mx-auto animate-fade-in">
+                                <div className="text-center mb-6">
+                                    <h1 className="text-2xl font-bold text-[#FF8C42] mb-2">Required Documents</h1>
+                                    <p className="text-gray-500 text-sm">Please upload your business verification documents to complete registration.</p>
+                                </div>
+                                {error && (
+                                    <div className="p-3 mb-4 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                        {error}
+                                    </div>
+                                )}
+                                <div className="space-y-5">
+                                    {/* BR Document */}
+                                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-800">Business Registration <span className="text-red-500">*</span></h3>
+                                                <p className="text-xs text-gray-500">Official company registration certificate</p>
+                                            </div>
+                                            {documents.brDocument.base64 && <FiCheck className="text-green-500 text-xl" />}
+                                        </div>
+                                        {!documents.brDocument.base64 ? (
+                                            <div>
+                                                <input type="file" id="brDoc" className="hidden" accept=".pdf,image/jpeg,image/png" onChange={(e) => handleFileUpload(e, 'brDocument')} />
+                                                <label htmlFor="brDoc" className="flex items-center justify-center w-full py-2 border-2 border-dashed border-[#FF8C42]/50 rounded-lg text-[#FF8C42] cursor-pointer hover:bg-[#FF8C42]/5 transition-colors text-xs font-bold">
+                                                    Click to Upload
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-lg">
+                                                <span className="text-xs text-gray-700 truncate max-w-[200px]">{documents.brDocument.name}</span>
+                                                <button type="button" onClick={() => removeFile('brDocument')} className="text-red-500 hover:text-red-700"><FiX /></button>
+                                            </div>
+                                        )}
+                                        {documents.brDocument.error && <p className="text-red-500 text-xs mt-1">{documents.brDocument.error}</p>}
+                                    </div>
+
+                                    {/* Tax Document */}
+                                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-800">Tax Identification <span className="text-red-500">*</span></h3>
+                                                <p className="text-xs text-gray-500">TIN or equivalent tax document</p>
+                                            </div>
+                                            {documents.taxDocument.base64 && <FiCheck className="text-green-500 text-xl" />}
+                                        </div>
+                                        {!documents.taxDocument.base64 ? (
+                                            <div>
+                                                <input type="file" id="taxDoc" className="hidden" accept=".pdf,image/jpeg,image/png" onChange={(e) => handleFileUpload(e, 'taxDocument')} />
+                                                <label htmlFor="taxDoc" className="flex items-center justify-center w-full py-2 border-2 border-dashed border-[#FF8C42]/50 rounded-lg text-[#FF8C42] cursor-pointer hover:bg-[#FF8C42]/5 transition-colors text-xs font-bold">
+                                                    Click to Upload
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-lg">
+                                                <span className="text-xs text-gray-700 truncate max-w-[200px]">{documents.taxDocument.name}</span>
+                                                <button type="button" onClick={() => removeFile('taxDocument')} className="text-red-500 hover:text-red-700"><FiX /></button>
+                                            </div>
+                                        )}
+                                        {documents.taxDocument.error && <p className="text-red-500 text-xs mt-1">{documents.taxDocument.error}</p>}
+                                    </div>
+
+                                    {/* NIC Document */}
+                                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-800">NIC / Passport <span className="text-red-500">*</span></h3>
+                                                <p className="text-xs text-gray-500">Owner's personal identity document</p>
+                                            </div>
+                                            {documents.nicDocument.base64 && <FiCheck className="text-green-500 text-xl" />}
+                                        </div>
+                                        {!documents.nicDocument.base64 ? (
+                                            <div>
+                                                <input type="file" id="nicDoc" className="hidden" accept=".pdf,image/jpeg,image/png" onChange={(e) => handleFileUpload(e, 'nicDocument')} />
+                                                <label htmlFor="nicDoc" className="flex items-center justify-center w-full py-2 border-2 border-dashed border-[#FF8C42]/50 rounded-lg text-[#FF8C42] cursor-pointer hover:bg-[#FF8C42]/5 transition-colors text-xs font-bold">
+                                                    Click to Upload
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-lg">
+                                                <span className="text-xs text-gray-700 truncate max-w-[200px]">{documents.nicDocument.name}</span>
+                                                <button type="button" onClick={() => removeFile('nicDocument')} className="text-red-500 hover:text-red-700"><FiX /></button>
+                                            </div>
+                                        )}
+                                        {documents.nicDocument.error && <p className="text-red-500 text-xs mt-1">{documents.nicDocument.error}</p>}
+                                    </div>
+                                    
+                                    <div className="pt-4 flex items-center justify-between gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep(2)}
+                                            className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSignup()}
+                                            disabled={loading || !documents.brDocument.base64 || !documents.taxDocument.base64 || !documents.nicDocument.base64}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-lg shadow-orange-200 text-white bg-[#FF8C42] hover:bg-[#F97316] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8C42] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-sm"
+                                        >
+                                            {loading ? (
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <>Submit Registration <FiCheck /></>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
