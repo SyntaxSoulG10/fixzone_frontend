@@ -385,7 +385,6 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
-    const [autoRenew, setAutoRenew] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -457,7 +456,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
         }
         setCheckoutLoading(true);
         try {
-            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan, autoRenew });
+            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan });
             const checkoutUrl = res.data?.checkoutUrl || res.data;
             if (!checkoutUrl || typeof checkoutUrl !== "string") {
                 throw new Error("Invalid checkout URL received from server.");
@@ -521,7 +520,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
             {/* Subscription Checkout Card */}
             <Grid size={{ xs: 12, md: 7 }}>
                 <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe / Renew</Typography>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe</Typography>
                     <Divider sx={{ mb: 2 }} />
                     {loadingPlans ? (
                         <Box display="flex" justifyContent="center" p={3}><CircularProgress size={32} sx={{ color: '#EA580C' }} /></Box>
@@ -556,19 +555,13 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                                 </RadioGroup>
                             </MuiFormControl>
 
-                            <FormControlLabel
-                                control={<Checkbox checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
-                                label={<Typography variant="body2">Enable Auto-Renew (save card for future payments)</Typography>}
-                                sx={{ mb: 2, mt: 0.5 }}
-                            />
-
                             <Button
                                 variant="contained"
                                 fullWidth
                                 disabled={!selectedPlan || checkoutLoading}
                                 onClick={handleSubscribe}
                                 startIcon={checkoutLoading ? <CircularProgress size={16} color="inherit" /> : <FiCreditCard />}
-                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
+                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, mt: 1, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
                             >
                                 {checkoutLoading ? "Redirecting to Stripe..." : "Proceed to Payment"}
                             </Button>

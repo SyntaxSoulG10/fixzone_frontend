@@ -735,6 +735,20 @@ export default function ServicesPage() {
             isActive: currentPackage.isActive
         };
 
+        // Optimistic update for editing
+        if (isEditing) {
+            setPackages(prev => prev.map(p => p.id === currentPackage.id ? {
+                ...p,
+                name: currentPackage.name,
+                description: currentPackage.description,
+                price: Number(currentPackage.price),
+                duration: Number(currentPackage.duration),
+                features: processedFeatures,
+                isActive: currentPackage.isActive
+            } : p));
+        }
+
+        setIsModalOpen(false);
         try {
             if (isEditing) {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/service-packages/${currentPackage.id}`, packageData);
@@ -743,11 +757,11 @@ export default function ServicesPage() {
                 await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
                 showSnackbar("Service package created successfully");
             }
-            await fetchPackages();
-            setIsModalOpen(false);
+            fetchPackages();
         } catch (error: any) {
             console.error("Error saving service package:", error);
             showSnackbar(error.response?.data?.message || "Failed to save service package", "error");
+            fetchPackages();
         } finally {
             setIsSaving(false);
         }
@@ -756,12 +770,19 @@ export default function ServicesPage() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string, name: string }>({ isOpen: false, id: '', name: '' });
 
     const handleDelete = async (id: string) => {
+        const pkgToDelete = packages.find(p => p.id === id);
+        // Optimistic delete (0ms)
+        setPackages(prev => prev.filter(p => p.id !== id));
+        setDeleteModal({ isOpen: false, id: '', name: '' });
+        showSnackbar("Service package deleted successfully");
+
         try {
             await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
-            showSnackbar("Service package deleted successfully");
             fetchPackages();
-            setDeleteModal({ isOpen: false, id: '', name: '' });
         } catch (error: any) {
+            if (pkgToDelete) {
+                setPackages(prev => [...prev, pkgToDelete]);
+            }
             console.error("Error deleting service package:", error);
             showSnackbar(error.response?.data?.message || "Failed to delete service package", "error");
         }
@@ -777,6 +798,7 @@ export default function ServicesPage() {
                 description="Create and manage your service offerings and pricing."
                 action={
                     <Button 
+                        variant="primary"
                         onClick={handleOpenCreate}
                         disabled={isExpired}
                         title={isExpired ? "Upgrade your plan to use this feature" : ""}

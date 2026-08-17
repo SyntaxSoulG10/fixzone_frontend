@@ -23,8 +23,8 @@ export default function Tabs({ tabs, activeTab, onChange, className = '' }: Tabs
                     className={`
                         relative px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 flex items-center gap-2
                         ${activeTab === tab.id
-                            ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20 border border-orange-500'
+                            : 'text-slate-500 hover:text-orange-600 hover:bg-orange-50'
                         }
                     `}
                 >
