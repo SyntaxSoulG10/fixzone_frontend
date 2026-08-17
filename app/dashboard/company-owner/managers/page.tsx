@@ -72,7 +72,7 @@ interface CenterAPIResponse { centerId: string; name: string; }
  * TABLE COLUMNS: Defining the table structure outside the component 
  * reduces complexity and improves rendering performance.
  */
-const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any, onResend: any, isExpired: boolean): GridColDef[] => [
+const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any, onResend: any, isExpired: boolean, resendingId: string | null): GridColDef[] => [
     {
         field: 'name', headerName: 'Name', flex: 2, minWidth: 250,
         renderCell: (p: GridRenderCellParams) => (
@@ -117,6 +117,7 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
         field: 'actions', headerName: 'Actions', flex: 2, minWidth: 260, align: 'right', sortable: false,
         renderCell: (p: GridRenderCellParams) => {
             const isInvited = p.row.status === 'INVITED' || p.row.status === 'Pending';
+            const isResending = resendingId === p.row.id;
             return (
                 <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end">
                     {isInvited && (
@@ -124,11 +125,12 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
                             size="small" 
                             variant="outlined" 
                             color="primary"
-                            disabled={isExpired} 
+                            disabled={isExpired || isResending} 
                             onClick={() => onResend(p.row.id)}
+                            startIcon={isResending ? <CircularProgress size={14} color="inherit" /> : undefined}
                             sx={{ textTransform: 'none', borderRadius: 1.5 }}
                         >
-                            Resend
+                            {isResending ? "Sending..." : "Resend"}
                         </Button>
                     )}
                     <Button size="small" variant="outlined" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
@@ -158,18 +160,18 @@ function ManagersHeader({ onAdd, isExpired }: { onAdd: () => void, isExpired: bo
 /**
  * DIALOG COMPONENT: Standardized form dialog for managing manager data.
  */
-function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers, dialogError }: any) {
+function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers, dialogError, isSaving }: any) {
     const isEmailInvalid = Boolean(formData.email) && !isValidEmail(formData.email.trim());
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={isSaving ? undefined : onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
             <DialogTitle sx={{ fontWeight: 'bold' }}>{isEdit ? "Edit Manager Access" : "Add New Manager"}</DialogTitle>
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
                     {dialogError && (
                         <Alert severity="error" sx={{ borderRadius: 2 }}>{dialogError}</Alert>
                     )}
-                    <TextField label="Full Name" name="name" value={formData.name} onChange={onChange} fullWidth required />
-                    <FormControl fullWidth required>
+                    <TextField label="Full Name" name="name" value={formData.name} onChange={onChange} fullWidth required disabled={isSaving} />
+                    <FormControl fullWidth required disabled={isSaving}>
                         <InputLabel>Assign Center</InputLabel>
                         <Select name="center" value={formData.center} label="Assign Center" onChange={onChange}>
                             {centers.map((c: any) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
@@ -186,15 +188,24 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
                         helperText={isEmailInvalid ? "Please enter a valid, real email address (e.g. manager@gmail.com, dummy domains like example.com are not allowed)" : ""}
                         fullWidth 
                         required 
+                        disabled={isSaving}
                     />
                     {!isEdit && (
-                        <FormControlLabel control={<Checkbox checked={formData.sendInvite} onChange={onChange} name="sendInvite" color="primary" />} label="Send Email Invitation" />
+                        <FormControlLabel control={<Checkbox checked={formData.sendInvite} onChange={onChange} name="sendInvite" color="primary" disabled={isSaving} />} label="Send Email Invitation" />
                     )}
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={onSave} variant="contained" sx={{ borderRadius: 2, px: 4 }}>{isEdit ? "Save Changes" : "Create Account"}</Button>
+                <Button onClick={onClose} disabled={isSaving}>Cancel</Button>
+                <Button 
+                    onClick={onSave} 
+                    variant="contained" 
+                    disabled={isSaving} 
+                    startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : undefined}
+                    sx={{ borderRadius: 2, px: 4 }}
+                >
+                    {isSaving ? "Saving..." : (isEdit ? "Save Changes" : "Create Account")}
+                </Button>
             </DialogActions>
         </Dialog>
     );
@@ -205,7 +216,7 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
  */
 export default function ManagersPage() {
     const theme = useTheme();
-    const { managersData, centersData, ownerData, isLoading: contextLoading, refreshAll } = useDashboardData();
+    const { managersData, centersData, ownerData, isLoading: contextLoading, refreshManagers } = useDashboardData();
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
     const [managers, setManagers] = useState<ManagerView[]>([]);
     const [centersList, setCentersList] = useState<string[]>([]);
@@ -217,6 +228,8 @@ export default function ManagersPage() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
     const [dialogError, setDialogError] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
+    const [isSaving, setIsSaving] = useState(false);
+    const [resendingId, setResendingId] = useState<string | null>(null);
 
     useEffect(() => { 
         if (!contextLoading) {
@@ -272,6 +285,7 @@ export default function ManagersPage() {
             status: formData.status, 
             sendInvite: formData.sendInvite 
         };
+        setIsSaving(true);
         try {
             if (isEditMode && selectedId) {
                 await axios.put(`${APP_CONFIG.api.managers}/${selectedId}`, payload);
@@ -282,11 +296,13 @@ export default function ManagersPage() {
             }
             setOpenDialog(false);
             setDialogError(null);
-            await refreshAll();
+            await refreshManagers();
         } catch (e: any) { 
             const errorMsg = e.response?.data?.message || 'Operation failed';
             setDialogError(errorMsg);
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -303,7 +319,7 @@ export default function ManagersPage() {
                 status: targetStatus
             };
             await axios.put(`${APP_CONFIG.api.managers}/${id}`, payload);
-            await refreshAll();
+            await refreshManagers();
             setSnackbar({ open: true, message: `Manager account ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
         } catch (e: any) { 
             setSnackbar({ open: true, message: e.response?.data?.message || 'Update failed', severity: 'error' }); 
@@ -315,7 +331,7 @@ export default function ManagersPage() {
     const handleDeleteManager = async (id: string) => {
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
-            await refreshAll();
+            await refreshManagers();
             setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
             setDeleteModal({ isOpen: false, id: '' });
         } catch (e: any) {
@@ -324,11 +340,14 @@ export default function ManagersPage() {
     };
 
     const handleResendInvite = async (id: string) => {
+        setResendingId(id);
         try {
             await axios.post(`${APP_CONFIG.api.managers}/${id}/resend-invite`);
             setSnackbar({ open: true, message: 'Invitation email resent successfully!', severity: 'success' });
         } catch (e: any) {
             setSnackbar({ open: true, message: e.response?.data?.message || 'Failed to resend invitation', severity: 'error' });
+        } finally {
+            setResendingId(null);
         }
     };
 
@@ -361,7 +380,8 @@ export default function ManagersPage() {
                             handleToggleStatus, 
                             (id: string) => setDeleteModal({ isOpen: true, id }),
                             handleResendInvite,
-                            isExpired
+                            isExpired,
+                            resendingId
                         )} 
                         pageSizeOptions={[5, 10]} 
                         disableRowSelectionOnClick 
@@ -372,13 +392,14 @@ export default function ManagersPage() {
 
             <ManagerDialog 
                 open={openDialog} 
-                onClose={() => { setOpenDialog(false); setDialogError(null); }} 
+                onClose={() => { if (!isSaving) { setOpenDialog(false); setDialogError(null); } }} 
                 isEdit={isEditMode} 
                 formData={formData} 
                 onChange={handleFormChange} 
                 onSave={handleSave} 
                 centers={centersList} 
                 dialogError={dialogError}
+                isSaving={isSaving}
             />
 
             {/* Delete Manager Dialog */}

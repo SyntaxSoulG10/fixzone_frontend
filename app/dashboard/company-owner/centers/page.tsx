@@ -430,7 +430,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  * Optimized with DashboardDataContext for instant tab switching.
  */
 export default function MyCentersPage() {
-    const { centersData, ownerData, isLoading: isContextLoading, refreshAll } = useDashboardData();
+    const { centersData, ownerData, isLoading: isContextLoading, refreshCenters, refreshAll } = useDashboardData();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -524,8 +524,8 @@ export default function MyCentersPage() {
     });
 
     useEffect(() => { 
-        if (centersData.length === 0) refreshAll(); 
-    }, [centersData.length, refreshAll]);
+        if (centersData.length === 0) refreshCenters(); 
+    }, [centersData.length, refreshCenters]);
 
     const refreshStripeStatus = async () => {
         try {
@@ -631,8 +631,8 @@ export default function MyCentersPage() {
                 setSnackbar({ open: true, message: 'New center branch created!', severity: 'success' });
             }
             
-            // Refreshes global data after changes
-            await refreshAll();
+            // Refreshes centers data after changes
+            await refreshCenters();
             setOpenDialog(false);
         } catch (e: any) { 
             const data = e.response?.data;
@@ -655,7 +655,7 @@ export default function MyCentersPage() {
             await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, {
                 ...center, isActive: current !== 'Active', ownerId: APP_CONFIG.placeholders.ownerId
             });
-            await refreshAll();
+            await refreshCenters();
             setSnackbar({ open: true, message: `Branch is now ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
         } catch (e: any) { 
             const data = e.response?.data;
@@ -689,7 +689,7 @@ export default function MyCentersPage() {
         try {
             await axios.delete(`${APP_CONFIG.api.serviceCenters}/${id}`);
             setSnackbar({ open: true, message: 'Service center deleted successfully', severity: 'success' });
-            await refreshAll();
+            await refreshCenters();
             setDeleteModal({ isOpen: false, id: '', name: '' });
         } catch (e: any) {
             const data = e.response?.data;
