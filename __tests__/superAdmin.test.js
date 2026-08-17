@@ -48,6 +48,18 @@ function getGraphData(analytics, view) {
   };
 }
 
+function getSubscriberData(analytics, view) {
+  if (!analytics) return { total: 0, labels: [], counts: [] };
+  const source =
+    view === "weekly" ? analytics.weeklySubscribers : analytics.monthlySubscribers;
+  if (!source) return { total: 0, labels: [], counts: [] };
+  return {
+    total: source.reduce((acc, curr) => acc + curr.count, 0),
+    labels: source.map((d) => d.label),
+    counts: source.map((d) => d.count),
+  };
+}
+
 function formatRevenueLabel(totalPlatformRevenue) {
   if (totalPlatformRevenue >= 1_000_000)
     return `Rs ${(totalPlatformRevenue / 1_000_000).toFixed(1)}M`;
@@ -287,6 +299,14 @@ describe("4. Graph Data Computation (getGraphData)", () => {
       { label: "Jan", amount: 5000, percentage: 60 },
       { label: "Feb", amount: 8000, percentage: 100 },
     ],
+    weeklySubscribers: [
+      { label: "Mon", count: 2 },
+      { label: "Tue", count: 5 },
+    ],
+    monthlySubscribers: [
+      { label: "Jan", count: 10 },
+      { label: "Feb", count: 15 },
+    ],
   };
 
   test("TC-FE-21: returns zero total when analytics is null", () => {
@@ -466,5 +486,49 @@ describe("8. Revenue Label Formatting (formatRevenueLabel)", () => {
 
   test("TC-FE-50: formats 750,000 as Rs 750K", () => {
     expect(formatRevenueLabel(750000)).toBe("Rs 750K");
+  });
+});
+
+// ═══════════════════════════════════════
+//  SECTION 9 – Subscriber Trend Utilities
+// ═══════════════════════════════════════
+describe("9. Subscriber Trend (getSubscriberData)", () => {
+  const mockAnalytics = {
+    weeklySubscribers: [
+      { label: "Mon", count: 2 },
+      { label: "Tue", count: 5 },
+      { label: "Wed", count: 1 },
+    ],
+    monthlySubscribers: [
+      { label: "Jan", count: 10 },
+      { label: "Feb", count: 15 },
+      { label: "Mar", count: 8 },
+    ],
+  };
+
+  test("TC-FE-51: returns zero total when analytics is null", () => {
+    const data = getSubscriberData(null, "weekly");
+    expect(data.total).toBe(0);
+    expect(data.labels).toHaveLength(0);
+  });
+
+  test("TC-FE-52: weekly view sums subscriber counts correctly", () => {
+    const data = getSubscriberData(mockAnalytics, "weekly");
+    expect(data.total).toBe(8); // 2 + 5 + 1
+  });
+
+  test("TC-FE-53: monthly view sums subscriber counts correctly", () => {
+    const data = getSubscriberData(mockAnalytics, "monthly");
+    expect(data.total).toBe(33); // 10 + 15 + 8
+  });
+
+  test("TC-FE-54: weekly labels are mapped correctly", () => {
+    const data = getSubscriberData(mockAnalytics, "weekly");
+    expect(data.labels).toEqual(["Mon", "Tue", "Wed"]);
+  });
+
+  test("TC-FE-55: weekly counts are mapped correctly", () => {
+    const data = getSubscriberData(mockAnalytics, "weekly");
+    expect(data.counts).toEqual([2, 5, 1]);
   });
 });

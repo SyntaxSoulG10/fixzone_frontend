@@ -20,8 +20,6 @@ import { DashboardDataProvider } from "@/context/DashboardDataContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "react-hot-toast";
 
-import FetchInterceptor from "@/components/auth/FetchInterceptor";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +28,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={roboto.className}>
-        <FetchInterceptor />
         <ThemeRegistry>
           <ThemeProvider>
             <DashboardDataProvider>

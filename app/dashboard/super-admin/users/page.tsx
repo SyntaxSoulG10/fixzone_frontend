@@ -79,20 +79,52 @@ import ConfirmDialog from "@/components/UI/ConfirmDialog";
  * CONFIRMATION MODAL: Safety component for destructive or sensitive status changes using ConfirmDialog.
  */
 function StatusConfirmModal({ isOpen, user, action, onConfirm, onCancel }: any) {
-    if (!isOpen || !user) return null;
+    const [reason, setReason] = useState("");
+    
+    // Reset reason when modal opens/closes
+    useEffect(() => {
+        if (isOpen) setReason("");
+    }, [isOpen]);
+
+    if (!isOpen) return null;
     const isSuspending = action === 'Suspended';
 
     return (
-        <ConfirmDialog
-            open={isOpen}
-            onClose={onCancel}
-            title={`${action} User?`}
-            message={<>Are you sure you want to {action.toLowerCase()} <strong style={{ color: '#0f172a' }}>{user.name}</strong>?</>}
-            confirmText={isSuspending ? 'Suspend User' : 'Activate User'}
-            cancelText="Cancel"
-            variant={isSuspending ? 'warning' : 'success'}
-            onConfirm={onConfirm}
-        />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className={`h-2 ${isSuspending ? 'bg-orange-500' : 'bg-green-500'}`}></div>
+                <div className="p-8 text-center space-y-6">
+                    <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl ${isSuspending ? 'bg-orange-50 text-orange-500' : 'bg-green-50 text-green-500'}`}>
+                        {isSuspending ? <FiUserX /> : <FiUserCheck />}
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900">{action} User?</h3>
+                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                            Are you sure you want to {action.toLowerCase()} <span className="font-bold text-slate-800">{user.name}</span>?
+                        </p>
+                    </div>
+                    {isSuspending && (
+                        <div className="text-left">
+                            <label className="block text-xs font-bold text-slate-700 mb-2">Reason for Suspension <span className="text-red-500">*</span></label>
+                            <textarea 
+                                value={reason} 
+                                onChange={e => setReason(e.target.value)}
+                                className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-100 focus:border-orange-300 outline-none transition-all resize-none h-20"
+                                placeholder="Enter suspension reason..."
+                            ></textarea>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button onClick={onCancel} className="px-6 py-3 text-sm font-bold text-black bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">Cancel</button>
+                        <button 
+                            onClick={() => onConfirm(reason)} 
+                            disabled={isSuspending && !reason.trim()}
+                            className={`px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all shadow-lg disabled:opacity-50 ${isSuspending ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-100' : 'bg-green-600 hover:bg-green-700 shadow-green-100'}`}
+                        >Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -132,13 +164,15 @@ export default function UsersPage() {
         } catch (e) { toast.error("Failed to synchronize user records."); } finally { setLoading(false); }
     };
 
-    const handleStatusUpdate = async () => {
+    const handleStatusUpdate = async (reason?: string) => {
         const { userId, action } = confirmModal;
         try {
             setProcessingId(userId);
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: action } : u));
-            await axios.post(`${APP_CONFIG.api.baseUrl}/admin/users/${userId}/status?status=${action}`);
+            const params = new URLSearchParams({ status: action });
+            if (reason) params.append('reason', reason);
+            await axios.post(`${APP_CONFIG.api.baseUrl}/admin/users/${userId}/status?${params.toString()}`);
             toast.success(`Account successfully ${action.toLowerCase()}`);
         } catch (e) { toast.error("Action failed."); loadUserDatabase(); } finally { setProcessingId(null); }
     };

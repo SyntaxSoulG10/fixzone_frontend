@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import toast from "react-hot-toast";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton, Grid, Box, Button, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, IconButton, Grid, Box, Button, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import StatCard from "@/components/dashboard/StatCard";
 import ChartCard from "@/components/dashboard/ChartCard";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, LineChart, Line } from "recharts";
@@ -16,6 +16,11 @@ interface RevenueBar {
     label: string;
     amount: number;
     percentage: number;
+}
+
+interface SubscriberTrend {
+    label: string;
+    count: number;
 }
 
 interface TopStation {
@@ -33,6 +38,8 @@ interface AnalyticsData {
     subscriptionChange: string;
     weeklyRevenue: RevenueBar[];
     monthlyRevenue: RevenueBar[];
+    weeklySubscribers: SubscriberTrend[];
+    monthlySubscribers: SubscriberTrend[];
     topStations: TopStation[];
 }
 
@@ -63,19 +70,31 @@ export default function SuperAdminDashboard() {
     const analytics = analyticsData as AnalyticsData | null;
     const loading = isLoading;
 
-    // Transform analytics data for charts (Recharts format)
+    // Transform subscription billing data for Revenue chart
     const getChartData = () => {
         if (!analytics) return [];
         const source = view === 'weekly' ? analytics.weeklyRevenue : analytics.monthlyRevenue;
-        return source.map((d: RevenueBar) => ({
+        return (source || []).map((d: RevenueBar) => ({
             name: d.label,
             revenue: d.amount,
             percentage: d.percentage,
         }));
     };
 
+    // Transform subscriber trend data for Subscription Trend chart
+    const getSubscriberData = () => {
+        if (!analytics) return [];
+        const source = view === 'weekly' ? analytics.weeklySubscribers : analytics.monthlySubscribers;
+        return (source || []).map((d: SubscriberTrend) => ({
+            name: d.label,
+            subscribers: d.count,
+        }));
+    };
+
     const chartData = getChartData();
-    const totalRevenue = chartData.reduce((acc: number, curr: any) => acc + curr.revenue, 0);
+    const subscriberData = getSubscriberData();
+    const totalRevenue = chartData.reduce((acc: number, curr: any) => acc + (curr.revenue || 0), 0);
+    const totalNewSubscribers = subscriberData.reduce((acc: number, curr: any) => acc + (curr.subscribers || 0), 0);
 
     // Mapping for Summary Metrics (used in PDF report)
     const summaryMetrics = analytics ? [
@@ -333,14 +352,15 @@ export default function SuperAdminDashboard() {
                                         Rs {totalRevenue.toLocaleString()}
                                     </Typography>
                                     <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
-                                        total {view} revenue
+                                        total {view} subscription revenue
                                     </Typography>
                                 </Box>
                             }
                             date={`updated just now`}
                             color="primary"
                             chart={
-                                <ResponsiveContainer width="100%" height="100%">
+                                <div style={{ width: '100%', height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <BarChart
                                         data={chartData}
                                         margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
@@ -370,6 +390,7 @@ export default function SuperAdminDashboard() {
                                         <Bar dataKey="revenue" name="Revenue" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>
@@ -386,16 +407,17 @@ export default function SuperAdminDashboard() {
                                         {analytics?.subscriptionChange || '0%'}
                                     </Typography>
                                     <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
-                                        subscription growth
+                                        new subscribers ({totalNewSubscribers} this {view})
                                     </Typography>
                                 </Box>
                             }
                             date={`${view} trend`}
                             color="primary"
                             chart={
-                                <ResponsiveContainer width="100%" height="100%">
+                                <div style={{ width: '100%', height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <LineChart
-                                        data={chartData}
+                                        data={subscriberData}
                                         margin={{ top: 10, right: 30, left: 10, bottom: 40 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
@@ -412,17 +434,17 @@ export default function SuperAdminDashboard() {
                                             fontSize={12}
                                             tickLine={false}
                                             axisLine={false}
-                                            tickFormatter={(value) => `Rs ${(value / 1000).toFixed(0)}k`}
+                                            allowDecimals={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
                                         />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                             itemStyle={{ color: '#1e293b' }}
-                                            formatter={(value: number | undefined) => [`Rs ${(value ?? 0).toLocaleString()}`, 'Revenue']}
+                                            formatter={(value: number | undefined) => [`${value ?? 0}`, 'New Subscribers']}
                                         />
                                         <Line
                                             type="monotone"
-                                            dataKey="revenue"
+                                            dataKey="subscribers"
                                             stroke="#ffffff"
                                             strokeWidth={3}
                                             dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
@@ -430,6 +452,7 @@ export default function SuperAdminDashboard() {
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>

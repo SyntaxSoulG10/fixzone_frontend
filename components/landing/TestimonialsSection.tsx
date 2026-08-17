@@ -63,6 +63,7 @@ const TestimonialsSection = () => {
                                             src={testimonial.image}
                                             alt={testimonial.name}
                                             fill
+                                            sizes="(max-width: 768px) 56px, 64px"
                                             className="object-cover"
                                         />
                                     </div>

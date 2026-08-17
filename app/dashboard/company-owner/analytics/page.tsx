@@ -323,7 +323,8 @@ export default function AnalyticsPage() {
                             date={`updated at ${data?.updatedAt || 'just now'}`}
                             color="primary"
                             chart={
-                                <ResponsiveContainer width="100%" height="100%">
+                                <div style={{ width: '100%', height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <LineChart
                                         data={data?.revenueOverview || []}
                                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -357,6 +358,7 @@ export default function AnalyticsPage() {
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>
@@ -370,7 +372,8 @@ export default function AnalyticsPage() {
                             date="last 6 months"
                             color="primary"
                             chart={
-                                <ResponsiveContainer width="100%" height="100%">
+                                <div style={{ width: '100%', height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                     <BarChart
                                         data={data?.customerGrowth || []}
                                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -397,6 +400,7 @@ export default function AnalyticsPage() {
                                         <Bar dataKey="activeCustomers" name="Active" fill="rgba(255,255,255,0.5)" radius={[4, 4, 0, 0]} maxBarSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>
+                                </div>
                             }
                         />
                     </Box>

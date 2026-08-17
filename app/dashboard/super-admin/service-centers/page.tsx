@@ -21,7 +21,6 @@ import {
     Button as MuiButton 
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
-import ConfirmDialog from "@/components/UI/ConfirmDialog";
 
 interface Station {
     id: string;
@@ -47,7 +46,7 @@ export default function ServiceStationsPage() {
     const [rejectionMode, setRejectionMode] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [processingAction, setProcessingAction] = useState(false);
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' as 'SUSPENDED' | 'APPROVED' });
+
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
     
     // Pagination State
@@ -152,15 +151,7 @@ export default function ServiceStationsPage() {
         }
     };
 
-    const handleUpdateStatus = async (id: string, status: string) => {
-        try {
-            await axios.post(`${APP_CONFIG.API_BASE_URL}/api/admin/service-centers/${id}/status?status=${status}`);
-            showSnackbar(`Station status updated to ${status === 'SUSPENDED' ? 'Suspended' : 'Active'}`, "success");
-            fetchStations();
-        } catch (error) {
-            showSnackbar("Failed to update status", "error");
-        }
-    };
+
 
     const openReviewModal = (station: Station) => {
         setSelectedStation(station);
@@ -211,19 +202,12 @@ export default function ServiceStationsPage() {
             )
         },
         {
-            header: "Actions",
+            header: "View",
             accessor: (row: Station) => (
                 <div className="flex items-center gap-2">
-                    {row.status === 'Active' ? (
-                        <button onClick={() => {
-                            setConfirmModal({ isOpen: true, stationId: row.id, stationName: row.name, action: 'SUSPENDED' });
-                        }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Suspend"><FiSlash /></button>
-                    ) : (
-                        <button onClick={() => {
-                            setConfirmModal({ isOpen: true, stationId: row.id, stationName: row.name, action: 'APPROVED' });
-                        }} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reactivate"><FiCheckCircle /></button>
-                    )}
-                    <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details"><FiFileText /></button>
+                    <button onClick={() => openReviewModal(row)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
+                        <FiFileText />
+                    </button>
                 </div>
             )
         }
@@ -477,21 +461,6 @@ export default function ServiceStationsPage() {
                     </>
                 )}
             </Dialog>
-
-            {/* Status Change Confirmation MUI Dialog */}
-            <ConfirmDialog
-                open={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' })}
-                title={`${confirmModal.action === 'SUSPENDED' ? 'Suspend' : 'Reactivate'} Service Center?`}
-                message={<>Are you sure you want to {confirmModal.action === 'SUSPENDED' ? 'suspend' : 'reactivate'} <strong style={{ color: '#0f172a' }}>{confirmModal.stationName}</strong>?</>}
-                confirmText={confirmModal.action === 'SUSPENDED' ? 'Suspend Center' : 'Reactivate Center'}
-                cancelText="Cancel"
-                variant={confirmModal.action === 'SUSPENDED' ? 'danger' : 'success'}
-                onConfirm={() => {
-                    handleUpdateStatus(confirmModal.stationId, confirmModal.action);
-                    setConfirmModal({ isOpen: false, stationId: '', stationName: '', action: 'SUSPENDED' });
-                }}
-            />
 
             <FeedbackSnackbar 
                 open={snackbar.open} 

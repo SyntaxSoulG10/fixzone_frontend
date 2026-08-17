@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
                     <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Trend</h3>
                     <div className="h-80">
                         {chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
                     <h3 className="text-lg font-bold text-slate-900 mb-6">Service Breakdown</h3>
                     <div className="h-80">
                         {breakdownData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <BarChart data={breakdownData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
