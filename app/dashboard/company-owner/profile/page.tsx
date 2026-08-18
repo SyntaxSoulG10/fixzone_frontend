@@ -1221,6 +1221,7 @@ export default function ProfilePage() {
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [openDeactivateDialog, setOpenDeactivateDialog] = useState(false);
     const [deactivateInput, setDeactivateInput] = useState("");
+    const [isDeactivating, setIsDeactivating] = useState(false);
 
     return (
         <ProfileHeader
@@ -1270,21 +1271,49 @@ export default function ProfilePage() {
                 onClose={() => setOpenDeactivateDialog(false)} 
                 deactivateInput={deactivateInput} 
                 setDeactivateInput={setDeactivateInput} 
+                isDeactivating={isDeactivating}
                 onDeactivate={async () => {
                     if (deactivateInput !== "DELETE") return;
+                    setIsDeactivating(true);
                     try {
-                        await axios.delete(`${APP_CONFIG.api.owners}/${userId}`);
+                        // Use /current for safe deletion of the currently authenticated owner
+                        await axios.delete(`${APP_CONFIG.api.owners}/current`);
                         setSnackbarMessage("Account deactivated successfully");
                         setSnackbarSeverity("success");
                         setSnackbarOpen(true);
                         setOpenDeactivateDialog(false);
-                        // Log out
+                        // Clean all auth state
                         localStorage.removeItem('token');
+                        localStorage.removeItem('userId');
+                        localStorage.removeItem('role');
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('fullName');
                         window.location.href = '/login';
                     } catch (error: any) {
-                        setSnackbarMessage(error.response?.data?.details || "Failed to deactivate account");
+                        const targetId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+                        if (targetId) {
+                            try {
+                                await axios.delete(`${APP_CONFIG.api.owners}/${targetId}`);
+                                setSnackbarMessage("Account deactivated successfully");
+                                setSnackbarSeverity("success");
+                                setSnackbarOpen(true);
+                                setOpenDeactivateDialog(false);
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('userId');
+                                localStorage.removeItem('role');
+                                localStorage.removeItem('userRole');
+                                localStorage.removeItem('fullName');
+                                window.location.href = '/login';
+                                return;
+                            } catch (retryError: any) {
+                                console.error("Retry deactivation error:", retryError);
+                            }
+                        }
+                        setSnackbarMessage(error.response?.data?.details || error.response?.data?.message || "Failed to deactivate account");
                         setSnackbarSeverity("error");
                         setSnackbarOpen(true);
+                    } finally {
+                        setIsDeactivating(false);
                     }
                 }}
             />
