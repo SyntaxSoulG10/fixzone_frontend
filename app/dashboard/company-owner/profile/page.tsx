@@ -27,7 +27,8 @@ import {
     Checkbox,
     Radio,
     RadioGroup,
-    FormControl as MuiFormControl
+    FormControl as MuiFormControl,
+    InputAdornment
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import {
@@ -46,7 +47,12 @@ import {
     FiExternalLink,
     FiCheckCircle,
     FiAlertCircle,
-    FiRefreshCw
+    FiRefreshCw,
+    FiEye,
+    FiEyeOff,
+    FiLock,
+    FiKey,
+    FiShield
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
@@ -361,17 +367,81 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
-        <Grid container spacing={1} justifyContent="center">
-            <Grid size={{ xs: 12, md: 8, xl: 6 }}>
-                <Card sx={{ boxShadow: 'none', p: 2 }}>
-                    <Typography variant="h6" fontWeight="medium" gutterBottom>Security & Access</Typography>
-                    <Box py={2}>
-                        <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>Password</Typography>
-                        <Button variant="outlined" color="primary" fullWidth sx={{ mb: 3 }} onClick={onOpenPassword}>Change Password</Button>
+        <Grid container spacing={3} justifyContent="center">
+            <Grid size={{ xs: 12, md: 8, xl: 7 }}>
+                {/* Password & Security Card */}
+                <Card sx={{ p: 3, borderRadius: 3, mb: 3, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                        <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                            <FiShield size={22} />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700}>Security & Access</Typography>
+                            <Typography variant="caption" color="text.secondary">Manage your password and protect your FixZone company account</Typography>
+                        </Box>
+                    </Box>
+                    
+                    <Divider sx={{ my: 2 }} />
 
-                        <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>Danger Zone</Typography>
-                        <Typography variant="caption" color="text.secondary" display="block" mb={2}>Once you delete your account, there is no going back.</Typography>
-                        <Button variant="outlined" color="error" fullWidth onClick={onOpenDeactivate}>Deactivate Account</Button>
+                    <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0', mb: 1 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                                <Box sx={{ p: 1, borderRadius: '50%', bgcolor: '#fff', border: '1px solid #e2e8f0', color: '#64748b', display: 'flex' }}>
+                                    <FiLock size={18} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">Account Password</Typography>
+                                    <Typography variant="caption" color="text.secondary">Use a strong, unique password with letters, numbers, and symbols</Typography>
+                                </Box>
+                            </Box>
+                            <Button 
+                                variant="contained" 
+                                startIcon={<FiKey />}
+                                onClick={onOpenPassword}
+                                sx={{
+                                    bgcolor: '#EA580C',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    px: 2.5,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    '&:hover': { bgcolor: '#c2410c' }
+                                }}
+                            >
+                                Change Password
+                            </Button>
+                        </Box>
+                    </Box>
+                </Card>
+
+                {/* Danger Zone Card */}
+                <Card sx={{ p: 3, borderRadius: 3, border: '1px solid #fecaca', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                        <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#fef2f2', color: '#ef4444', display: 'flex' }}>
+                            <FiAlertCircle size={22} />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700} color="error.main">Danger Zone</Typography>
+                            <Typography variant="caption" color="text.secondary">Irreversible actions on your company account</Typography>
+                        </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} color="text.primary">Deactivate Company Account</Typography>
+                            <Typography variant="caption" color="text.secondary">Once deactivated, you will lose access to all your service centers and branches.</Typography>
+                        </Box>
+                        <Button 
+                            variant="outlined" 
+                            color="error" 
+                            onClick={onOpenDeactivate}
+                            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+                        >
+                            Deactivate Account
+                        </Button>
                     </Box>
                 </Card>
             </Grid>
@@ -385,7 +455,6 @@ function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
 function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refreshAll: () => Promise<void>; onMessage: (msg: string, sev: 'success'|'error') => void }) {
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
-    const [autoRenew, setAutoRenew] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -457,7 +526,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
         }
         setCheckoutLoading(true);
         try {
-            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan, autoRenew });
+            const res = await axios.post(APP_CONFIG.api.subscriptions + "/checkout", { planId: selectedPlan });
             const checkoutUrl = res.data?.checkoutUrl || res.data;
             if (!checkoutUrl || typeof checkoutUrl !== "string") {
                 throw new Error("Invalid checkout URL received from server.");
@@ -521,7 +590,7 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
             {/* Subscription Checkout Card */}
             <Grid size={{ xs: 12, md: 7 }}>
                 <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe / Renew</Typography>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>Subscribe</Typography>
                     <Divider sx={{ mb: 2 }} />
                     {loadingPlans ? (
                         <Box display="flex" justifyContent="center" p={3}><CircularProgress size={32} sx={{ color: '#EA580C' }} /></Box>
@@ -556,19 +625,13 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
                                 </RadioGroup>
                             </MuiFormControl>
 
-                            <FormControlLabel
-                                control={<Checkbox checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} sx={{ color: '#EA580C', '&.Mui-checked': { color: '#EA580C' } }} />}
-                                label={<Typography variant="body2">Enable Auto-Renew (save card for future payments)</Typography>}
-                                sx={{ mb: 2, mt: 0.5 }}
-                            />
-
                             <Button
                                 variant="contained"
                                 fullWidth
                                 disabled={!selectedPlan || checkoutLoading}
                                 onClick={handleSubscribe}
                                 startIcon={checkoutLoading ? <CircularProgress size={16} color="inherit" /> : <FiCreditCard />}
-                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
+                                sx={{ bgcolor: '#EA580C', '&:hover': { bgcolor: '#c2410c' }, borderRadius: 2, py: 1.5, mt: 1, textTransform: 'none', fontWeight: 700, fontSize: '1rem' }}
                             >
                                 {checkoutLoading ? "Redirecting to Stripe..." : "Proceed to Payment"}
                             </Button>
@@ -581,18 +644,72 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 }
 
 /**
- * DIALOG COMPONENTS: For handling password changes and deactivation.
+ * DIALOG COMPONENTS: For handling password changes with live validations, strength meter, and visibility toggles.
  */
 function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [touched, setTouched] = useState({ current: false, new: false, confirm: false });
     const [error, setError] = useState("");
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // Validation rules
+    const validations = {
+        length: passwords.new.length >= MIN_PASSWORD_LENGTH,
+        uppercase: /[A-Z]/.test(passwords.new),
+        lowercase: /[a-z]/.test(passwords.new),
+        number: /[0-9]/.test(passwords.new),
+        special: /[^A-Za-z0-9]/.test(passwords.new),
+    };
+
+    // Strength calculation (0 to 5)
+    const strengthScore = Object.values(validations).filter(Boolean).length;
+    const isPasswordStrong = strengthScore === 5;
+    const isSameAsCurrent = passwords.current.length > 0 && passwords.new.length > 0 && passwords.current === passwords.new;
+    const doPasswordsMatch = passwords.new === passwords.confirm && passwords.confirm.length > 0;
+    const isConfirmMismatch = passwords.confirm.length > 0 && passwords.new !== passwords.confirm;
+
+    const getStrengthDetails = () => {
+        if (!passwords.new) return { label: "", color: "#e2e8f0", percent: 0 };
+        if (strengthScore <= 2) return { label: "Weak", color: "#ef4444", percent: 33 };
+        if (strengthScore <= 4) return { label: "Moderate", color: "#f59e0b", percent: 66 };
+        return { label: "Strong", color: "#10b981", percent: 100 };
+    };
+
+    const strength = getStrengthDetails();
+
+    const handleReset = () => {
+        setPasswords({ current: "", new: "", confirm: "" });
+        setShowCurrent(false);
+        setShowNew(false);
+        setShowConfirm(false);
+        setTouched({ current: false, new: false, confirm: false });
+        setError("");
+    };
+
+    const handleClose = () => {
+        handleReset();
+        onClose();
+    };
+
     const handleUpdate = async () => {
-        if (!passwords.current) return setError("Current password is required");
-        if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-        if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
+        setTouched({ current: true, new: true, confirm: true });
         
+        if (!passwords.current) {
+            return setError("Current password is required");
+        }
+        if (!isPasswordStrong) {
+            return setError("Please ensure your new password meets all security requirements");
+        }
+        if (isSameAsCurrent) {
+            return setError("New password cannot be the same as your current password");
+        }
+        if (passwords.new !== passwords.confirm) {
+            return setError("New password and confirm password do not match");
+        }
+
         setError("");
         setIsUpdating(true);
         try {
@@ -601,10 +718,10 @@ function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
                 newPassword: passwords.new
             });
             onSuccess("Password updated successfully!");
-            setPasswords({ current: "", new: "", confirm: "" });
+            handleReset();
             onClose();
         } catch (error: any) {
-            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password";
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password. Please verify your current password.";
             setError(msg);
             onError(msg);
         } finally {
@@ -612,21 +729,309 @@ function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
         }
     };
 
+    const isSubmitDisabled = 
+        !passwords.current || 
+        !isPasswordStrong || 
+        isSameAsCurrent || 
+        !doPasswordsMatch || 
+        isUpdating;
+
     return (
-        <Dialog open={open} onClose={() => { onClose(); setError(""); }} fullWidth maxWidth="sm">
-            <DialogTitle>Change Password</DialogTitle>
-            <DialogContent>
-                <Box display="flex" flexDirection="column" gap={2} pt={1}>
-                    {error && <Typography color="error" variant="caption">{error}</Typography>}
-                    <TextField label="Current Password" type="password" fullWidth value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} error={!!error && !passwords.current} />
-                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < MIN_PASSWORD_LENGTH} />
-                    <TextField label="Confirm New Password" type="password" fullWidth value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} error={!!error && passwords.new !== passwords.confirm} />
+        <Dialog 
+            open={open} 
+            onClose={isUpdating ? undefined : handleClose} 
+            fullWidth 
+            maxWidth="sm"
+            PaperProps={{
+                sx: { borderRadius: 3, overflow: 'hidden', position: 'relative' }
+            }}
+        >
+            {isUpdating && (
+                <LinearProgress 
+                    sx={{ 
+                        height: 3.5, 
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 10,
+                        bgcolor: 'rgba(234, 88, 12, 0.2)', 
+                        '& .MuiLinearProgress-bar': { bgcolor: '#EA580C' } 
+                    }} 
+                />
+            )}
+            <DialogTitle sx={{ pb: 1, pt: 2.5, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                    <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                        <FiLock size={20} />
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" fontWeight={700}>Change Password</Typography>
+                        <Typography variant="caption" color="text.secondary">Update your credentials to keep your account protected</Typography>
+                    </Box>
+                </Box>
+                <IconButton size="small" onClick={handleClose} disabled={isUpdating}>
+                    <FiX size={18} />
+                </IconButton>
+            </DialogTitle>
+
+            <Divider />
+
+            <DialogContent sx={{ px: 3, py: 2.5 }}>
+                <Box display="flex" flexDirection="column" gap={2.5}>
+                    {error && (
+                        <Alert severity="error" onClose={() => setError("")} sx={{ borderRadius: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
+                    {/* Current Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            CURRENT PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Enter current password"
+                            type={showCurrent ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.current}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, current: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, current: true }))}
+                            error={touched.current && !passwords.current}
+                            helperText={touched.current && !passwords.current ? "Current password is required" : ""}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiKey color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowCurrent(!showCurrent)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle current password visibility"
+                                        >
+                                            {showCurrent ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+                    </Box>
+
+                    {/* New Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            NEW PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Enter new strong password"
+                            type={showNew ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.new}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, new: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, new: true }))}
+                            error={(touched.new && passwords.new.length > 0 && !isPasswordStrong) || isSameAsCurrent}
+                            helperText={
+                                isSameAsCurrent 
+                                    ? "New password cannot be the same as current password" 
+                                    : ""
+                            }
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiLock color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowNew(!showNew)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle new password visibility"
+                                        >
+                                            {showNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+
+                        {/* Password Strength Indicator */}
+                        {passwords.new.length > 0 && (
+                            <Box mt={1.5} p={1.5} bgcolor="#f8fafc" borderRadius={2} border="1px solid #f1f5f9">
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                                    <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                        Password Strength:
+                                    </Typography>
+                                    <Typography variant="caption" fontWeight={700} sx={{ color: strength.color }}>
+                                        {strength.label}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress 
+                                    variant="determinate" 
+                                    value={strength.percent} 
+                                    sx={{
+                                        height: 6,
+                                        borderRadius: 3,
+                                        bgcolor: '#e2e8f0',
+                                        '& .MuiLinearProgress-bar': {
+                                            bgcolor: strength.color,
+                                            borderRadius: 3,
+                                            transition: 'all 0.3s ease'
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        )}
+
+                        {/* Validation Requirements Checklist */}
+                        <Box mt={1.5} p={1.5} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
+                            <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" mb={1}>
+                                Password Requirements:
+                            </Typography>
+                            <Grid container spacing={1}>
+                                {[
+                                    { key: "length", label: `At least ${MIN_PASSWORD_LENGTH} characters`, valid: validations.length },
+                                    { key: "uppercase", label: "One uppercase letter (A-Z)", valid: validations.uppercase },
+                                    { key: "lowercase", label: "One lowercase letter (a-z)", valid: validations.lowercase },
+                                    { key: "number", label: "One number (0-9)", valid: validations.number },
+                                    { key: "special", label: "One special character (!@#$...)", valid: validations.special },
+                                ].map((req) => (
+                                    <Grid size={{ xs: 12, sm: 6 }} key={req.key}>
+                                        <Box display="flex" alignItems="center" gap={0.75}>
+                                            {req.valid ? (
+                                                <FiCheckCircle size={14} color="#10b981" />
+                                            ) : (
+                                                <FiAlertCircle size={14} color="#94a3b8" />
+                                            )}
+                                            <Typography 
+                                                variant="caption" 
+                                                sx={{ 
+                                                    color: req.valid ? '#10b981' : '#64748b',
+                                                    fontWeight: req.valid ? 600 : 400,
+                                                    transition: 'color 0.2s ease'
+                                                }}
+                                            >
+                                                {req.label}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Box>
+                    </Box>
+
+                    {/* Confirm New Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            CONFIRM NEW PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Re-enter new password"
+                            type={showConfirm ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.confirm}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, confirm: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, confirm: true }))}
+                            error={touched.confirm && (isConfirmMismatch || !passwords.confirm)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiLock color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowConfirm(!showConfirm)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle confirm password visibility"
+                                        >
+                                            {showConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+
+                        {/* Match Feedback */}
+                        {passwords.confirm.length > 0 && (
+                            <Box display="flex" alignItems="center" gap={0.75} mt={0.75}>
+                                {doPasswordsMatch ? (
+                                    <>
+                                        <FiCheckCircle size={14} color="#10b981" />
+                                        <Typography variant="caption" color="#10b981" fontWeight={600}>
+                                            Passwords match
+                                        </Typography>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FiAlertCircle size={14} color="#ef4444" />
+                                        <Typography variant="caption" color="#ef4444" fontWeight={600}>
+                                            Passwords do not match
+                                        </Typography>
+                                    </>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
                 </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={isUpdating}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating} variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>
-                    {isUpdating ? <CircularProgress size={20} color="inherit" /> : "Update Password"}
+
+            <Divider />
+
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc' }}>
+                <Button 
+                    onClick={handleClose} 
+                    disabled={isUpdating}
+                    sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    onClick={handleUpdate} 
+                    disabled={isSubmitDisabled} 
+                    variant="contained" 
+                    startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <FiKey />}
+                    sx={{ 
+                        bgcolor: '#EA580C', 
+                        color: '#fff', 
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        px: 3,
+                        py: 1,
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: '#c2410c' },
+                        '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+                    }}
+                >
+                    {isUpdating ? "Updating Password..." : "Update Password"}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -124,25 +124,25 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                 <div className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Menu
                 </div>
-                <nav className="space-y-1 px-2">
+                <nav className="space-y-1.5 px-3">
                     {menuItems.map((item: any) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${isActive
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                className={`group flex items-center px-3.5 py-2.5 text-sm font-semibold rounded-xl transition-all ${isActive
+                                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
+                                    : 'text-slate-600 hover:bg-orange-50 hover:text-orange-600'
                                     }`}
                             >
                                 <item.icon
-                                    className={`mr-3 h-5 w-5 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-500'
+                                    className={`mr-3 h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-orange-500'
                                         }`}
                                 />
                                 <span className="flex-1">{item.name}</span>
                                 {item.badge && unreadCount > 0 && (
-                                    <span className="ml-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white text-orange-600' : 'bg-orange-500 text-white'}`}>
                                         {unreadCount}
                                     </span>
                                 )}

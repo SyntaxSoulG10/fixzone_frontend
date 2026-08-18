@@ -285,6 +285,18 @@ export default function ManagersPage() {
             status: formData.status, 
             sendInvite: formData.sendInvite 
         };
+        // Optimistic update for edit mode
+        if (isEditMode && selectedId) {
+            setManagers(prev => prev.map(m => m.id === selectedId ? {
+                ...m,
+                name: formData.name,
+                email: formData.email.trim().toLowerCase(),
+                center: formData.center,
+                status: formData.status
+            } : m));
+        }
+
+        setOpenDialog(false);
         setIsSaving(true);
         try {
             if (isEditMode && selectedId) {
@@ -294,22 +306,27 @@ export default function ManagersPage() {
                 await axios.post(APP_CONFIG.api.managers, payload);
                 setSnackbar({ open: true, message: 'New manager account created and invite sent!', severity: 'success' });
             }
-            setOpenDialog(false);
             setDialogError(null);
-            await refreshManagers();
+            refreshManagers();
         } catch (e: any) { 
             const errorMsg = e.response?.data?.message || 'Operation failed';
             setDialogError(errorMsg);
             setSnackbar({ open: true, message: errorMsg, severity: 'error' }); 
+            refreshManagers();
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleToggleStatus = async (id: string, current: string) => {
+        const manager = managers.find(m => m.id === id);
+        const targetStatus = current === 'Active' ? 'Inactive' : 'Active';
+        
+        // Optimistic toggle (0ms)
+        setManagers(prev => prev.map(m => m.id === id ? { ...m, status: targetStatus } : m));
+        setSnackbar({ open: true, message: `Manager account ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
+
         try {
-            const manager = managers.find(m => m.id === id);
-            const targetStatus = current === 'Active' ? 'Inactive' : 'Active';
             const payload = manager ? {
                 fullName: manager.name,
                 email: manager.email,
@@ -319,9 +336,10 @@ export default function ManagersPage() {
                 status: targetStatus
             };
             await axios.put(`${APP_CONFIG.api.managers}/${id}`, payload);
-            await refreshManagers();
-            setSnackbar({ open: true, message: `Manager account ${current === 'Active' ? 'Disabled' : 'Enabled'}`, severity: 'success' });
+            refreshManagers();
         } catch (e: any) { 
+            // Revert on error
+            setManagers(prev => prev.map(m => m.id === id ? { ...m, status: current } : m));
             setSnackbar({ open: true, message: e.response?.data?.message || 'Update failed', severity: 'error' }); 
         }
     };
@@ -329,12 +347,20 @@ export default function ManagersPage() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, id: string }>({ isOpen: false, id: '' });
 
     const handleDeleteManager = async (id: string) => {
+        const managerToDelete = managers.find(m => m.id === id);
+        // Optimistic delete (0ms)
+        setManagers(prev => prev.filter(m => m.id !== id));
+        setDeleteModal({ isOpen: false, id: '' });
+        setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
+
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
-            await refreshManagers();
-            setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
-            setDeleteModal({ isOpen: false, id: '' });
+            refreshManagers();
         } catch (e: any) {
+            // Revert on error
+            if (managerToDelete) {
+                setManagers(prev => [...prev, managerToDelete]);
+            }
             setSnackbar({ open: true, message: e.response?.data?.message || 'Delete failed', severity: 'error' });
         }
     };
