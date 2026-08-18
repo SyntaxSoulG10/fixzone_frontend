@@ -4,8 +4,16 @@ import APP_CONFIG from "../config";
 // Use centralized configuration
 const BASE_URL = APP_CONFIG.API_BASE_URL;
 
-// Helper to get auth headers (now rely on cookies via credentials: "include")
+// Helper to get auth headers with JWT token from localStorage
 const getAuthHeaders = (): Record<string, string> => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`
+      };
+    }
+  }
   return {};
 };
 

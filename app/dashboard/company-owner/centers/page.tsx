@@ -536,14 +536,17 @@ export default function MyCentersPage() {
             const data = await getStripeConnectStatus();
             setStripeConnected(Boolean(data.stripeConnected));
         } catch {
-            setStripeConnected(false);
+            setStripeConnected(Boolean(ownerData?.stripeOnboardingComplete));
         }
     };
 
-    // Fetch Stripe connect status once on mount
+    // Fetch Stripe connect status once on mount or when ownerData updates
     useEffect(() => {
+        if (ownerData?.stripeOnboardingComplete !== undefined) {
+            setStripeConnected(Boolean(ownerData.stripeOnboardingComplete));
+        }
         refreshStripeStatus();
-    }, []);
+    }, [ownerData?.stripeOnboardingComplete]);
 
     // Handle Stripe Connect redirect query params
     useEffect(() => {
@@ -570,28 +573,13 @@ export default function MyCentersPage() {
         setStripeLoading(true);
         try {
             const url = await connectStripe();
-            if (!url) {
+            if (!url || typeof url !== 'string') {
                 throw new Error('No Stripe onboarding URL returned');
             }
-
-            const popup = window.open(url, '_blank', 'noopener,noreferrer');
-            if (!popup) {
-                throw new Error('Popup blocked');
-            }
-
-            const intervalId = window.setInterval(async () => {
-                if (popup.closed) {
-                    window.clearInterval(intervalId);
-                    await refreshStripeStatus();
-                    return;
-                }
-                if (document.visibilityState === 'visible') {
-                    await refreshStripeStatus();
-                }
-            }, 3000);
-        } catch {
-            setSnackbar({ open: true, message: 'Failed to generate Stripe link. Please try again.', severity: 'error' });
-        } finally {
+            window.location.href = url;
+        } catch (e: any) {
+            const errorMsg = e.response?.data?.message || e.response?.data || e.message || 'Failed to generate Stripe link. Please try again.';
+            setSnackbar({ open: true, message: typeof errorMsg === 'string' ? errorMsg : 'Failed to generate Stripe link. Please try again.', severity: 'error' });
             setStripeLoading(false);
         }
     };
@@ -618,12 +606,15 @@ export default function MyCentersPage() {
         }
 
         const payload = { 
-            name: formData.name, address: formData.location, contactPhone: formData.phone,
+            name: formData.name, 
+            address: formData.location, 
+            contactPhone: formData.phone,
             openingHours: `${formData.openTime} - ${formData.closeTime}`,
             isActive: formData.status === 'Active',
-            mechanicsCount: formData.mechanics, currentCapacity: formData.capacity,
+            mechanicsCount: formData.mechanics, 
+            currentCapacity: formData.capacity,
             googleMapsUrl: formData.googleMapsUrl,
-            ownerId: APP_CONFIG.placeholders.ownerId
+            ownerId: ownerData?.userId
         };
         
         // Optimistic update for edit mode
@@ -675,7 +666,13 @@ export default function MyCentersPage() {
 
         try {
             await axios.put(`${APP_CONFIG.api.serviceCenters}/${id}`, {
-                ...center, isActive: nextStatus === 'Active', ownerId: APP_CONFIG.placeholders.ownerId
+                name: center.name,
+                address: center.location,
+                contactPhone: center.phone,
+                openingHours: center.openingHours,
+                googleMapsUrl: center.googleMapsUrl,
+                isActive: nextStatus === 'Active',
+                ownerId: ownerData?.userId
             });
             refreshCenters();
         } catch (e: any) { 

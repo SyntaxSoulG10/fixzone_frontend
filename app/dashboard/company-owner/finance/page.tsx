@@ -255,10 +255,10 @@ export default function FinancePage() {
 
             {/* KPI STATS ROW */}
             <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${financeData.totalRevenue.toLocaleString()}`} subtext="+12% from last month" icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${financeData.cashRevenue.toLocaleString()}`} subtext="In-person" icon={FiDollarSign} color="#4caf50" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${financeData.onlineRevenue.toLocaleString()}`} subtext="Digital" icon={FiCreditCard} color="#2196f3" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job" value={`Rs. ${financeData.avgTransaction.toFixed(0)}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${(financeData.totalRevenue || 0).toLocaleString()}`} subtext="+12% from last month" icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${(financeData.cashRevenue || 0).toLocaleString()}`} subtext="In-person" icon={FiDollarSign} color="#4caf50" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString()}`} subtext="Digital" icon={FiCreditCard} color="#2196f3" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job" value={`Rs. ${Number(financeData.avgTransaction || 0).toFixed(0)}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
             </Grid>
 
             {/* REVENUE GROWTH CHART */}
@@ -289,7 +289,13 @@ export default function FinancePage() {
                 <Card sx={{ p: 3, borderRadius: 3 }}>
                     <Typography variant="h6" fontWeight="bold" mb={3}>Recent Transactions</Typography>
                     <Box sx={{ height: 400, width: '100%' }}>
-                        <DataGrid rows={financeData.recentTransactions} columns={transactionColumns} pageSizeOptions={[5]} disableRowSelectionOnClick />
+                        <DataGrid 
+                            rows={financeData.recentTransactions} 
+                            columns={transactionColumns} 
+                            getRowId={(row) => row.id || Math.random().toString()}
+                            pageSizeOptions={[5]} 
+                            disableRowSelectionOnClick 
+                        />
                     </Box>
                 </Card>
             </Box>

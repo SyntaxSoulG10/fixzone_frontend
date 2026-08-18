@@ -94,8 +94,8 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
                     title="Total Revenue"
                     count={`Rs. ${stats.totalRevenue.toLocaleString()}`}
                     percentage={stats.totalRevenue > 0 ? {
-                        color: stats.revenueChange.startsWith('+') ? 'success' : 'danger',
-                        amount: stats.revenueChange,
+                        color: stats.revenueChange?.startsWith('+') ? 'success' : 'danger',
+                        amount: stats.revenueChange || '0%',
                         label: 'vs. last month'
                     } : undefined}
                     icon={<FiDollarSign />}
