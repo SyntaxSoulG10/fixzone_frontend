@@ -10,8 +10,7 @@ import {
     FiTrash,
     FiSearch,
     FiBell,
-    FiLoader,
-    FiArrowRight
+    FiLoader
 } from "react-icons/fi";
 import {
     getNotifications,
@@ -256,15 +255,7 @@ export default function NotificationCenter() {
                                         dangerouslySetInnerHTML={{ __html: n.message }}
                                     />
 
-                                    {/* Link indicator */}
-                                    {n.targetUrl && (
-                                        <button
-                                            onClick={() => handleCardClick(n)}
-                                            className="mt-3 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-all"
-                                        >
-                                            View details <FiArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                                        </button>
-                                    )}
+
                                 </div>
 
                                 {/* Right Actions */}
