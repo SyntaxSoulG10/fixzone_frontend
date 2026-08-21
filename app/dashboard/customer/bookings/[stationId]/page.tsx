@@ -99,6 +99,7 @@ type BackendPackage = {
   basePrice?: number;
   estimatedDurationMins?: number;
   type?: string | null;
+  vehicleBrand?: string | null;
 };
 
 type BackendVehicle = {
@@ -173,7 +174,7 @@ export default function StationDetailPage() {
           name: data.name,
           location: data.address || "Unknown Location",
           googleMapsUrl: data.googleMapsUrl || null,
-          image: "/garages/garage01.jpg",
+          image: data.imageUrl || "/garages/garage01.jpg",
           rating: data.rating || 4.5,
           reviews: data.customerRatings?.length || 0,
           openStatus: "Contact center for hours",

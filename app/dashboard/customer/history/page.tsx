@@ -246,7 +246,7 @@ export default function MyBookingsPage() {
     
     const isTooLateToReschedule = diffDays < 3;
     const canReschedule = isUpcoming && (booking.rescheduleCount || 0) < 3 && !isTooLateToReschedule;
-    const canCancel = (isUpcoming || type === 'current') && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED';
+    const canCancel = isUpcoming && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && booking.status !== 'IN_PROGRESS';
 
     return (
       <div key={bookingId} className="bg-white border-2 border-slate-200 rounded-2xl p-6 hover:border-red-300 hover:shadow-lg transition-all">

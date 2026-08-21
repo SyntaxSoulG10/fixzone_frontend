@@ -13,9 +13,6 @@ import {
     Divider,
     TextField,
     IconButton,
-    Snackbar,
-    Alert,
-    Badge,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -24,10 +21,11 @@ import {
     Chip,
     CircularProgress,
     FormControlLabel,
-    Checkbox,
     Radio,
     RadioGroup,
-    FormControl as MuiFormControl
+    FormControl as MuiFormControl,
+    InputAdornment,
+    Tooltip
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import {
@@ -42,26 +40,37 @@ import {
     FiX,
     FiCamera,
     FiCreditCard,
-    FiDownload,
-    FiExternalLink,
     FiCheckCircle,
     FiAlertCircle,
-    FiRefreshCw
+    FiRefreshCw,
+    FiEye,
+    FiEyeOff,
+    FiLock,
+    FiKey,
+    FiShield,
+    FiUser,
+    FiMail,
+    FiPhone,
+    FiMapPin,
+    FiBriefcase,
+    FiHash
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { isValidEmail } from "@/utils/helpers";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 /**
  * Validation constants for profile management.
  */
-const MIN_COMPANY_NAME_LENGTH = 3;
+const MIN_COMPANY_NAME_LENGTH = 2;
+const MIN_FULL_NAME_LENGTH = 2;
 const MIN_PASSWORD_LENGTH = 8;
-const PHONE_REGEX = /^[0-9+]{10,15}$/;
+const PHONE_REGEX = /^[0-9+()\\s-]{9,20}$/;
 
 /**
- * PROPS INTERFACES: Defining strict representations for our components
+ * PROPS INTERFACES
  */
 interface ProfileHeaderProps {
     tabValue: number;
@@ -76,20 +85,8 @@ interface ProfileHeaderProps {
     onSaveProfile?: () => void;
 }
 
-interface ProfileInfoCardProps {
-    title: string;
-    description: string;
-    info: { [key: string]: string };
-    social: { name: string, icon: React.ReactNode, color: string, url: string, onChange: (val: string) => void }[];
-    onEdit: () => void;
-    isEditing: boolean;
-    onSave: () => void;
-    onCancel: () => void;
-    onChange: (field: string, value: string) => void;
-}
-
 /**
- * HEADER COMPONENT: Separates branding from content.
+ * HEADER COMPONENT: Branding, cover image, and avatar.
  */
 function ProfileHeader({ 
     tabValue, 
@@ -114,19 +111,20 @@ function ProfileHeader({
             <Box
                 position="relative"
                 minHeight="18.75rem"
-                borderRadius="0.75rem"
+                borderRadius="1rem"
                 sx={{
                     overflow: "hidden",
-                    background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                    background: 'linear-gradient(135deg, #FF8C42 0%, #EA580C 50%, #C2410C 100%)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    boxShadow: '0 10px 25px -5px rgba(234, 88, 12, 0.25)'
                 }}
             >
                 {bannerImage && (
                     <Box
                         component="img"
-                        key={bannerImage} // Keys element to force re-render on update
+                        key={bannerImage}
                         src={bannerImage}
                         alt="banner"
                         sx={{
@@ -135,7 +133,6 @@ function ProfileHeader({
                             objectFit: 'cover',
                         }}
                         onError={(e: any) => {
-                            // Hides broken image to reveal fallback gradient
                             e.target.style.opacity = '0';
                         }}
                     />
@@ -147,49 +144,78 @@ function ProfileHeader({
                         size="small"
                         startIcon={<FiCamera />}
                         onClick={handleBannerClick}
-                        sx={{ bgcolor: 'rgba(255, 255, 255, 0.8)', color: 'text.primary', '&:hover': { bgcolor: '#fff' } }}
+                        sx={{ 
+                            bgcolor: 'rgba(255, 255, 255, 0.9)', 
+                            color: '#1e293b', 
+                            backdropFilter: 'blur(8px)',
+                            fontWeight: 600,
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: '#fff' } 
+                        }}
                     >
-                        Edit Cover
+                        Change Cover
                     </Button>
                     <input type="file" ref={bannerInputRef} style={{ display: 'none' }} accept="image/*" onChange={onBannerChange} />
                 </Box>
             </Box>
 
-            <Card sx={{ position: "relative", mt: -8, mx: 3, py: 2, px: 2 }}>
+            <Card sx={{ position: "relative", mt: -8, mx: { xs: 2, md: 4 }, py: 2.5, px: 3, borderRadius: '1rem', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.08)' }}>
                 <Grid container spacing={3} alignItems="center">
-                    <Grid>
-                        <Badge
-                            overlap="circular"
-                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                            badgeContent={
-                                <IconButton
-                                    size="small"
-                                    onClick={handleProfileClick}
-                                    sx={{ bgcolor: 'background.paper', boxShadow: 2, '&:hover': { bgcolor: 'grey.100' }, width: 32, height: 32 }}
-                                >
-                                    <FiCamera size={16} color="#EA580C" />
-                                </IconButton>
-                            }
-                        >
+                    <Grid size="auto">
+                        <Box sx={{ position: 'relative' }}>
                             <Avatar
                                 src={profileImage || ""}
-                                alt="profile-image"
-                                sx={{ width: 74, height: 74, bgcolor: 'background.paper', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                alt={companyName || "Company Avatar"}
+                                sx={{ 
+                                    width: 84, 
+                                    height: 84, 
+                                    bgcolor: '#fff', 
+                                    border: '4px solid #fff',
+                                    boxShadow: '0 8px 16px -4px rgba(0,0,0,0.12)' 
+                                }}
                             >
-                                {!profileImage && <FiTool color="#EA580C" size={32} />}
+                                {!profileImage && <FiTool color="#EA580C" size={36} />}
                             </Avatar>
-                        </Badge>
-                        <input type="file" ref={profileInputRef} style={{ display: 'none' }} accept="image/*" onChange={onProfileImageChange} />
-                    </Grid>
-                    <Grid>
-                        <Box height="100%" mt={0.5} lineHeight={1}>
-                            <Typography variant="h5" fontWeight="medium">{companyName}</Typography>
-                            <Typography variant="button" color="text.secondary" fontWeight="regular">
-                                Authorized Service Provider
-                            </Typography>
+                            <IconButton
+                                size="small"
+                                onClick={handleProfileClick}
+                                aria-label="Upload profile picture"
+                                sx={{ 
+                                    position: 'absolute',
+                                    bottom: -2,
+                                    right: -2,
+                                    bgcolor: '#EA580C', 
+                                    color: '#fff',
+                                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.4)', 
+                                    '&:hover': { bgcolor: '#c2410c' }, 
+                                    width: 30, 
+                                    height: 30 
+                                }}
+                            >
+                                <FiCamera size={15} />
+                            </IconButton>
+                            <input type="file" ref={profileInputRef} style={{ display: 'none' }} accept="image/*" onChange={onProfileImageChange} />
                         </Box>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 7, lg: 6 }} sx={{ ml: "auto" }}>
+                    <Grid size={{ xs: 12, sm: 'grow' }}>
+                        <Box height="100%">
+                            <Typography variant="h5" fontWeight={700} color="#0f172a">
+                                {companyName || "Service Provider"}
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                                <Chip 
+                                    label="Authorized Provider" 
+                                    size="small" 
+                                    sx={{ bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', fontWeight: 600, fontSize: '0.75rem' }} 
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                    Company Owner Dashboard
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 'auto' }} sx={{ ml: "auto" }}>
                         <Tabs
                             value={tabValue}
                             onChange={onTabChange}
@@ -197,34 +223,21 @@ function ProfileHeader({
                             scrollButtons="auto"
                             textColor="inherit"
                             sx={{
-                                '& .MuiTabs-indicator': { backgroundColor: '#EA580C' },
-                                '& .MuiTab-root': { color: 'text.secondary', '&.Mui-selected': { color: '#EA580C' } }
+                                '& .MuiTabs-indicator': { backgroundColor: '#EA580C', height: 3, borderRadius: '3px 3px 0 0' },
+                                '& .MuiTab-root': { 
+                                    color: '#64748b', 
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    minHeight: 48,
+                                    fontSize: '0.925rem',
+                                    '&.Mui-selected': { color: '#EA580C' } 
+                                }
                             }}
                         >
-                            <Tab label="Overview" icon={<FiHome size={18} />} iconPosition="start" />
-                            <Tab label="Account" icon={<FiSettings size={18} />} iconPosition="start" />
-                            <Tab label="Billing" icon={<FiCreditCard size={18} />} iconPosition="start" />
+                            <Tab label="Overview" icon={<FiHome size={17} />} iconPosition="start" />
+                            <Tab label="Account" icon={<FiSettings size={17} />} iconPosition="start" />
+                            <Tab label="Billing" icon={<FiCreditCard size={17} />} iconPosition="start" />
                         </Tabs>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 2 }} sx={{ ml: "auto", display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                            variant="contained"
-                            disabled={isSaving}
-                            startIcon={isSaving ? <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}><CircularProgress size={16} color="inherit" /></Box> : <FiSave />}
-                            onClick={onSaveProfile}
-                            sx={{
-                                bgcolor: '#EA580C',
-                                color: 'white',
-                                borderRadius: '8px',
-                                px: 3,
-                                py: 1,
-                                fontWeight: 'bold',
-                                textTransform: 'none',
-                                '&:hover': { bgcolor: '#c2410c' }
-                            }}
-                        >
-                            Save Profile
-                        </Button>
                     </Grid>
                 </Grid>
                 {children}
@@ -234,125 +247,511 @@ function ProfileHeader({
 }
 
 /**
- * INFO CARD COMPONENT: Reusable display for company details.
+ * OVERVIEW TAB: Structured Profile UI with separate sections, strict validations, and locked login email.
  */
-function ProfileInfoCard({ title, description, info, social, onEdit, isEditing, onSave, onCancel, onChange }: ProfileInfoCardProps) {
+function OverviewTab({
+    formState,
+    fieldErrors,
+    socialData,
+    isEditing,
+    isSaving,
+    handleEdit,
+    handleSaveProfile,
+    handleCancel,
+    handleFieldChange,
+    handleSocialChange
+}: any) {
     return (
-        <Card sx={{ height: "100%", boxShadow: 'none' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" pt={2} px={2}>
-                <Typography variant="h6" fontWeight="medium" textTransform="capitalize">{title}</Typography>
-                {isEditing ? (
-                    <Box display="flex" gap={1}>
-                        <IconButton size="small" onClick={onSave} color="success"><FiSave /></IconButton>
-                        <IconButton size="small" onClick={onCancel} color="error"><FiX /></IconButton>
-                    </Box>
-                ) : (
-                    <Button variant="text" color="primary" sx={{ color: '#EA580C' }} onClick={onEdit}>
-                        <FiEdit2 />
+        <Box sx={{ mt: 3, px: { xs: 0, md: 1 } }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box>
+                    <Typography variant="h6" fontWeight={700} color="#0f172a">
+                        Profile & Company Details
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Manage your company identity, contact channels, and credentials
+                    </Typography>
+                </Box>
+                {!isEditing ? (
+                    <Button
+                        variant="outlined"
+                        startIcon={<FiEdit2 />}
+                        onClick={handleEdit}
+                        sx={{
+                            color: '#EA580C',
+                            borderColor: '#EA580C',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 2.5,
+                            '&:hover': { borderColor: '#c2410c', bgcolor: 'rgba(234,88,12,0.04)' }
+                        }}
+                    >
+                        Edit Profile
                     </Button>
+                ) : (
+                    <Box display="flex" gap={1.5}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<FiX />}
+                            onClick={handleCancel}
+                            disabled={isSaving}
+                            sx={{
+                                color: '#64748b',
+                                borderColor: '#cbd5e1',
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' }
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <FiSave />}
+                            onClick={handleSaveProfile}
+                            disabled={isSaving}
+                            sx={{
+                                bgcolor: '#EA580C',
+                                color: '#fff',
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                px: 2.5,
+                                '&:hover': { bgcolor: '#c2410c' }
+                            }}
+                        >
+                            {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </Box>
                 )}
             </Box>
-            <Box p={2}>
-                <Box mb={2} lineHeight={1}>
-                    <Typography variant="button" color="text.secondary" fontWeight="light">{description}</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Box>
-                    {Object.keys(info).map((label) => {
-                        const isEmailField = label === "Email" || label.toLowerCase().includes("email");
-                        const isEmailInvalid = isEmailField && Boolean(info[label]) && !isValidEmail(info[label].trim());
-                        return (
-                            <Box key={label} display="flex" py={1} pr={2} alignItems="center">
-                                <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>
-                                    {label}:
+
+            <Grid container spacing={3}>
+                {/* 1. Company & Business Information */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Card sx={{ p: 3, borderRadius: '12px', height: '100%', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                            <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                                <FiBriefcase size={20} />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight={700} color="#1e293b">
+                                    Company Information
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    Official business presence on FixZone
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Divider sx={{ mb: 2.5 }} />
+
+                        <Box display="flex" flexDirection="column" gap={2.5}>
+                            {/* Company Name */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    COMPANY NAME *
                                 </Typography>
                                 {isEditing ? (
                                     <TextField
-                                        variant="standard"
                                         fullWidth
-                                        type={isEmailField ? "email" : "text"}
-                                        value={info[label]}
-                                        onChange={(e) => onChange(label, e.target.value)}
-                                        error={isEmailInvalid}
-                                        helperText={isEmailInvalid ? "Please enter a valid, real email (dummy domains like example.com are not allowed)" : ""}
                                         size="small"
-                                        sx={{ ml: 1 }}
+                                        value={formState.companyName}
+                                        onChange={(e) => handleFieldChange("companyName", e.target.value)}
+                                        error={Boolean(fieldErrors.companyName)}
+                                        helperText={fieldErrors.companyName || ""}
+                                        placeholder="e.g. AutoCare Solutions"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiBriefcase color="#94a3b8" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                     />
                                 ) : (
-                                    <Typography variant="button" fontWeight="regular" color="text.secondary">
-                                        &nbsp;{info[label]}
-                                    </Typography>
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiBriefcase color="#EA580C" size={16} />
+                                        <Typography variant="body2" fontWeight={600} color="#1e293b">
+                                            {formState.companyName || "—"}
+                                        </Typography>
+                                    </Box>
                                 )}
                             </Box>
-                        );
-                    })}
-                    <Box display="flex" py={1} pr={2} mt={1} flexDirection="column" gap={1}>
-                        <Typography variant="button" fontWeight="bold" textTransform="capitalize" sx={{ minWidth: 120 }}>Social:</Typography>
-                        {isEditing ? (
-                            <Box display="flex" flexDirection="column" gap={1} ml={1} mt={1}>
-                                {social.map((item: any, index: number) => (
-                                    <Box key={index} display="flex" alignItems="center">
-                                        <Box sx={{ color: item.color, display: 'flex', alignItems: 'center', mr: 2 }}>{item.icon}</Box>
-                                        <TextField
-                                            variant="standard"
-                                            fullWidth
-                                            placeholder={`${item.name} URL`}
-                                            value={item.url || ''}
-                                            onChange={(e) => item.onChange(e.target.value)}
-                                            size="small"
-                                        />
-                                    </Box>
-                                ))}
-                            </Box>
-                        ) : (
-                            <Box display="flex" gap={1} mt={0.5}>
-                                {social.map((item: any, index: number) => {
-                                    const validUrl = item.url ? (item.url.startsWith('http') ? item.url : `https://${item.url}`) : '';
-                                    return item.url ? (
-                                        <IconButton key={index} size="small" sx={{ color: item.color }} component="a" href={validUrl} target="_blank" rel="noopener noreferrer">
-                                            {item.icon}
-                                        </IconButton>
-                                    ) : (
-                                        <IconButton key={index} size="small" sx={{ color: '#ccc' }} disabled>
-                                            {item.icon}
-                                        </IconButton>
-                                    );
-                                })}
-                            </Box>
-                        )}
-                    </Box>
-                </Box>
-            </Box>
-        </Card>
-    );
-}
 
-/**
- * OVERVIEW TAB: Displays company info and details.
- */
-function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSaveProfile, handleCancel, handleProfileChange, handleSocialChange }: any) {
-    return (
-        <Grid container spacing={1} justifyContent="center">
-            <Grid size={{ xs: 12, md: 8, xl: 8 }} sx={{ display: "flex" }}>
-                <Box sx={{ width: "100%" }}>
-                    <ProfileInfoCard
-                        title="Company Details"
-                        description={`${profileData["Company Name"]} is a dedicated automotive service provider. We prioritize customer trust and technical excellence.`}
-                        info={profileData}
-                        social={[
-                            { name: "Facebook", icon: <FiFacebook />, color: "#1877F2", url: socialData.facebook, onChange: (v: string) => handleSocialChange('facebook', v) },
-                            { name: "Twitter", icon: <FiTwitter />, color: "#1DA1F2", url: socialData.twitter, onChange: (v: string) => handleSocialChange('twitter', v) },
-                            { name: "Instagram", icon: <FiInstagram />, color: "#E4405F", url: socialData.instagram, onChange: (v: string) => handleSocialChange('instagram', v) },
-                        ]}
-                        isEditing={isEditing}
-                        onEdit={handleEdit}
-                        onSave={handleSaveProfile}
-                        onCancel={handleCancel}
-                        onChange={handleProfileChange}
-                    />
-                </Box>
+                            {/* Owner / Registration Code (Read-Only) */}
+                            <Box>
+                                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.75}>
+                                    <Typography variant="caption" fontWeight={700} color="#475569">
+                                        BUSINESS REGISTRATION / OWNER CODE
+                                    </Typography>
+                                    <Chip label="System Generated" size="small" sx={{ height: 20, fontSize: '0.65rem', bgcolor: '#f1f5f9', color: '#64748b' }} />
+                                </Box>
+                                <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f1f5f9" borderRadius="8px" border="1px solid #e2e8f0">
+                                    <FiHash color="#64748b" size={16} />
+                                    <Typography variant="body2" fontWeight={700} color="#334155">
+                                        {formState.ownerCode || "—"}
+                                    </Typography>
+                                </Box>
+                            </Box>
+
+                            {/* Company Contact Email */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    COMPANY CONTACT EMAIL
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        type="email"
+                                        value={formState.companyEmail}
+                                        onChange={(e) => handleFieldChange("companyEmail", e.target.value)}
+                                        error={Boolean(fieldErrors.companyEmail)}
+                                        helperText={fieldErrors.companyEmail || "Business email shown to customers on invoices & bookings"}
+                                        placeholder="e.g. contact@yourcompany.com"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiMail color="#94a3b8" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiMail color="#EA580C" size={16} />
+                                        <Typography variant="body2" color="#334155">
+                                            {formState.companyEmail || "—"}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Company Phone */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    COMPANY PHONE NUMBER
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={formState.companyPhone}
+                                        onChange={(e) => handleFieldChange("companyPhone", e.target.value)}
+                                        error={Boolean(fieldErrors.companyPhone)}
+                                        helperText={fieldErrors.companyPhone || ""}
+                                        placeholder="e.g. +94 11 234 5678"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiPhone color="#94a3b8" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiPhone color="#EA580C" size={16} />
+                                        <Typography variant="body2" color="#334155">
+                                            {formState.companyPhone || "—"}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        </Box>
+                    </Card>
+                </Grid>
+
+                {/* Section 2: Account Owner Personal Details */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Card sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+                        <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+                            <Box p={1} bgcolor="#eff6ff" borderRadius="10px">
+                                <FiUser color="#2563eb" size={20} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h6" fontWeight={700} color="#1e293b">
+                                    Owner Credentials
+                                </Typography>
+                                <Typography variant="caption" color="#64748b">
+                                    Primary administrator login and contact details
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        <Box display="flex" flexDirection="column" gap={2.5}>
+                            {/* Owner Full Name */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    OWNER FULL NAME *
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={formState.fullName}
+                                        onChange={(e) => handleFieldChange("fullName", e.target.value)}
+                                        error={Boolean(fieldErrors.fullName)}
+                                        helperText={fieldErrors.fullName || ""}
+                                        placeholder="e.g. John Doe"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiUser color="#94a3b8" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiUser color="#2563eb" size={16} />
+                                        <Typography variant="body2" fontWeight={600} color="#1e293b">
+                                            {formState.fullName || "—"}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* PRIMARY LOGIN EMAIL (IMMUTABLE - CANNOT BE CHANGED) */}
+                            <Box>
+                                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.75}>
+                                    <Typography variant="caption" fontWeight={700} color="#475569">
+                                        PRIMARY LOGIN EMAIL (PERMANENT)
+                                    </Typography>
+                                    <Tooltip title="Your primary login email is permanent and cannot be modified for security reasons">
+                                        <Chip 
+                                            icon={<FiLock size={11} />} 
+                                            label="Cannot be changed" 
+                                            size="small" 
+                                            sx={{ 
+                                                height: 20, 
+                                                fontSize: '0.65rem', 
+                                                bgcolor: '#fee2e2', 
+                                                color: '#b91c1c',
+                                                fontWeight: 600,
+                                                '& .MuiChip-icon': { color: '#b91c1c' }
+                                            }} 
+                                        />
+                                    </Tooltip>
+                                </Box>
+                                <Box 
+                                    display="flex" 
+                                    alignItems="center" 
+                                    justifyContent="space-between" 
+                                    p={1.25} 
+                                    bgcolor="#f8fafc" 
+                                    borderRadius="8px" 
+                                    border="1.5px dashed #cbd5e1"
+                                >
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <FiLock color="#64748b" size={16} />
+                                        <Typography variant="body2" fontWeight={600} color="#334155">
+                                            {formState.email || "Protected Account Email"}
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.72rem' }}>
+                                        Immutable
+                                    </Typography>
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.72rem' }}>
+                                    Used to sign in to FixZone. To change password, visit the <b>Account</b> tab.
+                                </Typography>
+                            </Box>
+
+                            {/* Owner Personal Phone */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    OWNER PERSONAL PHONE
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={formState.phone}
+                                        onChange={(e) => handleFieldChange("phone", e.target.value)}
+                                        error={Boolean(fieldErrors.phone)}
+                                        helperText={fieldErrors.phone || "Personal mobile for notifications & security alerts"}
+                                        placeholder="+94 77 123 4567"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiPhone color="#94a3b8" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiPhone color="#2563eb" size={16} />
+                                        <Typography variant="body2" color="#334155">
+                                            {formState.phone || "—"}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        </Box>
+                    </Card>
+                </Grid>
+
+                {/* 3. Social Media & Online Links */}
+                <Grid size={{ xs: 12 }}>
+                    <Card sx={{ p: 3, borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                            <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex' }}>
+                                <FiFacebook size={20} />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight={700} color="#1e293b">
+                                    Social Media & Public Links
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    Direct customers to your social pages and websites
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Divider sx={{ mb: 2.5 }} />
+
+                        <Grid container spacing={2.5}>
+                            {/* Facebook */}
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    FACEBOOK URL
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={socialData.facebook}
+                                        onChange={(e) => handleSocialChange("facebook", e.target.value)}
+                                        placeholder="https://facebook.com/yourpage"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiFacebook color="#1877F2" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiFacebook color="#1877F2" size={16} />
+                                        {socialData.facebook ? (
+                                            <Typography 
+                                                component="a" 
+                                                href={socialData.facebook.startsWith('http') ? socialData.facebook : `https://${socialData.facebook}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                variant="body2" 
+                                                color="#1877F2"
+                                                sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                            >
+                                                {socialData.facebook}
+                                            </Typography>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">Not configured</Typography>
+                                        )}
+                                    </Box>
+                                )}
+                            </Grid>
+
+                            {/* Twitter / X */}
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    TWITTER / X URL
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={socialData.twitter}
+                                        onChange={(e) => handleSocialChange("twitter", e.target.value)}
+                                        placeholder="https://twitter.com/yourhandle"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiTwitter color="#1DA1F2" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiTwitter color="#1DA1F2" size={16} />
+                                        {socialData.twitter ? (
+                                            <Typography 
+                                                component="a" 
+                                                href={socialData.twitter.startsWith('http') ? socialData.twitter : `https://${socialData.twitter}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                variant="body2" 
+                                                color="#1DA1F2"
+                                                sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                            >
+                                                {socialData.twitter}
+                                            </Typography>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">Not configured</Typography>
+                                        )}
+                                    </Box>
+                                )}
+                            </Grid>
+
+                            {/* Instagram */}
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
+                                    INSTAGRAM URL
+                                </Typography>
+                                {isEditing ? (
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={socialData.instagram}
+                                        onChange={(e) => handleSocialChange("instagram", e.target.value)}
+                                        placeholder="https://instagram.com/yourhandle"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <FiInstagram color="#E4405F" size={16} />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    />
+                                ) : (
+                                    <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
+                                        <FiInstagram color="#E4405F" size={16} />
+                                        {socialData.instagram ? (
+                                            <Typography 
+                                                component="a" 
+                                                href={socialData.instagram.startsWith('http') ? socialData.instagram : `https://${socialData.instagram}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                variant="body2" 
+                                                color="#E4405F"
+                                                sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                            >
+                                                {socialData.instagram}
+                                            </Typography>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">Not configured</Typography>
+                                        )}
+                                    </Box>
+                                )}
+                            </Grid>
+                        </Grid>
+                    </Card>
+                </Grid>
             </Grid>
-        </Grid>
+        </Box>
     );
 }
 
@@ -361,17 +760,81 @@ function OverviewTab({ profileData, socialData, isEditing, handleEdit, handleSav
  */
 function SecurityTab({ onOpenPassword, onOpenDeactivate }: any) {
     return (
-        <Grid container spacing={1} justifyContent="center">
-            <Grid size={{ xs: 12, md: 8, xl: 6 }}>
-                <Card sx={{ boxShadow: 'none', p: 2 }}>
-                    <Typography variant="h6" fontWeight="medium" gutterBottom>Security & Access</Typography>
-                    <Box py={2}>
-                        <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>Password</Typography>
-                        <Button variant="outlined" color="primary" fullWidth sx={{ mb: 3 }} onClick={onOpenPassword}>Change Password</Button>
+        <Grid container spacing={3} justifyContent="center">
+            <Grid size={{ xs: 12, md: 8, xl: 7 }}>
+                {/* Password & Security Card */}
+                <Card sx={{ p: 3, borderRadius: 3, mb: 3, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                        <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                            <FiShield size={22} />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700}>Security & Access</Typography>
+                            <Typography variant="caption" color="text.secondary">Manage your password and protect your FixZone company account</Typography>
+                        </Box>
+                    </Box>
+                    
+                    <Divider sx={{ my: 2 }} />
 
-                        <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase" display="block" mb={1}>Danger Zone</Typography>
-                        <Typography variant="caption" color="text.secondary" display="block" mb={2}>Once you delete your account, there is no going back.</Typography>
-                        <Button variant="outlined" color="error" fullWidth onClick={onOpenDeactivate}>Deactivate Account</Button>
+                    <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0', mb: 1 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                                <Box sx={{ p: 1, borderRadius: '50%', bgcolor: '#fff', border: '1px solid #e2e8f0', color: '#64748b', display: 'flex' }}>
+                                    <FiLock size={18} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">Account Password</Typography>
+                                    <Typography variant="caption" color="text.secondary">Use a strong, unique password with letters, numbers, and symbols</Typography>
+                                </Box>
+                            </Box>
+                            <Button 
+                                variant="contained" 
+                                startIcon={<FiKey />}
+                                onClick={onOpenPassword}
+                                sx={{
+                                    bgcolor: '#EA580C',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    px: 2.5,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    '&:hover': { bgcolor: '#c2410c' }
+                                }}
+                            >
+                                Change Password
+                            </Button>
+                        </Box>
+                    </Box>
+                </Card>
+
+                {/* Danger Zone Card */}
+                <Card sx={{ p: 3, borderRadius: 3, border: '1px solid #fecaca', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                        <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#fef2f2', color: '#ef4444', display: 'flex' }}>
+                            <FiAlertCircle size={22} />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700} color="error.main">Danger Zone</Typography>
+                            <Typography variant="caption" color="text.secondary">Irreversible actions on your company account</Typography>
+                        </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} color="text.primary">Deactivate Company Account</Typography>
+                            <Typography variant="caption" color="text.secondary">Once deactivated, you will lose access to all your service centers and branches.</Typography>
+                        </Box>
+                        <Button 
+                            variant="outlined" 
+                            color="error" 
+                            onClick={onOpenDeactivate}
+                            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+                        >
+                            Deactivate Account
+                        </Button>
                     </Box>
                 </Card>
             </Grid>
@@ -386,18 +849,15 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
     const [plans, setPlans] = useState<any[]>([]);
     const [selectedPlan, setSelectedPlan] = useState<string>("");
     const [loadingPlans, setLoadingPlans] = useState(true);
-    const [connectLoading, setConnectLoading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const searchParams = useSearchParams();
 
-    const isStripeConnected = ownerData?.stripeOnboardingComplete === true;
     const subStatus = ownerData?.subscriptionStatus || "TRIAL";
     const trialEnds = ownerData?.trialEndsAt ? new Date(ownerData.trialEndsAt) : null;
     const nextBilling = ownerData?.nextBillingDate ? new Date(ownerData.nextBillingDate) : null;
     const isAutoRenewEnabled = ownerData?.autoRenewEnabled === true;
 
     useEffect(() => {
-        // Handle Stripe redirect results
         const subSuccess = searchParams.get("sub_success");
         const subCanceled = searchParams.get("sub_canceled");
         const sessionId = searchParams.get("session_id");
@@ -425,7 +885,6 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
             }
         }
 
-        // Fetch plans
         axios.get(APP_CONFIG.api.subPlans)
             .then(r => { 
                 setPlans(r.data); 
@@ -436,18 +895,6 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
             .catch(() => onMessage("Could not load subscription plans", "error"))
             .finally(() => setLoadingPlans(false));
     }, []);
-
-    const handleConnectStripe = async () => {
-        setConnectLoading(true);
-        try {
-            const res = await axios.post(APP_CONFIG.api.payments + "/connect");
-            window.location.href = res.data; // Redirect to Stripe onboarding
-        } catch {
-            onMessage("Failed to generate Stripe link. Please try again.", "error");
-        } finally {
-            setConnectLoading(false);
-        }
-    };
 
     const handleSubscribe = async () => {
         if (!selectedPlan) {
@@ -476,12 +923,11 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
         PREMIUM_ACTIVE: "#10b981", 
         PREMIUM_EXPIRED: "#ef4444",
         CANCELLED: "#6b7280",
-        TRIAL: "#f59e0b", // Legacy support
-        ACTIVE: "#10b981", // Legacy support
-        EXPIRED: "#ef4444" // Legacy support
+        TRIAL: "#f59e0b",
+        ACTIVE: "#10b981",
+        EXPIRED: "#ef4444"
     };
     const statusColor = statusColors[subStatus] || "#6b7280";
-
     const displayStatus = subStatus.replace('_', ' ');
 
     return (
@@ -574,18 +1020,70 @@ function BillingTab({ ownerData, refreshAll, onMessage }: { ownerData: any; refr
 }
 
 /**
- * DIALOG COMPONENTS: For handling password changes and deactivation.
+ * CHANGE PASSWORD DIALOG
  */
 function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [touched, setTouched] = useState({ current: false, new: false, confirm: false });
     const [error, setError] = useState("");
     const [isUpdating, setIsUpdating] = useState(false);
 
+    const validations = {
+        length: passwords.new.length >= MIN_PASSWORD_LENGTH,
+        uppercase: /[A-Z]/.test(passwords.new),
+        lowercase: /[a-z]/.test(passwords.new),
+        number: /[0-9]/.test(passwords.new),
+        special: /[^A-Za-z0-9]/.test(passwords.new),
+    };
+
+    const strengthScore = Object.values(validations).filter(Boolean).length;
+    const isPasswordStrong = strengthScore === 5;
+    const isSameAsCurrent = passwords.current.length > 0 && passwords.new.length > 0 && passwords.current === passwords.new;
+    const doPasswordsMatch = passwords.new === passwords.confirm && passwords.confirm.length > 0;
+    const isConfirmMismatch = passwords.confirm.length > 0 && passwords.new !== passwords.confirm;
+
+    const getStrengthDetails = () => {
+        if (!passwords.new) return { label: "", color: "#e2e8f0", percent: 0 };
+        if (strengthScore <= 2) return { label: "Weak", color: "#ef4444", percent: 33 };
+        if (strengthScore <= 4) return { label: "Moderate", color: "#f59e0b", percent: 66 };
+        return { label: "Strong", color: "#10b981", percent: 100 };
+    };
+
+    const strength = getStrengthDetails();
+
+    const handleReset = () => {
+        setPasswords({ current: "", new: "", confirm: "" });
+        setShowCurrent(false);
+        setShowNew(false);
+        setShowConfirm(false);
+        setTouched({ current: false, new: false, confirm: false });
+        setError("");
+    };
+
+    const handleClose = () => {
+        handleReset();
+        onClose();
+    };
+
     const handleUpdate = async () => {
-        if (!passwords.current) return setError("Current password is required");
-        if (passwords.new.length < MIN_PASSWORD_LENGTH) return setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-        if (passwords.new !== passwords.confirm) return setError("Passwords do not match");
+        setTouched({ current: true, new: true, confirm: true });
         
+        if (!passwords.current) {
+            return setError("Current password is required");
+        }
+        if (!isPasswordStrong) {
+            return setError("Please ensure your new password meets all security requirements");
+        }
+        if (isSameAsCurrent) {
+            return setError("New password cannot be the same as your current password");
+        }
+        if (passwords.new !== passwords.confirm) {
+            return setError("New password and confirm password do not match");
+        }
+
         setError("");
         setIsUpdating(true);
         try {
@@ -594,10 +1092,10 @@ function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
                 newPassword: passwords.new
             });
             onSuccess("Password updated successfully!");
-            setPasswords({ current: "", new: "", confirm: "" });
+            handleReset();
             onClose();
         } catch (error: any) {
-            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password";
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password. Please verify your current password.";
             setError(msg);
             onError(msg);
         } finally {
@@ -605,38 +1103,332 @@ function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
         }
     };
 
+    const isSubmitDisabled = 
+        !passwords.current || 
+        !isPasswordStrong || 
+        isSameAsCurrent || 
+        !doPasswordsMatch || 
+        isUpdating;
+
     return (
-        <Dialog open={open} onClose={() => { onClose(); setError(""); }} fullWidth maxWidth="sm">
-            <DialogTitle>Change Password</DialogTitle>
-            <DialogContent>
-                <Box display="flex" flexDirection="column" gap={2} pt={1}>
-                    {error && <Typography color="error" variant="caption">{error}</Typography>}
-                    <TextField label="Current Password" type="password" fullWidth value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} error={!!error && !passwords.current} />
-                    <TextField label="New Password" type="password" fullWidth value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} error={!!error && passwords.new.length < MIN_PASSWORD_LENGTH} />
-                    <TextField label="Confirm New Password" type="password" fullWidth value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} error={!!error && passwords.new !== passwords.confirm} />
+        <Dialog 
+            open={open} 
+            onClose={isUpdating ? undefined : handleClose} 
+            fullWidth 
+            maxWidth="sm"
+            PaperProps={{
+                sx: { borderRadius: 3 }
+            }}
+        >
+            <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                    <FiKey size={20} />
+                </Box>
+                <Box>
+                    <Typography variant="h6" fontWeight={700}>Change Password</Typography>
+                    <Typography variant="caption" color="text.secondary">Update your account credentials to keep your account safe</Typography>
+                </Box>
+            </DialogTitle>
+            
+            <Divider />
+
+            <DialogContent sx={{ pt: 2.5 }}>
+                {error && (
+                    <Box mb={2.5} p={1.5} bgcolor="#fef2f2" borderRadius={2} border="1px solid #fecaca" display="flex" alignItems="center" gap={1}>
+                        <FiAlertCircle color="#ef4444" size={18} />
+                        <Typography variant="body2" color="error.main" fontWeight={500}>
+                            {error}
+                        </Typography>
+                    </Box>
+                )}
+
+                <Box display="flex" flexDirection="column" gap={2.5}>
+                    {/* Current Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            CURRENT PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Enter current password"
+                            type={showCurrent ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.current}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, current: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, current: true }))}
+                            error={touched.current && !passwords.current}
+                            helperText={touched.current && !passwords.current ? "Current password is required" : ""}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiKey color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowCurrent(!showCurrent)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle current password visibility"
+                                        >
+                                            {showCurrent ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+                    </Box>
+
+                    {/* New Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            NEW PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Enter new strong password"
+                            type={showNew ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.new}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, new: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, new: true }))}
+                            error={(touched.new && passwords.new.length > 0 && !isPasswordStrong) || isSameAsCurrent}
+                            helperText={
+                                isSameAsCurrent 
+                                    ? "New password cannot be the same as current password" 
+                                    : ""
+                            }
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiLock color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowNew(!showNew)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle new password visibility"
+                                        >
+                                            {showNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+
+                        {/* Password Strength Indicator */}
+                        {passwords.new.length > 0 && (
+                            <Box mt={1.5} p={1.5} bgcolor="#f8fafc" borderRadius={2} border="1px solid #f1f5f9">
+                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                                    <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                        Password Strength:
+                                    </Typography>
+                                    <Typography variant="caption" fontWeight={700} sx={{ color: strength.color }}>
+                                        {strength.label}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress 
+                                    variant="determinate" 
+                                    value={strength.percent} 
+                                    sx={{
+                                        height: 6,
+                                        borderRadius: 3,
+                                        bgcolor: '#e2e8f0',
+                                        '& .MuiLinearProgress-bar': {
+                                            bgcolor: strength.color,
+                                            borderRadius: 3,
+                                            transition: 'all 0.3s ease'
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        )}
+
+                        {/* Validation Requirements Checklist */}
+                        <Box mt={1.5} p={1.5} bgcolor="#f8fafc" borderRadius={2} border="1px solid #e2e8f0">
+                            <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" mb={1}>
+                                Password Requirements:
+                            </Typography>
+                            <Grid container spacing={1}>
+                                {[
+                                    { key: "length", label: `At least ${MIN_PASSWORD_LENGTH} characters`, valid: validations.length },
+                                    { key: "uppercase", label: "One uppercase letter (A-Z)", valid: validations.uppercase },
+                                    { key: "lowercase", label: "One lowercase letter (a-z)", valid: validations.lowercase },
+                                    { key: "number", label: "One number (0-9)", valid: validations.number },
+                                    { key: "special", label: "One special character (!@#$...)", valid: validations.special },
+                                ].map((req) => (
+                                    <Grid size={{ xs: 12, sm: 6 }} key={req.key}>
+                                        <Box display="flex" alignItems="center" gap={0.75}>
+                                            {req.valid ? (
+                                                <FiCheckCircle size={14} color="#10b981" />
+                                            ) : (
+                                                <FiAlertCircle size={14} color="#94a3b8" />
+                                            )}
+                                            <Typography 
+                                                variant="caption" 
+                                                sx={{ 
+                                                    color: req.valid ? '#10b981' : '#64748b',
+                                                    fontWeight: req.valid ? 600 : 400,
+                                                    transition: 'color 0.2s ease'
+                                                }}
+                                            >
+                                                {req.label}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Box>
+                    </Box>
+
+                    {/* Confirm New Password */}
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={0.75}>
+                            CONFIRM NEW PASSWORD *
+                        </Typography>
+                        <TextField
+                            placeholder="Re-enter new password"
+                            type={showConfirm ? "text" : "password"}
+                            fullWidth
+                            size="small"
+                            disabled={isUpdating}
+                            value={passwords.confirm}
+                            onChange={(e) => {
+                                setPasswords({ ...passwords, confirm: e.target.value });
+                                if (error) setError("");
+                            }}
+                            onBlur={() => setTouched(prev => ({ ...prev, confirm: true }))}
+                            error={touched.confirm && (isConfirmMismatch || !passwords.confirm)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiLock color="#94a3b8" size={16} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setShowConfirm(!showConfirm)}
+                                            edge="end"
+                                            disabled={isUpdating}
+                                            aria-label="toggle confirm password visibility"
+                                        >
+                                            {showConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 2 }
+                            }}
+                        />
+
+                        {passwords.confirm.length > 0 && (
+                            <Box display="flex" alignItems="center" gap={0.75} mt={0.75}>
+                                {doPasswordsMatch ? (
+                                    <>
+                                        <FiCheckCircle size={14} color="#10b981" />
+                                        <Typography variant="caption" color="#10b981" fontWeight={600}>
+                                            Passwords match
+                                        </Typography>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FiAlertCircle size={14} color="#ef4444" />
+                                        <Typography variant="caption" color="#ef4444" fontWeight={600}>
+                                            Passwords do not match
+                                        </Typography>
+                                    </>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
                 </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={isUpdating}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating} variant="contained" sx={{ bgcolor: '#EA580C', color: '#fff', '&:hover': { bgcolor: '#c2410c' } }}>
-                    {isUpdating ? <CircularProgress size={20} color="inherit" /> : "Update Password"}
+
+            <Divider />
+
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc' }}>
+                <Button 
+                    onClick={handleClose} 
+                    disabled={isUpdating}
+                    sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    onClick={handleUpdate} 
+                    disabled={isSubmitDisabled} 
+                    variant="contained" 
+                    startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <FiKey />}
+                    sx={{ 
+                        bgcolor: '#EA580C', 
+                        color: '#fff', 
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        px: 3,
+                        py: 1,
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: '#c2410c' },
+                        '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+                    }}
+                >
+                    {isUpdating ? "Updating Password..." : "Update Password"}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
 
+/**
+ * DEACTIVATE ACCOUNT DIALOG
+ */
 function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivateInput, onDeactivate, isDeactivating }: any) {
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ color: 'error.main' }}>Deactivate Account</DialogTitle>
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 3 } }}>
+            <DialogTitle sx={{ color: 'error.main', fontWeight: 700 }}>Deactivate Company Account</DialogTitle>
             <DialogContent>
-                <Typography variant="body1" paragraph>Are you sure you want to deactivate? This is permanent.</Typography>
-                <TextField fullWidth placeholder="Type DELETE to confirm" value={deactivateInput} onChange={(e) => setDeactivateInput(e.target.value)} />
+                <Typography variant="body2" color="text.secondary" paragraph>
+                    Are you sure you want to permanently deactivate your company account? This will hide all your service centers and cancel all active bookings.
+                </Typography>
+                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={1}>
+                    Type <b>DELETE</b> to confirm:
+                </Typography>
+                <TextField 
+                    fullWidth 
+                    size="small"
+                    placeholder="DELETE" 
+                    value={deactivateInput} 
+                    onChange={(e) => setDeactivateInput(e.target.value)} 
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                />
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={isDeactivating}>Cancel</Button>
-                <Button variant="contained" color="error" disabled={deactivateInput !== "DELETE" || isDeactivating} onClick={onDeactivate}>
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc' }}>
+                <Button onClick={onClose} disabled={isDeactivating} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                    Cancel
+                </Button>
+                <Button 
+                    variant="contained" 
+                    color="error" 
+                    disabled={deactivateInput !== "DELETE" || isDeactivating} 
+                    onClick={onDeactivate}
+                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                >
                     {isDeactivating ? <CircularProgress size={20} color="inherit" /> : "Deactivate My Account"}
                 </Button>
             </DialogActions>
@@ -644,15 +1436,12 @@ function DeactivateAccountDialog({ open, onClose, deactivateInput, setDeactivate
     );
 }
 
-import { useDashboardData } from "@/context/DashboardDataContext";
-
 /**
- * MAIN PAGE COMPONENT: Handles state and lifecycle.
+ * MAIN PAGE COMPONENT: State management, validation, and lifecycle.
  */
 export default function ProfilePage() {
     const { ownerData, refreshAll } = useDashboardData();
     const searchParams = useSearchParams();
-    // Auto-switch to correct tab when redirected with ?tab=billing or ?tab=account
     const tabParam = searchParams?.get("tab");
     const initialTab = tabParam === "billing" ? 2 : tabParam === "account" ? 1 : 0;
     const [tabValue, setTabValue] = useState(initialTab);
@@ -663,76 +1452,142 @@ export default function ProfilePage() {
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-
     const [isEditing, setIsEditing] = useState(false);
+
     const [userId, setUserId] = useState<string | null>(null);
     const [fullOwnerData, setFullOwnerData] = useState<any>(null);
-    
-    const [profileData, setProfileData] = useState<{ [key: string]: string }>({
-        "Company Name": "",
-        "Registration": "",
-        "Mobile": "",
-        "Email": "",
-        "Location": "Sri Lanka",
+
+    // Profile Form State
+    const [formState, setFormState] = useState({
+        companyName: "",
+        ownerCode: "",
+        companyEmail: "",
+        companyNumber: "",
+        fullName: "",
+        email: "",
+        phone: "",
+        location: "Sri Lanka"
     });
+
     const [socialData, setSocialData] = useState({
         facebook: "",
         twitter: "",
         instagram: ""
     });
-    const [originalProfileData, setOriginalProfileData] = useState(profileData);
+
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+    const [originalFormState, setOriginalFormState] = useState(formState);
     const [originalSocialData, setOriginalSocialData] = useState(socialData);
 
     useEffect(() => {
-        if (ownerData) {
-            setUserId(ownerData.userId);
-            setFullOwnerData(ownerData);
-            const mappedData = {
-                "Company Name": ownerData.companyName || "",
-                "Registration": ownerData.ownerCode || "",
-                "Mobile": ownerData.companyNumber || ownerData.phone || "",
-                "Email": ownerData.companyEmail || ownerData.email || "",
-                "Location": "Sri Lanka",
-            };
-            setProfileData(mappedData);
-            setOriginalProfileData(mappedData);
+        const applyOwnerData = (data: any) => {
+            if (!data) return;
+            setUserId(data.userId);
+            setFullOwnerData(data);
             
-            const mappedSocial = {
-                facebook: ownerData.facebookUrl || "",
-                twitter: ownerData.twitterUrl || "",
-                instagram: ownerData.instagramUrl || ""
+            const loadedState = {
+                companyName: data.companyName || "",
+                ownerCode: data.ownerCode || "",
+                companyEmail: data.companyEmail || "",
+                companyNumber: data.companyNumber || "",
+                fullName: data.fullName || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                location: "Sri Lanka"
             };
-            setSocialData(mappedSocial);
-            setOriginalSocialData(mappedSocial);
-            if (ownerData.profilePictureUrl) setProfileImage(ownerData.profilePictureUrl);
-            if (ownerData.bannerImageUrl) setBannerImage(ownerData.bannerImageUrl);
+
+            setFormState(loadedState);
+            setOriginalFormState(loadedState);
+
+            const loadedSocial = {
+                facebook: data.facebookUrl || "",
+                twitter: data.twitterUrl || "",
+                instagram: data.instagramUrl || ""
+            };
+            setSocialData(loadedSocial);
+            setOriginalSocialData(loadedSocial);
+
+            if (data.profilePictureUrl) setProfileImage(data.profilePictureUrl);
+            if (data.bannerImageUrl) setBannerImage(data.bannerImageUrl);
+        };
+
+        if (ownerData) {
+            applyOwnerData(ownerData);
+        } else {
+            // Direct fetch fallback if context has not loaded yet
+            axios.get(`${APP_CONFIG.api.owners}/current`)
+                .then((res) => {
+                    if (res.data) applyOwnerData(res.data);
+                })
+                .catch((err) => {
+                    console.warn("Direct fetch /owners/current warning:", err);
+                });
         }
     }, [ownerData]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
-    const handleEdit = () => { setIsEditing(true); setOriginalProfileData({ ...profileData }); setOriginalSocialData({ ...socialData }); };
-    const handleCancel = () => { setIsEditing(false); setProfileData({ ...originalProfileData }); setSocialData({ ...originalSocialData }); };
+
+    const handleEdit = () => {
+        setIsEditing(true);
+        setFieldErrors({});
+        setOriginalFormState({ ...formState });
+        setOriginalSocialData({ ...socialData });
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        setFieldErrors({});
+        setFormState({ ...originalFormState });
+        setSocialData({ ...originalSocialData });
+    };
+
+    const handleFieldChange = (field: string, value: string) => {
+        setFormState(prev => ({ ...prev, [field]: value }));
+        if (fieldErrors[field]) {
+            setFieldErrors(prev => ({ ...prev, [field]: "" }));
+        }
+    };
+
+    const handleSocialChange = (network: string, value: string) => {
+        setSocialData(prev => ({ ...prev, [network]: value }));
+    };
+
+    // Real-time client-side validation
+    const validateForm = () => {
+        const errors: { [key: string]: string } = {};
+
+        // 1. Company Name (Required, min 2 chars)
+        if (!formState.companyName.trim() || formState.companyName.trim().length < MIN_COMPANY_NAME_LENGTH) {
+            errors.companyName = `Company name is required (at least ${MIN_COMPANY_NAME_LENGTH} characters)`;
+        }
+
+        // 2. Full Name (Required, min 2 chars)
+        if (formState.fullName && formState.fullName.trim().length < MIN_FULL_NAME_LENGTH) {
+            errors.fullName = `Owner name must be at least ${MIN_FULL_NAME_LENGTH} characters`;
+        }
+
+        // 3. Company Email (Optional, valid format)
+        if (formState.companyEmail && formState.companyEmail.trim() && !isValidEmail(formState.companyEmail.trim())) {
+            errors.companyEmail = "Please enter a valid company email address";
+        }
+
+        // 4. Company Phone (Optional, valid phone format)
+        if (formState.companyNumber && formState.companyNumber.trim() && !PHONE_REGEX.test(formState.companyNumber.replace(/\s/g, ''))) {
+            errors.companyNumber = "Please enter a valid phone number (9-20 digits)";
+        }
+
+        // 5. Personal Phone (Optional, valid phone format)
+        if (formState.phone && formState.phone.trim() && !PHONE_REGEX.test(formState.phone.replace(/\s/g, ''))) {
+            errors.phone = "Please enter a valid personal phone number (9-20 digits)";
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const handleSaveProfile = async () => {
-        if (!userId || !fullOwnerData) return;
-        
-        // Comprehensive validation
-        if (!profileData["Company Name"].trim() || profileData["Company Name"].length < MIN_COMPANY_NAME_LENGTH) {
-            setSnackbarMessage(`Company name must be at least ${MIN_COMPANY_NAME_LENGTH} characters`);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-            return;
-        }
-
-        if (profileData["Email"] && !isValidEmail(profileData["Email"].trim())) {
-            setSnackbarMessage("Please enter a valid, real company email address (dummy domains like example.com are not allowed)");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-            return;
-        }
-
-        if (profileData["Mobile"] && !PHONE_REGEX.test(profileData["Mobile"].replace(/\s/g, ''))) {
-            setSnackbarMessage("Please enter a valid mobile number (10-15 digits)");
+        if (!validateForm()) {
+            setSnackbarMessage("Please correct the highlighted validation errors.");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
             return;
@@ -740,29 +1595,43 @@ export default function ProfilePage() {
 
         setIsSaving(true);
         try {
-            const updatedOwner = { 
-                ...fullOwnerData, 
-                companyName: profileData["Company Name"], 
-                companyNumber: profileData["Mobile"], 
-                companyEmail: profileData["Email"],
+            const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+
+            // Note: Primary login email is deliberately NOT overwritten, preserving account credentials
+            const updatedOwner = {
+                ...(fullOwnerData || {}),
+                userId: targetUserId,
+                fullName: formState.fullName.trim() || (fullOwnerData && fullOwnerData.fullName) || undefined,
+                companyName: formState.companyName.trim(),
+                companyNumber: formState.companyNumber.trim(),
+                companyEmail: formState.companyEmail.trim(),
+                phone: formState.phone.trim(),
                 profilePictureUrl: profileImage,
                 bannerImageUrl: bannerImage,
-                facebookUrl: socialData.facebook,
-                twitterUrl: socialData.twitter,
-                instagramUrl: socialData.instagram
+                facebookUrl: socialData.facebook.trim(),
+                twitterUrl: socialData.twitter.trim(),
+                instagramUrl: socialData.instagram.trim()
             };
-            await axios.put(`${APP_CONFIG.api.owners}/${userId}`, updatedOwner);
+
+            const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+            const res = await axios.put(endpoint, updatedOwner);
+            if (res.data) {
+                setFullOwnerData(res.data);
+                if (res.data.profilePictureUrl) setProfileImage(res.data.profilePictureUrl);
+                if (res.data.bannerImageUrl) setBannerImage(res.data.bannerImageUrl);
+            }
+
             setIsEditing(false);
             await refreshAll();
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('profileUpdated'));
             }
-            setSnackbarMessage("Profile saved successfully!");
+            setSnackbarMessage("Owner profile updated successfully!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
         } catch (error: any) {
             console.error("Save profile error:", error);
-            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save changes.";
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save profile changes.";
             setSnackbarMessage(msg);
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
@@ -771,44 +1640,89 @@ export default function ProfilePage() {
         }
     };
 
-    useEffect(() => {
-        (window as any).handleGlobalSave = handleSaveProfile;
-    }, [handleSaveProfile]);
-
-    const handleProfileChange = (field: string, value: string) => setProfileData(prev => ({ ...prev, [field]: value }));
-    const handleSocialChange = (field: string, value: string) => setSocialData(prev => ({ ...prev, [field]: value }));
-
-    const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBannerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64 = reader.result as string;
                 setBannerImage(base64);
-                setSnackbarMessage("Banner preview updated. Click 'Save Profile' to apply.");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
+                
+                if (isEditing) {
+                    setSnackbarMessage("Cover banner preview updated. Click 'Save Changes' to apply.");
+                    setSnackbarSeverity("success");
+                    setSnackbarOpen(true);
+                    return;
+                }
+
+                try {
+                    const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+                    const updatedOwner = { ...(fullOwnerData || {}), bannerImageUrl: base64 };
+                    const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+                    const res = await axios.put(endpoint, updatedOwner);
+                    if (res.data?.bannerImageUrl) {
+                        setBannerImage(res.data.bannerImageUrl);
+                    }
+                    await refreshAll();
+                    setSnackbarMessage("Cover banner updated successfully!");
+                    setSnackbarSeverity("success");
+                    setSnackbarOpen(true);
+                } catch (err: any) {
+                    console.error("Banner upload error:", err);
+                    setSnackbarMessage("Failed to upload cover banner. Please try again.");
+                    setSnackbarSeverity("error");
+                    setSnackbarOpen(true);
+                }
             };
-            reader.readAsDataURL(event.target.files[0]);
+            reader.readAsDataURL(file);
         }
     };
 
-    const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64 = reader.result as string;
                 setProfileImage(base64);
-                setSnackbarMessage("Profile preview updated. Click 'Save Profile' to apply.");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
+
+                if (isEditing) {
+                    setSnackbarMessage("Profile picture preview updated. Click 'Save Changes' to apply.");
+                    setSnackbarSeverity("success");
+                    setSnackbarOpen(true);
+                    return;
+                }
+
+                try {
+                    const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+                    const updatedOwner = { ...(fullOwnerData || {}), profilePictureUrl: base64 };
+                    const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+                    const res = await axios.put(endpoint, updatedOwner);
+                    if (res.data?.profilePictureUrl) {
+                        setProfileImage(res.data.profilePictureUrl);
+                    }
+                    await refreshAll();
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('profileUpdated'));
+                    }
+                    setSnackbarMessage("Profile picture updated successfully!");
+                    setSnackbarSeverity("success");
+                    setSnackbarOpen(true);
+                } catch (err: any) {
+                    console.error("Profile picture upload error:", err);
+                    setSnackbarMessage("Failed to upload profile picture. Please try again.");
+                    setSnackbarSeverity("error");
+                    setSnackbarOpen(true);
+                }
             };
-            reader.readAsDataURL(event.target.files[0]);
+            reader.readAsDataURL(file);
         }
     };
 
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [openDeactivateDialog, setOpenDeactivateDialog] = useState(false);
     const [deactivateInput, setDeactivateInput] = useState("");
+    const [isDeactivating, setIsDeactivating] = useState(false);
 
     return (
         <ProfileHeader
@@ -818,21 +1732,23 @@ export default function ProfilePage() {
             onBannerChange={handleBannerChange}
             profileImage={profileImage}
             onProfileImageChange={handleProfileImageChange}
-            companyName={profileData["Company Name"]}
+            companyName={formState.companyName}
             isSaving={isSaving}
             onSaveProfile={handleSaveProfile}
         >
-            <Box mt={5} mb={3}>
+            <Box mt={4} mb={3}>
                 {tabValue === 0 && (
                     <OverviewTab 
-                        profileData={profileData} 
+                        formState={formState}
+                        fieldErrors={fieldErrors}
                         socialData={socialData}
-                        isEditing={isEditing} 
-                        handleEdit={handleEdit} 
-                        handleSaveProfile={handleSaveProfile} 
-                        handleCancel={handleCancel} 
-                        handleProfileChange={handleProfileChange}
-                        handleSocialChange={handleSocialChange} 
+                        isEditing={isEditing}
+                        isSaving={isSaving}
+                        handleEdit={handleEdit}
+                        handleSaveProfile={handleSaveProfile}
+                        handleCancel={handleCancel}
+                        handleFieldChange={handleFieldChange}
+                        handleSocialChange={handleSocialChange}
                     />
                 )}
 
@@ -843,14 +1759,32 @@ export default function ProfilePage() {
                     />
                 )}
 
-                {tabValue === 2 && <BillingTab ownerData={ownerData} refreshAll={refreshAll} onMessage={(msg, sev) => { setSnackbarMessage(msg); setSnackbarSeverity(sev); setSnackbarOpen(true); }} />}
+                {tabValue === 2 && (
+                    <BillingTab 
+                        ownerData={ownerData} 
+                        refreshAll={refreshAll} 
+                        onMessage={(msg, sev) => { 
+                            setSnackbarMessage(msg); 
+                            setSnackbarSeverity(sev); 
+                            setSnackbarOpen(true); 
+                        }} 
+                    />
+                )}
             </Box>
 
             <ChangePasswordDialog 
                 open={openPasswordDialog} 
                 onClose={() => setOpenPasswordDialog(false)} 
-                onSuccess={(msg: string) => { setSnackbarMessage(msg); setSnackbarSeverity("success"); setSnackbarOpen(true); }}
-                onError={(msg: string) => { setSnackbarMessage(msg); setSnackbarSeverity("error"); setSnackbarOpen(true); }}
+                onSuccess={(msg: string) => { 
+                    setSnackbarMessage(msg); 
+                    setSnackbarSeverity("success"); 
+                    setSnackbarOpen(true); 
+                }}
+                onError={(msg: string) => { 
+                    setSnackbarMessage(msg); 
+                    setSnackbarSeverity("error"); 
+                    setSnackbarOpen(true); 
+                }}
             />
             
             <DeactivateAccountDialog 
@@ -858,21 +1792,47 @@ export default function ProfilePage() {
                 onClose={() => setOpenDeactivateDialog(false)} 
                 deactivateInput={deactivateInput} 
                 setDeactivateInput={setDeactivateInput} 
+                isDeactivating={isDeactivating}
                 onDeactivate={async () => {
                     if (deactivateInput !== "DELETE") return;
+                    setIsDeactivating(true);
                     try {
-                        await axios.delete(`${APP_CONFIG.api.owners}/${userId}`);
+                        await axios.delete(`${APP_CONFIG.api.owners}/current`);
                         setSnackbarMessage("Account deactivated successfully");
                         setSnackbarSeverity("success");
                         setSnackbarOpen(true);
                         setOpenDeactivateDialog(false);
-                        // Log out
                         localStorage.removeItem('token');
+                        localStorage.removeItem('userId');
+                        localStorage.removeItem('role');
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('fullName');
                         window.location.href = '/login';
                     } catch (error: any) {
-                        setSnackbarMessage(error.response?.data?.details || "Failed to deactivate account");
+                        const targetId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+                        if (targetId) {
+                            try {
+                                await axios.delete(`${APP_CONFIG.api.owners}/${targetId}`);
+                                setSnackbarMessage("Account deactivated successfully");
+                                setSnackbarSeverity("success");
+                                setSnackbarOpen(true);
+                                setOpenDeactivateDialog(false);
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('userId');
+                                localStorage.removeItem('role');
+                                localStorage.removeItem('userRole');
+                                localStorage.removeItem('fullName');
+                                window.location.href = '/login';
+                                return;
+                            } catch (retryError: any) {
+                                console.error("Retry deactivation error:", retryError);
+                            }
+                        }
+                        setSnackbarMessage(error.response?.data?.details || error.response?.data?.message || "Failed to deactivate account");
                         setSnackbarSeverity("error");
                         setSnackbarOpen(true);
+                    } finally {
+                        setIsDeactivating(false);
                     }
                 }}
             />
@@ -884,6 +1844,6 @@ export default function ProfilePage() {
                 message={snackbarMessage}
                 onClose={() => setSnackbarOpen(false)} 
             />
-        </ProfileHeader >
+        </ProfileHeader>
     );
 }

@@ -216,10 +216,10 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Revenue"
-                        count={`Rs. ${data?.totalRevenue.toLocaleString() || '0'}`}
+                        count={`Rs. ${data?.totalRevenue?.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
                         percentage={data?.totalRevenue && data.totalRevenue > 0 ? {
-                            color: data?.revenueChange.startsWith('+') ? 'success' : 'danger',
+                            color: data?.revenueChange?.startsWith('+') ? 'success' : 'danger',
                             amount: data?.revenueChange || '0%',
                             label: 'than last month'
                         } : undefined}
@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Online Revenue"
-                        count={`Rs. ${data?.onlineRevenue.toLocaleString() || '0'}`}
+                        count={`Rs. ${data?.onlineRevenue?.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
                         percentage={data?.onlineRevenue && data.onlineRevenue > 0 ? {
                             color: 'success',
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Hand Collection"
-                        count={`Rs. ${data?.handCollectionRevenue.toLocaleString() || '0'}`}
+                        count={`Rs. ${data?.handCollectionRevenue?.toLocaleString() || '0'}`}
                         icon={<FiDollarSign />}
                         percentage={data?.handCollectionRevenue && data.handCollectionRevenue > 0 ? {
                             color: 'warning',
@@ -258,10 +258,10 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Total Jobs"
-                        count={data?.totalJobs.toString() || '0'}
+                        count={data?.totalJobs?.toString() || '0'}
                         icon={<FiBriefcase />}
                         percentage={data?.totalJobs && data.totalJobs > 0 ? {
-                            color: data?.jobsChange.startsWith('+') ? 'success' : 'danger',
+                            color: data?.jobsChange?.startsWith('+') ? 'success' : 'danger',
                             amount: data?.jobsChange || '0%',
                             label: 'than last month'
                         } : undefined}
@@ -271,9 +271,9 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Pending Jobs"
-                        count={data?.pendingJobs.toString() || '0'}
+                        count={data?.pendingJobs?.toString() || '0'}
                         percentage={data?.pendingJobs && data.pendingJobs > 0 ? {
-                            color: data?.pendingJobsChange.startsWith('-') ? 'success' : 'danger',
+                            color: data?.pendingJobsChange?.startsWith('-') ? 'success' : 'danger',
                             amount: data?.pendingJobsChange || '0%',
                             label: 'vs. yesterday'
                         } : undefined}
@@ -284,10 +284,10 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <StatCard
                         title="Avg. Job Value"
-                        count={`Rs. ${data?.avgJobValue.toLocaleString() || '0'}`}
+                        count={`Rs. ${data?.avgJobValue?.toLocaleString() || '0'}`}
                         icon={<FiArrowUp />}
                         percentage={data?.avgJobValue && data.avgJobValue > 0 ? {
-                            color: data?.avgJobValueChange.startsWith('+') ? 'success' : 'danger',
+                            color: data?.avgJobValueChange?.startsWith('+') ? 'success' : 'danger',
                             amount: data?.avgJobValueChange || '0%',
                             label: 'than yesterday'
                         } : undefined}
@@ -312,7 +312,7 @@ export default function AnalyticsPage() {
                             title="Revenue Overview"
                             description={
                                 <Box display="flex" alignItems="center">
-                                    <Typography variant="button" fontWeight="bold" color={data?.revenueChange.startsWith('+') ? "success.main" : "error.main"}>
+                                    <Typography variant="button" fontWeight="bold" color={data?.revenueChange?.startsWith('+') ? "success.main" : "error.main"}>
                                         {data?.revenueChange || '0%'}
                                     </Typography>
                                     <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <DonutStatCard
                         title="Services Breakdown"
-                        totalValue={data?.serviceBreakdown.reduce((acc, curr) => acc + curr.value, 0) || 0}
+                        totalValue={(data?.serviceBreakdown || []).reduce((acc, curr) => acc + curr.value, 0)}
                         unit="JOBS"
                         data={(() => {
                             const serviceData = data?.serviceBreakdown || [];

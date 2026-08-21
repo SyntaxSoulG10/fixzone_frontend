@@ -39,11 +39,14 @@ import {
     FiTrash2,
     FiSearch,
     FiMail,
-    FiLock
+    FiLock,
+    FiX,
+    FiUsers
 } from "react-icons/fi";
 import { APP_CONFIG } from "@/utils/config";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { isValidEmail } from "@/utils/helpers";
+import EmptyState from "@/components/UI/EmptyState";
 
 /**
  * Validation and default constants for managers.
@@ -77,21 +80,31 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
         field: 'name', headerName: 'Name', flex: 2, minWidth: 250,
         renderCell: (p: GridRenderCellParams) => (
             <Box display="flex" alignItems="center" gap={2} height="100%">
-                <Avatar src={p.row.avatar} sx={{ bgcolor: theme.palette.primary.main, color: '#fff' }}>{p.row.name.charAt(0)}</Avatar>
+                <Avatar src={p.row.avatar} sx={{ bgcolor: '#ea580c', color: '#fff', fontWeight: 700 }}>{p.row.name.charAt(0)}</Avatar>
                 <Box>
-                    <Typography variant="subtitle2" fontWeight="bold">{p.row.name}</Typography>
-                    <Box display="flex" alignItems="center" gap={0.5}><FiBriefcase size={12} /><Typography variant="caption">Manager</Typography></Box>
+                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">{p.row.name}</Typography>
+                    <Box display="flex" alignItems="center" gap={0.5} color="text.secondary"><FiBriefcase size={12} /><Typography variant="caption">Service Center Manager</Typography></Box>
                 </Box>
             </Box>
         )
     },
-    { field: 'center', headerName: 'Center', flex: 1.5, minWidth: 200, renderCell: (p: GridRenderCellParams) => <Typography variant="body2">{p.value}</Typography> },
+    { 
+        field: 'center', 
+        headerName: 'Assigned Center', 
+        flex: 1.5, 
+        minWidth: 200, 
+        renderCell: (p: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" height="100%">
+                <Chip label={p.value} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: '6px' }} />
+            </Box>
+        ) 
+    },
     {
-        field: 'email', headerName: 'Access Info', flex: 1.5, minWidth: 250,
+        field: 'email', headerName: 'Login / Contact', flex: 1.5, minWidth: 250,
         renderCell: (p: GridRenderCellParams) => (
             <Box display="flex" flexDirection="column" justifyContent="center" height="100%">
-                <Box display="flex" alignItems="center" gap={1}><FiMail size={12} /><Typography variant="caption">{p.value}</Typography></Box>
-                <Box display="flex" alignItems="center" gap={1}><FiLock size={12} /><Typography variant="caption">Last: {p.row.lastLogin}</Typography></Box>
+                <Box display="flex" alignItems="center" gap={1}><FiMail size={13} color="#64748b" /><Typography variant="caption" fontWeight={600} color="#334155">{p.value}</Typography></Box>
+                <Box display="flex" alignItems="center" gap={1}><FiLock size={12} color="#94a3b8" /><Typography variant="caption" color="text.secondary">Last Login: {p.row.lastLogin}</Typography></Box>
             </Box>
         )
     },
@@ -101,15 +114,18 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
             const isInvited = p.value === 'INVITED' || p.value === 'Pending';
             const isActive = p.value === 'Active';
             return (
-                <Chip 
-                    label={isInvited ? "Pending Invite" : (isActive ? "Active" : "Inactive")} 
-                    size="small" 
-                    sx={{ 
-                        fontWeight: 'bold', 
-                        bgcolor: isInvited ? '#FEF3C7' : (isActive ? '#E6F4EA' : '#F1F5F9'), 
-                        color: isInvited ? '#D97706' : (isActive ? '#1E8E3E' : '#64748B') 
-                    }} 
-                />
+                <Box display="flex" alignItems="center" height="100%">
+                    <Chip 
+                        label={isInvited ? "Pending Invite" : (isActive ? "Active" : "Inactive")} 
+                        size="small" 
+                        sx={{ 
+                            fontWeight: 700, 
+                            borderRadius: '999px',
+                            bgcolor: isInvited ? '#FEF3C7' : (isActive ? '#E6F4EA' : '#F1F5F9'), 
+                            color: isInvited ? '#D97706' : (isActive ? '#1E8E3E' : '#64748B') 
+                        }} 
+                    />
+                </Box>
             );
         }
     },
@@ -128,14 +144,14 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
                             disabled={isExpired || isResending} 
                             onClick={() => onResend(p.row.id)}
                             startIcon={isResending ? <CircularProgress size={14} color="inherit" /> : undefined}
-                            sx={{ textTransform: 'none', borderRadius: 1.5 }}
+                            sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }}
                         >
-                            {isResending ? "Sending..." : "Resend"}
+                            {isResending ? "Sending..." : "Resend Invite"}
                         </Button>
                     )}
-                    <Button size="small" variant="outlined" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
-                    <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} disabled={isExpired || isInvited} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
-                    <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 /></IconButton>
+                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
+                    <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired || isInvited} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
+                    <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 size={16} /></IconButton>
                 </Box>
             );
         }
@@ -149,10 +165,39 @@ function ManagersHeader({ onAdd, isExpired }: { onAdd: () => void, isExpired: bo
     return (
         <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} gap={3} mb={4}>
             <Box>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>Managers</Typography>
-                <Typography variant="body1" color="text.secondary">Oversee your service center leadership team.</Typography>
+                <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
+                    Managers Directory
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Oversee branch leadership and system access permissions.
+                </Typography>
             </Box>
-            <Button variant="contained" color="primary" sx={{ px: 3, borderRadius: 2, textTransform: 'none' }} onClick={onAdd} disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} startIcon={<FiPlus />}>Add Manager</Button>
+            <Button 
+                variant="contained" 
+                onClick={onAdd} 
+                disabled={isExpired} 
+                title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                startIcon={<FiPlus />}
+                sx={{
+                    background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                    color: '#ffffff !important',
+                    px: 3.5,
+                    py: 1.2,
+                    borderRadius: '0.75rem',
+                    textTransform: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                        background: 'linear-gradient(195deg, #ea580c, #c2410c)',
+                        boxShadow: '0 6px 20px rgba(234, 88, 12, 0.45)',
+                        transform: 'translateY(-1px)'
+                    }
+                }}
+            >
+                Add Manager
+            </Button>
         </Box>
     );
 }
@@ -163,15 +208,15 @@ function ManagersHeader({ onAdd, isExpired }: { onAdd: () => void, isExpired: bo
 function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, centers, dialogError, isSaving }: any) {
     const isEmailInvalid = Boolean(formData.email) && !isValidEmail(formData.email.trim());
     return (
-        <Dialog open={open} onClose={isSaving ? undefined : onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ fontWeight: 'bold' }}>{isEdit ? "Edit Manager Access" : "Add New Manager"}</DialogTitle>
+        <Dialog open={open} onClose={isSaving ? undefined : onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '1rem' } }}>
+            <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{isEdit ? "Edit Manager Access" : "Add New Manager"}</DialogTitle>
             <DialogContent>
                 <Box display="flex" flexDirection="column" gap={2.5} pt={2}>
                     {dialogError && (
-                        <Alert severity="error" sx={{ borderRadius: 2 }}>{dialogError}</Alert>
+                        <Alert severity="error" sx={{ borderRadius: '0.75rem' }}>{dialogError}</Alert>
                     )}
-                    <TextField label="Full Name" name="name" value={formData.name} onChange={onChange} fullWidth required disabled={isSaving} />
-                    <FormControl fullWidth required disabled={isSaving}>
+                    <TextField label="Full Name" name="name" value={formData.name} onChange={onChange} fullWidth required disabled={isSaving} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} />
+                    <FormControl fullWidth required disabled={isSaving} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                         <InputLabel>Assign Center</InputLabel>
                         <Select name="center" value={formData.center} label="Assign Center" onChange={onChange}>
                             {centers.map((c: any) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
@@ -189,6 +234,7 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
                         fullWidth 
                         required 
                         disabled={isSaving}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                     />
                     {!isEdit && (
                         <FormControlLabel control={<Checkbox checked={formData.sendInvite} onChange={onChange} name="sendInvite" color="primary" disabled={isSaving} />} label="Send Email Invitation" />
@@ -196,13 +242,19 @@ function ManagerDialog({ open, onClose, isEdit, formData, onChange, onSave, cent
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button onClick={onClose} disabled={isSaving}>Cancel</Button>
+                <Button onClick={onClose} disabled={isSaving} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
                 <Button 
                     onClick={onSave} 
                     variant="contained" 
                     disabled={isSaving} 
                     startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : undefined}
-                    sx={{ borderRadius: 2, px: 4 }}
+                    sx={{ 
+                        borderRadius: '0.75rem', 
+                        px: 4, 
+                        background: 'linear-gradient(195deg, #FB923C, #EA580C)', 
+                        fontWeight: 700,
+                        textTransform: 'none' 
+                    }}
                 >
                     {isSaving ? "Saving..." : (isEdit ? "Save Changes" : "Create Account")}
                 </Button>
@@ -218,9 +270,19 @@ export default function ManagersPage() {
     const theme = useTheme();
     const { managersData, centersData, ownerData, isLoading: contextLoading, refreshManagers } = useDashboardData();
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
-    const [managers, setManagers] = useState<ManagerView[]>([]);
-    const [centersList, setCentersList] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const mapManagers = (mgrData: any[], ctrData: any[]) => {
+        const centersMap = (ctrData || []).reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
+        return (mgrData || []).map((m: any) => ({
+            id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
+            center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
+            status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
+        }));
+    };
+
+    const [managers, setManagers] = useState<ManagerView[]>(() => mapManagers(managersData, centersData));
+    const [centersList, setCentersList] = useState<string[]>(() => (centersData || []).map((c: any) => c.name));
+    const [loading, setLoading] = useState<boolean>(() => contextLoading && (!managersData || managersData.length === 0));
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -232,24 +294,10 @@ export default function ManagersPage() {
     const [resendingId, setResendingId] = useState<string | null>(null);
 
     useEffect(() => { 
-        if (!contextLoading) {
-            mapData(managersData || [], centersData || []);
-        }
-    }, [managersData, centersData, contextLoading]);
-
-    const mapData = (mgrData: any[], ctrData: any[]) => {
-        setLoading(true);
-        try {
-            setCentersList(ctrData.map((c: any) => c.name));
-            const centersMap = ctrData.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-            setManagers(mgrData.map((m: any) => ({
-                id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
-                center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
-                status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
-            })));
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-    };
+        setCentersList((centersData || []).map((c: any) => c.name));
+        setManagers(mapManagers(managersData || [], centersData || []));
+        setLoading(false);
+    }, [managersData, centersData]);
 
     const handleFormChange = (e: any) => {
         setDialogError(null);
@@ -356,7 +404,7 @@ export default function ManagersPage() {
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
             refreshManagers();
-        } catch (e: any) {
+        } catch (e: any) { 
             // Revert on error
             if (managerToDelete) {
                 setManagers(prev => [...prev, managerToDelete]);
@@ -379,41 +427,88 @@ export default function ManagersPage() {
 
     const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>;
+    if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress sx={{ color: '#ea580c' }} /></Box>;
 
     return (
         <Box pb={3}>
             <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setDialogError(null); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
 
-            <Card sx={{ borderRadius: 3 }}>
-                <Box p={2} display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6" fontWeight="bold">Manager List</Typography>
-                    <TextField size="small" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{ startAdornment: <InputAdornment position="start"><FiSearch /></InputAdornment> }} sx={{ minWidth: 250 }} />
-                </Box>
-                <Box sx={{ height: 600, width: '100%' }}>
-                    <DataGrid 
-                        rows={filtered} 
-                        columns={getManagerColumns(
-                            theme, 
-                            (m: any) => { 
-                                setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); 
-                                setDialogError(null);
-                                setSelectedId(m.id); 
-                                setIsEditMode(true); 
-                                setOpenDialog(true); 
-                            }, 
-                            handleToggleStatus, 
-                            (id: string) => setDeleteModal({ isOpen: true, id }),
-                            handleResendInvite,
-                            isExpired,
-                            resendingId
-                        )} 
-                        pageSizeOptions={[5, 10]} 
-                        disableRowSelectionOnClick 
-                        rowHeight={80} 
+            <Card sx={{ borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                <Box p={2.5} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} bgcolor="#ffffff">
+                    <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
+                    <TextField 
+                        size="small" 
+                        placeholder="Search managers..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{ 
+                            startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
+                            endAdornment: searchTerm ? (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                        <FiX size={15} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null
+                        }} 
+                        sx={{ minWidth: 280, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
                     />
                 </Box>
+                
+                {filtered.length === 0 ? (
+                    <Box p={4}>
+                        <EmptyState 
+                            icon={<FiUsers size={40} />}
+                            title="No Managers Found"
+                            description={searchTerm ? "No managers match your search criteria." : "You haven't assigned any branch managers yet."}
+                            actionLabel={searchTerm ? undefined : "Add First Manager"}
+                            onAction={searchTerm ? undefined : () => {
+                                setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true });
+                                setDialogError(null);
+                                setIsEditMode(false);
+                                setOpenDialog(true);
+                            }}
+                        />
+                    </Box>
+                ) : (
+                    <Box sx={{ height: 600, width: '100%' }}>
+                        <DataGrid 
+                            rows={filtered} 
+                            columns={getManagerColumns(
+                                theme, 
+                                (m: any) => { 
+                                    setFormData({ name: m.name, center: m.center, email: m.email, phone: m.phone, status: m.status, sendInvite: false }); 
+                                    setDialogError(null);
+                                    setSelectedId(m.id); 
+                                    setIsEditMode(true); 
+                                    setOpenDialog(true); 
+                                }, 
+                                handleToggleStatus, 
+                                (id: string) => setDeleteModal({ isOpen: true, id }),
+                                handleResendInvite,
+                                isExpired,
+                                resendingId
+                            )} 
+                            pageSizeOptions={[5, 10]} 
+                            disableRowSelectionOnClick 
+                            rowHeight={80} 
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: '#f8fafc',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #f1f5f9'
+                                }
+                            }}
+                        />
+                    </Box>
+                )}
             </Card>
 
             <ManagerDialog 

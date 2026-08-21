@@ -58,7 +58,8 @@ ChartJS.register(
   Legend
 );
 
-const branches = ["All Branches", "Colombo Main", "Kandy Branch", "Galle Branch", "Jaffna Branch"];
+import { useDashboardData } from "@/context/DashboardDataContext";
+
 const availableSections = ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations", "Raw Data Export"];
 
 const base64ToBlob = (base64Str: string, contentType: string = 'application/pdf') => {
@@ -81,6 +82,9 @@ const base64ToBlob = (base64Str: string, contentType: string = 'application/pdf'
 };
 
 export default function ReportsPage() {
+    const { centersData, analyticsData, bookingsData, invoicesData, ownerData } = useDashboardData();
+    const branchOptions = useMemo(() => ["All Branches", ...(centersData || []).map((c: any) => c.name)], [centersData]);
+
     const [reports, setReports] = useState<ReportItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -237,18 +241,29 @@ export default function ReportsPage() {
             
             setTimeout(() => {
                 const isFinancial = row.type === 'Financial';
+                const totalRev = analyticsData?.totalRevenue || 0;
+                const totalJobs = analyticsData?.totalJobs || (bookingsData?.length || 0);
+                const activeCentersCount = (centersData?.filter((c: any) => c.isActive)?.length || 0);
+
                 const mockData = {
-                    kpi1: isFinancial ? `$${(Math.random() * 50000 + 10000).toLocaleString('en-US', {maximumFractionDigits:0})}` : `${Math.floor(Math.random() * 5000 + 500)} Units`,
-                    kpi2: `+${(Math.random() * 20).toFixed(1)}%`,
-                    kpi3: `${(Math.random() * 5 + 94).toFixed(1)}%`,
-                    tableData: Array.from({length: 20}, (_, i) => [`#100${i+1}`, `Historical Entry ${i+1}`, isFinancial ? `$1,200` : `84`, `Completed`]),
-                    summaryText: "Historical report data retrieved from archive. Chart visualizations omitted."
+                    kpi1: isFinancial ? `Rs. ${totalRev.toLocaleString('en-LK')}` : `${totalJobs} Jobs`,
+                    kpi2: analyticsData?.revenueChange || "+0%",
+                    kpi3: `${activeCentersCount} Active Centers`,
+                    tableData: (analyticsData?.topCenters && analyticsData.topCenters.length > 0)
+                        ? analyticsData.topCenters.map((tc: any, i: number) => [
+                            `#CTR-${i + 1}`,
+                            tc.name || `Branch ${i + 1}`,
+                            isFinancial ? `Rs. ${Number(tc.revenue || 0).toLocaleString('en-LK')}` : `${tc.jobs || 0} Jobs`,
+                            'Active'
+                        ])
+                        : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
+                    summaryText: `Archived ${row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
                 };
                 
                 const mockReportObj = {
                     name: row.name,
                     type: row.type,
-                    branch: "Historical Archive",
+                    branch: "All Branches",
                     sections: ["Executive Summary", "Key Metrics", "Detailed Data Table"]
                 };
                 
@@ -271,28 +286,41 @@ export default function ReportsPage() {
         setPreviewGenerating(true);
         setViewOnlyMode(false);
 
-        // Generate precise random data ONCE for this specific report preview/export
         const isFinancial = newReport.type === 'Financial';
+        const totalRev = analyticsData?.totalRevenue || 0;
+        const totalJobs = analyticsData?.totalJobs || (bookingsData?.length || 0);
+        const activeCentersCount = (centersData?.filter((c: any) => c.isActive)?.length || 0);
+
         const kpi1 = isFinancial 
-            ? `$${(Math.random() * 50000 + 10000).toLocaleString('en-US', {maximumFractionDigits:0})}` 
-            : `${Math.floor(Math.random() * 5000 + 500)} Units`;
-        const kpi2 = `+${(Math.random() * 20).toFixed(1)}%`;
-        const kpi3 = `${(Math.random() * 5 + 94).toFixed(1)}%`;
+            ? `Rs. ${totalRev.toLocaleString('en-LK')}` 
+            : `${totalJobs} Jobs`;
+        const kpi2 = analyticsData?.revenueChange || "+0%";
+        const kpi3 = `${activeCentersCount} Active Locations`;
 
-        const chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        const chartDataValues = chartLabels.map(() => Math.floor(Math.random() * 10000 + 5000));
+        const chartLabels = (analyticsData?.revenueOverview && analyticsData.revenueOverview.length > 0)
+            ? analyticsData.revenueOverview.map((item: any) => item.name)
+            : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const chartDataValues = (analyticsData?.revenueOverview && analyticsData.revenueOverview.length > 0)
+            ? analyticsData.revenueOverview.map((item: any) => item.revenue)
+            : [0, 0, 0, 0, 0, 0];
 
-        const tableData = [];
-        for (let i = 1; i <= 20; i++) {
-            tableData.push([
-                `#100${i}`,
-                `Entry ${i} for ${newReport.branch || 'Global'}`,
-                isFinancial ? `$${(Math.random() * 5000 + 100).toFixed(2)}` : Math.floor(Math.random() * 100).toString(),
-                ['Active', 'Pending', 'Completed', 'In Review'][Math.floor(Math.random() * 4)]
-            ]);
-        }
+        const tableData = (analyticsData?.topCenters && analyticsData.topCenters.length > 0)
+            ? analyticsData.topCenters.map((tc: any, i: number) => [
+                `#CTR-${i + 1}`,
+                tc.name || `Branch ${i + 1}`,
+                isFinancial ? `Rs. ${Number(tc.revenue || 0).toLocaleString('en-LK')}` : `${tc.jobs || 0} Jobs`,
+                'Active'
+            ])
+            : (centersData && centersData.length > 0)
+                ? centersData.map((c: any, i: number) => [
+                    `#CTR-${i + 1}`,
+                    c.name,
+                    c.location || 'Active',
+                    c.isActive ? 'Active' : 'Disabled'
+                ])
+                : [['#1001', 'General Service Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']];
 
-        const summaryText = `This report provides a comprehensive overview of ${newReport.type.toLowerCase()} operations for ${newReport.branch || 'all branches'} within the selected timeframe. The data indicates stable performance metrics with notable trends in recent weeks. Ensure all confidential information is handled appropriately according to FixZone policies.`;
+        const summaryText = `This report provides a comprehensive overview of ${newReport.type.toLowerCase()} operations for ${newReport.branch || 'all branches'} within the selected timeframe for ${ownerData?.companyName || 'FixZone Automotive'}. All metrics reflect real-time business activity and verified customer transactions. Ensure all confidential information is handled appropriately according to FixZone policies.`;
 
         setReportData({ kpi1, kpi2, kpi3, chartLabels, chartDataValues, tableData, summaryText });
     };
@@ -329,12 +357,12 @@ export default function ReportsPage() {
         doc.setFontSize(24);
         doc.setTextColor(33, 37, 41);
         doc.setFont("helvetica", "bold");
-        doc.text("FixZone", 14, 25);
+        doc.text(ownerData?.companyName || "FixZone Automotive", 14, 25);
         
         doc.setFontSize(14);
         doc.setTextColor(108, 117, 125);
         doc.setFont("helvetica", "normal");
-        doc.text("Professional Report Document", 14, 33);
+        doc.text("Official Business Report", 14, 33);
 
         let currentY = 50;
 
@@ -749,18 +777,40 @@ export default function ReportsPage() {
                         />
                         <Button 
                             variant="outlined" 
-                            color="primary" 
                             startIcon={<FiUpload />}
-                            sx={{ borderRadius: 2, px: 3, py: 1, bgcolor: '#fff', border: '1px solid #e0e0e0' }}
+                            sx={{ 
+                                borderRadius: '0.75rem', 
+                                px: 3, 
+                                py: 1.2, 
+                                bgcolor: '#fff', 
+                                border: '1px solid #cbd5e1',
+                                color: '#334155',
+                                fontWeight: 700,
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' }
+                            }}
                             onClick={() => fileInputRef.current?.click()}
                         >
                             Upload PDF
                         </Button>
                         <Button 
                             variant="contained" 
-                            color="primary" 
                             startIcon={<FiFileText />}
-                            sx={{ borderRadius: 2, px: 3, py: 1 }}
+                            sx={{ 
+                                borderRadius: '0.75rem', 
+                                px: 3.5, 
+                                py: 1.2,
+                                background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                                color: '#ffffff !important',
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                                '&:hover': {
+                                    background: 'linear-gradient(195deg, #ea580c, #c2410c)',
+                                    boxShadow: '0 6px 20px rgba(234, 88, 12, 0.45)',
+                                    transform: 'translateY(-1px)'
+                                }
+                            }}
                             onClick={() => {
                                 setPreviewMode(false);
                                 setPdfPreviewUrl(null);
@@ -779,7 +829,7 @@ export default function ReportsPage() {
                         <Bar ref={chartRef} options={chartOptions} data={{
                             labels: reportData.chartLabels,
                             datasets: [{
-                                label: newReport.type === 'Financial' ? 'Revenue ($)' : 'Volume (Units)',
+                                label: newReport.type === 'Financial' ? 'Revenue (Rs.)' : 'Volume (Units)',
                                 data: reportData.chartDataValues,
                                 backgroundColor: 'rgba(234, 88, 12, 0.7)',
                                 borderColor: 'rgba(234, 88, 12, 1)',
@@ -789,7 +839,7 @@ export default function ReportsPage() {
                     )}
                 </Box>
 
-                <Card sx={{ p: 2, mb: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                <Card sx={{ p: 2.5, mb: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
                         <TextField
                             placeholder="Search reports..."
@@ -797,12 +847,12 @@ export default function ReportsPage() {
                             size="small"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{ minWidth: { xs: '100%', md: 300 } }}
+                            sx={{ minWidth: { xs: '100%', md: 320 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                             slotProps={{
                                 input: {
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <FiSearch color="action" />
+                                            <FiSearch color="#94a3b8" />
                                         </InputAdornment>
                                     ),
                                 }
@@ -812,7 +862,7 @@ export default function ReportsPage() {
                         <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                             <Box display="flex" alignItems="center" gap={0.5} mr={1} color="text.secondary">
                                 <FiFilter size={16} />
-                                <Typography variant="body2" fontWeight="medium">Filter:</Typography>
+                                <Typography variant="body2" fontWeight={600}>Filter:</Typography>
                             </Box>
                             {reportTypes.map((type) => (
                                 <Chip 
@@ -821,14 +871,14 @@ export default function ReportsPage() {
                                     onClick={() => setTypeFilter(type)}
                                     color={typeFilter === type ? "primary" : "default"}
                                     variant={typeFilter === type ? "filled" : "outlined"}
-                                    sx={{ borderRadius: 2, cursor: 'pointer' }}
+                                    sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
                                 />
                             ))}
                         </Box>
                     </Stack>
                 </Card>
 
-                <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <Card sx={{ borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
                     {loading ? (
                         <Box p={3}>
                             {[...Array(5)].map((_, i) => (
@@ -856,9 +906,16 @@ export default function ReportsPage() {
                                     backgroundColor: 'rgba(0, 0, 0, 0.02)',
                                 },
                                 '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: 'background.default',
-                                    borderBottom: '1px solid rgba(224, 224, 224, 1)',
+                                    backgroundColor: '#f8fafc',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
                                 },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #f1f5f9'
+                                }
                             }}
                         />
                     )}
@@ -976,7 +1033,7 @@ export default function ReportsPage() {
                                             onChange={(e) => setNewReport({ ...newReport, branch: e.target.value })}
                                             disabled={generating}
                                         >
-                                            {branches.map((b) => (
+                                            {branchOptions.map((b) => (
                                                 <MenuItem key={b} value={b}>{b}</MenuItem>
                                             ))}
                                         </Select>

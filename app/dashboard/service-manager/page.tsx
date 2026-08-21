@@ -9,13 +9,15 @@ import { APP_CONFIG } from "../../../utils/config";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 export default function ServiceManagerDashboard() {
-    const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData } = useDashboardData();
+    const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData, refreshAll } = useDashboardData();
     const [activeBookings, setActiveBookings] = useState<any[]>([]);
     const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
     const [todaysInvoices, setTodaysInvoices] = useState<any[]>([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    useEffect(() => {
+        refreshAll();
+    }, [refreshAll]);
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
     };
