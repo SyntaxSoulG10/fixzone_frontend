@@ -255,10 +255,10 @@ export default function FinancePage() {
 
             {/* KPI STATS ROW */}
             <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${(financeData.totalRevenue || 0).toLocaleString()}`} subtext="+12% from last month" icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${(financeData.cashRevenue || 0).toLocaleString()}`} subtext="In-person" icon={FiDollarSign} color="#4caf50" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString()}`} subtext="Digital" icon={FiCreditCard} color="#2196f3" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job" value={`Rs. ${Number(financeData.avgTransaction || 0).toFixed(0)}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${(financeData.totalRevenue || 0).toLocaleString('en-LK')}`} subtext={contextData?.revenueChange ? `${contextData.revenueChange} vs. last month` : "Overall company earnings"} icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${(financeData.cashRevenue || 0).toLocaleString('en-LK')}`} subtext="In-person payment" icon={FiDollarSign} color="#4caf50" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString('en-LK')}`} subtext="Digital card & Stripe" icon={FiCreditCard} color="#2196f3" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job Value" value={`Rs. ${Number(financeData.avgTransaction || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
             </Grid>
 
             {/* REVENUE GROWTH CHART */}
