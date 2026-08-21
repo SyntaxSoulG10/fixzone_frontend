@@ -394,7 +394,12 @@ export default function ServiceStationsPage() {
                                                 <span className="text-sm font-bold text-slate-700">{doc.label}</span>
                                             </div>
                                             {doc.url ? (
-                                                <a href={doc.url} target="_blank" rel="noreferrer" className="p-2 bg-white rounded-lg border border-slate-200 text-slate-600 hover:text-orange-600 hover:border-orange-200 transition-all shadow-sm">
+                                                <a 
+                                                    href={doc.url} 
+                                                    download={`${doc.label.replace(/ /g, '_')}${doc.url.includes('pdf') ? '.pdf' : '.jpg'}`}
+                                                    className="p-2 bg-white rounded-lg border border-slate-200 text-slate-600 hover:text-orange-600 hover:border-orange-200 transition-all shadow-sm"
+                                                    title="Download Document"
+                                                >
                                                     <FiExternalLink />
                                                 </a>
                                             ) : (

@@ -18,7 +18,6 @@ export default function ServiceManagerDashboard() {
     useEffect(() => {
         refreshAll();
     }, [refreshAll]);
-
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
     };
@@ -28,7 +27,19 @@ export default function ServiceManagerDashboard() {
     useEffect(() => {
         const saved = localStorage.getItem('hiddenActiveBookings');
         if (saved) setHiddenFromActive(JSON.parse(saved));
-    }, []);
+
+        const handleSync = () => {
+            if (refreshBookings) refreshBookings();
+            if (refreshInvoices) refreshInvoices();
+        };
+
+        window.addEventListener("bookingsUpdated", handleSync);
+        window.addEventListener("storage", handleSync);
+        return () => {
+            window.removeEventListener("bookingsUpdated", handleSync);
+            window.removeEventListener("storage", handleSync);
+        };
+    }, [refreshBookings, refreshInvoices]);
 
     const hideFromActiveList = (id: string) => {
         const updated = [...hiddenFromActive, id];
@@ -38,24 +49,43 @@ export default function ServiceManagerDashboard() {
     };
 
     const getBookingDetails = (booking: any) => {
-        let customer = booking.customerName || (booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Unknown');
-        let vehicle = booking.vehicleName || (booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Unknown');
-        let vehicleNumber = "";
+        let customer = booking.customerName || (booking.customerId ? `Customer ${booking.customerId.toString().substring(0,6)}` : 'Customer');
+        let vehicle = booking.vehicleName || (booking.vehicleLabel ? booking.vehicleLabel.split(" - ")[0] : (booking.vehicleId ? `Vehicle ${booking.vehicleId.toString().substring(0,6)}` : 'Vehicle'));
+        let vehicleNumber = booking.plateNumber || (booking.vehicleLabel && booking.vehicleLabel.includes(" - ") ? booking.vehicleLabel.split(" - ")[1] : "");
         let service = booking.packageName || 'Standard Service';
+
+        // Calculate time range (start - end)
+        let startTimeStr = booking.bookingTime ? (booking.bookingTime.length >= 5 ? booking.bookingTime.substring(0, 5) : booking.bookingTime) : "09:00";
+        let endTimeStr = "";
+        if (booking.endTime) {
+            endTimeStr = booking.endTime.length >= 5 ? booking.endTime.substring(0, 5) : booking.endTime;
+        } else if (booking.bookingTime) {
+            try {
+                const [h, m] = booking.bookingTime.split(":").map(Number);
+                const duration = booking.estimatedDurationMins || 60;
+                const endMinutes = h * 60 + m + duration;
+                const endH = Math.floor(endMinutes / 60) % 24;
+                const endM = endMinutes % 60;
+                endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+            } catch(e) {
+                endTimeStr = "";
+            }
+        }
+        let timeRange = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
 
         if (booking.specialRequest && booking.specialRequest.startsWith("Customer: ")) {
             try {
                 const cMatch = booking.specialRequest.match(/Customer:\s*([^,]+)/);
-                if (cMatch) customer = cMatch[1].trim();
+                if (cMatch && cMatch[1].trim()) customer = cMatch[1].trim();
                 const vMatch = booking.specialRequest.match(/Vehicle:\s*([^,]+)/);
-                if (vMatch) vehicle = vMatch[1].trim();
+                if (vMatch && vMatch[1].trim()) vehicle = vMatch[1].trim();
                 const vnMatch = booking.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
-                if (vnMatch) vehicleNumber = vnMatch[1].trim();
+                if (vnMatch && vnMatch[1].trim()) vehicleNumber = vnMatch[1].trim();
                 const sMatch = booking.specialRequest.match(/Service:\s*([^,]+)/);
-                if (sMatch) service = sMatch[1].trim();
+                if (sMatch && sMatch[1].trim()) service = sMatch[1].trim();
             } catch(e) {}
         }
-        return { customer, vehicle, vehicleNumber, service };
+        return { customer, vehicle, vehicleNumber, service, timeRange };
     };
 
     useEffect(() => {
@@ -63,38 +93,65 @@ export default function ServiceManagerDashboard() {
             console.log("[Dashboard] bookingsData received:", bookingsData);
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const managerCenterId = managersData?.[0]?.managedCenterId;
             
-            const upcoming = bookingsData.filter((b: any) =>
+            // Strictly isolate to manager's center if present
+            const centerBookings = (bookingsData || []).filter((b: any) => !managerCenterId || b.centerId === managerCenterId);
+
+            const upcoming = centerBookings.filter((b: any) =>
                 (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING") &&
                 b.bookingDate === today
             );
             
-            // Keep IN_PROGRESS, and today's COMPLETED/CANCELLED in active list until hidden
-            const active = bookingsData.filter((b: any) => 
-                (b.status === "IN_PROGRESS" || 
-                ((b.status === "COMPLETED" || b.status === "CANCELLED") && b.bookingDate === today))
-                && !hiddenFromActive.includes(b.bookingId)
-            );
+            // Keep all IN_PROGRESS, and today's COMPLETED/CANCELLED in active list
+            const active = centerBookings.filter((b: any) => {
+                if (hiddenFromActive.includes(b.bookingId)) return false;
+                if (b.status === "IN_PROGRESS") return true;
+                
+                const bDate = b.bookingDate || (b.createdAt ? String(b.createdAt).split("T")[0] : null) || (b.updatedAt ? String(b.updatedAt).split("T")[0] : null);
+                return (b.status === "COMPLETED" || b.status === "CANCELLED") && (!bDate || bDate === today);
+            });
+
+            // Filter invoices issued today for this center
+            const centerInvoices = (invoicesData || []).filter((inv: any) => {
+                const invDate = inv.issuedAt ? inv.issuedAt.split("T")[0] : (inv.createdDate || inv.createdAt ? String(inv.createdDate || inv.createdAt).split("T")[0] : null);
+                const matchesDate = invDate === today;
+                const matchesCenter = !managerCenterId || inv.centerId === managerCenterId;
+                return matchesDate && matchesCenter;
+            });
             
-            console.log("[Dashboard] Active:", active.length, "Upcoming:", upcoming.length);
+            console.log("[Dashboard] Active:", active.length, "Upcoming:", upcoming.length, "Today's Invoices:", centerInvoices.length);
             setUpcomingBookings(upcoming);
             setActiveBookings(active);
-            setTodaysInvoices(invoicesData || []);
+            setTodaysInvoices(centerInvoices);
         }
-    }, [hasDataInitialized, bookingsData, invoicesData, hiddenFromActive]);
+    }, [hasDataInitialized, bookingsData, invoicesData, managersData, hiddenFromActive]);
 
     const completedCount = useMemo(() => {
-        return bookingsData.filter((b: any) => b.status === "COMPLETED").length;
-    }, [bookingsData]);
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const managerCenterId = managersData?.[0]?.managedCenterId;
+
+        return (bookingsData || []).filter((b: any) => 
+            b.status === "COMPLETED" && 
+            b.bookingDate === today &&
+            (!managerCenterId || b.centerId === managerCenterId)
+        ).length;
+    }, [bookingsData, managersData]);
 
     const inProgressCount = useMemo(() => {
-        return activeBookings.filter(b => b.status === "IN_PROGRESS").length;
-    }, [activeBookings]);
+        const managerCenterId = managersData?.[0]?.managedCenterId;
+        return (bookingsData || []).filter((b: any) => 
+            b.status === "IN_PROGRESS" &&
+            (!managerCenterId || b.centerId === managerCenterId)
+        ).length;
+    }, [bookingsData, managersData]);
 
     const totalIncome = useMemo(() => {
         return todaysInvoices.reduce((sum, invoice) => sum + (Number(invoice.total) || Number(invoice.amount) || 0), 0);
     }, [todaysInvoices]);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
             if (newStatus === "COMPLETED") {
@@ -143,6 +200,7 @@ export default function ServiceManagerDashboard() {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const activateBooking = async (booking: any) => {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/start-service`);
@@ -280,11 +338,11 @@ export default function ServiceManagerDashboard() {
                                     <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
                                         <td className="px-6 py-4">
-                                            <div>{details.vehicle}</div>
-                                            {details.vehicleNumber && <div className="text-xs text-slate-400">{details.vehicleNumber}</div>}
+                                            <div className="font-medium text-slate-800">{details.vehicle}</div>
+                                            {details.vehicleNumber && <div className="text-xs text-slate-500 font-mono mt-0.5">{details.vehicleNumber}</div>}
                                         </td>
                                         <td className="px-6 py-4">{details.service}</td>
-                                        <td className="px-6 py-4 text-slate-500">{booking.bookingTime || booking.bookingDate || 'TBD'}</td>
+                                        <td className="px-6 py-4 text-slate-600 font-mono text-xs font-medium">{details.timeRange}</td>
                                     </tr>
                                 )})}
                                 {upcomingBookings.length === 0 && (

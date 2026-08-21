@@ -88,17 +88,24 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                 const mData = managerRes.data;
                 const centerId = mData?.managedCenterId || (Array.isArray(mData) ? mData[0]?.managedCenterId : null);
 
-                const [bookingsRes, invoicesRes] = await Promise.all([
-                    axios.get(centerId ? `${APP_CONFIG.api.bookings}/center/${centerId}` : APP_CONFIG.api.bookings).catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
-                    axios.get(centerId ? `${APP_CONFIG.api.invoices}/center/${centerId}` : APP_CONFIG.api.invoices).catch((e) => { console.warn("invoices fetch failed", e); return { data: [] }; }),
-                ]);
-
                 setManagersData(Array.isArray(mData) ? mData : (mData ? [mData] : []));
-                const bookingsArray = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
-                const invoicesArray = Array.isArray(invoicesRes.data) ? invoicesRes.data : [];
-                console.log("[DashboardDataContext] Bookings fetched:", bookingsArray.length, "Invoices fetched:", invoicesArray.length);
-                setBookingsData(bookingsArray);
-                setInvoicesData(invoicesArray);
+
+                if (!centerId) {
+                    console.warn("[DashboardDataContext] Service manager has no assigned managedCenterId. Setting empty datasets.");
+                    setBookingsData([]);
+                    setInvoicesData([]);
+                } else {
+                    const [bookingsRes, invoicesRes] = await Promise.all([
+                        axios.get(`${APP_CONFIG.api.bookings}/center/${centerId}`).catch((e) => { console.warn("bookings fetch failed", e); return { data: [] }; }),
+                        axios.get(`${APP_CONFIG.api.invoices}/center/${centerId}`).catch((e) => { console.warn("invoices fetch failed", e); return { data: [] }; }),
+                    ]);
+
+                    const bookingsArray = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
+                    const invoicesArray = Array.isArray(invoicesRes.data) ? invoicesRes.data : [];
+                    console.log("[DashboardDataContext] Bookings fetched for center:", centerId, bookingsArray.length, "Invoices:", invoicesArray.length);
+                    setBookingsData(bookingsArray);
+                    setInvoicesData(invoicesArray);
+                }
 
             } else if (role === "ROLE_SUPER_ADMIN" || role === "SUPER_ADMIN") {
                 const [analyticsRes, statsRes, subscriptionsRes, invoicesRes] = await Promise.all([
@@ -179,7 +186,11 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null }));
                 const centerId = managerRes?.data?.managedCenterId || (Array.isArray(managerRes?.data) ? managerRes?.data[0]?.managedCenterId : null);
-                const res = await axios.get(centerId ? `${APP_CONFIG.api.bookings}/center/${centerId}` : APP_CONFIG.api.bookings);
+                if (!centerId) {
+                    setBookingsData([]);
+                    return;
+                }
+                const res = await axios.get(`${APP_CONFIG.api.bookings}/center/${centerId}`).catch(() => ({ data: [] }));
                 setBookingsData(Array.isArray(res.data) ? res.data : []);
             } else {
                 const res = await axios.get(APP_CONFIG.api.bookings);
@@ -203,7 +214,11 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch(() => ({ data: null }));
                 const centerId = managerRes?.data?.managedCenterId || (Array.isArray(managerRes?.data) ? managerRes?.data[0]?.managedCenterId : null);
-                const res = await axios.get(centerId ? `${APP_CONFIG.api.invoices}/center/${centerId}` : APP_CONFIG.api.invoices);
+                if (!centerId) {
+                    setInvoicesData([]);
+                    return;
+                }
+                const res = await axios.get(`${APP_CONFIG.api.invoices}/center/${centerId}`).catch(() => ({ data: [] }));
                 setInvoicesData(Array.isArray(res.data) ? res.data : []);
             } else {
                 const res = await axios.get(APP_CONFIG.api.invoices);

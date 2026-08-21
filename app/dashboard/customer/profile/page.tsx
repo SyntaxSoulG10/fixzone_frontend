@@ -15,27 +15,28 @@ import {
   Save,
   Check,
   ChevronRight,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/UI/Button";
+import ConfirmDialog from "@/components/UI/ConfirmDialog";
 import {
   addVehicle,
   deleteVehicle,
   getProfile,
   getSettings,
   getVehicles,
-  getPaymentMethods,
-  addPaymentMethod,
-  deletePaymentMethod,
   toApiErrorMessage,
   updateProfile,
   updateSettings,
   uploadProfilePicture,
   uploadVehicleImage,
+  changePassword,
   type CustomerProfile,
   type CustomerSettings,
   type Vehicle,
-  type PaymentMethod,
 } from "@/lib/customer-api";
 
 /* ── tiny helpers ─────────────────────────────────────────── */
@@ -104,35 +105,34 @@ export default function CustomerProfilePage() {
     profilePictureUrl: "",
   });
   const [settings, setSettings] = useState<CustomerSettings>({
-    notificationsOn: true,
     language: "English",
   });
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [newVehicle, setNewVehicle] = useState({ brand: "", model: "", plateNumber: "", vehicleType: "CAR" as "CAR" | "BIKE" | "VAN" | "TRUCK" });
   const [newVehicleImageData, setNewVehicleImageData] = useState<string | null>(null);
   const [newVehicleImageName, setNewVehicleImageName] = useState<string>("");
-  const [newPaymentMethod, setNewPaymentMethod] = useState({
-    cardType: "Visa",
-    lastFour: "",
-    brandColor: "bg-orange-500",
-  });
-  const [showAddPayment, setShowAddPayment] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [settingsError, setSettingsError] = useState("");
   const [vehiclesError, setVehiclesError] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [vehicleAddedSuccess, setVehicleAddedSuccess] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vehicleId: string }>({ open: false, vehicleId: "" });
+
+  // Change Password state
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [showPwCurrent, setShowPwCurrent] = useState(false);
+  const [showPwNew, setShowPwNew] = useState(false);
+  const [showPwConfirm, setShowPwConfirm] = useState(false);
 
   const loadVehicles = async () => {
     const data = await getVehicles();
     setVehicles(data);
-  };
-
-  const loadPaymentMethods = async () => {
-    const data = await getPaymentMethods();
-    setPaymentMethods(data);
   };
 
   useEffect(() => {
@@ -150,7 +150,6 @@ export default function CustomerProfilePage() {
           profilePictureUrl: profileData?.profilePictureUrl ?? "",
         });
         setSettings({
-          notificationsOn: Boolean(settingsData?.notificationsOn),
           language: settingsData?.language ?? "English",
         });
       } catch (error) {
@@ -160,7 +159,7 @@ export default function CustomerProfilePage() {
       }
 
       try {
-        await Promise.all([loadVehicles(), loadPaymentMethods()]);
+        await loadVehicles();
       } catch (error) {
         setVehiclesError(toApiErrorMessage(error));
       }
@@ -177,10 +176,6 @@ export default function CustomerProfilePage() {
       setProfileError("First name and last name are required.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) {
-      setProfileError("Please enter a valid email address.");
-      return;
-    }
     if (p.phoneNumber && !/^\d{10}$/.test(p.phoneNumber.replace(/[\s-]/g, ''))) {
       setProfileError("Phone number must be exactly 10 digits.");
       return;
@@ -189,11 +184,13 @@ export default function CustomerProfilePage() {
     setProfileError("");
     setProfileSaved(false);
     try {
-      const updated = await updateProfile(customProfile || profile);
+      // email is not updatable — strip it from the payload
+      const { email: _email, ...profilePayload } = p;
+      const updated = await updateProfile(profilePayload);
       const newProfile = {
         firstName: updated?.firstName ?? "",
         secondName: updated?.secondName ?? "",
-        email: updated?.email ?? "",
+        email: profile.email, // keep existing email in local state
         phoneNumber: updated?.phoneNumber ?? "",
         profilePictureUrl: updated?.profilePictureUrl ?? "",
       };
@@ -233,13 +230,42 @@ export default function CustomerProfilePage() {
     try {
       const updated = await updateSettings(settings);
       setSettings({
-        notificationsOn: Boolean(updated?.notificationsOn),
         language: updated?.language ?? "English",
       });
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 2500);
     } catch (error) {
       setSettingsError(toApiErrorMessage(error));
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPwError("");
+    if (!pwCurrent.trim() || !pwNew.trim() || !pwConfirm.trim()) {
+      setPwError("All password fields are required.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    if (pwNew.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    setPwLoading(true);
+    setPwSuccess(false);
+    try {
+      await changePassword({ currentPassword: pwCurrent, newPassword: pwNew });
+      setPwSuccess(true);
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (error) {
+      setPwError(toApiErrorMessage(error));
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -297,24 +323,15 @@ export default function CustomerProfilePage() {
     try {
       await deleteVehicle(id);
       await loadVehicles();
-    } catch (error) {
-      setVehiclesError(toApiErrorMessage(error));
-    }
-  };
-
-  const handlePaymentMethodAdd = async () => {
-    if (!newPaymentMethod.lastFour.trim()) return;
-    try {
-      await addPaymentMethod({
-        cardType: newPaymentMethod.cardType,
-        lastFour: newPaymentMethod.lastFour.trim().slice(-4),
-        brandColor: newPaymentMethod.brandColor,
-      });
-      setNewPaymentMethod({ cardType: "Visa", lastFour: "", brandColor: "bg-orange-500" });
-      setShowAddPayment(false);
-      await loadPaymentMethods();
-    } catch (error) {
-      setSettingsError(toApiErrorMessage(error));
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 403) {
+        setVehiclesError("You don't have permission to delete this vehicle.");
+      } else if (status === 404) {
+        setVehiclesError("Vehicle not found.");
+      } else {
+        setVehiclesError(toApiErrorMessage(error));
+      }
     }
   };
 
@@ -410,10 +427,12 @@ export default function CustomerProfilePage() {
                 <input
                   type="email"
                   value={profile.email}
-                  onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                  className={inputCls}
+                  readOnly
+                  className={inputCls + " cursor-not-allowed opacity-60 select-none"}
                   placeholder="you@example.com"
+                  title="Email cannot be changed"
                 />
+                <p className="text-xs text-slate-400 mt-1">Email address cannot be changed.</p>
               </FormField>
 
               <FormField label="Phone Number" icon={Phone}>
@@ -446,99 +465,85 @@ export default function CustomerProfilePage() {
             </div>
           </SectionCard>
 
-          {/* Payment Methods */}
+          {/* Platform Settings */}
           <SectionCard
-            title="Payment Methods"
-            subtitle="Manage your saved cards"
-            icon={CreditCard}
-            accent="text-blue-600"
-            accentBg="bg-blue-50"
+            title="Platform Settings"
+            subtitle="Security preferences"
+            icon={Shield}
+            accent="text-emerald-600"
+            accentBg="bg-emerald-50"
           >
-            {/* add form */}
-            {showAddPayment && (
-              <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <select
-                    value={newPaymentMethod.cardType}
-                    onChange={(e) =>
-                      setNewPaymentMethod((prev) => ({
-                        ...prev,
-                        cardType: e.target.value,
-                        brandColor: e.target.value === "Visa" ? "bg-red-500" : "bg-blue-600",
-                      }))
-                    }
-                    className={inputCls}
-                  >
-                    <option value="Visa">Visa</option>
-                    <option value="Mastercard">Mastercard</option>
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Last 4 digits"
-                    maxLength={4}
-                    value={newPaymentMethod.lastFour}
-                    onChange={(e) =>
-                      setNewPaymentMethod((prev) => ({
-                        ...prev,
-                        lastFour: e.target.value.replace(/\D/g, ""),
-                      }))
-                    }
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handlePaymentMethodAdd}
-                    className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors"
-                  >
-                    Add Card
-                  </button>
-                  <button
-                    onClick={() => setShowAddPayment(false)}
-                    className="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Lock size={14} className="text-orange-500" />
+                <p className="text-sm font-semibold text-slate-700">Change Password</p>
               </div>
-            )}
 
-            {/* cards list */}
-            <div className="space-y-3 mb-4">
-              {paymentMethods.length > 0 ? (
-                paymentMethods.map((pm) => (
-                  <div
-                    key={pm.id}
-                    className="flex items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-7 ${pm.brandColor || "bg-slate-400"} rounded-md shadow-sm`} />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{pm.cardType}</p>
-                        <p className="text-xs text-slate-400">•••• •••• •••• {pm.lastFour}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => deletePaymentMethod(pm.id).then(loadPaymentMethods)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400 italic py-2">No payment methods added yet.</p>
+              <div className="relative">
+                <input
+                  type={showPwCurrent ? "text" : "password"}
+                  placeholder="Current password"
+                  value={pwCurrent}
+                  onChange={(e) => setPwCurrent(e.target.value)}
+                  className={inputCls + " pr-10"}
+                />
+                <button type="button" onClick={() => setShowPwCurrent((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  {showPwCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showPwNew ? "text" : "password"}
+                  placeholder="New password (min. 8 characters)"
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                  className={inputCls + " pr-10"}
+                />
+                <button type="button" onClick={() => setShowPwNew((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  {showPwNew ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showPwConfirm ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                  className={inputCls + " pr-10"}
+                />
+                <button type="button" onClick={() => setShowPwConfirm((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  {showPwConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+
+              {pwError && (
+                <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl border border-red-100">
+                  {pwError}
+                </p>
               )}
-            </div>
+              {pwSuccess && (
+                <p className="text-sm text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 flex items-center gap-2">
+                  <Check size={14} /> Password changed successfully!
+                </p>
+              )}
 
-            <button
-              onClick={() => setShowAddPayment(!showAddPayment)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50 text-slate-500 hover:text-orange-600 text-sm font-semibold transition-all"
-            >
-              <Plus size={16} />
-              Add Payment Method
-            </button>
+              <button
+                type="button"
+                onClick={handleChangePassword}
+                disabled={pwLoading}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all shadow-md bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200 hover:-translate-y-0.5 disabled:opacity-60"
+              >
+                <Lock size={15} />
+                {pwLoading ? "Updating..." : "Update Password"}
+              </button>
+            </div>
           </SectionCard>
+
         </div>
 
         {/* ── RIGHT COLUMN ────────────────────────────────── */}
@@ -610,7 +615,7 @@ export default function CustomerProfilePage() {
 
                       <button
                         type="button"
-                        onClick={(e) => { e.preventDefault(); handleVehicleDelete(vehicle.id); }}
+                        onClick={(e) => { e.preventDefault(); setDeleteConfirm({ open: true, vehicleId: vehicle.id }); }}
                         className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                       >
                         <Trash2 size={13} /> Remove
@@ -699,7 +704,7 @@ export default function CustomerProfilePage() {
               <button
                 type="button"
                 onClick={handleVehicleAdd}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 text-sm font-semibold transition-all"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-orange-300 hover:border-orange-400 hover:bg-orange-50 text-orange-500 hover:text-orange-600 text-sm font-semibold transition-all"
               >
                 <Plus size={16} />
                 Add Vehicle
@@ -707,92 +712,25 @@ export default function CustomerProfilePage() {
             </div>
           </SectionCard>
 
-          {/* Platform Settings */}
-          <SectionCard
-            title="Platform Settings"
-            subtitle="Notifications and security preferences"
-            icon={Shield}
-            accent="text-emerald-600"
-            accentBg="bg-emerald-50"
-          >
-            <div className="space-y-5">
-
-              {/* notifications toggle */}
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
-                    <Bell size={15} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">Push Notifications</p>
-                    <p className="text-xs text-slate-400">Service updates and reminders</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={settings.notificationsOn}
-                  onClick={async () => {
-                    if (!settings.notificationsOn) {
-                      if ("Notification" in window) {
-                        if (Notification.permission === "granted") {
-                          setSettings((prev) => ({ ...prev, notificationsOn: true }));
-                        } else if (Notification.permission !== "denied") {
-                          const permission = await Notification.requestPermission();
-                          if (permission === "granted") {
-                            setSettings((prev) => ({ ...prev, notificationsOn: true }));
-                          } else {
-                            setSettingsError("Notification permission denied by browser.");
-                            setTimeout(() => setSettingsError(""), 3000);
-                          }
-                        } else {
-                          setSettingsError("Notification permission denied. Please enable it in your browser settings.");
-                          setTimeout(() => setSettingsError(""), 4000);
-                        }
-                      } else {
-                        setSettingsError("This browser does not support desktop notifications.");
-                        setTimeout(() => setSettingsError(""), 3000);
-                      }
-                    } else {
-                      setSettings((prev) => ({ ...prev, notificationsOn: false }));
-                    }
-                  }}
-                  className={`w-14 h-8 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${
-                    settings.notificationsOn ? "bg-orange-500" : "bg-slate-200"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all flex items-center justify-center ${
-                      settings.notificationsOn ? "left-7" : "left-1"
-                    }`}
-                  >
-                    {settings.notificationsOn && <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
-                  </span>
-                </button>
-              </div>
-
-              {settingsError && (
-                <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl border border-red-100">
-                  {settingsError}
-                </p>
-              )}
-
-              <button
-                onClick={handleSettingsSave}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all shadow-md ${
-                  settingsSaved
-                    ? "bg-emerald-500 text-white shadow-emerald-200"
-                    : "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200 hover:-translate-y-0.5"
-                }`}
-              >
-                {settingsSaved ? <Check size={16} /> : <Save size={16} />}
-                {settingsSaved ? "Saved!" : "Save Settings"}
-              </button>
-            </div>
-          </SectionCard>
-
+          {/* Platform Settings — END of right column content above, now full-width below */}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, vehicleId: "" })}
+        title="Remove Vehicle?"
+        message="Are you sure you want to remove this vehicle? This action cannot be undone."
+        confirmText="Yes, Remove"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={false}
+        onConfirm={() => {
+          handleVehicleDelete(deleteConfirm.vehicleId);
+          setDeleteConfirm({ open: false, vehicleId: "" });
+        }}
+      />
+
     </div>
   );
 }

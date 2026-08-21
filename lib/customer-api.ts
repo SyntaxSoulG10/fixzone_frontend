@@ -40,7 +40,6 @@ export type Vehicle = {
 };
 
 export type CustomerSettings = {
-  notificationsOn: boolean;
   language: string;
 };
 
@@ -52,13 +51,17 @@ export type ApiValidationError = {
 export function toApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
-    const data = error.response?.data as ApiValidationError | undefined;
+    const data = error.response?.data as any;
     if (status === 400 && data) {
+      // details can be a plain string, string[], or Record<string, string[]>
+      if (typeof data.details === "string" && data.details.length > 0) {
+        return data.details;
+      }
       if (Array.isArray(data.details) && data.details.length > 0) {
         return data.details.join(", ");
       }
       if (data.details && typeof data.details === "object") {
-        const first = Object.values(data.details)[0];
+        const first = Object.values(data.details)[0] as string[];
         if (first && first.length > 0) return first[0];
       }
       if (data.message) return data.message;
@@ -76,7 +79,7 @@ export async function getProfile(): Promise<CustomerProfile> {
 }
 
 // 2) PUT /profile
-export async function updateProfile(payload: CustomerProfile): Promise<CustomerProfile> {
+export async function updateProfile(payload: Omit<CustomerProfile, 'email'>): Promise<CustomerProfile> {
   const { data } = await api.put<CustomerProfile>(`${CUSTOMER_BASE}/profile`, payload);
   return data;
 }
@@ -144,5 +147,10 @@ export async function addPaymentMethod(payload: Omit<PaymentMethod, "id">): Prom
 // 10) DELETE /payment-method/{id}
 export async function deletePaymentMethod(id: number): Promise<void> {
   await api.delete(`${CUSTOMER_BASE}/payment-method/${id}`);
+}
+
+// 11) POST /auth/change-password
+export async function changePassword(payload: { currentPassword: string; newPassword: string }): Promise<void> {
+  await api.post(`/api/auth/change-password`, payload);
 }
 
