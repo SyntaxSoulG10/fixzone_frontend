@@ -70,7 +70,11 @@ export default function SuperAdminDashboard() {
     const analytics = analyticsData as AnalyticsData | null;
     const loading = isLoading;
 
-    // Transform subscription billing data for Revenue chart
+    useEffect(() => {
+        refreshAll();
+    }, [refreshAll]);
+
+    // Transform analytics data for charts (Recharts format)
     const getChartData = () => {
         if (!analytics) return [];
         const source = view === 'weekly' ? analytics.weeklyRevenue : analytics.monthlyRevenue;

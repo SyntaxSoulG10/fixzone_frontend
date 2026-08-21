@@ -10,6 +10,7 @@ export type ServiceCenter = {
   supportedVehicleBrands: string[] | null;
   status?: string | null;
   googleMapsUrl?: string | null;
+  imageUrl?: string | null;
   paymentEnabled?: boolean | null;
   stripeConnected?: boolean | null;
   stripeConnectEnabled?: boolean | null;
@@ -21,5 +22,6 @@ export type ServiceCenter = {
     name: string;
     type: string | null;
     vehicleType: string | null;
+    vehicleBrand?: string | null;
   }[];
 };

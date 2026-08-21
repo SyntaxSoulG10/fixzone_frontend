@@ -26,8 +26,4 @@ export const APP_CONFIG = {
     subscriptions: `${BASE}/api/subscriptions`,
     subPlans: `${BASE}/api/subscription-plans`,
   },
-  // Adding placeholder IDs to resolve arbitrary hardcoded assignments
-  placeholders: {
-    ownerId: "00000000-0000-0000-0000-000000010011",
-  },
 };

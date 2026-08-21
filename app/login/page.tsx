@@ -50,34 +50,40 @@ export default function LoginPage() {
                 if (data.userId) localStorage.setItem("userId", data.userId);
                 if (data.fullName) localStorage.setItem("fullName", data.fullName);
 
-                if (tokenToSave) {
-                    if (isTokenExpired(tokenToSave)) {
-                        throw new Error("Received an expired token");
-                    }
-                    const role = getUserRole(tokenToSave);
-                    switch (role) {
-                        case "ROLE_SERVICE_MANAGER":
-                            router.push("/dashboard/service-manager");
-                            break;
-                        case "ROLE_SUPER_ADMIN":
-                            router.push("/dashboard/super-admin");
-                            break;
-                        case "ROLE_COMPANY_OWNER":
-                        case "OWNER":
-                            router.push("/dashboard/company-owner");
-                            break;
-                        case "ROLE_CUSTOMER":
-                            router.push("/dashboard/customer");
-                            break;
-                        default:
-                            router.push("/dashboard/customer"); // fallback
-                    }
-                } else {
-                    throw new Error("No token received from server");
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new Event("authChange"));
+                }
+
+                if (isTokenExpired(tokenToSave)) {
+                    throw new Error("Received an expired token");
+                }
+
+                const role = data.role || data.userRole || getUserRole(tokenToSave);
+                const normalizedRole = role ? role.toUpperCase().replace(/^ROLE_/, '') : '';
+
+                switch (normalizedRole) {
+                    case "SERVICE_MANAGER":
+                        router.push("/dashboard/service-manager");
+                        break;
+                    case "SUPER_ADMIN":
+                        router.push("/dashboard/super-admin");
+                        break;
+                    case "COMPANY_OWNER":
+                    case "OWNER":
+                        router.push("/dashboard/company-owner");
+                        break;
+                    case "CUSTOMER":
+                        router.push("/dashboard/customer");
+                        break;
+                    default:
+                        router.push("/dashboard/customer"); // fallback
                 }
             } else if (typeof data === 'string') {
                 tokenToSave = data;
                 localStorage.setItem("token", data);
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new Event("authChange"));
+                }
                 router.push("/dashboard");
             }
             

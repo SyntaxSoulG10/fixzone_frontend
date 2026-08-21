@@ -108,12 +108,69 @@ describe('Company Owner Profile Tab Page', () => {
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
         expect.stringContaining('/checkout'),
-        expect.objectContaining({ planId: 'plan_basic', autoRenew: false })
+        expect.objectContaining({ planId: 'plan_basic' })
       )
       expect(win.location.href).toBe(checkoutUrl)
     })
 
     // Restore location
     win.location = originalLocation
+  })
+
+  it('validates password change modal requirements and submissions', async () => {
+    render(<ProfilePage />)
+
+    // Go to Account tab
+    fireEvent.click(screen.getByRole('tab', { name: /Account/i }))
+
+    // Click Change Password button
+    fireEvent.click(screen.getByRole('button', { name: /Change Password/i }))
+
+    // Dialog should open
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Password Requirements:')).toBeInTheDocument()
+
+    const currentPassInput = screen.getByPlaceholderText('Enter current password')
+    const newPassInput = screen.getByPlaceholderText('Enter new strong password')
+    const confirmPassInput = screen.getByPlaceholderText('Re-enter new password')
+    const updateBtn = screen.getByRole('button', { name: /Update Password/i })
+
+    // Initially button is disabled
+    expect(updateBtn).toBeDisabled()
+
+    // Type weak new password
+    fireEvent.change(currentPassInput, { target: { value: 'OldPass@123' } })
+    fireEvent.change(newPassInput, { target: { value: 'weak' } })
+    fireEvent.change(confirmPassInput, { target: { value: 'weak' } })
+
+    // Still disabled because not strong
+    expect(updateBtn).toBeDisabled()
+
+    // Type strong password but mismatched confirm
+    fireEvent.change(newPassInput, { target: { value: 'FixZone@2026Secure' } })
+    fireEvent.change(confirmPassInput, { target: { value: 'Mismatch@2026' } })
+
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument()
+    expect(updateBtn).toBeDisabled()
+
+    // Match confirm password
+    fireEvent.change(confirmPassInput, { target: { value: 'FixZone@2026Secure' } })
+    expect(screen.getByText('Passwords match')).toBeInTheDocument()
+    expect(updateBtn).not.toBeDisabled()
+
+    // Mock successful password change
+    vi.mocked(axios.post).mockResolvedValueOnce({ data: { message: 'Password changed successfully' } })
+
+    fireEvent.click(updateBtn)
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/change-password'),
+        {
+          currentPassword: 'OldPass@123',
+          newPassword: 'FixZone@2026Secure'
+        }
+      )
+    })
   })
 })

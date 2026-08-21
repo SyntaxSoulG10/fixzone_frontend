@@ -58,11 +58,11 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
         if (!token || isTokenExpired(token)) {
             console.warn("[DashboardDataContext] No valid token found. Skipping data fetch.");
             setIsInitialLoad(false);
-            setHasDataInitialized(true); // Mark as done so the dashboard doesn't spin forever
             return;
         }
 
-        setIsInitialLoad(true);
+        // Only show blocking spinner on cold first-time load, not background revalidations
+        setIsInitialLoad((prev) => (!hasDataInitialized ? true : prev));
         try {
             const role = getUserRole(token);
             console.log("[DashboardDataContext] Fetching for role:", role);
@@ -138,16 +138,33 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
             console.warn("[DashboardDataContext] Critical error during data initialization:", fetchError);
         } finally {
             setIsInitialLoad(false);
-            setHasDataInitialized(true); // Always mark initialized so UI doesn't spin forever
+            setHasDataInitialized(true); // Mark initialized once fetch attempt finishes
         }
     }, []);
 
-    // Trigger data fetch exactly once when the dashboard layout mounts
+    // Trigger data fetch when the dashboard layout mounts or token becomes available
     useEffect(() => {
-        if (!hasDataInitialized) {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (token && !isTokenExpired(token) && !hasDataInitialized) {
             refreshAllDashboardData();
         }
     }, [hasDataInitialized, refreshAllDashboardData]);
+
+    // Listen to authentication changes across tabs or post-login navigation
+    useEffect(() => {
+        const handleAuthChange = () => {
+            const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+            if (token && !isTokenExpired(token)) {
+                refreshAllDashboardData();
+            }
+        };
+        window.addEventListener("authChange", handleAuthChange);
+        window.addEventListener("storage", handleAuthChange);
+        return () => {
+            window.removeEventListener("authChange", handleAuthChange);
+            window.removeEventListener("storage", handleAuthChange);
+        };
+    }, [refreshAllDashboardData]);
 
     const refreshBookings = useCallback(async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;

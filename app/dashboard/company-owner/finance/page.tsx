@@ -255,16 +255,15 @@ export default function FinancePage() {
 
             {/* KPI STATS ROW */}
             <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${financeData.totalRevenue.toLocaleString()}`} subtext="+12% from last month" icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${financeData.cashRevenue.toLocaleString()}`} subtext="In-person" icon={FiDollarSign} color="#4caf50" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${financeData.onlineRevenue.toLocaleString()}`} subtext="Digital" icon={FiCreditCard} color="#2196f3" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job" value={`Rs. ${financeData.avgTransaction.toFixed(0)}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${(financeData.totalRevenue || 0).toLocaleString('en-LK')}`} subtext={contextData?.revenueChange ? `${contextData.revenueChange} vs. last month` : "Overall company earnings"} icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${(financeData.cashRevenue || 0).toLocaleString('en-LK')}`} subtext="In-person payment" icon={FiDollarSign} color="#4caf50" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString('en-LK')}`} subtext="Digital card & Stripe" icon={FiCreditCard} color="#2196f3" /></Grid>
+                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job Value" value={`Rs. ${Number(financeData.avgTransaction || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
             </Grid>
 
             {/* REVENUE GROWTH CHART */}
-            <Box mt={10}>
+            <Box mt={4}>
             <ChartCard 
-                
                 title="Revenue Overview"
                 description="Monthly revenue growth tracking across all payment methods"
                 date="Last updated just now"
@@ -288,16 +287,36 @@ export default function FinancePage() {
 
             {/* RECENT TRANSACTIONS TABLE */}
             <Box mt={4}>
-                <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight="bold" mb={3}>Recent Transactions</Typography>
+                <Card sx={{ p: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                    <Typography variant="h6" fontWeight={700} color="text.primary" mb={2.5}>Recent Transactions</Typography>
                     <Box sx={{ height: 400, width: '100%' }}>
-                        <DataGrid rows={financeData.recentTransactions} columns={transactionColumns} pageSizeOptions={[5]} disableRowSelectionOnClick />
+                        <DataGrid 
+                            rows={financeData.recentTransactions} 
+                            columns={transactionColumns} 
+                            getRowId={(row) => row.id || Math.random().toString()}
+                            pageSizeOptions={[5]} 
+                            disableRowSelectionOnClick 
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: '#f8fafc',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #f1f5f9'
+                                }
+                            }}
+                        />
                     </Box>
                 </Card>
             </Box>
 
             {/* CENTER PERFORMANCE BAR CHART */}
-            <Box mt={10}>
+            <Box mt={4}>
                 <ChartCard
                     title="Center Performance"
                     description="Revenue comparison across all active service center branches"

@@ -4,15 +4,17 @@ import APP_CONFIG from "../config";
 // Use centralized configuration
 const BASE_URL = APP_CONFIG.API_BASE_URL;
 
-// Helper to get auth headers
+// Helper to get auth headers with JWT token from localStorage
 const getAuthHeaders = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem("token");
-  if (!token) {
-    console.warn("[getAuthHeaders] No token found in localStorage");
-    return {};
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`,
+      };
+    }
   }
-  return { "Authorization": `Bearer ${token}` };
+  return {};
 };
 
 const parseErrorMessage = async (res: Response, fallback: string): Promise<string> => {
