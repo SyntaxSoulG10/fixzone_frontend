@@ -42,10 +42,29 @@ export default function BookingsPage() {
     const mappedBookings = useMemo(() => {
         if (!bookingsData) return [];
         return bookingsData.map((b: any) => {
-            let customer = b.customerName || `Customer ${b.customerId?.substring(0,4) || ''}`;
-            let vehicle = b.vehicleName || `Vehicle ${b.vehicleId?.substring(0,4) || ''}`;
-            let vehicleNumber = "";
+            let customer = b.customerName || (b.customerId ? `Customer ${b.customerId.substring(0,6)}` : 'Customer');
+            let vehicle = b.vehicleName || (b.vehicleLabel ? b.vehicleLabel.split(" - ")[0] : (b.vehicleId ? `Vehicle ${b.vehicleId.substring(0,6)}` : 'Vehicle'));
+            let vehicleNumber = b.plateNumber || (b.vehicleLabel && b.vehicleLabel.includes(" - ") ? b.vehicleLabel.split(" - ")[1] : "");
             let category = b.packageName || "General Service";
+
+            // Calculate start-to-end time range
+            let startTimeStr = b.bookingTime ? (b.bookingTime.length >= 5 ? b.bookingTime.substring(0, 5) : b.bookingTime) : "09:00";
+            let endTimeStr = "";
+            if (b.endTime) {
+                endTimeStr = b.endTime.length >= 5 ? b.endTime.substring(0, 5) : b.endTime;
+            } else if (b.bookingTime) {
+                try {
+                    const [h, m] = b.bookingTime.split(":").map(Number);
+                    const duration = b.estimatedDurationMins || 60;
+                    const endMinutes = h * 60 + m + duration;
+                    const endH = Math.floor(endMinutes / 60) % 24;
+                    const endM = endMinutes % 60;
+                    endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                } catch(e) {
+                    endTimeStr = "";
+                }
+            }
+            let timeRange = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
 
             let isManagerAdded = false;
 
@@ -53,13 +72,13 @@ export default function BookingsPage() {
                 isManagerAdded = true;
                 try {
                     const cMatch = b.specialRequest.match(/Customer:\s*([^,]+)/);
-                    if (cMatch) customer = cMatch[1].trim();
+                    if (cMatch && cMatch[1].trim()) customer = cMatch[1].trim();
                     const vMatch = b.specialRequest.match(/Vehicle:\s*([^,]+)/);
-                    if (vMatch) vehicle = vMatch[1].trim();
+                    if (vMatch && vMatch[1].trim()) vehicle = vMatch[1].trim();
                     const vnMatch = b.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
-                    if (vnMatch) vehicleNumber = vnMatch[1].trim();
+                    if (vnMatch && vnMatch[1].trim()) vehicleNumber = vnMatch[1].trim();
                     const sMatch = b.specialRequest.match(/Service:\s*([^,]+)/);
-                    if (sMatch) category = sMatch[1].trim();
+                    if (sMatch && sMatch[1].trim()) category = sMatch[1].trim();
                 } catch(e) {}
             }
 
@@ -71,7 +90,8 @@ export default function BookingsPage() {
                 isManagerAdded,
                 variety: vehicleNumber, 
                 category,
-                time: b.bookingTime ? b.bookingTime.substring(0, 5) : "00:00",
+                time: timeRange,
+                rawTime: startTimeStr,
                 date: b.bookingDate, 
                 status: b.status || "PENDING"
             };
@@ -198,7 +218,7 @@ export default function BookingsPage() {
         dateTitle = selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
-    const completedCount = filteredBookings.filter((b: any) => b.status === "COMPLETED" || b.status === "CONFIRMED").length;
+    const completedCount = filteredBookings.filter((b: any) => b.status === "COMPLETED").length;
     const inProgressCount = filteredBookings.filter((b: any) => b.status === "IN_PROGRESS").length;
 
     return (
@@ -231,7 +251,7 @@ export default function BookingsPage() {
                     {/* Summary Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <SummaryCard title={`Total on ${dateTitle}`} value={filteredBookings.length} icon={<FiCalendar />} color="blue" />
-                        <SummaryCard title="Confirmed / Completed" value={completedCount} icon={<FiCheckCircle />} color="green" />
+                        <SummaryCard title="Completed" value={completedCount} icon={<FiCheckCircle />} color="green" />
                         <SummaryCard title="In Progress" value={inProgressCount} icon={<FiClock />} color="orange" />
                     </div>
 
@@ -291,7 +311,7 @@ export default function BookingsPage() {
                                         <div className="text-center text-slate-400 text-sm py-4">Loading timeline...</div>
                                     ) : filteredBookings.length > 0 ? (
                                         [...filteredBookings]
-                                            .sort((a, b) => a.time.localeCompare(b.time))
+                                            .sort((a, b) => (a.rawTime || a.time).localeCompare(b.rawTime || b.time))
                                             .map((booking, index) => {
                                                 const colors = [
                                                     "bg-blue-50 text-blue-700 border-blue-500",
@@ -328,11 +348,10 @@ export default function BookingsPage() {
                                 <table className="w-full text-left text-sm text-slate-600">
                                     <thead className="bg-slate-50 text-slate-900 font-semibold uppercase tracking-wider text-xs sticky top-0 z-10 shadow-sm">
                                         <tr>
-                                            <th className="px-6 py-4 w-1/5">ID</th>
-                                            <th className="px-6 py-4 w-1/5">Customer</th>
-                                            <th className="px-6 py-4">Vehicle</th>
-                                            <th className="px-6 py-4">Service</th>
-                                            <th className="px-6 py-4">Time</th>
+                                            <th className="px-6 py-4 w-1/4">Customer</th>
+                                            <th className="px-6 py-4 w-1/4">Vehicle</th>
+                                            <th className="px-6 py-4 w-1/4">Service</th>
+                                            <th className="px-6 py-4 w-1/6">Time</th>
                                             <th className="px-6 py-4 text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -346,14 +365,13 @@ export default function BookingsPage() {
                                         ) : filteredBookings.length > 0 ? (
                                             filteredBookings.map((booking: any) => (
                                                 <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-6 py-4 font-mono text-xs uppercase">{booking.id}</td>
                                                     <td className="px-6 py-4 font-medium text-slate-900">{booking.customer}</td>
                                                     <td className="px-6 py-4">
                                                         <div>{booking.vehicle}</div>
                                                         <div className="text-xs text-slate-400">{booking.variety}</div>
                                                     </td>
                                                     <td className="px-6 py-4">{booking.category}</td>
-                                                    <td className="px-6 py-4">{booking.time}</td>
+                                                    <td className="px-6 py-4 text-slate-600 font-mono text-xs">{booking.time}</td>
                                                     <td className="px-6 py-4 text-center">
                                                         {booking.isManagerAdded ? (
                                                             <button

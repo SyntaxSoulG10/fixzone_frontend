@@ -54,8 +54,8 @@ export default function ServiceManagerProfile() {
         role: "Service Manager",
         phone: "",
         email: "",
-        location: "Main Service Center",
-        centerName: "Service Center",
+        location: "",
+        centerName: "",
         managerCode: "",
         status: "Active"
     });
@@ -83,7 +83,7 @@ export default function ServiceManagerProfile() {
     const [passwordError, setPasswordError] = useState("");
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-    // Fetch manager details from DB
+    // Fetch manager details directly from DB
     const fetchManagerProfile = async () => {
         setIsLoading(true);
         try {
@@ -97,9 +97,9 @@ export default function ServiceManagerProfile() {
                     role: "Service Manager",
                     phone: data.phone || "",
                     email: data.email || "",
-                    location: data.location || (data.centerName ? data.centerName : "Main Branch"),
+                    location: data.location || (data.centerName ? data.centerName : "Service Center"),
                     centerName: data.centerName || "Assigned Service Center",
-                    managerCode: data.managerCode || "MGR-001",
+                    managerCode: data.managerCode || "",
                     status: data.status || "Active"
                 };
 
@@ -111,22 +111,7 @@ export default function ServiceManagerProfile() {
             }
         } catch (err: any) {
             console.error("Failed to load manager profile:", err);
-            // Fallback to localStorage info if available
-            const storedName = localStorage.getItem("fullName") || localStorage.getItem("userName") || "Service Manager";
-            const storedEmail = localStorage.getItem("email") || localStorage.getItem("userEmail") || "";
-            const fallback = {
-                fullName: storedName,
-                role: "Service Manager",
-                phone: "+94 77 000 0000",
-                email: storedEmail,
-                location: "Colombo Branch",
-                centerName: "Service Center HQ",
-                managerCode: "MGR-ACTIVE",
-                status: "Active"
-            };
-            setProfileData(fallback);
-            setTempData(fallback);
-            showSnackbar("Loaded profile session details.", "info");
+            showSnackbar("Failed to load profile data from server.", "error");
         } finally {
             setIsLoading(false);
         }
@@ -170,7 +155,7 @@ export default function ServiceManagerProfile() {
                 fullName: tempData.fullName.trim(),
                 email: tempData.email.trim(),
                 phone: tempData.phone.trim(),
-                location: tempData.location.trim(),
+                location: tempData.location ? tempData.location.trim() : undefined,
                 profilePictureUrl: profileImage
             };
 
@@ -196,7 +181,7 @@ export default function ServiceManagerProfile() {
                 window.dispatchEvent(new Event("profileUpdated"));
             }
 
-            showSnackbar("Profile updated successfully!", "success");
+            showSnackbar("Profile updated successfully in DB!", "success");
         } catch (error: any) {
             console.error("Error updating profile:", error);
             const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update profile";
@@ -255,7 +240,7 @@ export default function ServiceManagerProfile() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <FiLoader className="w-10 h-10 text-orange-600 animate-spin" />
-                <p className="text-slate-600 font-medium">Loading Manager Profile...</p>
+                <p className="text-slate-600 font-medium">Loading Manager Profile from Database...</p>
             </div>
         );
     }
@@ -345,10 +330,12 @@ export default function ServiceManagerProfile() {
                                         <FiShield className="w-3 h-3" />
                                         {profileData.role}
                                     </span>
-                                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                                        <FiMapPin className="text-slate-400" />
-                                        {profileData.location}
-                                    </span>
+                                    {profileData.location && (
+                                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                            <FiMapPin className="text-orange-500" />
+                                            {profileData.location}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -493,7 +480,7 @@ export default function ServiceManagerProfile() {
                                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                                                 Center Name
                                             </span>
-                                            <p className="text-sm font-bold text-slate-900">{profileData.centerName}</p>
+                                            <p className="text-sm font-bold text-slate-900">{profileData.centerName || "Not Assigned"}</p>
                                         </div>
 
                                         <div>
@@ -509,25 +496,27 @@ export default function ServiceManagerProfile() {
                                                         value={tempData.location}
                                                         onChange={handleChange}
                                                         className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
-                                                        placeholder="e.g. Colombo Branch"
+                                                        placeholder="e.g. Kandy Branch"
                                                     />
                                                 </div>
                                             ) : (
                                                 <p className="text-sm font-medium text-slate-700 flex items-start gap-1.5">
                                                     <FiMapPin className="text-orange-500 mt-0.5 shrink-0" />
-                                                    <span>{profileData.location}</span>
+                                                    <span>{profileData.location || "Sri Lanka"}</span>
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div>
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                                                Manager Code
-                                            </span>
-                                            <p className="text-sm font-mono font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 inline-block">
-                                                {profileData.managerCode}
-                                            </p>
-                                        </div>
+                                        {profileData.managerCode && (
+                                            <div>
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                                                    Manager Code
+                                                </span>
+                                                <p className="text-sm font-mono font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 inline-block">
+                                                    {profileData.managerCode}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
