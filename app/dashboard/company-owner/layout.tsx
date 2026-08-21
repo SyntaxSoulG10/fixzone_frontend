@@ -40,7 +40,7 @@ export default function CompanyOwnerLayout({ children }: { children: React.React
                     }
                 }
             } catch (error) {
-                console.error("Verification check failed", error);
+                console.warn("Verification check skipped or backend reconnecting:", error);
             } finally {
                 setIsCheckingStatus(false);
             }
