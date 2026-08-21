@@ -24,7 +24,7 @@ interface Lane {
 }
 
 export default function ServiceLaneManagePage() {
-    const { bookingsData, refreshBookings } = useDashboardData();
+    const { bookingsData, refreshBookings, refreshInvoices, managersData } = useDashboardData();
     
     const [lanes, setLanes] = useState<Lane[]>([]);
     const [isClient, setIsClient] = useState(false);
@@ -34,33 +34,128 @@ export default function ServiceLaneManagePage() {
         setSnackbar({ open: true, message, severity });
     };
 
+    const managerCenterId = (managersData as any)?.[0]?.managedCenterId || (managersData as any)?.managedCenterId;
+
+    const extractBookingDetails = (booking: any) => {
+        let customer = booking?.customerName || (booking?.customerId ? `Customer ${String(booking.customerId).substring(0,6)}` : 'Customer');
+        let vehicle = booking?.vehicleName || (booking?.vehicleLabel ? booking.vehicleLabel.split(" - ")[0] : (booking?.vehicleId ? `Vehicle ${String(booking.vehicleId).substring(0,6)}` : 'Vehicle'));
+        let vehicleNumber = booking?.plateNumber || (booking?.vehicleLabel && booking.vehicleLabel.includes(" - ") ? booking.vehicleLabel.split(" - ")[1] : "");
+        let service = booking?.packageName || 'Standard Service';
+
+        // Calculate time range (start - end)
+        let startTimeStr = booking?.bookingTime ? (booking.bookingTime.length >= 5 ? booking.bookingTime.substring(0, 5) : booking.bookingTime) : "09:00";
+        let endTimeStr = "";
+        if (booking?.endTime) {
+            endTimeStr = booking.endTime.length >= 5 ? booking.endTime.substring(0, 5) : booking.endTime;
+        } else if (booking?.bookingTime) {
+            try {
+                const [h, m] = booking.bookingTime.split(":").map(Number);
+                const duration = booking.estimatedDurationMins || 60;
+                const endMinutes = h * 60 + m + duration;
+                const endH = Math.floor(endMinutes / 60) % 24;
+                const endM = endMinutes % 60;
+                endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+            } catch(e) {
+                endTimeStr = "";
+            }
+        }
+        let timeRange = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
+
+        if (booking?.specialRequest?.startsWith("Customer: ")) {
+            try {
+                const cMatch = booking.specialRequest.match(/Customer:\s*([^,]+)/);
+                if (cMatch && cMatch[1].trim()) customer = cMatch[1].trim();
+                const vMatch = booking.specialRequest.match(/Vehicle:\s*([^,]+)/);
+                if (vMatch && vMatch[1].trim()) vehicle = vMatch[1].trim();
+                const vnMatch = booking.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
+                if (vnMatch && vnMatch[1].trim()) vehicleNumber = vnMatch[1].trim();
+                const sMatch = booking.specialRequest.match(/Service:\s*([^,]+)/);
+                if (sMatch && sMatch[1].trim()) service = sMatch[1].trim();
+            } catch(e) {}
+        }
+        return { customer, vehicle, vehicleNumber, service, timeRange };
+    };
+
+    // Initialize or sync lanes with real IN_PROGRESS bookings
     useEffect(() => {
         setIsClient(true);
-        const savedLanes = localStorage.getItem("serviceLanes");
-        if (savedLanes) {
-            setLanes(JSON.parse(savedLanes));
-        } else {
-            setLanes(Array.from({ length: 5 }, (_, i) => ({ id: i + 1, status: "empty" })));
+        const storageKey = managerCenterId ? `serviceLanes_${managerCenterId}` : "serviceLanes";
+        const savedLanesStr = localStorage.getItem(storageKey);
+        let currentLanes: Lane[] = savedLanesStr ? JSON.parse(savedLanesStr) : Array.from({ length: 5 }, (_, i) => ({ id: i + 1, status: "empty" }));
+
+        // Current real IN_PROGRESS bookings for this center
+        const inProgressBookings = (bookingsData || []).filter((b: any) => 
+            b.status === "IN_PROGRESS" && (!managerCenterId || b.centerId === managerCenterId)
+        );
+
+        // 1. Remove vehicles from lanes if they are no longer IN_PROGRESS in the database
+        const inProgressIds = new Set(inProgressBookings.map((b: any) => b.bookingId));
+        currentLanes = currentLanes.map(lane => {
+            if (lane.status === "filled" && lane.vehicle && !inProgressIds.has(lane.vehicle.bookingId)) {
+                return { id: lane.id, status: "empty" };
+            }
+            return lane;
+        });
+
+        // 2. Place any IN_PROGRESS booking that is not yet assigned into an empty lane
+        const assignedBookingIds = new Set(
+            currentLanes.filter(l => l.status === "filled" && l.vehicle).map(l => l.vehicle!.bookingId)
+        );
+
+        const unassignedInProgress = inProgressBookings.filter((b: any) => !assignedBookingIds.has(b.bookingId));
+
+        unassignedInProgress.forEach(booking => {
+            const details = extractBookingDetails(booking);
+            const emptyLaneIndex = currentLanes.findIndex(l => l.status === "empty");
+            const newVehicle: LaneVehicle = {
+                bookingId: booking.bookingId,
+                model: details.vehicle,
+                vehicleNumber: details.vehicleNumber,
+                owner: details.customer,
+                action: details.service
+            };
+
+            if (emptyLaneIndex !== -1) {
+                currentLanes[emptyLaneIndex] = {
+                    ...currentLanes[emptyLaneIndex],
+                    status: "filled",
+                    vehicle: newVehicle
+                };
+            } else {
+                const nextId = currentLanes.length > 0 ? Math.max(...currentLanes.map(l => l.id)) + 1 : 1;
+                currentLanes.push({
+                    id: nextId,
+                    status: "filled",
+                    vehicle: newVehicle
+                });
+            }
+        });
+
+        setLanes(currentLanes);
+        if (storageKey) {
+            localStorage.setItem(storageKey, JSON.stringify(currentLanes));
         }
-    }, []);
+    }, [bookingsData, managerCenterId]);
 
     // Save lanes to localStorage whenever they change
     useEffect(() => {
         if (isClient && lanes.length > 0) {
-            localStorage.setItem("serviceLanes", JSON.stringify(lanes));
+            const storageKey = managerCenterId ? `serviceLanes_${managerCenterId}` : "serviceLanes";
+            localStorage.setItem(storageKey, JSON.stringify(lanes));
         }
-    }, [lanes, isClient]);
+    }, [lanes, isClient, managerCenterId]);
 
     const [openLaneId, setOpenLaneId] = useState<number | null>(null);
     const [manageLaneId, setManageLaneId] = useState<number | null>(null);
     const [selectedBookingId, setSelectedBookingId] = useState("");
 
-    // Get today's upcoming bookings
+    // Get today's upcoming bookings for this center
     const d = new Date();
     const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const upcomingBookings = (bookingsData || []).filter((b: any) => 
-        (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED") && 
-        b.bookingDate === todayStr
+        (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING") && 
+        b.bookingDate === todayStr &&
+        (!managerCenterId || b.centerId === managerCenterId)
     );
 
     const handleAddLane = () => {
@@ -78,42 +173,28 @@ export default function ServiceLaneManagePage() {
         try {
             await bookingService.startService(selectedBookingId);
             
-            // Find the booking details to populate the lane
             const booking = upcomingBookings.find((b: any) => b.bookingId === selectedBookingId);
-            
-            let customer = booking?.customerName || (booking?.customerId ? `Cust ${booking.customerId.substring(0,6)}` : 'Unknown');
-            let vehicle = booking?.vehicleName || (booking?.vehicleId ? `Veh ${booking.vehicleId.substring(0,6)}` : 'Unknown');
-            let vehicleNumber = "";
-            let service = booking?.packageName || 'Standard Service';
+            const details = extractBookingDetails(booking);
 
-            if (booking?.specialRequest?.startsWith("Customer: ")) {
-                try {
-                    const cMatch = booking.specialRequest.match(/Customer:\s*([^,]+)/);
-                    if (cMatch) customer = cMatch[1].trim();
-                    const vMatch = booking.specialRequest.match(/Vehicle:\s*([^,]+)/);
-                    if (vMatch) vehicle = vMatch[1].trim();
-                    const vnMatch = booking.specialRequest.match(/Vehicle Number:\s*([^,]+)/);
-                    if (vnMatch) vehicleNumber = vnMatch[1].trim();
-                    const sMatch = booking.specialRequest.match(/Service:\s*([^,]+)/);
-                    if (sMatch) service = sMatch[1].trim();
-                } catch(e) {}
-            }
-
-            setLanes(lanes.map(l => l.id === laneId ? {
+            const updatedLanes = lanes.map(l => l.id === laneId ? {
                 ...l,
-                status: "filled",
+                status: "filled" as const,
                 vehicle: {
                     bookingId: selectedBookingId,
-                    model: vehicle,
-                    vehicleNumber: vehicleNumber,
-                    owner: customer,
-                    action: service
+                    model: details.vehicle,
+                    vehicleNumber: details.vehicleNumber,
+                    owner: details.customer,
+                    action: details.service
                 }
-            } : l));
-            
+            } : l);
+
+            setLanes(updatedLanes);
             setOpenLaneId(null);
             setSelectedBookingId("");
-            if (refreshBookings) refreshBookings();
+            showSnackbar("Vehicle assigned to lane. Service started!", "success");
+            
+            if (refreshBookings) await refreshBookings();
+            window.dispatchEvent(new Event("bookingsUpdated"));
             
         } catch (error) {
             console.error("Failed to start service", error);
@@ -126,7 +207,9 @@ export default function ServiceLaneManagePage() {
             await bookingService.completeBooking(bookingId);
             emptyLane(laneId);
             showSnackbar("Service completed successfully!", "success");
-            if (refreshBookings) refreshBookings();
+            if (refreshBookings) await refreshBookings();
+            if (refreshInvoices) await refreshInvoices();
+            window.dispatchEvent(new Event("bookingsUpdated"));
         } catch (error) {
             console.error("Failed to complete booking", error);
             showSnackbar("Error completing service.", "error");
@@ -138,7 +221,8 @@ export default function ServiceLaneManagePage() {
             await bookingService.cancelBooking(bookingId);
             emptyLane(laneId);
             showSnackbar("Service cancelled.", "info");
-            if (refreshBookings) refreshBookings();
+            if (refreshBookings) await refreshBookings();
+            window.dispatchEvent(new Event("bookingsUpdated"));
         } catch (error) {
             console.error("Failed to cancel booking", error);
             showSnackbar("Error cancelling service.", "error");
@@ -146,7 +230,8 @@ export default function ServiceLaneManagePage() {
     };
 
     const emptyLane = (laneId: number) => {
-        setLanes(lanes.map(l => l.id === laneId ? { id: laneId, status: "empty" } : l));
+        const updated = lanes.map(l => l.id === laneId ? { id: laneId, status: "empty" as const } : l);
+        setLanes(updated);
         setManageLaneId(null);
     };
 
@@ -233,13 +318,13 @@ export default function ServiceLaneManagePage() {
                                                     onClick={() => handleComplete(lane.id, lane.vehicle!.bookingId)}
                                                     className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded hover:bg-green-100 transition-colors text-sm font-medium"
                                                 >
-                                                    <FiCheckCircle /> Complete Service
+                                                    <FiCheckCircle /> Completed Service
                                                 </button>
                                                 <button 
                                                     onClick={() => handleCancel(lane.id, lane.vehicle!.bookingId)}
                                                     className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-700 py-2 rounded hover:bg-red-100 transition-colors text-sm font-medium"
                                                 >
-                                                    <FiXCircle /> Cancel Booking
+                                                    <FiXCircle /> Cancelled service
                                                 </button>
                                             </div>
                                         )}
@@ -280,14 +365,20 @@ export default function ServiceLaneManagePage() {
                                                 ) : (
                                                     upcomingBookings.map((b: any) => {
                                                         const isSelected = selectedBookingId === b.bookingId;
+                                                        const details = extractBookingDetails(b);
                                                         return (
                                                             <div 
                                                                 key={b.bookingId}
                                                                 onClick={() => setSelectedBookingId(b.bookingId)}
-                                                                className={`p-2 border-b border-slate-100 last:border-0 cursor-pointer transition-colors text-sm ${isSelected ? 'bg-orange-600/10 border-orange-600/20' : 'hover:bg-slate-50'}`}
+                                                                className={`p-2.5 border-b border-slate-100 last:border-0 cursor-pointer transition-colors text-sm ${isSelected ? 'bg-orange-600/10 border-orange-600/20' : 'hover:bg-slate-50'}`}
                                                             >
-                                                                <div className="font-medium text-slate-800">{b.customerName || `Cust ${b.customerId?.substring(0,6)}`}</div>
-                                                                <div className="text-slate-500 text-xs mt-0.5">{b.bookingTime} - {b.packageName}</div>
+                                                                <div className="font-medium text-slate-800 flex justify-between items-center">
+                                                                    <span>{details.customer}</span>
+                                                                    <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{details.timeRange}</span>
+                                                                </div>
+                                                                <div className="text-slate-500 text-xs mt-1">
+                                                                    {details.vehicle} {details.vehicleNumber ? `(${details.vehicleNumber})` : ''} - <span className="text-orange-600 font-medium">{details.service}</span>
+                                                                </div>
                                                             </div>
                                                         )
                                                     })
