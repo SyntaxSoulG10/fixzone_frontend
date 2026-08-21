@@ -348,9 +348,10 @@ export default function BookingsPage() {
                                 <table className="w-full text-left text-sm text-slate-600">
                                     <thead className="bg-slate-50 text-slate-900 font-semibold uppercase tracking-wider text-xs sticky top-0 z-10 shadow-sm">
                                         <tr>
+                                            <th className="px-6 py-4 w-1/6">Booking ID</th>
                                             <th className="px-6 py-4 w-1/4">Customer</th>
                                             <th className="px-6 py-4 w-1/4">Vehicle</th>
-                                            <th className="px-6 py-4 w-1/4">Service</th>
+                                            <th className="px-6 py-4 w-1/5">Service</th>
                                             <th className="px-6 py-4 w-1/6">Time</th>
                                             <th className="px-6 py-4 text-center">Action</th>
                                         </tr>
@@ -358,13 +359,33 @@ export default function BookingsPage() {
                                     <tbody className="divide-y divide-slate-100">
                                         {isLoading ? (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                                                     Loading bookings from database...
                                                 </td>
                                             </tr>
                                         ) : filteredBookings.length > 0 ? (
                                             filteredBookings.map((booking: any) => (
                                                 <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded">
+                                                                {booking.id}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(booking.originalId || booking.id);
+                                                                    showSnackbar("Booking ID copied to clipboard!", "info");
+                                                                }}
+                                                                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                                                                title="Copy Full Booking ID"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                     <td className="px-6 py-4 font-medium text-slate-900">{booking.customer}</td>
                                                     <td className="px-6 py-4">
                                                         <div>{booking.vehicle}</div>
@@ -389,7 +410,7 @@ export default function BookingsPage() {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                                                     No bookings found for {dateTitle}.
                                                 </td>
                                             </tr>
