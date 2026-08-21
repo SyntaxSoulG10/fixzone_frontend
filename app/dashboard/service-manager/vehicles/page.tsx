@@ -29,6 +29,7 @@ export default function ServiceLaneManagePage() {
     const [lanes, setLanes] = useState<Lane[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+    const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
@@ -147,15 +148,19 @@ export default function ServiceLaneManagePage() {
 
     const [openLaneId, setOpenLaneId] = useState<number | null>(null);
     const [manageLaneId, setManageLaneId] = useState<number | null>(null);
-    const [selectedBookingId, setSelectedBookingId] = useState("");
+    // Get currently occupied booking IDs in lanes
+    const occupiedBookingIds = new Set(
+        lanes.filter(l => l.status === "filled" && l.vehicle?.bookingId).map(l => l.vehicle!.bookingId)
+    );
 
-    // Get today's upcoming bookings for this center
+    // Get today's upcoming bookings for this center that are not already assigned to any lane
     const d = new Date();
     const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const upcomingBookings = (bookingsData || []).filter((b: any) => 
         (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING") && 
         b.bookingDate === todayStr &&
-        (!managerCenterId || b.centerId === managerCenterId)
+        (!managerCenterId || b.centerId === managerCenterId) &&
+        !occupiedBookingIds.has(b.bookingId)
     );
 
     const handleAddLane = () => {
