@@ -99,6 +99,7 @@ type BackendPackage = {
   basePrice?: number;
   estimatedDurationMins?: number;
   type?: string | null;
+  vehicleBrand?: string | null;
 };
 
 type BackendVehicle = {

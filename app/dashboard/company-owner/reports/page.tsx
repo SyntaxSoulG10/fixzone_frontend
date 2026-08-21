@@ -777,18 +777,40 @@ export default function ReportsPage() {
                         />
                         <Button 
                             variant="outlined" 
-                            color="primary" 
                             startIcon={<FiUpload />}
-                            sx={{ borderRadius: 2, px: 3, py: 1, bgcolor: '#fff', border: '1px solid #e0e0e0' }}
+                            sx={{ 
+                                borderRadius: '0.75rem', 
+                                px: 3, 
+                                py: 1.2, 
+                                bgcolor: '#fff', 
+                                border: '1px solid #cbd5e1',
+                                color: '#334155',
+                                fontWeight: 700,
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' }
+                            }}
                             onClick={() => fileInputRef.current?.click()}
                         >
                             Upload PDF
                         </Button>
                         <Button 
                             variant="contained" 
-                            color="primary" 
                             startIcon={<FiFileText />}
-                            sx={{ borderRadius: 2, px: 3, py: 1 }}
+                            sx={{ 
+                                borderRadius: '0.75rem', 
+                                px: 3.5, 
+                                py: 1.2,
+                                background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                                color: '#ffffff !important',
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                                '&:hover': {
+                                    background: 'linear-gradient(195deg, #ea580c, #c2410c)',
+                                    boxShadow: '0 6px 20px rgba(234, 88, 12, 0.45)',
+                                    transform: 'translateY(-1px)'
+                                }
+                            }}
                             onClick={() => {
                                 setPreviewMode(false);
                                 setPdfPreviewUrl(null);
@@ -817,7 +839,7 @@ export default function ReportsPage() {
                     )}
                 </Box>
 
-                <Card sx={{ p: 2, mb: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                <Card sx={{ p: 2.5, mb: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
                         <TextField
                             placeholder="Search reports..."
@@ -825,12 +847,12 @@ export default function ReportsPage() {
                             size="small"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{ minWidth: { xs: '100%', md: 300 } }}
+                            sx={{ minWidth: { xs: '100%', md: 320 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                             slotProps={{
                                 input: {
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <FiSearch color="action" />
+                                            <FiSearch color="#94a3b8" />
                                         </InputAdornment>
                                     ),
                                 }
@@ -840,7 +862,7 @@ export default function ReportsPage() {
                         <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                             <Box display="flex" alignItems="center" gap={0.5} mr={1} color="text.secondary">
                                 <FiFilter size={16} />
-                                <Typography variant="body2" fontWeight="medium">Filter:</Typography>
+                                <Typography variant="body2" fontWeight={600}>Filter:</Typography>
                             </Box>
                             {reportTypes.map((type) => (
                                 <Chip 
@@ -849,14 +871,14 @@ export default function ReportsPage() {
                                     onClick={() => setTypeFilter(type)}
                                     color={typeFilter === type ? "primary" : "default"}
                                     variant={typeFilter === type ? "filled" : "outlined"}
-                                    sx={{ borderRadius: 2, cursor: 'pointer' }}
+                                    sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
                                 />
                             ))}
                         </Box>
                     </Stack>
                 </Card>
 
-                <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <Card sx={{ borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
                     {loading ? (
                         <Box p={3}>
                             {[...Array(5)].map((_, i) => (
@@ -884,9 +906,16 @@ export default function ReportsPage() {
                                     backgroundColor: 'rgba(0, 0, 0, 0.02)',
                                 },
                                 '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: 'background.default',
-                                    borderBottom: '1px solid rgba(224, 224, 224, 1)',
+                                    backgroundColor: '#f8fafc',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
                                 },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #f1f5f9'
+                                }
                             }}
                         />
                     )}

@@ -46,7 +46,8 @@ import {
     FiSearch,
     FiCheckCircle,
     FiDollarSign,
-    FiGrid
+    FiGrid,
+    FiAlertCircle
 } from "react-icons/fi";
 import { FaCar, FaBus, FaMotorcycle, FaShuttleVan, FaTruck, FaCarSide } from "react-icons/fa";
 import axios from "@/lib/axios";
@@ -72,6 +73,107 @@ export const VEHICLE_TYPE_OPTIONS = [
     { value: "TRUCK", label: "Light Truck", Icon: FaTruck, description: "Light commercial lorries & pickups" },
     { value: "BIKE", label: "Motorcycle", Icon: FaMotorcycle, description: "Motorcycles and scooters" },
 ];
+
+export const VEHICLE_BRAND_OPTIONS = [
+    { value: "ALL", label: "All Brands (Universal)" },
+    { value: "Toyota", label: "Toyota" },
+    { value: "Honda", label: "Honda" },
+    { value: "Nissan", label: "Nissan" },
+    { value: "Suzuki", label: "Suzuki" },
+    { value: "Mitsubishi", label: "Mitsubishi" },
+    { value: "Hyundai", label: "Hyundai" },
+    { value: "Kia", label: "Kia" },
+    { value: "Mazda", label: "Mazda" },
+    { value: "BMW", label: "BMW" },
+    { value: "Mercedes-Benz", label: "Mercedes-Benz" },
+    { value: "Audi", label: "Audi" },
+    { value: "Ford", label: "Ford" },
+    { value: "Tata", label: "Tata" },
+    { value: "Mahindra", label: "Mahindra" },
+    { value: "Subaru", label: "Subaru" },
+    { value: "Lexus", label: "Lexus" },
+    { value: "Land Rover", label: "Land Rover" },
+    { value: "Yamaha", label: "Yamaha" },
+    { value: "Bajaj", label: "Bajaj" },
+    { value: "TVS", label: "TVS" },
+    { value: "OTHER", label: "Other / Custom" }
+];
+
+export const COMPATIBLE_BRANDS_BY_TYPE: Record<string, string[]> = {
+    "ALL": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "BMW", "Mercedes-Benz"],
+    "CAR": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Mazda"],
+    "SUV": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Honda", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Land Rover", "Ford"],
+    "VAN": ["ALL", "Toyota", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Mercedes-Benz", "Ford", "Tata"],
+    "BUS": ["ALL", "Toyota", "Nissan", "Mercedes-Benz", "Tata", "Mitsubishi", "OTHER"],
+    "TRUCK": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Ford", "Tata", "Mahindra", "Mercedes-Benz", "OTHER"],
+    "BIKE": ["ALL", "Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "BMW", "OTHER"]
+};
+
+export function validateBrandAndType(vehicleType?: string, vehicleBrand?: string): { isValid: boolean; error?: string } {
+    if (!vehicleBrand || vehicleBrand === "ALL" || !vehicleType || vehicleType === "ALL") {
+        return { isValid: true };
+    }
+
+    const type = vehicleType.toUpperCase();
+    const brand = vehicleBrand.trim();
+
+    // 1. BIKE (Motorcycle / Scooter)
+    if (type === "BIKE") {
+        const incompatibleForBike = ["Toyota", "Nissan", "Hyundai", "Kia", "Mazda", "Audi", "Mercedes-Benz", "Subaru", "Lexus", "Tata", "Mahindra", "Ford", "Land Rover"];
+        if (incompatibleForBike.some(b => b.toLowerCase() === brand.toLowerCase())) {
+            return {
+                isValid: false,
+                error: `${brand} does not manufacture motorcycles or scooters. Please select a valid motorcycle brand (e.g. Honda, Yamaha, Suzuki, Bajaj, TVS, BMW) or change the vehicle classification.`
+            };
+        }
+    }
+
+    // 2. BUS (Commercial Buses & Coaches)
+    if (type === "BUS") {
+        const incompatibleForBus = ["BMW", "Audi", "Honda", "Suzuki", "Mazda", "Subaru", "Lexus", "Yamaha", "Bajaj", "TVS", "Kia", "Hyundai", "Land Rover", "Ford"];
+        if (incompatibleForBus.some(b => b.toLowerCase() === brand.toLowerCase())) {
+            return {
+                isValid: false,
+                error: `${brand} does not manufacture commercial passenger buses. Compatible bus brands include Toyota (Coaster), Nissan (Civilian), Mercedes-Benz, Tata, Ashok Leyland, Mitsubishi (Rosa), etc.`
+            };
+        }
+    }
+
+    // 3. CAR & SUV (Sedans, Hatchbacks, SUVs)
+    if (type === "CAR" || type === "SUV") {
+        const bikeOnlyBrands = ["Yamaha", "Bajaj", "TVS"];
+        if (bikeOnlyBrands.some(b => b.toLowerCase() === brand.toLowerCase())) {
+            return {
+                isValid: false,
+                error: `${brand} is a two-wheeler / motorcycle manufacturer and does not produce passenger cars or SUVs. Please select Motorcycle (BIKE) or a car manufacturer.`
+            };
+        }
+    }
+
+    // 4. VAN (Commercial Passenger & Cargo Vans)
+    if (type === "VAN") {
+        const incompatibleForVan = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus", "Land Rover"];
+        if (incompatibleForVan.some(b => b.toLowerCase() === brand.toLowerCase())) {
+            return {
+                isValid: false,
+                error: `${brand} does not manufacture commercial passenger or cargo vans. Valid van brands include Toyota, Nissan, Suzuki, Mitsubishi, Hyundai, Ford, Tata, etc.`
+            };
+        }
+    }
+
+    // 5. TRUCK (Light Commercial Lorries & Heavy Pickups)
+    if (type === "TRUCK") {
+        const incompatibleForTruck = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus"];
+        if (incompatibleForTruck.some(b => b.toLowerCase() === brand.toLowerCase())) {
+            return {
+                isValid: false,
+                error: `${brand} does not manufacture commercial lorries or pickup trucks. Valid truck brands include Toyota, Nissan, Mitsubishi, Ford, Tata, Mahindra, Isuzu, etc.`
+            };
+        }
+    }
+
+    return { isValid: true };
+}
 
 export const STANDARD_INCLUSION_PRESETS: { [category: string]: string[] } = {
     "Lubrication & Fluids": [
@@ -113,6 +215,7 @@ interface ServicePackage {
     type?: string;
     category?: string;
     vehicleType?: string;
+    vehicleBrand?: string;
     description: string;
     price: number;
     duration: number;
@@ -177,6 +280,7 @@ function ServicePackageCard({
 }) {
     const vehicleMeta = VEHICLE_TYPE_OPTIONS.find(v => v.value === (pkg.vehicleType || "ALL")) || VEHICLE_TYPE_OPTIONS[0];
     const VehicleIcon = vehicleMeta.Icon;
+    const isUniversalBrand = !pkg.vehicleBrand || pkg.vehicleBrand === "ALL";
 
     return (
         <Card sx={{
@@ -224,7 +328,7 @@ function ServicePackageCard({
                             <VehicleIcon size={20} color="#ffffff" />
                         </Box>
                         <Box>
-                            <Box display="flex" alignItems="center" gap={0.75}>
+                            <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.75}>
                                 <Chip
                                     label={vehicleMeta.label.split('/')[0].trim()}
                                     size="small"
@@ -235,6 +339,18 @@ function ServicePackageCard({
                                         bgcolor: 'rgba(234, 88, 12, 0.08)',
                                         color: '#c2410c',
                                         border: '1px solid rgba(234, 88, 12, 0.2)'
+                                    }}
+                                />
+                                <Chip
+                                    label={isUniversalBrand ? "All Brands" : pkg.vehicleBrand}
+                                    size="small"
+                                    sx={{
+                                        fontWeight: 700,
+                                        fontSize: '0.72rem',
+                                        height: 22,
+                                        bgcolor: isUniversalBrand ? '#f1f5f9' : 'rgba(59, 130, 246, 0.1)',
+                                        color: isUniversalBrand ? '#64748b' : '#1d4ed8',
+                                        border: `1px solid ${isUniversalBrand ? '#e2e8f0' : 'rgba(59, 130, 246, 0.3)'}`
                                     }}
                                 />
                                 <Chip
@@ -385,10 +501,23 @@ function ServicePackageDialog({
     centers, 
     handleSave, 
     handleCloseModal, 
-    isSaving 
+    isSaving,
+    dialogError
 }: any) {
     const [newFeatureText, setNewFeatureText] = useState("");
     const [activePresetCategory, setActivePresetCategory] = useState("Lubrication & Fluids");
+    const [isCustomBrand, setIsCustomBrand] = useState(false);
+
+    // Dynamic compatibility evaluation
+    const compatibility = useMemo(() => {
+        return validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
+    }, [currentPackage.vehicleType, currentPackage.vehicleBrand]);
+
+    // Recommended brand presets based on vehicle classification
+    const popularBrands = useMemo(() => {
+        const typeKey = currentPackage.vehicleType || "ALL";
+        return COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+    }, [currentPackage.vehicleType]);
 
     const featuresList = useMemo(() => {
         return featuresInput
@@ -456,7 +585,7 @@ function ServicePackageDialog({
                             {isEditing ? `Edit Service Package` : "Create Service Package"}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            Configure vehicle classification, price points, labor time, and inspection checklists.
+                            Configure vehicle classification, target brand (Honda, Toyota, etc.), pricing, and checklists.
                         </Typography>
                     </Box>
                 </Box>
@@ -471,6 +600,14 @@ function ServicePackageDialog({
 
             <form onSubmit={handleSave}>
                 <DialogContent sx={{ p: 3, maxHeight: '75vh', overflowY: 'auto' }}>
+                    {dialogError && (
+                        <Box mb={2.5} p={1.5} bgcolor="#fef2f2" borderRadius="0.75rem" border="1px solid #fecaca">
+                            <Typography variant="body2" color="error.main" fontWeight={600}>
+                                {dialogError}
+                            </Typography>
+                        </Box>
+                    )}
+
                     <Grid container spacing={2.5}>
                         <Grid size={{ xs: 12, md: 7 }}>
                             <TextField
@@ -479,7 +616,7 @@ function ServicePackageDialog({
                                 required
                                 value={currentPackage.name}
                                 onChange={(e) => setCurrentPackage({ ...currentPackage, name: e.target.value })}
-                                placeholder="e.g. Comprehensive Full Service"
+                                placeholder="e.g. Toyota / Honda Periodic Major Service"
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                             />
                         </Grid>
@@ -499,6 +636,74 @@ function ServicePackageDialog({
                             </FormControl>
                         </Grid>
 
+                        {/* VEHICLE BRAND / MAKE SELECTION (Honda, Toyota, etc.) */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                                <InputLabel>Vehicle Make / Brand</InputLabel>
+                                <Select
+                                    value={
+                                        isCustomBrand || (!VEHICLE_BRAND_OPTIONS.some(b => b.value === (currentPackage.vehicleBrand || "ALL")))
+                                            ? "OTHER"
+                                            : (currentPackage.vehicleBrand || "ALL")
+                                    }
+                                    label="Vehicle Make / Brand"
+                                    onChange={(e) => {
+                                        if (e.target.value === "OTHER") {
+                                            setIsCustomBrand(true);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
+                                        } else {
+                                            setIsCustomBrand(false);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value });
+                                        }
+                                    }}
+                                >
+                                    {VEHICLE_BRAND_OPTIONS.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            {/* Quick Compatible Brand Preset Chips */}
+                            <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
+                                {popularBrands.map((brand: string) => (
+                                    <Chip
+                                        key={brand}
+                                        label={brand === "ALL" ? "All Brands" : brand}
+                                        size="small"
+                                        clickable
+                                        onClick={() => {
+                                            setIsCustomBrand(false);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: brand });
+                                        }}
+                                        sx={{
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            fontSize: '0.72rem',
+                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(59, 130, 246, 0.15)' : '#f1f5f9',
+                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#1d4ed8' : '#475569',
+                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent'
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+
+                            {/* Custom Brand Input when OTHER is selected */}
+                            {isCustomBrand && (
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Custom Brand Name"
+                                    placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
+                                    value={currentPackage.vehicleBrand || ""}
+                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
+                                    sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
+                                />
+                            )}
+                        </Grid>
+
+                        {/* VEHICLE TYPE CLASSIFICATION */}
                         <Grid size={{ xs: 12, md: 6 }}>
                             <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                                 <InputLabel>Vehicle Classification</InputLabel>
@@ -520,30 +725,57 @@ function ServicePackageDialog({
                                     })}
                                 </Select>
                             </FormControl>
-                        </Grid>
 
-                        <Grid size={{ xs: 12, md: 6 }}>
                             <Box 
-                                height="100%" 
+                                mt={1.5}
                                 px={2} 
+                                py={1}
                                 display="flex" 
                                 alignItems="center" 
-                                justifyContent="space-between"
+                                justifyContent="space-between" 
                                 bgcolor="#f8fafc" 
-                                borderRadius="0.75rem"
+                                borderRadius="0.75rem" 
                                 border="1px solid #f1f5f9"
                             >
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight="bold">Offer Active Status</Typography>
+                                    <Typography variant="subtitle2" fontWeight="bold" fontSize="0.85rem">Offer Active Status</Typography>
                                     <Typography variant="caption" color="text.secondary">Visible for customer online bookings</Typography>
                                 </Box>
                                 <Switch
                                     checked={currentPackage.isActive}
                                     onChange={(e) => setCurrentPackage({ ...currentPackage, isActive: e.target.checked })}
                                     color="primary"
+                                    size="small"
                                 />
                             </Box>
                         </Grid>
+
+                        {/* INCOMPATIBILITY WARNING ALERT */}
+                        {!compatibility.isValid && (
+                            <Grid size={{ xs: 12 }}>
+                                <Box 
+                                    p={2} 
+                                    display="flex" 
+                                    alignItems="flex-start" 
+                                    gap={1.5} 
+                                    bgcolor="#fff1f2" 
+                                    borderRadius="0.75rem" 
+                                    border="1px solid #fecdd3"
+                                >
+                                    <Box color="#e11d48" display="flex" mt={0.25} flexShrink={0}>
+                                        <FiAlertCircle size={20} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="subtitle2" color="#9f1239" fontWeight="bold">
+                                            Incompatible Brand & Vehicle Type Combination
+                                        </Typography>
+                                        <Typography variant="body2" color="#be123c" sx={{ fontSize: '0.85rem', mt: 0.25 }}>
+                                            {compatibility.error}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Grid>
+                        )}
 
                         <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
@@ -622,7 +854,7 @@ function ServicePackageDialog({
                                 required
                                 value={currentPackage.description}
                                 onChange={(e) => setCurrentPackage({ ...currentPackage, description: e.target.value })}
-                                placeholder="Explain what is covered in this service package..."
+                                placeholder="Explain what is covered in this service package (e.g. Specialized 30-point periodic service for Honda & Toyota vehicles)..."
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                             />
                         </Grid>
@@ -777,7 +1009,9 @@ export default function ServicesPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedVehicleFilter, setSelectedVehicleFilter] = useState("ALL");
     const [selectedCenterFilter, setSelectedCenterFilter] = useState("ALL");
+    const [selectedBrandFilter, setSelectedBrandFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
+    const [dialogError, setDialogError] = useState<string | null>(null);
     
     const [snackbar, setSnackbar] = useState({ 
         open: false, 
@@ -790,6 +1024,7 @@ export default function ServicesPage() {
         centerId: "",
         name: "",
         vehicleType: "ALL",
+        vehicleBrand: "ALL",
         description: "",
         price: DEFAULT_PRICE,
         duration: DEFAULT_DURATION,
@@ -831,6 +1066,7 @@ export default function ServicesPage() {
                 name: pkg.name,
                 type: pkg.type,
                 vehicleType: pkg.vehicleType || "ALL",
+                vehicleBrand: pkg.vehicleBrand || "ALL",
                 description: pkg.description,
                 price: pkg.basePrice,
                 duration: pkg.estimatedDurationMins,
@@ -858,6 +1094,7 @@ export default function ServicesPage() {
             centerId: centers.length > 0 ? centers[0].id : "",
             name: "",
             vehicleType: "ALL",
+            vehicleBrand: "ALL",
             description: "",
             price: DEFAULT_PRICE,
             duration: DEFAULT_DURATION,
@@ -865,13 +1102,19 @@ export default function ServicesPage() {
             isActive: true
         });
         setFeaturesInput("");
+        setDialogError(null);
         setIsEditing(false);
         setIsModalOpen(true);
     };
 
     const handleOpenEdit = (pkg: ServicePackage) => {
-        setCurrentPackage({ ...pkg, vehicleType: pkg.vehicleType || "ALL" });
+        setCurrentPackage({ 
+            ...pkg, 
+            vehicleType: pkg.vehicleType || "ALL",
+            vehicleBrand: pkg.vehicleBrand || "ALL"
+        });
         setFeaturesInput(pkg.features.join("\n"));
+        setDialogError(null);
         setIsEditing(true);
         setIsModalOpen(true);
     };
@@ -880,15 +1123,54 @@ export default function ServicesPage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setDialogError(null);
+
+        // Validation Checks
+        if (!currentPackage.name || currentPackage.name.trim().length < MIN_PACKAGE_NAME_LENGTH) {
+            setDialogError(`Package name must be at least ${MIN_PACKAGE_NAME_LENGTH} characters`);
+            return;
+        }
+
+        if (!currentPackage.centerId) {
+            setDialogError("Please assign a service center branch");
+            return;
+        }
+
+        if (Number(currentPackage.price) <= 0) {
+            setDialogError("Price must be greater than 0");
+            return;
+        }
+
+        if (Number(currentPackage.duration) < MIN_DURATION || Number(currentPackage.duration) > MAX_DURATION) {
+            setDialogError(`Duration must be between ${MIN_DURATION} and ${MAX_DURATION} minutes`);
+            return;
+        }
+
+        if (!currentPackage.description || currentPackage.description.trim().length < MIN_DESC_LENGTH) {
+            setDialogError(`Description must be at least ${MIN_DESC_LENGTH} characters`);
+            return;
+        }
+
+        // Brand & Type Compatibility Validation
+        const compatibility = validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
+        if (!compatibility.isValid) {
+            setDialogError(compatibility.error || "Incompatible vehicle brand and classification combination");
+            return;
+        }
+
         setIsSaving(true);
         const processedFeatures = featuresInput.split("\n").map(f => f.trim()).filter(f => f.length > 0);
+        const brandVal = currentPackage.vehicleBrand?.trim();
+        const finalBrand = (!brandVal || brandVal.toUpperCase() === "ALL") ? null : brandVal;
+
         const packageData = {
             packageId: isEditing ? currentPackage.id : undefined,
             centerId: currentPackage.centerId,
-            name: currentPackage.name,
+            name: currentPackage.name.trim(),
             type: processedFeatures.join(","),
             vehicleType: currentPackage.vehicleType === "ALL" ? null : currentPackage.vehicleType,
-            description: currentPackage.description,
+            vehicleBrand: finalBrand,
+            description: currentPackage.description.trim(),
             basePrice: Number(currentPackage.price),
             estimatedDurationMins: Number(currentPackage.duration),
             isActive: currentPackage.isActive
@@ -900,11 +1182,13 @@ export default function ServicesPage() {
             } else {
                 await axios.post(`${APP_CONFIG.api.baseUrl}/service-packages`, packageData);
             }
-            showSnackbar("Saved successfully");
+            showSnackbar(isEditing ? "Package updated successfully!" : "New service package created!");
             fetchPackages();
             setIsModalOpen(false);
-        } catch (err) {
-            showSnackbar("Failed to save", "error");
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.response?.data?.details || "Failed to save package";
+            setDialogError(msg);
+            showSnackbar(msg, "error");
         } finally {
             setIsSaving(false);
         }
@@ -913,10 +1197,10 @@ export default function ServicesPage() {
     const handleDelete = async (id: string) => {
         try {
             await axios.delete(`${APP_CONFIG.api.baseUrl}/service-packages/${id}`);
-            showSnackbar("Deleted successfully");
+            showSnackbar("Package deleted successfully");
             fetchPackages();
         } catch (err) {
-            showSnackbar("Failed to delete", "error");
+            showSnackbar("Failed to delete package", "error");
         }
         setDeleteModal({ isOpen: false, id: '', name: '' });
     };
@@ -926,17 +1210,32 @@ export default function ServicesPage() {
     const avgPrice = packages.length > 0 ? packages.reduce((acc, p) => acc + (p.price || 0), 0) / packages.length : 0;
     const distinctCentersCount = new Set(packages.map(p => p.centerId)).size;
 
+    // Extract unique brands present in existing packages for filter
+    const availableBrands = useMemo(() => {
+        const brandSet = new Set<string>();
+        packages.forEach(p => {
+            if (p.vehicleBrand && p.vehicleBrand !== "ALL") brandSet.add(p.vehicleBrand);
+        });
+        return Array.from(brandSet);
+    }, [packages]);
+
     const filteredPackages = useMemo(() => {
         return packages.filter(pkg => {
             if (selectedVehicleFilter !== "ALL" && (pkg.vehicleType || "ALL") !== selectedVehicleFilter) return false;
             if (selectedCenterFilter !== "ALL" && pkg.centerId !== selectedCenterFilter) return false;
+            if (selectedBrandFilter !== "ALL" && (pkg.vehicleBrand || "ALL") !== selectedBrandFilter) return false;
             if (searchQuery.trim()) {
                 const query = searchQuery.toLowerCase();
-                return pkg.name.toLowerCase().includes(query) || pkg.description.toLowerCase().includes(query) || pkg.features.some(f => f.toLowerCase().includes(query));
+                return (
+                    pkg.name.toLowerCase().includes(query) || 
+                    (pkg.vehicleBrand && pkg.vehicleBrand.toLowerCase().includes(query)) ||
+                    pkg.description.toLowerCase().includes(query) || 
+                    pkg.features.some(f => f.toLowerCase().includes(query))
+                );
             }
             return true;
         });
-    }, [packages, selectedVehicleFilter, selectedCenterFilter, searchQuery]);
+    }, [packages, selectedVehicleFilter, selectedCenterFilter, selectedBrandFilter, searchQuery]);
 
     const centerNameMap = useMemo(() => {
         return centers.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {} as Record<string, string>);
@@ -962,28 +1261,54 @@ export default function ServicesPage() {
             </Grid>
 
             <Card sx={{ p: 2.5, mb: 4, borderRadius: '1rem', border: '1px solid', borderColor: 'divider', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ md: 'center' }} justifyContent="space-between">
+                <Box display="flex" flexDirection={{ xs: 'column', lg: 'row' }} gap={2} alignItems={{ lg: 'center' }} justifyContent="space-between">
                     <TextField
                         size="small"
-                        placeholder="Search service packages..."
+                        placeholder="Search by package name, brand (Toyota, Honda...), or features..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
                             endAdornment: searchQuery ? <InputAdornment position="end"><IconButton size="small" onClick={() => setSearchQuery("")}><FiX size={15} /></IconButton></InputAdornment> : null
                         }}
-                        sx={{ width: { xs: '100%', md: 380 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem', bgcolor: '#ffffff' } }}
+                        sx={{ width: { xs: '100%', lg: 380 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem', bgcolor: '#ffffff' } }}
                     />
                     <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-                        <FormControl size="small" sx={{ minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <FormControl size="small" sx={{ minWidth: 180, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                             <InputLabel>Filter by Branch</InputLabel>
                             <Select value={selectedCenterFilter} label="Filter by Branch" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
                                 <MenuItem value="ALL">All Service Centers</MenuItem>
                                 {centers.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                             </Select>
                         </FormControl>
-                        {(searchQuery || selectedVehicleFilter !== "ALL" || selectedCenterFilter !== "ALL") && (
-                            <Button size="small" variant="text" onClick={() => { setSearchQuery(""); setSelectedVehicleFilter("ALL"); setSelectedCenterFilter("ALL"); }} sx={{ color: BRAND_ORANGE, fontWeight: 700, textTransform: 'none' }}>Reset</Button>
+
+                        <FormControl size="small" sx={{ minWidth: 160, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>Filter by Make / Brand</InputLabel>
+                            <Select value={selectedBrandFilter} label="Filter by Make / Brand" onChange={(e) => setSelectedBrandFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Brands</MenuItem>
+                                {VEHICLE_BRAND_OPTIONS.filter(b => b.value !== "ALL" && b.value !== "OTHER").map((b) => (
+                                    <MenuItem key={b.value} value={b.value}>{b.label}</MenuItem>
+                                ))}
+                                {availableBrands.filter(b => !VEHICLE_BRAND_OPTIONS.some(opt => opt.value === b)).map((b) => (
+                                    <MenuItem key={b} value={b}>{b}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {(searchQuery || selectedVehicleFilter !== "ALL" || selectedCenterFilter !== "ALL" || selectedBrandFilter !== "ALL") && (
+                            <Button 
+                                size="small" 
+                                variant="text" 
+                                onClick={() => { 
+                                    setSearchQuery(""); 
+                                    setSelectedVehicleFilter("ALL"); 
+                                    setSelectedCenterFilter("ALL"); 
+                                    setSelectedBrandFilter("ALL");
+                                }} 
+                                sx={{ color: BRAND_ORANGE, fontWeight: 700, textTransform: 'none' }}
+                            >
+                                Reset
+                            </Button>
                         )}
                     </Box>
                 </Box>
@@ -1044,7 +1369,7 @@ export default function ServicesPage() {
                 {isLoading ? (
                     <Grid size={{ xs: 12 }}><Box py={10} textAlign="center"><CircularProgress sx={{ color: BRAND_ORANGE }} /></Box></Grid>
                 ) : filteredPackages.length === 0 ? (
-                    <Grid size={{ xs: 12 }}><EmptyState icon={<FiLayers size={40} />} title="No Packages" description="No packages found." actionLabel="Create" onAction={handleOpenCreate} /></Grid>
+                    <Grid size={{ xs: 12 }}><EmptyState icon={<FiLayers size={40} />} title="No Service Packages Found" description="No packages matching the selected filters. Try changing your search or brand filters." actionLabel="Create Package" onAction={handleOpenCreate} /></Grid>
                 ) : (
                     filteredPackages.map((pkg) => (
                         <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={pkg.id}>
@@ -1071,6 +1396,7 @@ export default function ServicesPage() {
                     handleSave={handleSave}
                     handleCloseModal={handleCloseModal}
                     isSaving={isSaving}
+                    dialogError={dialogError}
                 />
             )}
 
@@ -1078,7 +1404,7 @@ export default function ServicesPage() {
                 open={deleteModal.isOpen}
                 onClose={() => setDeleteModal({ isOpen: false, id: '', name: '' })}
                 title="Delete Package?"
-                message={`Are you sure you want to delete ${deleteModal.name}?`}
+                message={`Are you sure you want to delete "${deleteModal.name}"? This action cannot be undone.`}
                 confirmText="Delete"
                 cancelText="Cancel"
                 variant="danger"

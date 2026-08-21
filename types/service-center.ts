@@ -22,5 +22,6 @@ export type ServiceCenter = {
     name: string;
     type: string | null;
     vehicleType: string | null;
+    vehicleBrand?: string | null;
   }[];
 };

@@ -262,9 +262,8 @@ export default function FinancePage() {
             </Grid>
 
             {/* REVENUE GROWTH CHART */}
-            <Box mt={10}>
+            <Box mt={4}>
             <ChartCard 
-                
                 title="Revenue Overview"
                 description="Monthly revenue growth tracking across all payment methods"
                 date="Last updated just now"
@@ -286,8 +285,8 @@ export default function FinancePage() {
 
             {/* RECENT TRANSACTIONS TABLE */}
             <Box mt={4}>
-                <Card sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight="bold" mb={3}>Recent Transactions</Typography>
+                <Card sx={{ p: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                    <Typography variant="h6" fontWeight={700} color="text.primary" mb={2.5}>Recent Transactions</Typography>
                     <Box sx={{ height: 400, width: '100%' }}>
                         <DataGrid 
                             rows={financeData.recentTransactions} 
@@ -295,13 +294,27 @@ export default function FinancePage() {
                             getRowId={(row) => row.id || Math.random().toString()}
                             pageSizeOptions={[5]} 
                             disableRowSelectionOnClick 
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: '#f8fafc',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #f1f5f9'
+                                }
+                            }}
                         />
                     </Box>
                 </Card>
             </Box>
 
             {/* CENTER PERFORMANCE BAR CHART */}
-            <Box mt={10}>
+            <Box mt={4}>
                 <ChartCard
                     title="Center Performance"
                     description="Revenue comparison across all active service center branches"

@@ -74,7 +74,26 @@ function DashboardHeader({ companyName }: { companyName: string }) {
             </Box>
             <Box display="flex" gap={2}>
                 <Link href="/dashboard/company-owner/centers" style={{ textDecoration: 'none' }}>
-                    <Button variant="contained" color="primary" sx={{ height: 44, color: '#ffffff !important' }}>
+                    <Button 
+                        variant="contained" 
+                        sx={{ 
+                            background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                            color: '#ffffff !important',
+                            px: 3.5,
+                            py: 1.2,
+                            borderRadius: '0.75rem',
+                            textTransform: 'none',
+                            fontSize: '0.95rem',
+                            fontWeight: 700,
+                            boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                            transition: 'all 0.25s ease',
+                            '&:hover': {
+                                background: 'linear-gradient(195deg, #ea580c, #c2410c)',
+                                boxShadow: '0 6px 20px rgba(234, 88, 12, 0.45)',
+                                transform: 'translateY(-1px)'
+                            }
+                        }}
+                    >
                         Manage Centers
                     </Button>
                 </Link>
@@ -92,7 +111,7 @@ function StatsGrid({ stats }: { stats: DashboardStatistics }) {
             <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
                 <StatCard
                     title="Total Revenue"
-                    count={`Rs. ${stats.totalRevenue.toLocaleString()}`}
+                    count={`Rs. ${stats.totalRevenue.toLocaleString('en-LK')}`}
                     percentage={stats.totalRevenue > 0 ? {
                         color: stats.revenueChange?.startsWith('+') ? 'success' : 'danger',
                         amount: stats.revenueChange || '0%',
@@ -137,17 +156,42 @@ function QuickActionBtn({ title, icon, href, color }: { title: string, icon: Rea
     return (
         <Link href={href} style={{ textDecoration: 'none', width: '100%' }}>
             <Card sx={{
-                p: 2, display: 'flex', alignItems: 'center', gap: 2,
-                transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' },
-                bgcolor: isPrimary ? 'primary.main' : 'background.paper',
-                color: isPrimary ? '#ffffff' : 'text.primary'
+                p: 2.5, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2,
+                borderRadius: '1rem',
+                border: '1px solid',
+                borderColor: isPrimary ? 'rgba(234, 88, 12, 0.2)' : 'divider',
+                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                bgcolor: isPrimary ? 'rgba(234, 88, 12, 0.03)' : 'background.paper',
+                '&:hover': { 
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(234, 88, 12, 0.15)',
+                    borderColor: '#ea580c'
+                }
             }}>
-                <Box fontSize={24} color={isPrimary ? "inherit" : "primary.main"}>{icon}</Box>
-                <Box flex={1}>
-                    <Typography variant="subtitle1" fontWeight="bold" color="inherit">{title}</Typography>
-                    <Typography variant="caption" color="inherit" sx={{ opacity: 0.8 }}>Click to view details</Typography>
+                <Box 
+                    sx={{ 
+                        p: 1.25, 
+                        borderRadius: '0.75rem', 
+                        bgcolor: 'rgba(234, 88, 12, 0.1)', 
+                        color: '#ea580c', 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    {icon}
                 </Box>
-                <FiArrowRight style={{ opacity: 0.7 }} />
+                <Box flex={1}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="text.primary">{title}</Typography>
+                    <Typography variant="caption" color="text.secondary">Click to view details</Typography>
+                </Box>
+                <Box color="#ea580c" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FiArrowRight />
+                </Box>
             </Card>
         </Link>
     );
