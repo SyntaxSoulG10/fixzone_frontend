@@ -13,6 +13,10 @@ import {
   FiMapPin,
   FiStar,
 } from "react-icons/fi";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ErrorIcon from "@mui/icons-material/Error";
+import InfoIcon from "@mui/icons-material/Info";
 import BookingCard from "@/components/bookings/BookingCard";
 import { getMyBookings, getNotifications, getServiceCenters } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
@@ -87,11 +91,11 @@ function getInitials(name: string) {
 }
 
 /* ─── Notification type config ─────────────────────────────── */
-const NOTIF_CONFIG: Record<string, { bg: string; dot: string; emoji: string }> = {
-  SUCCESS:  { bg: "bg-emerald-100", dot: "bg-emerald-500", emoji: "✅" },
-  WARNING:  { bg: "bg-amber-100",   dot: "bg-amber-500",   emoji: "⚠️" },
-  ERROR:    { bg: "bg-red-100",     dot: "bg-red-500",     emoji: "🚨" },
-  default:  { bg: "bg-blue-100",    dot: "bg-blue-500",    emoji: "ℹ️" },
+const NOTIF_CONFIG: Record<string, { bg: string; dot: string; Icon: React.ElementType; iconColor: string }> = {
+  SUCCESS:  { bg: "bg-emerald-100", dot: "bg-emerald-500", Icon: CheckCircleIcon,  iconColor: "text-emerald-600" },
+  WARNING:  { bg: "bg-amber-100",   dot: "bg-amber-500",   Icon: WarningAmberIcon, iconColor: "text-amber-600" },
+  ERROR:    { bg: "bg-red-100",     dot: "bg-red-500",     Icon: ErrorIcon,        iconColor: "text-red-600" },
+  default:  { bg: "bg-blue-100",    dot: "bg-blue-500",    Icon: InfoIcon,         iconColor: "text-blue-600" },
 };
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -276,7 +280,7 @@ export default function CustomerDashboard() {
                 {todayLabel}
               </p>
               <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                Hey, {firstName} 👋
+                Hey, {firstName}
               </h1>
               <p className="text-sm text-slate-300 mt-1">
                 Welcome back {firstName}.book your next service.
@@ -519,6 +523,7 @@ export default function CustomerDashboard() {
               notifications.slice(0, 7).map((n, i) => {
                 const isRead = n.read !== undefined ? n.read : n.isRead;
                 const cfg = NOTIF_CONFIG[n.type] || NOTIF_CONFIG.default;
+                const NotifIcon = cfg.Icon;
                 return (
                   <Link
                     key={n.id || i}
@@ -530,8 +535,8 @@ export default function CustomerDashboard() {
                     }`}
                   >
                     {/* type icon */}
-                    <span className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center text-base shrink-0`} aria-hidden="true">
-                      {cfg.emoji}
+                    <span className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center shrink-0`} aria-hidden="true">
+                      <NotifIcon className={`w-4 h-4 ${cfg.iconColor}`} style={{ fontSize: 16 }} />
                     </span>
 
                     <div className="min-w-0 flex-1">

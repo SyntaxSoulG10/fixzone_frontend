@@ -1,7 +1,7 @@
 "use client";
 import { useRoleGuard } from "../../../utils/useRoleGuard";
 import { useDashboardData } from "../../../context/DashboardDataContext";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { FiLoader, FiAlertTriangle, FiArrowRight } from "react-icons/fi";
 import { Suspense, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button as MuiButton } from "@mui/material";
@@ -76,7 +76,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     const { isLoading: isRoleLoading, isAuthorized } = useRoleGuard(['ROLE_COMPANY_OWNER', 'OWNER']);
     const { ownerData } = useDashboardData();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
     const [modalOpen, setModalOpen] = useState(false);
+    const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
     useEffect(() => {
         if (searchParams?.get("sub_expired") === "true") {
@@ -84,7 +87,42 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         }
     }, [searchParams]);
 
-    if (isRoleLoading || !isAuthorized) {
+    useEffect(() => {
+        const checkVerification = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+                
+                // Only check if we are in company-owner dashboard, not on verification page itself
+                if (pathname?.includes("/dashboard/company-owner") && !pathname?.includes("/verification")) {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/service-centers/current`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            const status = data[0].status;
+                            if (status === "PENDING" || status === "REJECTED") {
+                                router.push("/verification");
+                                return; // Stop rendering dashboard
+                            }
+                        } else {
+                            router.push("/verification");
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Verification check failed", error);
+            } finally {
+                setIsCheckingStatus(false);
+            }
+        };
+        checkVerification();
+    }, [pathname, router]);
+
+    if (isRoleLoading || !isAuthorized || isCheckingStatus) {
         return (
             <div className="flex flex-col items-center justify-center h-screen space-y-4">
                 <FiLoader className="w-8 h-8 text-orange-600 animate-spin" />

@@ -64,6 +64,26 @@ export default function LoginPage() {
                             break;
                         case "ROLE_COMPANY_OWNER":
                         case "OWNER":
+                            try {
+                                const scResponse = await fetch(`${APP_CONFIG.API_BASE_URL}/api/service-centers/current`, {
+                                    headers: { Authorization: `Bearer ${tokenToSave}` },
+                                });
+                                if (scResponse.ok) {
+                                    const scData = await scResponse.json();
+                                    if (scData && scData.length > 0) {
+                                        const status = scData[0].status;
+                                        if (status === "PENDING" || status === "REJECTED") {
+                                            router.push("/verification");
+                                            break;
+                                        }
+                                    } else {
+                                        router.push("/verification");
+                                        break;
+                                    }
+                                }
+                            } catch (err) {
+                                console.error("Error fetching SC status:", err);
+                            }
                             router.push("/dashboard/company-owner");
                             break;
                         case "ROLE_CUSTOMER":
