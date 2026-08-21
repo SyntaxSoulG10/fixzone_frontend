@@ -62,39 +62,27 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 export default function CustomersPage() {
     const theme = useTheme();
     const { customersData, analyticsData, refreshAll } = useDashboardData();
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [loading, setLoading] = useState(true);
+    const mapCustomers = (data: CustomerDTO[]): Customer[] => {
+        return (data || []).map((customer: CustomerDTO) => ({
+            id: customer.userId || customer.id || Math.random().toString(),
+            name: customer.fullName || customer.name || "Unknown Customer",
+            email: customer.email,
+            visits: customer.visits || 0,
+            totalSpent: customer.totalSpent || 0,
+            lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+            status: customer.status || "Active",
+            avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
+        }));
+    };
+
+    const [customers, setCustomers] = useState<Customer[]>(() => mapCustomers(customersData));
+    const [loading, setLoading] = useState<boolean>(() => !customersData || customersData.length === 0);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
-        const loadCustomers = async () => {
-            setLoading(true);
-            try {
-                if (customersData.length === 0) {
-                    await refreshAll();
-                }
-                
-                const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerDTO) => ({
-                    id: customer.userId || customer.id || Math.random().toString(),
-                    name: customer.fullName || customer.name || "Unknown Customer",
-                    email: customer.email,
-                    visits: customer.visits || 0,
-                    totalSpent: customer.totalSpent || 0,
-                    lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-                    status: customer.status || "Active",
-                    avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=random&color=fff`
-                }));
-                setCustomers(mappedCustomers);
-            } catch (err: any) {
-                console.error("Failed to load customers:", err);
-                const msg = err.response?.data?.message || err.message || "Failed to load customers.";
-                setSnackbar({ open: true, message: msg, severity: 'error' });
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadCustomers();
-    }, [customersData, refreshAll]);
+        setCustomers(mapCustomers(customersData || []));
+        setLoading(false);
+    }, [customersData]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {

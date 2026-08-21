@@ -47,6 +47,10 @@ export default function LoginPage() {
             if (data.userId) localStorage.setItem("userId", data.userId);
             if (data.fullName) localStorage.setItem("fullName", data.fullName);
 
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new Event("authChange"));
+            }
+
             const role = data.role || data.userRole;
             
             if (role) {

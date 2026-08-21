@@ -21,7 +21,7 @@ export interface Station {
 }
 
 export const MOCK_STATIONS: Station[] = [
-    { id: "SS-001", name: "AutoMiraj", owner: "Mahen Wijesinghe", location: "Colombo 03", ratings: 4.2, bookings: 156, revenue: "Rs. 5,740", plan: "Basic", status: "Pending" },
+    { id: "SS-001", name: "Colombo Car Care", owner: "Mahen Wijesinghe", location: "Colombo 03", ratings: 4.2, bookings: 156, revenue: "Rs. 5,740", plan: "Basic", status: "Pending" },
     { id: "SS-002", name: "Laugfs Car Care", owner: "Ruwan Alwis", location: "Nugegoda", ratings: 3.8, bookings: 98, revenue: "Rs. 18,600", plan: "Standard", status: "Active" },
     { id: "SS-003", name: "Hybrid Hub", owner: "Sanjeewa Pushpakumara", location: "Kotte", ratings: 2.9, bookings: 103, revenue: "Rs. 8,320", plan: "Standard", status: "Active" },
     { id: "SS-004", name: "United Motors", owner: "Amal Gunawardena", location: "Battaramulla", ratings: 4.1, bookings: 225, revenue: "Rs. 12,450", plan: "Basic", status: "Pending" },

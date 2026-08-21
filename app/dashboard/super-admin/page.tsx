@@ -63,6 +63,10 @@ export default function SuperAdminDashboard() {
     const analytics = analyticsData as AnalyticsData | null;
     const loading = isLoading;
 
+    useEffect(() => {
+        refreshAll();
+    }, [refreshAll]);
+
     // Transform analytics data for charts (Recharts format)
     const getChartData = () => {
         if (!analytics) return [];

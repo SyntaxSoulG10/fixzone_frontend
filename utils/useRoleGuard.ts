@@ -4,9 +4,21 @@ import { getToken, isTokenExpired, getUserRole } from "./authUtils";
 
 export const useRoleGuard = (allowedRoles: string[]) => {
     const router = useRouter();
+    const rolesKey = allowedRoles.join(',');
+
+    const checkCurrentAuth = () => {
+        if (typeof window === "undefined") return false;
+        const token = getToken();
+        if (!token || isTokenExpired(token)) return false;
+        const storedRole = localStorage.getItem("role") || localStorage.getItem("userRole");
+        const userRole = getUserRole(token) || storedRole;
+        const normalizedAllowed = allowedRoles.map(r => r.toUpperCase().replace(/^ROLE_/, ''));
+        const normalizedRole = userRole ? userRole.toUpperCase().replace(/^ROLE_/, '') : '';
+        return Boolean(userRole && (allowedRoles.includes(userRole) || normalizedAllowed.includes(normalizedRole)));
+    };
+
     const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const rolesKey = allowedRoles.join(',');
 
     useEffect(() => {
         const checkAuth = () => {
@@ -31,7 +43,7 @@ export const useRoleGuard = (allowedRoles: string[]) => {
             
             const normalizedAllowed = allowedRoles.map(r => r.toUpperCase().replace(/^ROLE_/, ''));
             const normalizedRole = userRole ? userRole.toUpperCase().replace(/^ROLE_/, '') : '';
-            const hasAccess = isAuthorized || (userRole && (allowedRoles.includes(userRole) || normalizedAllowed.includes(normalizedRole)));
+            const hasAccess = Boolean(userRole && (allowedRoles.includes(userRole) || normalizedAllowed.includes(normalizedRole)));
 
             if (!hasAccess) {
                 if (normalizedRole === "SERVICE_MANAGER") router.push("/dashboard/service-manager");

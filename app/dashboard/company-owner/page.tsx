@@ -167,6 +167,7 @@ export default function CompanyOwnerDashboard() {
         centersData: centers, 
         customersData: customers, 
         isLoading, 
+        hasDataInitialized,
         refreshAll 
     } = useDashboardData();
 
@@ -184,8 +185,10 @@ export default function CompanyOwnerDashboard() {
     };
 
     useEffect(() => {
-        // Data is handled by the root provider
-    }, []);
+        if (!hasDataInitialized) {
+            refreshAll();
+        }
+    }, [hasDataInitialized, refreshAll]);
 
     if (isLoading && !analytics) {
         return (

@@ -400,7 +400,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                     {isProfileOpen && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-4 border-b border-slate-100">
-                                <p className="text-sm font-semibold text-slate-800">{userData?.fullName || "Charlie Brown"}</p>
+                                <p className="text-sm font-semibold text-slate-800">{userData?.fullName || "User"}</p>
                                 <p className="text-xs text-slate-500 truncate capitalize">{role?.replace('_', ' ') || 'User'}</p>
                             </div>
                             <div className="p-1">

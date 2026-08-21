@@ -193,7 +193,7 @@ export default function BookServicePage() {
     name: c.name,
     location: c.address ?? "Unknown",
     googleMapsUrl: c.googleMapsUrl ?? null,
-    image: "/garages/garage01.jpg",
+    image: c.imageUrl || "/garages/garage01.jpg",
     services: c.supportedVehicleBrands ?? [],
     openStatus: c.isActive !== false ? computeOpenStatus(c.openingHours) : "Closed",
   }));

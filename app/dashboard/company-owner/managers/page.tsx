@@ -218,9 +218,19 @@ export default function ManagersPage() {
     const theme = useTheme();
     const { managersData, centersData, ownerData, isLoading: contextLoading, refreshManagers } = useDashboardData();
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
-    const [managers, setManagers] = useState<ManagerView[]>([]);
-    const [centersList, setCentersList] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const mapManagers = (mgrData: any[], ctrData: any[]) => {
+        const centersMap = (ctrData || []).reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
+        return (mgrData || []).map((m: any) => ({
+            id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
+            center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
+            status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
+        }));
+    };
+
+    const [managers, setManagers] = useState<ManagerView[]>(() => mapManagers(managersData, centersData));
+    const [centersList, setCentersList] = useState<string[]>(() => (centersData || []).map((c: any) => c.name));
+    const [loading, setLoading] = useState<boolean>(() => contextLoading && (!managersData || managersData.length === 0));
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -232,24 +242,10 @@ export default function ManagersPage() {
     const [resendingId, setResendingId] = useState<string | null>(null);
 
     useEffect(() => { 
-        if (!contextLoading) {
-            mapData(managersData || [], centersData || []);
-        }
-    }, [managersData, centersData, contextLoading]);
-
-    const mapData = (mgrData: any[], ctrData: any[]) => {
-        setLoading(true);
-        try {
-            setCentersList(ctrData.map((c: any) => c.name));
-            const centersMap = ctrData.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-            setManagers(mgrData.map((m: any) => ({
-                id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
-                center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
-                status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-                avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
-            })));
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-    };
+        setCentersList((centersData || []).map((c: any) => c.name));
+        setManagers(mapManagers(managersData || [], centersData || []));
+        setLoading(false);
+    }, [managersData, centersData]);
 
     const handleFormChange = (e: any) => {
         setDialogError(null);

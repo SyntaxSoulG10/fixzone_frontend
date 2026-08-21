@@ -361,7 +361,7 @@ function OverviewTab({
                                         onChange={(e) => handleFieldChange("companyName", e.target.value)}
                                         error={Boolean(fieldErrors.companyName)}
                                         helperText={fieldErrors.companyName || ""}
-                                        placeholder="e.g. Raja Motors"
+                                        placeholder="e.g. AutoCare Solutions"
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
@@ -392,7 +392,7 @@ function OverviewTab({
                                 <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f1f5f9" borderRadius="8px" border="1px solid #e2e8f0">
                                     <FiHash color="#64748b" size={16} />
                                     <Typography variant="body2" fontWeight={700} color="#334155">
-                                        {formState.ownerCode || "RAJA001"}
+                                        {formState.ownerCode || "—"}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -411,7 +411,7 @@ function OverviewTab({
                                         onChange={(e) => handleFieldChange("companyEmail", e.target.value)}
                                         error={Boolean(fieldErrors.companyEmail)}
                                         helperText={fieldErrors.companyEmail || "Business email shown to customers on invoices & bookings"}
-                                        placeholder="e.g. contact@rajamotors.lk"
+                                        placeholder="e.g. contact@yourcompany.com"
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
@@ -431,20 +431,20 @@ function OverviewTab({
                                 )}
                             </Box>
 
-                            {/* Company Hotline / Phone */}
+                            {/* Company Phone */}
                             <Box>
                                 <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
-                                    COMPANY PHONE / HOTLINE
+                                    COMPANY PHONE NUMBER
                                 </Typography>
                                 {isEditing ? (
                                     <TextField
                                         fullWidth
                                         size="small"
-                                        value={formState.companyNumber}
-                                        onChange={(e) => handleFieldChange("companyNumber", e.target.value)}
-                                        error={Boolean(fieldErrors.companyNumber)}
-                                        helperText={fieldErrors.companyNumber || "Customer support hotline (e.g. +94 11 200 0000)"}
-                                        placeholder="+94 11 200 0000"
+                                        value={formState.companyPhone}
+                                        onChange={(e) => handleFieldChange("companyPhone", e.target.value)}
+                                        error={Boolean(fieldErrors.companyPhone)}
+                                        helperText={fieldErrors.companyPhone || ""}
+                                        placeholder="e.g. +94 11 234 5678"
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
@@ -458,45 +458,31 @@ function OverviewTab({
                                     <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
                                         <FiPhone color="#EA580C" size={16} />
                                         <Typography variant="body2" color="#334155">
-                                            {formState.companyNumber || "—"}
+                                            {formState.companyPhone || "—"}
                                         </Typography>
                                     </Box>
                                 )}
-                            </Box>
-
-                            {/* Operating Location */}
-                            <Box>
-                                <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={0.75}>
-                                    OPERATING COUNTRY & LOCATION
-                                </Typography>
-                                <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
-                                    <FiMapPin color="#EA580C" size={16} />
-                                    <Typography variant="body2" color="#334155">
-                                        {formState.location || "Sri Lanka"}
-                                    </Typography>
-                                </Box>
                             </Box>
                         </Box>
                     </Card>
                 </Grid>
 
-                {/* 2. Personal & Account Credentials (EMAIL CANNOT BE CHANGED) */}
+                {/* Section 2: Account Owner Personal Details */}
                 <Grid size={{ xs: 12, lg: 6 }}>
-                    <Card sx={{ p: 3, borderRadius: '12px', height: '100%', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                        <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                            <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', display: 'flex' }}>
-                                <FiUser size={20} />
+                    <Card sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+                        <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+                            <Box p={1} bgcolor="#eff6ff" borderRadius="10px">
+                                <FiUser color="#2563eb" size={20} />
                             </Box>
                             <Box>
-                                <Typography variant="subtitle1" fontWeight={700} color="#1e293b">
-                                    Account & Owner Profile
+                                <Typography variant="h6" fontWeight={700} color="#1e293b">
+                                    Owner Credentials
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Primary credentials & personal contact information
+                                <Typography variant="caption" color="#64748b">
+                                    Primary administrator login and contact details
                                 </Typography>
                             </Box>
                         </Box>
-                        <Divider sx={{ mb: 2.5 }} />
 
                         <Box display="flex" flexDirection="column" gap={2.5}>
                             {/* Owner Full Name */}
@@ -512,7 +498,7 @@ function OverviewTab({
                                         onChange={(e) => handleFieldChange("fullName", e.target.value)}
                                         error={Boolean(fieldErrors.fullName)}
                                         helperText={fieldErrors.fullName || ""}
-                                        placeholder="e.g. Raja Owner"
+                                        placeholder="e.g. John Doe"
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
