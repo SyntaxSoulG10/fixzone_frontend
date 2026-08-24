@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
 import axios from "@/lib/axios";
-import { FiTool, FiClock, FiCalendar, FiCheckCircle, FiPlus, FiMinus, FiLoader, FiFileText, FiCheck, FiPlay } from "react-icons/fi";
+import { FiTool, FiClock, FiCalendar, FiCheckCircle, FiPlus, FiMinus, FiLoader } from "react-icons/fi";
 import { FaUserCog, FaMoneyBillWave } from "react-icons/fa";
 import { useDashboardData } from "../../../context/DashboardDataContext";
 import { APP_CONFIG } from "../../../utils/config";
@@ -157,23 +156,51 @@ export default function ServiceManagerDashboard() {
         try {
             if (newStatus === "COMPLETED") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/complete`);
-                showSnackbar("Booking marked as completed! You can now generate an invoice.", "success");
+                
+                const booking = activeBookings.find(b => b.bookingId === id);
+                if (booking) {
+                    try {
+                        // Create a real invoice in the database
+                        const manager = managersData?.[0] || {};
+                        const centerId = booking.centerId || manager.managedCenterId || "00000000-0000-0000-0000-000000000001";
+                        const customerId = booking.customerId || "00000000-0000-0000-0000-000000000002";
+                        const amount = booking.estimatedCost ? Number(booking.estimatedCost) : (booking.bookingFee ? Number(booking.bookingFee) : 3500);
+                        
+                        const newInvoice = {
+                            companyCode: "FIX001",
+                            centerId: centerId,
+                            bookingId: booking.bookingId,
+                            issuedToCustomerId: customerId,
+                            subtotal: amount,
+                            tax: 0,
+                            discount: 0,
+                            total: amount,
+                            status: "PAID",
+                            issuedAt: new Date().toISOString(),
+                            dueAt: new Date().toISOString()
+                        };
+                        const invRes = await axios.post(APP_CONFIG.api.invoices, newInvoice);
+                        setTodaysInvoices(prev => [...prev, invRes.data]);
+                        if (refreshInvoices) refreshInvoices();
+                    } catch (invErr) {
+                        console.error("Failed to create real invoice in database", invErr);
+                    }
+                }
             } else if (newStatus === "IN_PROGRESS") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/start-service`);
-                showSnackbar("Service started successfully!", "success");
             } else if (newStatus === "CANCELLED") {
                 await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${id}/cancel`);
-                showSnackbar("Booking cancelled.", "info");
             }
             
+            // We just let the global refresh happen. The new filter logic will keep it in activeBookings.
             if (refreshBookings) refreshBookings();
-            if (refreshInvoices) refreshInvoices();
         } catch (error) {
             console.error("Failed to update booking status", error);
             showSnackbar("Error updating booking status. Please try again.", "error");
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const activateBooking = async (booking: any) => {
         try {
             await axios.put(`${APP_CONFIG.api.baseUrl}/bookings/${booking.bookingId}/start-service`);
@@ -184,6 +211,8 @@ export default function ServiceManagerDashboard() {
             showSnackbar("Error moving booking to active. Please try again.", "error");
         }
     };
+
+
 
     if (!hasDataInitialized) {
         return (
@@ -236,16 +265,16 @@ export default function ServiceManagerDashboard() {
                                 <tr>
                                     <th className="px-6 py-4 w-1/4">Customer</th>
                                     <th className="px-6 py-4 w-1/4">Vehicle</th>
-                                    <th className="px-6 py-4 w-1/5">Service</th>
+                                    <th className="px-6 py-4 w-1/4">Service</th>
                                     <th className="px-6 py-4 w-1/6">Status</th>
-                                    <th className="px-6 py-4 text-center">Invoice / Action</th>
+                                    <th className="px-6 py-4 w-1/12 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {activeBookings.map((booking, idx) => {
+                                {activeBookings.map((booking) => {
                                     const details = getBookingDetails(booking);
                                     return (
-                                    <tr key={booking.bookingId || `active-booking-${idx}`} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
                                         <td className="px-6 py-4">
                                             <div>{details.vehicle}</div>
@@ -264,34 +293,14 @@ export default function ServiceManagerDashboard() {
                                                  booking.status === 'CANCELLED' ? 'Cancelled' : booking.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {booking.status === 'IN_PROGRESS' && (
-                                                    <button
-                                                        onClick={() => handleStatusChange(booking.bookingId, 'COMPLETED')}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
-                                                        title="Mark service as completed"
-                                                    >
-                                                        <FiCheck className="w-3.5 h-3.5" /> Done
-                                                    </button>
-                                                )}
-                                                {booking.status === 'COMPLETED' && (
-                                                    <Link
-                                                        href={`/dashboard/service-manager/reports?action=generate-invoice&bookingId=${booking.bookingId}`}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
-                                                        title="Generate invoice for this booking"
-                                                    >
-                                                        <FiFileText className="w-3.5 h-3.5" /> Generate Invoice
-                                                    </Link>
-                                                )}
-                                                <button
-                                                    onClick={() => hideFromActiveList(booking.bookingId)}
-                                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                    title="Remove from Dashboard"
-                                                >
-                                                    <FiMinus className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => hideFromActiveList(booking.bookingId)}
+                                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                title="Remove from Dashboard"
+                                            >
+                                                <FiMinus className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 )})}
@@ -318,15 +327,15 @@ export default function ServiceManagerDashboard() {
                                 <tr>
                                     <th className="px-6 py-4 w-1/4">Customer</th>
                                     <th className="px-6 py-4 w-1/4">Vehicle</th>
-                                    <th className="px-6 py-4 w-1/3">Service</th>
-                                    <th className="px-6 py-4 w-1/6">Time</th>
+                                    <th className="px-6 py-4 w-1/4">Service</th>
+                                    <th className="px-6 py-4 w-1/4">Time</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {upcomingBookings.map((booking, idx) => {
+                                {upcomingBookings.map((booking) => {
                                     const details = getBookingDetails(booking);
                                     return (
-                                    <tr key={booking.bookingId || `upcoming-booking-${idx}`} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={booking.bookingId || Math.random()} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-800">{details.vehicle}</div>
