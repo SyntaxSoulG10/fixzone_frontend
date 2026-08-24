@@ -430,26 +430,19 @@ export default function BookingsPage() {
                                                             booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                                             booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
                                                             booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                                            booking.status === 'PAID' ? 'bg-purple-100 text-purple-800' :
                                                             'bg-slate-100 text-slate-800'
                                                         }`}>
                                                             {booking.status === 'IN_PROGRESS' ? 'In Progress' :
                                                              booking.status === 'COMPLETED' ? 'Completed' :
                                                              booking.status === 'CONFIRMED' ? 'Confirmed' :
-                                                             booking.status === 'CANCELLED' ? 'Cancelled' : booking.status}
+                                                             booking.status === 'CANCELLED' ? 'Cancelled' :
+                                                             booking.status === 'PAID' ? 'Paid' : booking.status}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center gap-2">
-                                                            {booking.status === 'IN_PROGRESS' && (
-                                                                <button
-                                                                    onClick={() => handleCompleteService(booking.originalId || booking.id)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap"
-                                                                    title="Mark Service as Completed"
-                                                                >
-                                                                    <FiCheckCircle className="w-3.5 h-3.5" /> Done
-                                                                </button>
-                                                            )}
-                                                            {booking.status === 'COMPLETED' && (() => {
+                                                            {booking.status === 'COMPLETED' ? (() => {
                                                                 const targetId = booking.originalId || booking.id;
                                                                 const isIssued = issuedBookingIds.has(targetId);
                                                                 return (
@@ -463,23 +456,13 @@ export default function BookingsPage() {
                                                                         <FiFileText className="w-3.5 h-3.5" /> {isIssued ? "Update Invoice" : "Generate Invoice"}
                                                                     </Link>
                                                                 );
-                                                            })()}
-                                                            {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+                                                            })() : (
                                                                 <button
-                                                                    onClick={() => handleStartService(booking.originalId || booking.id)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap"
-                                                                    title="Start Service"
+                                                                    disabled
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-400 text-xs font-semibold rounded-lg shadow-sm border border-slate-200 opacity-60 cursor-not-allowed whitespace-nowrap pointer-events-none"
+                                                                    title={booking.status === 'PAID' ? 'Invoice already generated and paid' : 'Service status must be Completed to generate invoice'}
                                                                 >
-                                                                    <FiClock className="w-3.5 h-3.5" /> Start
-                                                                </button>
-                                                            )}
-                                                            {booking.isManagerAdded && (
-                                                                <button
-                                                                    onClick={() => openEditModal(booking)}
-                                                                    className="p-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-md transition-colors inline-flex items-center justify-center shadow-sm"
-                                                                    title="Edit Booking Details"
-                                                                >
-                                                                    <FiEdit2 className="w-3.5 h-3.5" />
+                                                                    <FiFileText className="w-3.5 h-3.5" /> {booking.status === 'PAID' ? 'Invoice Paid' : 'Generate Invoice'}
                                                                 </button>
                                                             )}
                                                         </div>

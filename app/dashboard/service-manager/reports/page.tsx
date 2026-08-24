@@ -52,7 +52,7 @@ export default function ServiceReportsPage() {
 }
 
 function ServiceReportsContent() {
-    const { centersData, bookingsData, customersData } = useDashboardData();
+    const { centersData, bookingsData, customersData, refreshBookings, refreshInvoices } = useDashboardData();
     const searchParams = useSearchParams();
     const [view, setView] = useState<"list" | "create-report" | "generate-invoice">("list");
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
@@ -472,7 +472,7 @@ function ServiceReportsContent() {
             tax: Number(taxAmount.toFixed(2)),
             discount: Number(safeDiscount.toFixed(2)),
             total: Number(balanceDue.toFixed(2)),
-            status: "PAID"
+            status: "ISSUED"
         };
 
         try {
@@ -499,8 +499,10 @@ function ServiceReportsContent() {
             const savedData = await res.json();
             const meta = getBookingMeta(bookingDetails);
 
-            showSnackbar("Invoice successfully generated and saved!", "success");
+            showSnackbar("Invoice successfully generated and issued!", "success");
             fetchRecentInvoices();
+            if (refreshInvoices) await refreshInvoices();
+            if (refreshBookings) await refreshBookings();
             setSavedInvoiceModal({
                 open: true,
                 invoiceId: savedData.invoiceId || previewInvoiceNo,
@@ -513,6 +515,64 @@ function ServiceReportsContent() {
             showSnackbar("Failed to generate invoice. Please try again.", "error");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleMarkAsPaid = async (inv: any) => {
+        const targetId = inv.invoiceId || inv.id;
+        if (!targetId) return;
+        try {
+            const token = localStorage.getItem("token");
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            };
+
+            // 1. Try dedicated endpoint
+            let res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/invoices/${targetId}/status?status=PAID`, {
+                method: "PUT",
+                headers
+            });
+
+            // 2. Fallback to standard PUT /api/invoices/{targetId} if dedicated endpoint not reloaded
+            if (!res.ok) {
+                const updatedPayload = {
+                    companyCode: inv.companyCode || managerCompanyCode || "FIX001",
+                    centerId: inv.centerId || managerCenterId,
+                    bookingId: inv.bookingId,
+                    issuedToCustomerId: inv.issuedToCustomerId,
+                    subtotal: inv.subtotal,
+                    tax: inv.tax,
+                    discount: inv.discount,
+                    total: inv.total,
+                    status: "PAID"
+                };
+                res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/invoices/${targetId}`, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify(updatedPayload)
+                });
+            }
+
+            // 3. Update associated booking status to PAID
+            if (inv.bookingId) {
+                await fetch(`${APP_CONFIG.API_BASE_URL}/api/bookings/${inv.bookingId}/status?status=PAID`, {
+                    method: "PUT",
+                    headers
+                }).catch((err) => console.warn("Booking status update failed", err));
+            }
+
+            if (res.ok) {
+                showSnackbar("Invoice marked as PAID successfully!", "success");
+                fetchRecentInvoices();
+                if (refreshInvoices) await refreshInvoices();
+                if (refreshBookings) await refreshBookings();
+            } else {
+                showSnackbar("Failed to mark invoice as paid.", "error");
+            }
+        } catch (error) {
+            console.error("Error marking invoice as paid:", error);
+            showSnackbar("Failed to mark invoice as paid.", "error");
         }
     };
     
@@ -625,29 +685,56 @@ function ServiceReportsContent() {
                                                             </span>
                                                         </td>
                                                         <td className="py-3.5 px-4">
-                                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide ${
-                                                                inv.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' :
-                                                                inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-                                                                'bg-slate-100 text-slate-700'
-                                                            }`}>
-                                                                {inv.status}
-                                                            </span>
+                                                            {String(inv.status).toUpperCase() === 'PAID' ? (
+                                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 inline-flex items-center gap-1">
+                                                                    <FiCheckCircle className="w-3 h-3 text-emerald-600" /> Paid
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 inline-flex items-center gap-1">
+                                                                    <FiClock className="w-3 h-3 text-amber-600" /> Issued
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="py-3.5 px-4 text-right font-bold text-slate-800">
                                                             Rs {inv.total?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                         </td>
                                                         <td className="py-3.5 px-4 text-center">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setInvoiceBookingId(inv.bookingId);
-                                                                    fetchBookingDetails(inv.bookingId);
-                                                                    setView("generate-invoice");
-                                                                }}
-                                                                className="px-2.5 py-1 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-md transition-colors inline-flex items-center justify-center shadow-xs font-semibold text-xs gap-1"
-                                                                title="View & Edit Invoice"
-                                                            >
-                                                                <FiPrinter className="w-3.5 h-3.5" /> View / Edit
-                                                            </button>
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                {String(inv.status).toUpperCase() === 'PAID' ? (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setInvoiceBookingId(inv.bookingId);
+                                                                            fetchBookingDetails(inv.bookingId);
+                                                                            setView("generate-invoice");
+                                                                        }}
+                                                                        className="px-3.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80 rounded-lg font-semibold text-xs transition-all inline-flex items-center gap-1.5 shadow-xs"
+                                                                        title="View & Edit Invoice"
+                                                                    >
+                                                                        <FiPrinter className="w-3.5 h-3.5 text-slate-500" /> View Invoice
+                                                                    </button>
+                                                                ) : (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleMarkAsPaid(inv)}
+                                                                            className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-sm font-semibold text-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                                                                            title="Mark this invoice as PAID"
+                                                                        >
+                                                                            <FiCheck className="w-3.5 h-3.5" /> Mark Paid
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setInvoiceBookingId(inv.bookingId);
+                                                                                fetchBookingDetails(inv.bookingId);
+                                                                                setView("generate-invoice");
+                                                                            }}
+                                                                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                                                                            title="View & Edit Invoice"
+                                                                        >
+                                                                            <FiPrinter className="w-4 h-4" />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}

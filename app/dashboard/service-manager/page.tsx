@@ -149,7 +149,9 @@ export default function ServiceManagerDashboard() {
     }, [bookingsData, managersData]);
 
     const totalIncome = useMemo(() => {
-        return todaysInvoices.reduce((sum, invoice) => sum + (Number(invoice.total) || Number(invoice.amount) || 0), 0);
+        return todaysInvoices
+            .filter((inv: any) => String(inv.status).toUpperCase() === "PAID")
+            .reduce((sum, invoice) => sum + (Number(invoice.total) || Number(invoice.amount) || 0), 0);
     }, [todaysInvoices]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -238,7 +240,7 @@ export default function ServiceManagerDashboard() {
                                     <th className="px-6 py-4 w-1/4">Vehicle</th>
                                     <th className="px-6 py-4 w-1/5">Service</th>
                                     <th className="px-6 py-4 w-1/6">Status</th>
-                                    <th className="px-6 py-4 text-center">Invoice / Action</th>
+                                    <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
