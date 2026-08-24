@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { FiCalendar, FiCheckCircle, FiClock, FiList, FiPlus, FiChevronLeft, FiChevronRight, FiEdit2, FiX } from "react-icons/fi";
-import { createBooking, editExistingBooking } from "@/services/bookingService";
+import Link from "next/link";
+import { FiCalendar, FiCheckCircle, FiClock, FiList, FiPlus, FiChevronLeft, FiChevronRight, FiEdit2, FiX, FiFileText } from "react-icons/fi";
+import { createBooking, editExistingBooking, completeBooking, startService } from "@/services/bookingService";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
@@ -14,12 +15,17 @@ const formatYMD = (date: Date) => {
 };
 
 export default function BookingsPage() {
-    const { bookingsData, isLoading, refreshBookings, managersData } = useDashboardData();
+    const { bookingsData, isLoading, refreshBookings, managersData, centersData, customersData, invoicesData } = useDashboardData();
     const [view, setView] = useState<"list" | "new-booking">("list");
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
+
+    const issuedBookingIds = useMemo(() => {
+        if (!invoicesData || invoicesData.length === 0) return new Set<string>();
+        return new Set<string>(invoicesData.map((inv: any) => inv.bookingId));
+    }, [invoicesData]);
 
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
@@ -107,15 +113,15 @@ export default function BookingsPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            // Find centerId from context or use fallback
-            const manager = managersData?.[0] || {};
-            const centerId = manager.managedCenterId || "00000000-0000-0000-0000-000000000001";
+            // Find centerId and customerId dynamically from context
+            const currentCenter = centersData?.[0];
+            const centerId = currentCenter?.centerId || currentCenter?.id || managersData?.[0]?.managedCenterId;
+            const currentCustomer = customersData?.[0];
+            const customerId = currentCustomer?.userId || currentCustomer?.id || managersData?.[0]?.userId;
             
             const newBookingRequest = {
                 centerId: centerId,
-                customerId: "00000000-0000-0000-0000-000000000001", // Fallback Mock Charlie ID
-                packageId: "00000000-0000-0000-0000-000000000002", // Fallback Mock ID
-                vehicleId: "00000000-0000-0000-0000-000000000003", // Fallback Mock ID
+                customerId: customerId,
                 bookingDate: formData.date,
                 bookingTime: formData.time,
                 specialRequest: `Customer: ${formData.customer}, Vehicle: ${formData.vehicle}, Vehicle Number: ${formData.vehicleNumber}, Service: ${formData.service}`,
@@ -196,6 +202,30 @@ export default function BookingsPage() {
         return selectedDate.getDate() === day &&
                selectedDate.getMonth() === currentMonth.getMonth() &&
                selectedDate.getFullYear() === currentMonth.getFullYear();
+    };
+
+    const handleStartService = async (bookingId: string) => {
+        try {
+            await startService(bookingId);
+            showSnackbar("Service started successfully!", "success");
+            if (refreshBookings) await refreshBookings();
+            window.dispatchEvent(new Event("bookingsUpdated"));
+        } catch (error) {
+            console.error("Failed to start service:", error);
+            showSnackbar("Failed to start service.", "error");
+        }
+    };
+
+    const handleCompleteService = async (bookingId: string) => {
+        try {
+            await completeBooking(bookingId);
+            showSnackbar("Service marked as completed! You can now generate an invoice.", "success");
+            if (refreshBookings) await refreshBookings();
+            window.dispatchEvent(new Event("bookingsUpdated"));
+        } catch (error) {
+            console.error("Failed to complete service:", error);
+            showSnackbar("Failed to complete service.", "error");
+        }
     };
 
     const isToday = (day: number) => {
@@ -353,13 +383,14 @@ export default function BookingsPage() {
                                             <th className="px-6 py-4 w-1/4">Vehicle</th>
                                             <th className="px-6 py-4 w-1/5">Service</th>
                                             <th className="px-6 py-4 w-1/6">Time</th>
+                                            <th className="px-6 py-4 w-1/6">Status</th>
                                             <th className="px-6 py-4 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {isLoading ? (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                                                <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                                                     Loading bookings from database...
                                                 </td>
                                             </tr>
@@ -389,28 +420,75 @@ export default function BookingsPage() {
                                                     <td className="px-6 py-4 font-medium text-slate-900">{booking.customer}</td>
                                                     <td className="px-6 py-4">
                                                         <div>{booking.vehicle}</div>
-                                                        <div className="text-xs text-slate-400">{booking.variety}</div>
+                                                        {booking.variety && <div className="text-xs text-slate-400">{booking.variety}</div>}
                                                     </td>
                                                     <td className="px-6 py-4">{booking.category}</td>
                                                     <td className="px-6 py-4 text-slate-600 font-mono text-xs">{booking.time}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                            booking.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                                                            booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                                            booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                                                            booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                                            'bg-slate-100 text-slate-800'
+                                                        }`}>
+                                                            {booking.status === 'IN_PROGRESS' ? 'In Progress' :
+                                                             booking.status === 'COMPLETED' ? 'Completed' :
+                                                             booking.status === 'CONFIRMED' ? 'Confirmed' :
+                                                             booking.status === 'CANCELLED' ? 'Cancelled' : booking.status}
+                                                        </span>
+                                                    </td>
                                                     <td className="px-6 py-4 text-center">
-                                                        {booking.isManagerAdded ? (
-                                                            <button
-                                                                onClick={() => openEditModal(booking)}
-                                                                className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors inline-flex items-center justify-center shadow-sm"
-                                                                title="Edit Booking"
-                                                            >
-                                                                <FiEdit2 size={16} />
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-slate-300 text-xs">-</span>
-                                                        )}
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            {booking.status === 'IN_PROGRESS' && (
+                                                                <button
+                                                                    onClick={() => handleCompleteService(booking.originalId || booking.id)}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap"
+                                                                    title="Mark Service as Completed"
+                                                                >
+                                                                    <FiCheckCircle className="w-3.5 h-3.5" /> Done
+                                                                </button>
+                                                            )}
+                                                            {booking.status === 'COMPLETED' && (() => {
+                                                                const targetId = booking.originalId || booking.id;
+                                                                const isIssued = issuedBookingIds.has(targetId);
+                                                                return (
+                                                                    <Link
+                                                                        href={`/dashboard/service-manager/reports?action=generate-invoice&bookingId=${targetId}`}
+                                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap ${
+                                                                            isIssued ? "bg-amber-600 hover:bg-amber-700" : "bg-orange-600 hover:bg-orange-700"
+                                                                        }`}
+                                                                        title={isIssued ? "Update existing invoice for this booking" : "Generate Invoice for this booking"}
+                                                                    >
+                                                                        <FiFileText className="w-3.5 h-3.5" /> {isIssued ? "Update Invoice" : "Generate Invoice"}
+                                                                    </Link>
+                                                                );
+                                                            })()}
+                                                            {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+                                                                <button
+                                                                    onClick={() => handleStartService(booking.originalId || booking.id)}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap"
+                                                                    title="Start Service"
+                                                                >
+                                                                    <FiClock className="w-3.5 h-3.5" /> Start
+                                                                </button>
+                                                            )}
+                                                            {booking.isManagerAdded && (
+                                                                <button
+                                                                    onClick={() => openEditModal(booking)}
+                                                                    className="p-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-md transition-colors inline-flex items-center justify-center shadow-sm"
+                                                                    title="Edit Booking Details"
+                                                                >
+                                                                    <FiEdit2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                                                <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                                                     No bookings found for {dateTitle}.
                                                 </td>
                                             </tr>
