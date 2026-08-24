@@ -300,9 +300,8 @@ export default function ServiceManagerDashboard() {
                                 <tr>
                                     <th className="px-6 py-4 w-1/4">Customer</th>
                                     <th className="px-6 py-4 w-1/4">Vehicle</th>
-                                    <th className="px-6 py-4 w-1/5">Service</th>
+                                    <th className="px-6 py-4 w-1/3">Service</th>
                                     <th className="px-6 py-4 w-1/6">Time</th>
-                                    <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -317,20 +316,11 @@ export default function ServiceManagerDashboard() {
                                         </td>
                                         <td className="px-6 py-4">{details.service}</td>
                                         <td className="px-6 py-4 text-slate-600 font-mono text-xs font-medium">{details.timeRange}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => activateBooking(booking)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
-                                                title="Start servicing this vehicle"
-                                            >
-                                                <FiPlay className="w-3 h-3" /> Start Service
-                                            </button>
-                                        </td>
                                     </tr>
                                 )})}
                                 {upcomingBookings.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                                        <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
                                             No upcoming bookings.
                                         </td>
                                     </tr>
