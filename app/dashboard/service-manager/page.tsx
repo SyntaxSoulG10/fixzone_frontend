@@ -266,6 +266,24 @@ export default function ServiceManagerDashboard() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2">
+                                                {booking.status === 'IN_PROGRESS' && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.bookingId, 'COMPLETED')}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                                                        title="Mark service as completed"
+                                                    >
+                                                        <FiCheck className="w-3.5 h-3.5" /> Done
+                                                    </button>
+                                                )}
+                                                {booking.status === 'COMPLETED' && (
+                                                    <Link
+                                                        href={`/dashboard/service-manager/reports?action=generate-invoice&bookingId=${booking.bookingId}`}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                                                        title="Generate invoice for this booking"
+                                                    >
+                                                        <FiFileText className="w-3.5 h-3.5" /> Generate Invoice
+                                                    </Link>
+                                                )}
                                                 <button
                                                     onClick={() => hideFromActiveList(booking.bookingId)}
                                                     className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"

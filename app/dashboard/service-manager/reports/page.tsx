@@ -545,21 +545,37 @@ function ServiceReportsContent() {
                 return (
                 <div className="space-y-8">
                     {/* Top Action Cards */}
-                    <div className="grid grid-cols-1 gap-6">
-                        {/* Report Action */}
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg flex-shrink-0">
-                                    <FiList className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl text-slate-900 font-bold mb-1">Daily Operations Report</h2>
-                                    <p className="text-sm text-slate-500">Submit the end-of-day summary, including revenue and completed services.</p>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Invoice Action */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col items-start space-y-4 hover:shadow-md transition-shadow">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                                <FiFileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl text-slate-900 font-bold mb-1">Customer Invoices</h2>
+                                <p className="text-sm text-slate-500">Generate a new professional invoice for a completed vehicle service.</p>
                             </div>
                             <Button
                                 variant="primary"
-                                className="w-full md:w-auto flex justify-center items-center gap-2 !bg-orange-600 !hover:bg-orange-700 !text-white border-0 px-6 py-2.5"
+                                className="w-full flex justify-center items-center gap-2 mt-auto !bg-orange-600 !hover:bg-orange-700 !text-white border-0"
+                                onClick={() => setView("generate-invoice")}
+                            >
+                                <FiPlus /> Generate Invoice
+                            </Button>
+                        </div>
+
+                        {/* Report Action */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col items-start space-y-4 hover:shadow-md transition-shadow">
+                            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                                <FiList className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl text-slate-900 font-bold mb-1">Daily Operations Report</h2>
+                                <p className="text-sm text-slate-500">Submit the end-of-day summary, including revenue and completed services.</p>
+                            </div>
+                            <Button
+                                variant="primary"
+                                className="w-full flex justify-center items-center gap-2 mt-auto !bg-orange-600 !hover:bg-orange-700 !text-white border-0"
                                 onClick={() => setView("create-report")}
                             >
                                 <FiPlus /> Create Today Report
