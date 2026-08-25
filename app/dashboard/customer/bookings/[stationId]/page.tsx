@@ -130,6 +130,14 @@ export default function StationDetailPage() {
   const [rawApiVehicles, setRawApiVehicles] = useState<BackendVehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredPackages = useMemo(() => {
+    return packages.filter(pkg => 
+      pkg.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      pkg.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [packages, searchQuery]);
 
   // --- Auth Check ---
   useEffect(() => {
@@ -369,98 +377,128 @@ export default function StationDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col lg:flex-row gap-12">
-        
-        {/* Left Column: Details & Selections */}
-        <div className="flex-1 space-y-12">
-          
-          {/* Header */}
-          <BookingHeader station={station} />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      {/* Top: Header */}
+      <div className="space-y-6">
+        <BookingHeader station={station} />
+        {!station?.paymentReady && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+            {station?.paymentStatusMessage || "This branch is not accepting online payments yet."}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 font-medium">
+            {error}
+          </div>
+        )}
+      </div>
 
-          {/* Package Selection */}
-          {!station?.paymentReady && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
-              {station?.paymentStatusMessage || "This branch is not accepting online payments yet."}
+      {/* Step 1: Packages */}
+      <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">1. Select Package</h2>
+            <span className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              {filteredPackages.length} Packages
+            </span>
+          </div>
+          <div className="relative w-full md:w-[450px]">
+            <input 
+              type="text"
+              placeholder="Search packages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-5 py-3.5 pl-12 rounded-2xl border-2 border-slate-100 bg-white focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-50 focus:border-orange-500 shadow-sm text-sm font-medium transition-all text-slate-700 placeholder:text-slate-400"
+            />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        {/* Changed back to 3 columns per row as requested */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPackages.length > 0 ? (
+            filteredPackages.map((pkg) => (
+              <PackageCard 
+                key={pkg.id} 
+                pkg={pkg} 
+                isSelected={selectedPackage?.id === pkg.id}
+                onSelect={station?.paymentReady ? setSelectedPackage : () => undefined}
+              />
+            ))
+          ) : (
+            <div className="col-span-full py-8 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-100">
+              No packages match your search.
             </div>
           )}
+        </div>
+      </section>
 
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-slate-800">Available Packages</h2>
-              <span className="text-sm font-bold text-slate-400">({PACKAGES.length} Packages)</span>
-            </div>
-            <div className="space-y-6">
-              {packages.map((pkg) => (
-                <PackageCard 
-                  key={pkg.id} 
-                  pkg={pkg} 
-                  isSelected={selectedPackage?.id === pkg.id}
-                  onSelect={station?.paymentReady ? setSelectedPackage : () => undefined}
-                />
-              ))}
-            </div>
+      {/* Step 2: Date */}
+      {selectedPackage && (
+        <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm h-fit animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-8">2. Select Date</h2>
+          <DatePicker 
+            selectedDate={selectedDate} 
+            onDateSelect={(date) => {
+              setSelectedDate(date);
+              setSelectedTime(null);
+            }} 
+          />
+        </section>
+      )}
+
+      {/* Step 3: Time Slot */}
+      {selectedPackage && selectedDate && (
+        <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">3. Select Time Slot</h2>
+          <TimeSlotSelector 
+            slots={availableSlots.length > 0 ? availableSlots : TIME_SLOTS} 
+            selectedTime={selectedTime} 
+            onTimeSelect={setSelectedTime} 
+          />
+        </section>
+      )}
+
+      {/* Step 4 & 5: Vehicle & Summary */}
+      {selectedPackage && selectedDate && selectedTime && (
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">4. Select Vehicle</h2>
+            {vehiclesLoading ? (
+              <div className="py-4 text-center text-slate-400 italic">Loading your vehicles...</div>
+            ) : userVehicles.length > 0 ? (
+              <VehicleSelector 
+                vehicles={userVehicles} 
+                selectedVehicleId={selectedVehicleId}
+                onVehicleSelect={handleVehicleSelect}
+              />
+            ) : (
+              <div className="p-6 bg-orange-50 border border-orange-100 rounded-2xl text-center space-y-3">
+                <p className="text-sm font-medium text-orange-800">You don&apos;t have any vehicles yet.</p>
+                <Link href="/dashboard/customer/profile">
+                  <button className="text-xs font-bold text-orange-600 hover:underline">
+                    + Add a vehicle to your profile
+                  </button>
+                </Link>
+              </div>
+            )}
           </section>
 
-        </div>
-
-        {/* Right Column: Booking Form Container */}
-        <div className="w-full lg:w-[400px] flex-shrink-0">
-          <div className="space-y-10">
-            
-            <div className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-10">
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Book Your Service</h2>
-
-              {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 font-medium">
-                  {error}
-                </div>
-              )}
-              
-              <DatePicker 
-                selectedDate={selectedDate} 
-                onDateSelect={setSelectedDate} 
-              />
-
-              <TimeSlotSelector 
-                slots={availableSlots.length > 0 ? availableSlots : TIME_SLOTS} 
-                selectedTime={selectedTime} 
-                onTimeSelect={setSelectedTime} 
-              />
-
-              {vehiclesLoading ? (
-                <div className="py-4 text-center text-slate-400 italic">Loading your vehicles...</div>
-              ) : userVehicles.length > 0 ? (
-                <VehicleSelector 
-                  vehicles={userVehicles} 
-                  selectedVehicleId={selectedVehicleId}
-                  onVehicleSelect={handleVehicleSelect}
-                />
-              ) : (
-                <div className="p-6 bg-orange-50 border border-orange-100 rounded-2xl text-center space-y-3">
-                  <p className="text-sm font-medium text-orange-800">You don&apos;t have any vehicles yet.</p>
-                  <Link href="/dashboard/customer/profile">
-                    <button className="text-xs font-bold text-orange-600 hover:underline">
-                      + Add a vehicle to your profile
-                    </button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
+          <section className="w-full">
             <BookingSummary 
-              totalPrice={selectedPackage?.price || 0}
+              totalPrice={selectedPackage.price}
               isValid={isValid}
               specialRequest={specialRequest}
               onSpecialRequestChange={setSpecialRequest}
               onProceed={handleProceed}
               isLoading={initLoading}
             />
-
-          </div>
+          </section>
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

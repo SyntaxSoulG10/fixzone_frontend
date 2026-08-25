@@ -23,21 +23,20 @@ interface PackageCardProps {
 export default function PackageCard({ pkg, isSelected, onSelect }: PackageCardProps) {
   return (
     <div 
-      className={`relative flex flex-col md:flex-row bg-white rounded-3xl overflow-hidden border-2 transition-all duration-300 group cursor-pointer ${
-        isSelected ? 'border-orange-500 shadow-md ring-4 ring-orange-50' : 'border-slate-100 hover:border-orange-200'
+      className={`relative flex flex-col bg-white rounded-2xl overflow-hidden border transition-all duration-300 group cursor-pointer h-full ${
+        isSelected ? 'border-orange-500 shadow-xl ring-2 ring-orange-500 ring-offset-2' : 'border-slate-200 shadow-sm hover:border-orange-300 hover:shadow-md'
       }`}
       onClick={() => onSelect(pkg)}
     >
-      {/* Selection Overlay for Mobile UI feel */}
+      {/* Selection Overlay */}
       {isSelected && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-10 bg-white rounded-full shadow-sm p-0.5">
           <FiCheckCircle className="w-6 h-6 text-orange-500 fill-white" />
         </div>
       )}
 
-      {/* Package Image Source */}
-      <div className="md:w-1/3 h-48 md:h-auto relative overflow-hidden">
-        {/* Use standard img tag to support dynamic/untrusted protocols like file:// */}
+      {/* Banner Image */}
+      <div className="w-full h-44 relative overflow-hidden flex-shrink-0 bg-slate-100">
         <img
           src={pkg.image.startsWith('file://') ? 'https://images.unsplash.com/photo-15057404209ce-096b99092408?auto=format&fit=crop&q=80&w=400' : pkg.image}
           alt={pkg.name}
@@ -47,49 +46,48 @@ export default function PackageCard({ pkg, isSelected, onSelect }: PackageCardPr
           }}
         />
         {pkg.isRecommended && (
-          <div className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">
+          <div className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-lg">
             Recommended
           </div>
         )}
       </div>
 
-      {/* Package Details */}
-      <div className="flex-1 p-6 md:p-8 flex flex-col">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-xl font-bold text-slate-800 group-hover:text-orange-600 transition-colors">
+      {/* Content */}
+      <div className="flex-1 flex flex-col p-6">
+        <div className="flex justify-between items-start gap-4 mb-5">
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-slate-800 group-hover:text-orange-600 transition-colors leading-tight">
               {pkg.name}
             </h3>
-            <div className="flex items-center gap-1.5 text-slate-400 text-xs mt-1">
-              <FiClock className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-slate-500 text-sm mt-2 font-medium">
+              <FiClock className="w-4 h-4" />
               <span>Duration ~ {pkg.duration}</span>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-xs font-bold text-orange-500 uppercase">LKR</div>
-            <div className="text-2xl font-black text-slate-900 leading-none">
+          <div className="text-right flex-shrink-0">
+            <div className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-0.5">LKR</div>
+            <div className="text-2xl font-black text-slate-900 leading-none tracking-tight">
               {pkg.price.toLocaleString()}
             </div>
-            <div className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Estimated</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-4 mt-6">
+        <div className="space-y-3 mb-8">
           {pkg.features.map((feature, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-green-50 flex items-center justify-center">
-                <FiCheckCircle className="w-3.5 h-3.5 text-green-500" />
+            <div key={idx} className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <FiCheckCircle className="w-4 h-4 text-green-500" />
               </div>
-              <span className="text-sm text-slate-600 font-medium">{feature}</span>
+              <span className="text-sm text-slate-600 font-medium leading-snug">{feature}</span>
             </div>
           ))}
         </div>
 
         <button 
-          className={`mt-8 w-full py-3.5 rounded-xl font-bold transition-all duration-300 ${
+          className={`mt-auto w-full py-3.5 rounded-xl font-bold text-[15px] transition-all duration-300 ${
             isSelected 
               ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' 
-              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-orange-500 hover:text-orange-500'
+              : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600'
           }`}
         >
           {isSelected ? 'Package Selected' : 'Select Package'}
