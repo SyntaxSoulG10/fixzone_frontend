@@ -9,6 +9,7 @@ export interface Package {
   description: string;
   price: number;
   duration: string;
+  estimatedDurationMins?: number;
   features: string[];
   isRecommended?: boolean;
   image: string;

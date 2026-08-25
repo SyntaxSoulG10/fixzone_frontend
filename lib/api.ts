@@ -352,10 +352,13 @@ export async function downloadInvoice(bookingId: string): Promise<void> {
   window.open(`${BASE_URL}/api/invoices/booking/${bookingId}`, "_blank");
 }
 
-export async function getAvailableSlotsAPI(centerId: string, date: string): Promise<string[]> {
+export async function getAvailableSlotsAPI(centerId: string, date: string, packageId?: string): Promise<string[]> {
   const url = new URL(`${BASE_URL}/api/bookings/available-slots`);
   url.searchParams.append("centerId", centerId);
   url.searchParams.append("date", date);
+  if (packageId) {
+    url.searchParams.append("packageId", packageId);
+  }
 
   const res = await fetch(url.toString(), {
     headers: {

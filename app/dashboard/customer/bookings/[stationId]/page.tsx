@@ -23,7 +23,8 @@ const PACKAGES: Package[] = [
     name: "Full Service",
     description: "Premium comprehensive car care package",
     price: 15000,
-    duration: "4.5 hrs",
+    duration: "2.5 hrs",
+    estimatedDurationMins: 150,
     image: "/images/bookings/package-gold-car.png",
     isRecommended: true,
     features: [
@@ -40,7 +41,8 @@ const PACKAGES: Package[] = [
     name: "Gold Package (Bike)",
     description: "Essential care for your motorcycle",
     price: 8000,
-    duration: "4 hrs",
+    duration: "1.5 hrs",
+    estimatedDurationMins: 90,
     image: "/images/bookings/package-gold-bike.png",
     features: [
       "Engine Oil & Filter Change",
@@ -52,12 +54,12 @@ const PACKAGES: Package[] = [
 ];
 
 const TIME_SLOTS: TimeSlot[] = [
-  { time: "08:00-09:00", status: "available" },
-  { time: "10:00-11:00", status: "available" },
-  { time: "12:00-13:00", status: "available" },
-  { time: "14:00-15:00", status: "available" },
-  { time: "16:00-17:00", status: "busy" },
-  { time: "18:00-19:00", status: "available" },
+  { time: "08:00 AM", status: "available" },
+  { time: "09:30 AM", status: "available" },
+  { time: "10:30 AM", status: "busy" },
+  { time: "01:00 PM", status: "available" },
+  { time: "02:45 PM", status: "available" },
+  { time: "04:30 PM", status: "available" },
 ];
 
 // Vehicles will be fetched from API
@@ -130,6 +132,7 @@ export default function StationDetailPage() {
   const [rawApiVehicles, setRawApiVehicles] = useState<BackendVehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredPackages = useMemo(() => {
@@ -206,6 +209,7 @@ export default function StationDetailPage() {
               description: pkg.description ?? "Standard service package",
               price: pkg.basePrice ?? 0,
               duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
+              estimatedDurationMins: pkg.estimatedDurationMins || 60,
               image: "/images/bookings/package-gold-car.png",
               features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
             }));
@@ -251,22 +255,28 @@ export default function StationDetailPage() {
     fetchUserData();
   }, [params.stationId]);
 
-  // --- Load Slots ---
+  // --- Load Slots dynamically for selected date and package ---
   useEffect(() => {
     const fetchSlots = async () => {
       if (selectedDate && station?.id) {
         try {
+          setSlotsLoading(true);
+          setSelectedTime(null); // Reset previously picked time slot on date change
           const formattedDate = format(selectedDate, "yyyy-MM-dd");
-          const slots = await getAvailableSlotsAPI(station.id, formattedDate);
+          const slots = await getAvailableSlotsAPI(station.id, formattedDate, selectedPackage?.id);
           setAvailableSlots(slots.map(s => ({ time: s, status: "available" })));
         } catch (err) {
-          console.error("Failed to load slots:", err);
-          setAvailableSlots(TIME_SLOTS); // Fallback
+          console.error("Failed to load slots for date:", err);
+          setAvailableSlots([]);
+        } finally {
+          setSlotsLoading(false);
         }
+      } else {
+        setAvailableSlots([]);
       }
     };
     fetchSlots();
-  }, [selectedDate, station?.id]);
+  }, [selectedDate, station?.id, selectedPackage?.id]);
 
   // --- Re-fetch packages when vehicle type changes ---
   useEffect(() => {
@@ -281,6 +291,7 @@ export default function StationDetailPage() {
             description: pkg.description ?? "Standard service package",
             price: pkg.basePrice ?? 0,
             duration: pkg.estimatedDurationMins ? `${pkg.estimatedDurationMins / 60} hrs` : "Varies",
+            estimatedDurationMins: pkg.estimatedDurationMins || 60,
             image: "/images/bookings/package-gold-car.png",
             features: pkg.type ? pkg.type.split(",").map((t: string) => t.trim()) : ["Standard service features"],
           }));
@@ -455,9 +466,12 @@ export default function StationDetailPage() {
         <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight">3. Select Time Slot</h2>
           <TimeSlotSelector 
-            slots={availableSlots.length > 0 ? availableSlots : TIME_SLOTS} 
+            slots={availableSlots} 
             selectedTime={selectedTime} 
             onTimeSelect={setSelectedTime} 
+            durationMins={selectedPackage?.estimatedDurationMins || 60}
+            isLoading={slotsLoading}
+            selectedDate={selectedDate}
           />
         </section>
       )}
