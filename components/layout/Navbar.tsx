@@ -113,6 +113,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         // Robust mapping for dashboard sub-paths
         const roleToPath: Record<string, string> = {
             "ROLE_COMPANY_OWNER": "company-owner",
+            "ROLE_OWNER": "company-owner",
             "OWNER": "company-owner",
             "ROLE_SERVICE_MANAGER": "service-manager",
             "ROLE_SUPER_ADMIN": "super-admin",
