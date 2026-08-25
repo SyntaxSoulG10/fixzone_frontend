@@ -44,14 +44,20 @@ export default function OverviewTab({ data }: { data: any }) {
     }, []);
 
     // Transform backend revenueOverview to chart format if data exists
-    const chartData = data?.revenueOverview?.map((item: any) => ({
-        name: item.name,
-        sales: item.revenue
-    })) || [
-        { name: 'Apr', sales: 0 },
-        { name: 'May', sales: 0 },
-        { name: 'Jun', sales: 0 },
-    ];
+    const chartData = (data?.revenueOverview && data.revenueOverview.length > 0)
+        ? data.revenueOverview.map((item: any) => ({
+            name: item.name,
+            sales: Number(item.revenue || 0)
+        }))
+        : Array.from({ length: 6 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - (5 - i));
+            return {
+                name: d.toLocaleString('en-US', { month: 'short' }),
+                sales: 0
+            };
+        });
 
     return (
         <Grid container spacing={3}>
@@ -86,6 +92,7 @@ export default function OverviewTab({ data }: { data: any }) {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
+                                            interval={0}
                                         />
                                         <YAxis
                                             fontSize={12}
