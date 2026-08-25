@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { FiSun, FiMoon, FiCheck, FiCalendar } from "react-icons/fi";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 
 export interface TimeSlot {
   time: string;
@@ -18,33 +19,65 @@ interface TimeSlotSelectorProps {
 }
 
 /**
- * Categorizes a time slot into Morning (before 12:00 PM) or Evening (1:00 PM onwards).
+ * Parses time strings like "08:00 AM", "8:00 AM", "01:00 PM", "13:00" into 24-hour hour & minute.
  */
-function isMorningSlot(timeStr: string): boolean {
+function parseTimeString(timeStr: string): { hour: number; minute: number } | null {
   const clean = timeStr.trim();
   const match = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-  if (!match) {
-    return timeStr.includes("AM") || timeStr.startsWith("08") || timeStr.startsWith("09") || timeStr.startsWith("10") || timeStr.startsWith("11");
-  }
+  if (!match) return null;
 
   let hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
   const ampm = match[3]?.toUpperCase();
 
   if (ampm === "PM" && hour < 12) hour += 12;
   if (ampm === "AM" && hour === 12) hour = 0;
 
-  return hour < 12;
+  return { hour, minute };
+}
+
+/**
+ * Categorizes a time slot into Morning (before 12:00 PM) or Evening (1:00 PM onwards).
+ */
+function isMorningSlot(timeStr: string): boolean {
+  const parsed = parseTimeString(timeStr);
+  if (!parsed) {
+    return timeStr.includes("AM") || timeStr.startsWith("08") || timeStr.startsWith("09") || timeStr.startsWith("10") || timeStr.startsWith("11");
+  }
+  return parsed.hour < 12;
 }
 
 export default function TimeSlotSelector({
   slots,
   selectedTime,
   onTimeSelect,
+  durationMins = 60,
   isLoading = false,
   selectedDate,
 }: TimeSlotSelectorProps) {
-  const morningSlots = slots.filter((s) => isMorningSlot(s.time));
-  const eveningSlots = slots.filter((s) => !isMorningSlot(s.time));
+  const isToday = selectedDate ? isSameDay(selectedDate, new Date()) : false;
+  const now = new Date();
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+
+  // If selecting today, filter out any past slots so they vanish automatically
+  const activeSlots = useMemo(() => {
+    if (!isToday) {
+      return slots;
+    }
+    return slots.filter((slot) => {
+      const parsed = parseTimeString(slot.time);
+      if (!parsed) return true;
+      const slotMins = parsed.hour * 60 + parsed.minute;
+      return slotMins > currentMins;
+    });
+  }, [slots, isToday, currentMins]);
+
+  const morningSlots = activeSlots.filter((s) => isMorningSlot(s.time));
+  const eveningSlots = activeSlots.filter((s) => !isMorningSlot(s.time));
+
+  // 6:00 PM (18:00) minus package duration
+  const lastPossibleSlotMins = 18 * 60 - durationMins;
+  const isPastTodayCutoff = isToday && currentMins >= lastPossibleSlotMins;
 
   if (isLoading) {
     return (
@@ -66,17 +99,21 @@ export default function TimeSlotSelector({
     );
   }
 
-  if (slots.length === 0) {
+  if (activeSlots.length === 0) {
     return (
       <div className="p-8 text-center bg-slate-50 rounded-3xl border border-slate-100 space-y-3">
         <div className="w-12 h-12 mx-auto rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
           <FiCalendar className="w-6 h-6" />
         </div>
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-slate-800">No Time Slots Available</h4>
+          <h4 className="text-sm font-bold text-slate-800">
+            {isPastTodayCutoff ? "Booking Closed for Today" : "All Slots Booked"}
+          </h4>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             {selectedDate
-              ? `All slots on ${format(selectedDate, "EEE, MMM d")} are fully booked or closed. Please select another date.`
+              ? isPastTodayCutoff
+                ? "The last service booking time for today has passed. Please select a another date to book your service."
+                : `All booking time slots on ${format(selectedDate, "EEE, MMM d")} are Booked. Please select another date to book your service.`
               : "Please select a date to check available slots."}
           </p>
         </div>
@@ -144,7 +181,9 @@ export default function TimeSlotSelector({
           </div>
         ) : (
           <div className="p-4 text-center bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-500">
-            No morning slots available for this date.
+            {isToday && currentMins >= 12 * 60
+              ? "Morning session has concluded for today."
+              : "No morning slots available for this date."}
           </div>
         )}
       </div>
@@ -207,7 +246,9 @@ export default function TimeSlotSelector({
           </div>
         ) : (
           <div className="p-4 text-center bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-500">
-            No evening slots available for this date.
+            {isPastTodayCutoff
+              ? "Evening session booking has closed for today."
+              : "No evening slots available for this date."}
           </div>
         )}
       </div>
