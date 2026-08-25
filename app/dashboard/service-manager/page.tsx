@@ -6,8 +6,11 @@ import axios from "@/lib/axios";
 import { FiTool, FiClock, FiCalendar, FiCheckCircle, FiPlus, FiMinus, FiLoader, FiFileText, FiCheck, FiPlay } from "react-icons/fi";
 import { FaUserCog, FaMoneyBillWave } from "react-icons/fa";
 import { useDashboardData } from "../../../context/DashboardDataContext";
+import * as bookingService from "../../../services/bookingService";
 import { APP_CONFIG } from "../../../utils/config";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
+
+const normalizeStatus = (s: any) => String(s || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
 
 export default function ServiceManagerDashboard() {
     const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData, refreshAll } = useDashboardData();
@@ -19,16 +22,12 @@ export default function ServiceManagerDashboard() {
     useEffect(() => {
         refreshAll();
     }, [refreshAll]);
+
     const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
         setSnackbar({ open: true, message, severity });
     };
 
-    const [hiddenFromActive, setHiddenFromActive] = useState<string[]>([]);
-
     useEffect(() => {
-        const saved = localStorage.getItem('hiddenActiveBookings');
-        if (saved) setHiddenFromActive(JSON.parse(saved));
-
         const handleSync = () => {
             if (refreshBookings) refreshBookings();
             if (refreshInvoices) refreshInvoices();
@@ -42,11 +41,42 @@ export default function ServiceManagerDashboard() {
         };
     }, [refreshBookings, refreshInvoices]);
 
-    const hideFromActiveList = (id: string) => {
-        const updated = [...hiddenFromActive, id];
-        setHiddenFromActive(updated);
-        localStorage.setItem('hiddenActiveBookings', JSON.stringify(updated));
-        setActiveBookings(prev => prev.filter(b => b.bookingId !== id));
+    const handleRevertToUpcoming = async (id: string) => {
+        // Optimistic UI update: immediately move from active to upcoming
+        const targetBooking = activeBookings.find(b => b.bookingId === id);
+        if (targetBooking) {
+            const revertedBooking = { ...targetBooking, status: "CONFIRMED" };
+            setActiveBookings(prev => prev.filter(b => b.bookingId !== id));
+            setUpcomingBookings(prev => {
+                const exists = prev.some(b => b.bookingId === id);
+                return exists ? prev : [revertedBooking, ...prev];
+            });
+        }
+
+        try {
+            await bookingService.updateBookingStatus(id, "CONFIRMED");
+
+            // Also clean from serviceLanes in localStorage if assigned
+            const savedLanes = localStorage.getItem('serviceLanes');
+            if (savedLanes) {
+                try {
+                    const parsed = JSON.parse(savedLanes);
+                    const updatedLanes = parsed.map((l: any) => 
+                        l.vehicle?.bookingId === id ? { id: l.id, status: "empty" } : l
+                    );
+                    localStorage.setItem('serviceLanes', JSON.stringify(updatedLanes));
+                } catch(e) {}
+            }
+
+            showSnackbar("Service moved back to Upcoming Bookings successfully!", "success");
+            if (refreshBookings) await refreshBookings();
+            window.dispatchEvent(new Event("bookingsUpdated"));
+        } catch (error) {
+            console.error("Failed to move service back to upcoming", error);
+            showSnackbar("Error moving service back to upcoming. Please try again.", "error");
+            // Rollback on error
+            if (refreshBookings) refreshBookings();
+        }
     };
 
     const getBookingDetails = (booking: any) => {
@@ -99,18 +129,25 @@ export default function ServiceManagerDashboard() {
             // Strictly isolate to manager's center if present
             const centerBookings = (bookingsData || []).filter((b: any) => !managerCenterId || b.centerId === managerCenterId);
 
-            const upcoming = centerBookings.filter((b: any) =>
-                (b.status === "PENDING_PAYMENT" || b.status === "CONFIRMED" || b.status === "PENDING") &&
-                b.bookingDate === today
-            );
+            const isDateToday = (dStr: any) => {
+                if (!dStr) return true;
+                return String(dStr).split("T")[0] === today;
+            };
+
+            const upcoming = centerBookings.filter((b: any) => {
+                const s = normalizeStatus(b.status);
+                const isUpcomingStatus = s === "PENDING_PAYMENT" || s === "CONFIRMED" || s === "PENDING";
+                const bDate = b.bookingDate || (b.createdAt ? String(b.createdAt).split("T")[0] : null);
+                return isUpcomingStatus && isDateToday(bDate);
+            });
             
             // Keep all IN_PROGRESS, and today's COMPLETED/CANCELLED in active list
             const active = centerBookings.filter((b: any) => {
-                if (hiddenFromActive.includes(b.bookingId)) return false;
-                if (b.status === "IN_PROGRESS") return true;
+                const s = normalizeStatus(b.status);
+                if (s === "IN_PROGRESS") return true;
                 
                 const bDate = b.bookingDate || (b.createdAt ? String(b.createdAt).split("T")[0] : null) || (b.updatedAt ? String(b.updatedAt).split("T")[0] : null);
-                return (b.status === "COMPLETED" || b.status === "CANCELLED") && (!bDate || bDate === today);
+                return (s === "COMPLETED" || s === "CANCELLED") && isDateToday(bDate);
             });
 
             // Filter invoices issued today for this center
@@ -126,7 +163,7 @@ export default function ServiceManagerDashboard() {
             setActiveBookings(active);
             setTodaysInvoices(centerInvoices);
         }
-    }, [hasDataInitialized, bookingsData, invoicesData, managersData, hiddenFromActive]);
+    }, [hasDataInitialized, bookingsData, invoicesData, managersData]);
 
     const completedCount = useMemo(() => {
         const d = new Date();
@@ -246,6 +283,7 @@ export default function ServiceManagerDashboard() {
                             <tbody className="divide-y divide-slate-100">
                                 {activeBookings.map((booking, idx) => {
                                     const details = getBookingDetails(booking);
+                                    const statusNorm = normalizeStatus(booking.status);
                                     return (
                                     <tr key={booking.bookingId || `active-booking-${idx}`} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{details.customer}</td>
@@ -256,26 +294,30 @@ export default function ServiceManagerDashboard() {
                                         <td className="px-6 py-4 font-mono text-xs">{details.service}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                booking.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                                                booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                                statusNorm === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                                                statusNorm === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                                statusNorm === 'CANCELLED' ? 'bg-red-100 text-red-800' :
                                                 'bg-slate-100 text-slate-800'
                                             }`}>
-                                                {booking.status === 'IN_PROGRESS' ? 'In Progress' : 
-                                                 booking.status === 'COMPLETED' ? 'Completed' :
-                                                 booking.status === 'CANCELLED' ? 'Cancelled' : booking.status}
+                                                {statusNorm === 'IN_PROGRESS' ? 'In Progress' : 
+                                                 statusNorm === 'COMPLETED' ? 'Completed' :
+                                                 statusNorm === 'CANCELLED' ? 'Cancelled' : (booking.status || 'Pending')}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => hideFromActiveList(booking.bookingId)}
-                                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                    title="Remove from Dashboard"
-                                                >
-                                                    <FiMinus className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                        <td className="px-6 py-4 text-center">
+                                            {statusNorm === 'IN_PROGRESS' ? (
+                                                <div className="flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => handleRevertToUpcoming(booking.bookingId)}
+                                                        className="p-1.5 rounded-md text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                                                        title="Move back to Upcoming Bookings"
+                                                    >
+                                                        <FiMinus className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-300 font-bold">-</span>
+                                            )}
                                         </td>
                                     </tr>
                                 )})}

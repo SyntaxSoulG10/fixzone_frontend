@@ -72,3 +72,13 @@ export const cancelBooking = async (id: string): Promise<BookingResponseDTO> => 
     const response = await axios.put(`${API_BASE_URL}/api/bookings/${id}/cancel`);
     return response.data;
 };
+
+export const assignLane = async (id: string, laneNumber: number): Promise<BookingResponseDTO> => {
+    const response = await axios.put(`${API_BASE_URL}/api/bookings/${id}/assign-lane?laneNumber=${laneNumber}`);
+    return response.data;
+};
+
+export const updateBookingStatus = async (id: string, status: string): Promise<BookingResponseDTO> => {
+    const response = await axios.put(`${API_BASE_URL}/api/bookings/${id}/status?status=${status}`);
+    return response.data;
+};
