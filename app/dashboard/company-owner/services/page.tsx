@@ -508,6 +508,35 @@ function ServicePackageDialog({
     const [activePresetCategory, setActivePresetCategory] = useState("Lubrication & Fluids");
     const [isCustomBrand, setIsCustomBrand] = useState(false);
 
+    // Sync custom brand toggle with package data on load/edit
+    useEffect(() => {
+        if (currentPackage.vehicleBrand && 
+            !VEHICLE_BRAND_OPTIONS.some(b => b.value === currentPackage.vehicleBrand) && 
+            currentPackage.vehicleBrand !== "ALL") {
+            setIsCustomBrand(true);
+        } else {
+            setIsCustomBrand(false);
+        }
+    }, [currentPackage.vehicleBrand]);
+
+    // Dynamic brand list matching selected vehicle classification
+    const compatibleBrandsList = useMemo(() => {
+        const type = currentPackage.vehicleType || "ALL";
+        return VEHICLE_BRAND_OPTIONS.filter(opt => {
+            if (opt.value === "ALL" || opt.value === "OTHER") return true;
+            return validateBrandAndType(type, opt.value).isValid;
+        });
+    }, [currentPackage.vehicleType]);
+
+    // Dynamic vehicle classification matching selected brand
+    const compatibleVehicleTypesList = useMemo(() => {
+        const brand = currentPackage.vehicleBrand;
+        return VEHICLE_TYPE_OPTIONS.filter(opt => {
+            if (opt.value === "ALL") return true;
+            return validateBrandAndType(opt.value, brand).isValid;
+        });
+    }, [currentPackage.vehicleBrand]);
+
     // Dynamic compatibility evaluation
     const compatibility = useMemo(() => {
         return validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
@@ -648,16 +677,23 @@ function ServicePackageDialog({
                                     }
                                     label="Vehicle Make / Brand"
                                     onChange={(e) => {
-                                        if (e.target.value === "OTHER") {
+                                        const val = e.target.value;
+                                        if (val === "OTHER") {
                                             setIsCustomBrand(true);
                                             setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
                                         } else {
                                             setIsCustomBrand(false);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value });
+                                            const type = currentPackage.vehicleType || "ALL";
+                                            const validation = validateBrandAndType(type, val);
+                                            setCurrentPackage({ 
+                                                ...currentPackage, 
+                                                vehicleBrand: val,
+                                                vehicleType: validation.isValid ? type : "ALL"
+                                            });
                                         }
                                     }}
                                 >
-                                    {VEHICLE_BRAND_OPTIONS.map((opt) => (
+                                    {compatibleBrandsList.map((opt) => (
                                         <MenuItem key={opt.value} value={opt.value}>
                                             {opt.label}
                                         </MenuItem>
@@ -675,7 +711,13 @@ function ServicePackageDialog({
                                         clickable
                                         onClick={() => {
                                             setIsCustomBrand(false);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: brand });
+                                            const type = currentPackage.vehicleType || "ALL";
+                                            const validation = validateBrandAndType(type, brand);
+                                            setCurrentPackage({ 
+                                                ...currentPackage, 
+                                                vehicleBrand: brand,
+                                                vehicleType: validation.isValid ? type : "ALL"
+                                            });
                                         }}
                                         sx={{
                                             borderRadius: '0.5rem',
@@ -698,6 +740,8 @@ function ServicePackageDialog({
                                     placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
                                     value={currentPackage.vehicleBrand || ""}
                                     onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
+                                    error={!compatibility.isValid}
+                                    helperText={!compatibility.isValid ? compatibility.error : ""}
                                     sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                                 />
                             )}
@@ -710,9 +754,18 @@ function ServicePackageDialog({
                                 <Select
                                     value={currentPackage.vehicleType || "ALL"}
                                     label="Vehicle Classification"
-                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleType: e.target.value })}
+                                    onChange={(e) => {
+                                        const newType = e.target.value;
+                                        const brand = currentPackage.vehicleBrand || "ALL";
+                                        const validation = validateBrandAndType(newType, brand);
+                                        setCurrentPackage({ 
+                                            ...currentPackage, 
+                                            vehicleType: newType,
+                                            vehicleBrand: validation.isValid ? brand : "ALL"
+                                        });
+                                    }}
                                 >
-                                    {VEHICLE_TYPE_OPTIONS.map((opt) => {
+                                    {compatibleVehicleTypesList.map((opt) => {
                                         const IconComp = opt.Icon;
                                         return (
                                             <MenuItem key={opt.value} value={opt.value}>
@@ -1207,7 +1260,8 @@ export default function ServicesPage() {
 
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
     const activeCount = packages.filter(p => p.isActive).length;
-    const avgPrice = packages.length > 0 ? packages.reduce((acc, p) => acc + (p.price || 0), 0) / packages.length : 0;
+    const activePackages = packages.filter(p => p.isActive);
+    const avgPrice = activePackages.length > 0 ? activePackages.reduce((acc, p) => acc + (p.price || 0), 0) / activePackages.length : 0;
     const distinctCentersCount = new Set(packages.map(p => p.centerId)).size;
 
     // Extract unique brands present in existing packages for filter

@@ -96,32 +96,14 @@ const transactionColumns: GridColDef[] = [
     }
 ];
 
-/**
- * STAT CARD COMPONENT: Reusable display for financial KPIs.
- */
-function FinanceStatCard({ title, value, subtext, icon: Icon, color }: any) {
-    const theme = useTheme();
-    return (
-        <Card sx={{ p: 3, height: '100%', position: 'relative', overflow: 'visible', borderRadius: 3, boxShadow: theme.shadows[2] }}>
-            <Box sx={{ position: 'absolute', top: -20, left: 20, background: 'linear-gradient(195deg, #FB923C, #EA580C)', borderRadius: 3, p: 2, boxShadow: theme.shadows[4], color: '#fff' }}>
-                <Icon size={24} />
-            </Box>
-            <Box textAlign="right">
-                <Typography variant="body2" color="text.secondary" gutterBottom>{title}</Typography>
-                <Typography variant="h4" fontWeight="bold">{value}</Typography>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="caption" color="text.secondary">{subtext}</Typography>
-            </Box>
-        </Card>
-    );
-}
+import StatCard from "@/components/dashboard/StatCard";
 
 /**
  * FILTERS COMPONENT: Encapsulates the selection logic for center, period, and dates.
  */
 function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPeriodChange, startDate, onStartChange, endDate, onEndChange, onReset }: any) {
     return (
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={4} flexWrap="wrap">
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3} flexWrap="wrap" alignItems={{ md: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>All Centers</InputLabel>
                 <Select label="All Centers" value={selectedCenter} onChange={(e) => onCenterChange(e.target.value)} sx={{ borderRadius: 2 }}>
@@ -138,7 +120,7 @@ function FinanceFilters({ centers, selectedCenter, onCenterChange, period, onPer
             </FormControl>
             <TextField type="date" size="small" label="Start Date" value={startDate} onChange={(e) => onStartChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: endDate || new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
             <TextField type="date" size="small" label="End Date" value={endDate} onChange={(e) => onEndChange(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ min: startDate, max: new Date().toISOString().split('T')[0] }} sx={{ borderRadius: 2, minWidth: 150 }} />
-            <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2 }}>Reset</Button>
+            <Button variant="outlined" size="small" onClick={onReset} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, py: 0.8 }}>Reset</Button>
         </Stack>
     );
 }
@@ -240,9 +222,9 @@ export default function FinancePage() {
 
     return (
         <Box pb={3}>
-            <Box mb={6}>
+            <Box mb={4}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>Finance & Revenue</Typography>
-                <Typography variant="body1" color="text.secondary">Track earnings and financial health.</Typography>
+                <Typography variant="body1" color="text.secondary">Track earnings, payment distributions, and financial metrics across all centers.</Typography>
             </Box>
 
             <FinanceFilters 
@@ -254,39 +236,112 @@ export default function FinancePage() {
             {isLoading && <LinearProgress sx={{ mb: 4, height: 4, bgcolor: 'rgba(234, 88, 12, 0.1)', '& .MuiLinearProgress-bar': { bgcolor: '#EA580C' } }} />}
 
             {/* KPI STATS ROW */}
-            <Grid container spacing={3} mb={4}>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Total Revenue" value={`Rs. ${(financeData.totalRevenue || 0).toLocaleString('en-LK')}`} subtext={contextData?.revenueChange ? `${contextData.revenueChange} vs. last month` : "Overall company earnings"} icon={FiDollarSign} color={theme.palette.primary.main} /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Cash Revenue" value={`Rs. ${(financeData.cashRevenue || 0).toLocaleString('en-LK')}`} subtext="In-person payment" icon={FiDollarSign} color="#4caf50" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Online Revenue" value={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString('en-LK')}`} subtext="Digital card & Stripe" icon={FiCreditCard} color="#2196f3" /></Grid>
-                <Grid size={{ xs: 12, md: 3 }}><FinanceStatCard title="Avg. Job Value" value={`Rs. ${Number(financeData.avgTransaction || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}`} subtext="Per transaction" icon={FiCreditCard} color={theme.palette.primary.main} /></Grid>
+            <Grid container spacing={3} sx={{ mt: 1, mb: 5 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <StatCard 
+                        title="Total Revenue" 
+                        count={`Rs. ${(financeData.totalRevenue || 0).toLocaleString('en-LK')}`} 
+                        percentage={contextData?.revenueChange ? {
+                            color: contextData.revenueChange.startsWith('+') ? 'success' : 'danger',
+                            amount: contextData.revenueChange,
+                            label: 'vs. last month'
+                        } : undefined}
+                        icon={<FiDollarSign />} 
+                        color="primary" 
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <StatCard 
+                        title="Cash Revenue" 
+                        count={`Rs. ${(financeData.cashRevenue || 0).toLocaleString('en-LK')}`} 
+                        percentage={{
+                            color: 'success',
+                            amount: `${financeData.totalRevenue > 0 ? ((financeData.cashRevenue / financeData.totalRevenue) * 100).toFixed(0) : '0'}%`,
+                            label: 'of total'
+                        }}
+                        icon={<FiDollarSign />} 
+                        color="success" 
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <StatCard 
+                        title="Online Revenue" 
+                        count={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString('en-LK')}`} 
+                        percentage={{
+                            color: 'info',
+                            amount: `${financeData.totalRevenue > 0 ? ((financeData.onlineRevenue / financeData.totalRevenue) * 100).toFixed(0) : '0'}%`,
+                            label: 'digital / card'
+                        }}
+                        icon={<FiCreditCard />} 
+                        color="info" 
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <StatCard 
+                        title="Avg. Job Value" 
+                        count={`Rs. ${Number(financeData.avgTransaction || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}`} 
+                        percentage={contextData?.avgJobValueChange ? {
+                            color: contextData.avgJobValueChange.startsWith('+') ? 'success' : 'danger',
+                            amount: contextData.avgJobValueChange,
+                            label: 'vs. last month'
+                        } : undefined}
+                        icon={<FiCreditCard />} 
+                        color="warning" 
+                    />
+                </Grid>
             </Grid>
 
-            {/* REVENUE GROWTH CHART */}
-            <Box mt={4}>
-            <ChartCard 
-                title="Revenue Overview"
-                description="Monthly revenue growth tracking across all payment methods"
-                date="Last updated just now"
-                color="primary"
-                chart={
-                    <div style={{ width: '100%', height: 200 }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                        <LineChart data={financeData.growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
-                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} />
-                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none' }} />
-                            <Legend wrapperStyle={{ color: '#fff' }} />
-                            <Line type="monotone" dataKey="amount" name="Total Revenue" stroke="#fff" strokeWidth={3} dot={{ r: 4 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    </div>
-                }
-            />
+            {/* CHARTS ROW */}
+            <Box sx={{ mt: 3, mb: 6 }}>
+                <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, lg: 6 }}>
+                        <ChartCard 
+                            title="Revenue Overview"
+                            description="Monthly revenue growth tracking across all payment methods"
+                            date="Last updated just now"
+                            color="primary"
+                            chart={
+                                <div style={{ width: '100%', height: 200 }}>
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                                        <LineChart data={financeData.growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} interval={0} />
+                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#1e293b' }} formatter={(val: any) => [`Rs. ${Number(val || 0).toLocaleString()}`, 'Revenue']} />
+                                            <Line type="monotone" dataKey="amount" name="Total Revenue" stroke="#fff" strokeWidth={3} dot={{ r: 4 }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            }
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, lg: 6 }}>
+                        <ChartCard
+                            title="Center Performance"
+                            description="Revenue comparison across all active service center branches"
+                            date="Real-time performance data"
+                            color="warning"
+                            chart={
+                                <div style={{ width: '100%', height: 200 }}>
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                                        <BarChart data={financeData.revenueByCenter} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} interval={0} />
+                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#1e293b' }} formatter={(val: any) => [`Rs. ${Number(val || 0).toLocaleString()}`, 'Revenue']} />
+                                            <Bar dataKey="revenue" fill="#fff" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            }
+                        />
+                    </Grid>
+                </Grid>
             </Box>
 
             {/* RECENT TRANSACTIONS TABLE */}
-            <Box mt={4}>
+            <Box sx={{ mt: 5, mb: 4 }}>
                 <Card sx={{ p: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
                     <Typography variant="h6" fontWeight={700} color="text.primary" mb={2.5}>Recent Transactions</Typography>
                     <Box sx={{ height: 400, width: '100%' }}>
@@ -294,7 +349,8 @@ export default function FinancePage() {
                             rows={financeData.recentTransactions} 
                             columns={transactionColumns} 
                             getRowId={(row) => row.id || Math.random().toString()}
-                            pageSizeOptions={[5]} 
+                            pageSizeOptions={[5, 10]} 
+                            initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
                             disableRowSelectionOnClick 
                             sx={{
                                 border: 'none',
@@ -313,28 +369,6 @@ export default function FinancePage() {
                         />
                     </Box>
                 </Card>
-            </Box>
-
-            {/* CENTER PERFORMANCE BAR CHART */}
-            <Box mt={4}>
-                <ChartCard
-                    title="Center Performance"
-                    description="Revenue comparison across all active service center branches"
-                    date="Real-time performance data"
-                    color="warning"
-                    chart={
-                        <div style={{ width: '100%', height: 200 }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                            <BarChart data={financeData.revenueByCenter} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} />
-                                <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                                <Bar dataKey="revenue" fill="#fff" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                        </div>
-                    }
-                />
             </Box>
 
             <FeedbackSnackbar 
