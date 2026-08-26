@@ -11,10 +11,21 @@ vi.mock('next/navigation', () => ({
   })
 }))
 
+// Mock Stripe API
+vi.mock('@/lib/api', () => ({
+  getStripeConnectStatus: vi.fn().mockResolvedValue({ stripeConnected: true }),
+  connectStripe: vi.fn().mockResolvedValue('https://stripe.com/onboarding')
+}))
+
 // Mock context hook
 const mockRefreshAll = vi.fn()
 vi.mock('@/context/DashboardDataContext', () => ({
   useDashboardData: () => ({
+    ownerData: {
+      userId: 'owner1',
+      stripeOnboardingComplete: true,
+      subscriptionStatus: 'TRIAL_ACTIVE'
+    },
     centersData: [
       { centerId: 'c1', name: 'Colombo Main Center', address: 'Galle Rd, Colombo', managerName: 'John Doe', contactPhone: '0771234567', isActive: true, revenue: 12000, mechanicsCount: 5, currentCapacity: 40 },
       { centerId: 'c2', name: 'Kandy Station', address: 'Peradeniya Rd, Kandy', managerName: 'Jane Smith', contactPhone: '0817654321', isActive: false, revenue: 5000, mechanicsCount: 2, currentCapacity: 10 }
@@ -89,13 +100,22 @@ describe('Service Centers (Branches) Management Page', () => {
     expect(screen.getByText('Center name must be at least 3 characters')).toBeInTheDocument()
   })
 
-  it('renders suspended branch badge and admin suspension notice when center status is SUSPENDED', () => {
-    // Override context for suspended center
-    vi.mocked(axios.put).mockClear()
+  it('blocks creating a branch and shows error when Stripe account is not connected', async () => {
+    const { getStripeConnectStatus } = await import('@/lib/api')
+    vi.mocked(getStripeConnectStatus).mockResolvedValueOnce({ stripeConnected: false })
+
     render(<MyCentersPage />)
-    
-    // Check if initial centers are rendered
-    expect(screen.getByText('Colombo Main Center')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByText(/Stripe Account Required/i)).toBeInTheDocument()
+    })
+
+    const newBranchBtn = screen.getByRole('button', { name: /New Branch/i })
+    fireEvent.click(newBranchBtn)
+
+    // Verify modal did NOT open and error is shown
+    expect(screen.queryByText('Add New Service Center')).not.toBeInTheDocument()
+    expect(screen.getByText('Please complete your Stripe account setup first before creating a service center branch or HQ.')).toBeInTheDocument()
   })
 })
 

@@ -1004,6 +1004,15 @@ export default function MyCentersPage() {
     };
 
     const handleSave = async () => {
+        if (!isEditMode && !stripeConnected) {
+            setSnackbar({
+                open: true,
+                message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                severity: "error"
+            });
+            return;
+        }
+
         if (!formData.name || formData.name.trim().length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: "error" });
             return;
@@ -1173,6 +1182,14 @@ export default function MyCentersPage() {
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
             <CentersHeader
                 onAdd={() => {
+                    if (!stripeConnected) {
+                        setSnackbar({
+                            open: true,
+                            message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                            severity: "error"
+                        });
+                        return;
+                    }
                     setIsEditMode(false);
                     setFormData({
                         name: "",
@@ -1190,6 +1207,27 @@ export default function MyCentersPage() {
                 }}
                 isExpired={isExpired}
             />
+
+            {!stripeConnected && (
+                <Alert
+                    severity="error"
+                    icon={<WarningAmberRounded sx={{ fontSize: 22 }} />}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={handleConnectStripe}
+                            disabled={stripeLoading}
+                            sx={{ fontWeight: 700, textTransform: "none", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "0.5rem", px: 1.75 }}
+                        >
+                            Set Up Stripe Account
+                        </Button>
+                    }
+                    sx={{ mb: 4, borderRadius: "1rem", fontWeight: 600, border: "1px solid #fca5a5" }}
+                >
+                    Stripe Account Required: You cannot create a service center branch or HQ until you have set up and connected your Stripe payout account.
+                </Alert>
+            )}
 
             {hasSuspendedCenters && (
                 <Alert
@@ -1310,6 +1348,14 @@ export default function MyCentersPage() {
                     description="You haven't added any service center branches yet, or none matched your search criteria."
                     actionLabel="Add First Branch"
                     onAction={() => {
+                        if (!stripeConnected) {
+                            setSnackbar({
+                                open: true,
+                                message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                                severity: "error"
+                            });
+                            return;
+                        }
                         setIsEditMode(false);
                         setFormData({
                             name: "",
