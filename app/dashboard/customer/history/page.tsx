@@ -73,7 +73,11 @@ export default function MyBookingsPage() {
       const loadSlots = async () => {
         setLoadingSlots(true);
         try {
-          const slots = await getAvailableSlotsAPI(reschedulingBooking.centerId, newDate);
+          const slots = await getAvailableSlotsAPI(
+            reschedulingBooking.centerId, 
+            newDate, 
+            reschedulingBooking.packageId
+          );
           setAvailableSlots(slots);
         } catch (error) {
           console.error("Failed to fetch slots:", error);
@@ -558,7 +562,7 @@ export default function MyBookingsPage() {
                                   : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-orange-200'}
                               `}
                             >
-                              {slot.substring(0, 5)}
+                              {slot}
                             </button>
                           ))}
                         </div>

@@ -129,6 +129,9 @@ export default function CustomerDashboard() {
           if (data.profilePictureUrl) {
             setProfilePictureUrl(data.profilePictureUrl);
             localStorage.setItem("profilePictureUrl", data.profilePictureUrl);
+          } else {
+            setProfilePictureUrl(null);
+            localStorage.removeItem("profilePictureUrl");
           }
         }
       } catch (err) {
