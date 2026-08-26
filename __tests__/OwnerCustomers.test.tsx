@@ -65,7 +65,8 @@ describe('Company Owner Customers Tab Page', () => {
     render(<CustomersPage />)
     
     // Check main headings
-    expect(screen.getByText('Customers')).toBeInTheDocument()
+    expect(screen.getByText(/Customer Directory/i)).toBeInTheDocument()
+    expect(screen.getByText('Completed Bookings')).toBeInTheDocument()
     
     // Check stat cards
     expect(screen.getByText('Total Customers')).toBeInTheDocument()
@@ -78,6 +79,7 @@ describe('Company Owner Customers Tab Page', () => {
     // Check if customer details are in datagrid
     expect(screen.getByText('Amal Perera')).toBeInTheDocument()
     expect(screen.getByText('nimal@gmail.com')).toBeInTheDocument()
+    expect(screen.getByText('5 bookings')).toBeInTheDocument()
   })
 
   it('calculates repeat customer rate percentage correctly', () => {

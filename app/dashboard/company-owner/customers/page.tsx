@@ -139,15 +139,15 @@ export default function CustomersPage() {
         },
         {
             field: 'visits',
-            headerName: 'Completed Visits',
+            headerName: 'Completed Bookings',
             flex: 1,
             headerAlign: 'center',
             align: 'center',
-            minWidth: 140,
+            minWidth: 160,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                     <Chip
-                        label={`${params.value} ${params.value === 1 ? 'visit' : 'visits'}`}
+                        label={`${params.value} ${params.value === 1 ? 'booking' : 'bookings'}`}
                         size="small"
                         sx={{
                             fontWeight: 700,
@@ -177,9 +177,9 @@ export default function CustomersPage() {
         },
         {
             field: 'lastVisit',
-            headerName: 'Last Activity',
+            headerName: 'Last Booking / Activity',
             flex: 1,
-            minWidth: 160,
+            minWidth: 180,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" height="100%">
                     <Typography variant="body2" color="text.secondary">
