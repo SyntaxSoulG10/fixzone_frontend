@@ -740,6 +740,8 @@ function ServicePackageDialog({
                                     placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
                                     value={currentPackage.vehicleBrand || ""}
                                     onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
+                                    error={!compatibility.isValid}
+                                    helperText={!compatibility.isValid ? compatibility.error : ""}
                                     sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                                 />
                             )}
