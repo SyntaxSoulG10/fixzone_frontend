@@ -305,12 +305,12 @@ export default function FinancePage() {
                             date="Updated just now"
                             color="primary"
                             chart={
-                                <div style={{ width: '100%', height: 200 }}>
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                                        <LineChart data={financeData.growthData} margin={{ top: 10, right: 15, left: -10, bottom: 0 }}>
+                                <div style={{ width: '100%', height: '100%' }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={financeData.growthData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
-                                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} />
-                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.9 }} dy={4} />
+                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.9 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                                             <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#1e293b' }} />
                                             <Line type="monotone" dataKey="amount" name="Total Revenue" stroke="#ffffff" strokeWidth={3} dot={{ r: 4, fill: '#fff' }} activeDot={{ r: 6, stroke: '#fff' }} />
                                         </LineChart>
@@ -330,12 +330,12 @@ export default function FinancePage() {
                             date="Real-time branch data"
                             color="warning"
                             chart={
-                                <div style={{ width: '100%', height: 200 }}>
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                                        <BarChart data={financeData.revenueByCenter} margin={{ top: 10, right: 15, left: -10, bottom: 0 }}>
+                                <div style={{ width: '100%', height: '100%' }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={financeData.revenueByCenter} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
-                                            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(name) => typeof name === 'string' ? name.replace(/^(Raja Motors - |Branch )/i, '') : name} />
-                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.8 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                                            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.9 }} dy={4} tickFormatter={(name) => typeof name === 'string' ? name.replace(/^(Raja Motors - |Branch )/i, '') : name} />
+                                            <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{ fill: '#fff', opacity: 0.9 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                                             <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#1e293b' }} />
                                             <Bar dataKey="revenue" fill="#ffffff" radius={[4, 4, 0, 0]} maxBarSize={40} />
                                         </BarChart>

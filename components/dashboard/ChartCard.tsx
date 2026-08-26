@@ -39,36 +39,36 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
     };
 
     return (
-        <Card sx={{ height: '100%', overflow: 'visible', mt: 4 }}>
+        <Card sx={{ height: '100%', overflow: 'visible', mt: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <Box
                 sx={{
                     background: getGradient(validColor),
                     boxShadow: getShadow(validColor),
                     color: validColor === 'light' ? 'text.primary' : '#ffffff',
                     borderRadius: '0.75rem',
-                    padding: '1rem',
+                    p: 2,
                     position: 'relative',
-                    mt: '-40px',
+                    mt: '-24px',
                     mx: 2,
-                    height: '12.5rem',
-                    overflow: 'hidden'
+                    height: 210,
+                    boxSizing: 'border-box'
                 }}
             >
-                <Box sx={{ height: '100%', minHeight: 200, width: '100%' }}>
+                <Box sx={{ height: '100%', width: '100%' }}>
                     {chart}
                 </Box>
             </Box>
-            <Box p={2}>
-                <Typography variant="h6" textTransform="capitalize" fontWeight="bold">
+            <Box sx={{ p: 2.5, pt: 1.5 }}>
+                <Typography variant="h6" textTransform="capitalize" fontWeight="bold" color="text.primary">
                     {title}
                 </Typography>
-                <Typography component="div" variant="button" color="text.secondary" fontWeight="light">
+                <Typography component="div" variant="button" color="text.secondary" fontWeight="light" sx={{ mt: 0.5 }}>
                     {description}
                 </Typography>
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 1.5 }} />
                 <Box display="flex" alignItems="center" color="text.secondary">
-                    <FiClock style={{ marginRight: '5px' }} />
-                    <Typography variant="button" fontWeight="light" color="text.secondary">
+                    <FiClock style={{ marginRight: '6px' }} />
+                    <Typography variant="caption" fontWeight="medium" color="text.secondary">
                         {date}
                     </Typography>
                 </Box>
