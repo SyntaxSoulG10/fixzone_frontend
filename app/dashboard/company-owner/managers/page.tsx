@@ -130,28 +130,95 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
         }
     },
     {
-        field: 'actions', headerName: 'Actions', flex: 2, minWidth: 260, align: 'right', sortable: false,
+        field: 'actions', 
+        headerName: 'Actions', 
+        flex: 2, 
+        minWidth: 320, 
+        align: 'right', 
+        headerAlign: 'right',
+        sortable: false,
         renderCell: (p: GridRenderCellParams) => {
             const isInvited = p.row.status === 'INVITED' || p.row.status === 'Pending';
             const isResending = resendingId === p.row.id;
             return (
-                <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end">
+                <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end" sx={{ flexWrap: 'nowrap' }}>
                     {isInvited && (
                         <Button 
                             size="small" 
                             variant="outlined" 
-                            color="primary"
                             disabled={isExpired || isResending} 
                             onClick={() => onResend(p.row.id)}
                             startIcon={isResending ? <CircularProgress size={14} color="inherit" /> : undefined}
-                            sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }}
+                            sx={{ 
+                                textTransform: 'none', 
+                                borderRadius: '0.5rem', 
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                px: 1.75,
+                                py: 0.5,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                borderColor: '#ea580c',
+                                color: '#ea580c',
+                                '&:hover': { borderColor: '#c2410c', bgcolor: 'rgba(234, 88, 12, 0.04)' },
+                                '&.Mui-disabled': { borderColor: '#e2e8f0', color: '#94a3b8' }
+                            }}
                         >
                             {isResending ? "Sending..." : "Resend Invite"}
                         </Button>
                     )}
-                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
-                    <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired || isInvited} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
-                    <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 size={16} /></IconButton>
+                    <Button 
+                        size="small" 
+                        variant="outlined" 
+                        disabled={isExpired} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onEdit(p.row)}
+                        sx={{ 
+                            textTransform: 'none', 
+                            borderRadius: '0.5rem', 
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            px: 1.75,
+                            py: 0.5,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            borderColor: '#cbd5e1',
+                            color: '#334155',
+                            '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' }
+                        }}
+                    >
+                        Edit
+                    </Button>
+                    <Button 
+                        size="small" 
+                        variant="outlined"
+                        color={p.row.status === 'Active' ? 'warning' : 'success'} 
+                        disabled={isExpired || isInvited} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onToggle(p.row.id, p.row.status)}
+                        sx={{ 
+                            textTransform: 'none', 
+                            borderRadius: '0.5rem', 
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            px: 1.5,
+                            py: 0.5,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                        }}
+                    >
+                        {p.row.status === 'Active' ? 'Disable' : 'Enable'}
+                    </Button>
+                    <IconButton 
+                        size="small" 
+                        color="error" 
+                        disabled={isExpired} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onDelete(p.row.id)}
+                        sx={{ flexShrink: 0 }}
+                    >
+                        <FiTrash2 size={16} />
+                    </IconButton>
                 </Box>
             );
         }
