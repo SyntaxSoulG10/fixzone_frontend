@@ -100,11 +100,11 @@ export const VEHICLE_BRAND_OPTIONS = [
 ];
 
 export const COMPATIBLE_BRANDS_BY_TYPE: Record<string, string[]> = {
-    "ALL": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "BMW", "Mercedes-Benz"],
-    "CAR": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Mazda"],
-    "SUV": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Honda", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Land Rover", "Ford"],
-    "VAN": ["ALL", "Toyota", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Mercedes-Benz", "Ford", "Tata"],
-    "BUS": ["ALL", "Toyota", "Nissan", "Mercedes-Benz", "Tata", "Mitsubishi", "OTHER"],
+    "ALL": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Tata", "Mahindra", "Subaru", "Lexus", "Land Rover", "Yamaha", "Bajaj", "TVS", "OTHER"],
+    "CAR": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Subaru", "Lexus", "OTHER"],
+    "SUV": ["ALL", "Toyota", "Honda", "Nissan", "Mitsubishi", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Land Rover", "Ford", "Subaru", "Lexus", "OTHER"],
+    "VAN": ["ALL", "Toyota", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Mercedes-Benz", "Ford", "Tata", "Mahindra", "OTHER"],
+    "BUS": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Mercedes-Benz", "Tata", "Mahindra", "OTHER"],
     "TRUCK": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Ford", "Tata", "Mahindra", "Mercedes-Benz", "OTHER"],
     "BIKE": ["ALL", "Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "BMW", "OTHER"]
 };
@@ -513,11 +513,36 @@ function ServicePackageDialog({
         return validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
     }, [currentPackage.vehicleType, currentPackage.vehicleBrand]);
 
+    // Available brand options dynamically filtered by selected vehicle classification
+    const availableBrandOptions = useMemo(() => {
+        const typeKey = currentPackage.vehicleType || "ALL";
+        const allowed = COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+        return VEHICLE_BRAND_OPTIONS.filter(opt => allowed.includes(opt.value));
+    }, [currentPackage.vehicleType]);
+
     // Recommended brand presets based on vehicle classification
     const popularBrands = useMemo(() => {
         const typeKey = currentPackage.vehicleType || "ALL";
         return COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
     }, [currentPackage.vehicleType]);
+
+    const handleVehicleTypeChange = (newType: string) => {
+        const allowedBrands = COMPATIBLE_BRANDS_BY_TYPE[newType] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+        const currentBrand = currentPackage.vehicleBrand || "ALL";
+
+        let updatedBrand = currentBrand;
+        // If currently selected brand is not compatible with the newly selected vehicle type, reset to "ALL"
+        if (currentBrand !== "ALL" && !allowedBrands.includes(currentBrand)) {
+            updatedBrand = "ALL";
+            setIsCustomBrand(false);
+        }
+
+        setCurrentPackage({
+            ...currentPackage,
+            vehicleType: newType,
+            vehicleBrand: updatedBrand
+        });
+    };
 
     const featuresList = useMemo(() => {
         return featuresInput
@@ -549,6 +574,8 @@ function ServicePackageDialog({
 
     const durationPresets = [30, 45, 60, 90, 120, 180];
     const pricePresets = [5000, 8500, 12000, 18500, 25000, 35000];
+
+    const selectedVehicleMeta = VEHICLE_TYPE_OPTIONS.find(v => v.value === (currentPackage.vehicleType || "ALL")) || VEHICLE_TYPE_OPTIONS[0];
 
     return (
         <Dialog 
@@ -636,81 +663,14 @@ function ServicePackageDialog({
                             </FormControl>
                         </Grid>
 
-                        {/* VEHICLE BRAND / MAKE SELECTION (Honda, Toyota, etc.) */}
+                        {/* STEP 1: VEHICLE TYPE CLASSIFICATION (Placed First for natural workflow) */}
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel>Vehicle Make / Brand</InputLabel>
-                                <Select
-                                    value={
-                                        isCustomBrand || (!VEHICLE_BRAND_OPTIONS.some(b => b.value === (currentPackage.vehicleBrand || "ALL")))
-                                            ? "OTHER"
-                                            : (currentPackage.vehicleBrand || "ALL")
-                                    }
-                                    label="Vehicle Make / Brand"
-                                    onChange={(e) => {
-                                        if (e.target.value === "OTHER") {
-                                            setIsCustomBrand(true);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
-                                        } else {
-                                            setIsCustomBrand(false);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value });
-                                        }
-                                    }}
-                                >
-                                    {VEHICLE_BRAND_OPTIONS.map((opt) => (
-                                        <MenuItem key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-
-                            {/* Quick Compatible Brand Preset Chips */}
-                            <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
-                                {popularBrands.map((brand: string) => (
-                                    <Chip
-                                        key={brand}
-                                        label={brand === "ALL" ? "All Brands" : brand}
-                                        size="small"
-                                        clickable
-                                        onClick={() => {
-                                            setIsCustomBrand(false);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: brand });
-                                        }}
-                                        sx={{
-                                            borderRadius: '0.5rem',
-                                            fontWeight: 600,
-                                            fontSize: '0.72rem',
-                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(59, 130, 246, 0.15)' : '#f1f5f9',
-                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#1d4ed8' : '#475569',
-                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent'
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-
-                            {/* Custom Brand Input when OTHER is selected */}
-                            {isCustomBrand && (
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="Custom Brand Name"
-                                    placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
-                                    value={currentPackage.vehicleBrand || ""}
-                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
-                                    sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
-                                />
-                            )}
-                        </Grid>
-
-                        {/* VEHICLE TYPE CLASSIFICATION */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <FormControl fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                                 <InputLabel>Vehicle Classification</InputLabel>
                                 <Select
                                     value={currentPackage.vehicleType || "ALL"}
                                     label="Vehicle Classification"
-                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleType: e.target.value })}
+                                    onChange={(e) => handleVehicleTypeChange(e.target.value)}
                                 >
                                     {VEHICLE_TYPE_OPTIONS.map((opt) => {
                                         const IconComp = opt.Icon;
@@ -748,6 +708,86 @@ function ServicePackageDialog({
                                     size="small"
                                 />
                             </Box>
+                        </Grid>
+
+                        {/* STEP 2: VEHICLE BRAND SELECTION (Automatically filtered by Vehicle Type) */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                                <InputLabel>
+                                    {currentPackage.vehicleType && currentPackage.vehicleType !== "ALL"
+                                        ? `Vehicle Make / Brand (${selectedVehicleMeta.label})`
+                                        : "Vehicle Make / Brand"}
+                                </InputLabel>
+                                <Select
+                                    value={
+                                        isCustomBrand || (!availableBrandOptions.some(b => b.value === (currentPackage.vehicleBrand || "ALL")))
+                                            ? "OTHER"
+                                            : (currentPackage.vehicleBrand || "ALL")
+                                    }
+                                    label={
+                                        currentPackage.vehicleType && currentPackage.vehicleType !== "ALL"
+                                            ? `Vehicle Make / Brand (${selectedVehicleMeta.label})`
+                                            : "Vehicle Make / Brand"
+                                    }
+                                    onChange={(e) => {
+                                        if (e.target.value === "OTHER") {
+                                            setIsCustomBrand(true);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
+                                        } else {
+                                            setIsCustomBrand(false);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value });
+                                        }
+                                    }}
+                                >
+                                    {availableBrandOptions.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            {/* Quick Compatible Brand Preset Chips */}
+                            <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
+                                {popularBrands.map((brand: string) => (
+                                    <Chip
+                                        key={brand}
+                                        label={brand === "ALL" ? "All Brands" : brand}
+                                        size="small"
+                                        clickable
+                                        onClick={() => {
+                                            if (brand === "OTHER") {
+                                                setIsCustomBrand(true);
+                                                setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
+                                            } else {
+                                                setIsCustomBrand(false);
+                                                setCurrentPackage({ ...currentPackage, vehicleBrand: brand });
+                                            }
+                                        }}
+                                        sx={{
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            fontSize: '0.72rem',
+                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(59, 130, 246, 0.15)' : '#f1f5f9',
+                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#1d4ed8' : '#475569',
+                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent'
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+
+                            {/* Custom Brand Input when OTHER is selected */}
+                            {isCustomBrand && (
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Custom Brand Name"
+                                    placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
+                                    value={currentPackage.vehicleBrand || ""}
+                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
+                                    sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
+                                />
+                            )}
                         </Grid>
 
                         {/* INCOMPATIBILITY WARNING ALERT */}

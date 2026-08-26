@@ -65,8 +65,8 @@ describe('Company Owner Services Tab Page', () => {
       expect(screen.getByText('Full Engine Tune')).toBeInTheDocument()
     })
     
-    expect(screen.getByText('Rs. 7500.00')).toBeInTheDocument()
-    expect(screen.getByText('90 mins')).toBeInTheDocument()
+    expect(screen.getByText('7,500.00')).toBeInTheDocument()
+    expect(screen.getByText(/90 mins duration/i)).toBeInTheDocument()
   })
 
   it('opens package creation modal and shows validation errors on empty submission', async () => {
@@ -80,7 +80,7 @@ describe('Company Owner Services Tab Page', () => {
     const newBtn = screen.getByRole('button', { name: /Create Package/i })
     fireEvent.click(newBtn)
     
-    expect(screen.getByRole('heading', { name: 'Create New Package' })).toBeInTheDocument()
+    expect(screen.getAllByText('Create Service Package')[0]).toBeInTheDocument()
     
     const form = document.querySelector('form')!
     fireEvent.submit(form)
@@ -88,6 +88,38 @@ describe('Company Owner Services Tab Page', () => {
     // Shows snackbar error for missing inputs
     await waitFor(() => {
       expect(screen.getByText('Package name must be at least 3 characters')).toBeInTheDocument()
+    })
+  })
+
+  it('automatically shows particular brands when selecting vehicle type', async () => {
+    render(<ServicesPage />)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Full Engine Tune')).toBeInTheDocument()
+    })
+    
+    const newBtn = screen.getByRole('button', { name: /Create Package/i })
+    fireEvent.click(newBtn)
+    
+    // Check modal open
+    expect(screen.getAllByText('Create Service Package')[0]).toBeInTheDocument()
+    
+    // Initially shows All Brands presets
+    expect(screen.getByText('Toyota')).toBeInTheDocument()
+    
+    // Find Vehicle Classification select
+    const vehicleTypeSelect = screen.getByLabelText(/Vehicle Classification/i)
+    fireEvent.mouseDown(vehicleTypeSelect)
+    
+    // Select Motorcycle
+    const bikeOption = await screen.findByText('Motorcycle')
+    fireEvent.click(bikeOption)
+    
+    // Now motorcycle specific brands like Yamaha, Bajaj, TVS should be displayed
+    await waitFor(() => {
+      expect(screen.getByText('Yamaha')).toBeInTheDocument()
+      expect(screen.getByText('Bajaj')).toBeInTheDocument()
+      expect(screen.getByText('TVS')).toBeInTheDocument()
     })
   })
 })
