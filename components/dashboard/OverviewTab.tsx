@@ -23,19 +23,6 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
-// Data from material-dashboard-react-main (reportsLineChartData.js)
-const salesData = [
-    { name: 'Apr', sales: 50 },
-    { name: 'May', sales: 40 },
-    { name: 'Jun', sales: 300 },
-    { name: 'Jul', sales: 320 },
-    { name: 'Aug', sales: 500 },
-    { name: 'Sep', sales: 350 },
-    { name: 'Oct', sales: 200 },
-    { name: 'Nov', sales: 230 },
-    { name: 'Dec', sales: 500 },
-];
-
 export default function OverviewTab({ data }: { data: any }) {
     const [isMounted, setIsMounted] = React.useState(false);
 

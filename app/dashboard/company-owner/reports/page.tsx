@@ -686,25 +686,26 @@ export default function ReportsPage() {
                                 return;
                             }
                             const isFinancial = params.row.type === 'Financial';
-                            const kpi1 = isFinancial ? `$${(Math.random() * 50000 + 10000).toLocaleString('en-US', {maximumFractionDigits:0})}` : `${Math.floor(Math.random() * 5000 + 500)} Units`;
-                            const kpi2 = `+${(Math.random() * 20).toFixed(1)}%`;
-                            const kpi3 = `${(Math.random() * 5 + 94).toFixed(1)}%`;
-                            
-                            const tableData = [];
-                            for (let i = 1; i <= 20; i++) {
-                                tableData.push([
-                                    `#100${i}`,
-                                    `Entry ${i} for Historical`,
-                                    isFinancial ? `$${(Math.random() * 5000 + 100).toFixed(2)}` : Math.floor(Math.random() * 100).toString(),
-                                    ['Active', 'Pending', 'Completed', 'In Review'][Math.floor(Math.random() * 4)]
-                                ]);
-                            }
-                            
-                            const mockData = {
-                                kpi1, kpi2, kpi3, tableData, summaryText: "Historical report data retrieved from the archive. Note: Chart visualizations are not stored for historical records."
+                            const totalRev = analyticsData?.totalRevenue || 0;
+                            const totalJobs = analyticsData?.totalJobs || (bookingsData?.length || 0);
+                            const activeCentersCount = (centersData?.filter((c: any) => c.isActive)?.length || 0);
+
+                            const reportPayload = {
+                                kpi1: isFinancial ? `Rs. ${totalRev.toLocaleString('en-LK')}` : `${totalJobs} Jobs`,
+                                kpi2: analyticsData?.revenueChange || "+0%",
+                                kpi3: `${activeCentersCount} Active Centers`,
+                                tableData: (analyticsData?.topCenters && analyticsData.topCenters.length > 0)
+                                    ? analyticsData.topCenters.map((tc: any, i: number) => [
+                                        `#CTR-${i + 1}`,
+                                        tc.name || `Branch ${i + 1}`,
+                                        isFinancial ? `Rs. ${Number(tc.revenue || 0).toLocaleString('en-LK')}` : `${tc.jobs || 0} Jobs`,
+                                        'Active'
+                                    ])
+                                    : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
+                                summaryText: `Archived ${params.row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
                             };
                             
-                            const mockReportObj = {
+                            const reportObj = {
                                 name: params.row.name,
                                 type: params.row.type,
                                 branch: "Historical Archive",
@@ -713,7 +714,7 @@ export default function ReportsPage() {
 
                             try {
                                 showSnackbar(`Preparing ${params.row.name}...`, "info");
-                                const doc = generatePDFDoc(mockReportObj, undefined, mockData);
+                                const doc = generatePDFDoc(reportObj, undefined, reportPayload);
                                 doc.save(`${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
                                 showSnackbar(`Downloaded ${params.row.name}!`, "success");
                             } catch (e) {

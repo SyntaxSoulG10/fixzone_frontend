@@ -19,23 +19,6 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
-const performanceData = [
-    { name: 'Mon', revenue: 4000 },
-    { name: 'Tue', revenue: 3000 },
-    { name: 'Wed', revenue: 2000 },
-    { name: 'Thu', revenue: 2780 },
-    { name: 'Fri', revenue: 1890 },
-    { name: 'Sat', revenue: 2390 },
-    { name: 'Sun', revenue: 3490 },
-];
-
-const centerPerformance = [
-    { name: 'Downtown Hub', progress: 80, color: 'primary' },
-    { name: 'North Branch', progress: 65, color: 'primary' },
-    { name: 'Westside Station', progress: 45, color: 'primary' },
-    { name: 'East End Garage', progress: 90, color: 'primary' },
-];
-
 export default function PerformanceTab({ data }: { data: any }) {
     const [isMounted, setIsMounted] = React.useState(false);
 
