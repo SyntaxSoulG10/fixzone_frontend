@@ -95,4 +95,11 @@ describe('Company Owner Customers Tab Page', () => {
     expect(screen.getByText('Rs. 15,000')).toBeInTheDocument()
     expect(screen.getByText('Rs. 2,500')).toBeInTheDocument()
   })
+
+  it('labels customer as VIP Client only when completed bookings are more than 10', () => {
+    render(<CustomersPage />)
+    
+    // cust1 has 5 visits, so it should NOT be labeled 'VIP Client' (threshold is > 10)
+    expect(screen.queryByText('VIP Client')).not.toBeInTheDocument()
+  })
 })

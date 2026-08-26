@@ -196,7 +196,7 @@ export default function CustomersPage() {
             align: 'center',
             minWidth: 130,
             renderCell: (params: GridRenderCellParams) => {
-                const isVIP = params.row.visits >= 3;
+                const isVIP = params.row.visits > 10;
                 const label = isVIP ? 'VIP Client' : (params.value || 'Active');
                 return (
                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
