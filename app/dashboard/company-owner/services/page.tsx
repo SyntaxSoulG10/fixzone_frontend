@@ -1207,7 +1207,8 @@ export default function ServicesPage() {
 
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
     const activeCount = packages.filter(p => p.isActive).length;
-    const avgPrice = packages.length > 0 ? packages.reduce((acc, p) => acc + (p.price || 0), 0) / packages.length : 0;
+    const activePackages = packages.filter(p => p.isActive);
+    const avgPrice = activePackages.length > 0 ? activePackages.reduce((acc, p) => acc + (p.price || 0), 0) / activePackages.length : 0;
     const distinctCentersCount = new Set(packages.map(p => p.centerId)).size;
 
     // Extract unique brands present in existing packages for filter
