@@ -1246,8 +1246,9 @@ export default function ServicesPage() {
     };
 
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
+    const activeValidPackages = packages.filter(p => p.isActive && typeof p.price === 'number' && p.price > 0);
     const activeCount = packages.filter(p => p.isActive).length;
-    const avgPrice = packages.length > 0 ? packages.reduce((acc, p) => acc + (p.price || 0), 0) / packages.length : 0;
+    const avgPrice = activeValidPackages.length > 0 ? activeValidPackages.reduce((acc, p) => acc + (p.price || 0), 0) / activeValidPackages.length : 0;
     const distinctCentersCount = new Set(packages.map(p => p.centerId)).size;
 
     // Extract unique brands present in existing packages for filter
@@ -1296,7 +1297,7 @@ export default function ServicesPage() {
                     <StatCard title="Assigned Centers" count={distinctCentersCount.toString()} percentage={{ color: 'info', amount: `${distinctCentersCount} / ${centers.length}`, label: 'branches' }} icon={<FiMapPin />} color="info" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard title="Avg. Package Price" count={`Rs. ${Math.round(avgPrice).toLocaleString()}`} percentage={{ color: 'warning', amount: 'Base', label: 'average' }} icon={<FiDollarSign />} color="warning" />
+                    <StatCard title="Avg. Package Price" count={`Rs. ${Math.round(avgPrice).toLocaleString()}`} percentage={{ color: 'warning', amount: 'Active', label: 'valid avg' }} icon={<FiDollarSign />} color="warning" />
                 </Grid>
             </Grid>
 
