@@ -4,7 +4,7 @@ import Button from "@/components/UI/Button";
 import PageHeader from "@/components/UI/PageHeader";
 import { useState, useEffect, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiPlus, FiList, FiFileText, FiTrash2, FiSearch, FiPrinter, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiCheck } from "react-icons/fi";
+import { FiPlus, FiList, FiFileText, FiTrash2, FiSearch, FiPrinter, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiCheck, FiEdit2 } from "react-icons/fi";
 import APP_CONFIG from "@/config";
 import { Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Typography } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
@@ -52,7 +52,7 @@ export default function ServiceReportsPage() {
 }
 
 function ServiceReportsContent() {
-    const { centersData, bookingsData, customersData, refreshBookings, refreshInvoices } = useDashboardData();
+    const { centersData, bookingsData, customersData, invoicesData, refreshBookings, refreshInvoices } = useDashboardData();
     const searchParams = useSearchParams();
     const [view, setView] = useState<"list" | "create-report" | "generate-invoice">("list");
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
@@ -114,6 +114,8 @@ function ServiceReportsContent() {
     const [recentReports, setRecentReports] = useState<any[]>([]);
     const [isLoadingReports, setIsLoadingReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState<any>(null);
+    const [editingReportId, setEditingReportId] = useState<string | null>(null);
+
     const fetchRecentInvoices = async () => {
         setIsLoadingInvoices(true);
         try {
@@ -146,13 +148,25 @@ function ServiceReportsContent() {
             if (res.ok) {
                 const data = await res.json();
                 const parsedReports = data.map((r: any) => {
-                    let metrics = { revenue: 0, vehiclesServiced: 0, incompleteServices: 0, summary: "" };
+                    let metrics = { revenue: 0, vehiclesServiced: 0, incompleteServices: 0, summary: "", reportDate: "" };
                     try {
                         if (r.fileContentBase64) {
-                            metrics = JSON.parse(r.fileContentBase64);
+                            const parsed = typeof r.fileContentBase64 === "string" ? JSON.parse(r.fileContentBase64) : r.fileContentBase64;
+                            if (parsed && typeof parsed === "object") {
+                                metrics = {
+                                    revenue: Number(parsed.revenue) || 0,
+                                    vehiclesServiced: Number(parsed.vehiclesServiced) || 0,
+                                    incompleteServices: Number(parsed.incompleteServices) || 0,
+                                    summary: parsed.summary || "",
+                                    reportDate: parsed.reportDate || ""
+                                };
+                            }
                         }
-                    } catch(e) {}
-                    return { ...r, metrics };
+                    } catch(e) {
+                        console.error("Error parsing report metrics:", e);
+                    }
+                    const reportDate = metrics.reportDate || (r.date ? String(r.date).split("T")[0] : null) || r.name?.replace("Daily Operations Report - ", "") || (r.createdAt ? r.createdAt.split("T")[0] : "Report");
+                    return { ...r, date: reportDate, metrics };
                 });
                 setRecentReports(parsedReports.reverse());
             }
@@ -161,6 +175,134 @@ function ServiceReportsContent() {
         } finally {
             setIsLoadingReports(false);
         }
+    };
+
+    // Calculate revenue, incomplete services, and vehicles serviced for any selected date
+    const calculateMetricsForDate = useCallback((targetDate: string) => {
+        const isMatchingDate = (dStr: any) => {
+            if (!dStr) return false;
+            try {
+                const str = String(dStr).split("T")[0].trim();
+                if (str === targetDate) return true;
+                const dateObj = new Date(dStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    if (localStr === targetDate) return true;
+                }
+                return false;
+            } catch {
+                return false;
+            }
+        };
+
+        const countedBookingIds = new Set<string>();
+        let totalRev = 0;
+        let vehiclesServicedCount = 0;
+
+        // 1. Invoices for targetDate
+        const allInvoices = recentInvoices.length > 0 ? recentInvoices : (invoicesData || []);
+        allInvoices.forEach((inv: any) => {
+            if (managerCenterId && inv.centerId && inv.centerId !== managerCenterId) return;
+            const isPaid = String(inv.status || "").toUpperCase() === "PAID";
+            if (!isPaid) return;
+
+            const isDate = isMatchingDate(inv.updatedAt) || isMatchingDate(inv.issuedAt) || isMatchingDate(inv.createdAt) || isMatchingDate(inv.createdDate);
+            if (isDate) {
+                const amt = Number(inv.total) || Number(inv.amount) || Number(inv.subtotal) || 0;
+                totalRev += amt;
+                vehiclesServicedCount++;
+                if (inv.bookingId) countedBookingIds.add(String(inv.bookingId));
+            }
+        });
+
+        // 2. Bookings for targetDate
+        let cancelledCount = 0;
+        (bookingsData || []).forEach((b: any) => {
+            if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
+            const isDate = isMatchingDate(b.updatedAt) || isMatchingDate(b.bookingDate) || isMatchingDate(b.createdAt);
+            if (!isDate) return;
+
+            const s = String(b.status || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
+            if (s === "CANCELLED") {
+                cancelledCount++;
+            } else if (s === "PAID") {
+                if (!countedBookingIds.has(String(b.bookingId))) {
+                    const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
+                    totalRev += cost;
+                    vehiclesServicedCount++;
+                    if (b.bookingId) countedBookingIds.add(String(b.bookingId));
+                }
+            }
+        });
+
+        return {
+            revenue: totalRev.toString(),
+            incompleteServices: cancelledCount.toString(),
+            vehiclesServiced: vehiclesServicedCount.toString()
+        };
+    }, [recentInvoices, invoicesData, bookingsData, managerCenterId]);
+
+    const handleOpenGenerateReport = () => {
+        setEditingReportId(null);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const metrics = calculateMetricsForDate(todayStr);
+        setFormData({
+            date: todayStr,
+            revenue: metrics.revenue,
+            incompleteServices: metrics.incompleteServices,
+            vehiclesServiced: metrics.vehiclesServiced,
+            summary: ""
+        });
+        setView("create-report");
+    };
+
+    const handleEditReport = (report: any) => {
+        setEditingReportId(report.id);
+        const reportDate = report.metrics?.reportDate || report.date || report.name?.replace("Daily Operations Report - ", "") || new Date().toISOString().split('T')[0];
+        setFormData({
+            date: reportDate,
+            revenue: (report.metrics?.revenue ?? "").toString(),
+            incompleteServices: (report.metrics?.incompleteServices ?? "").toString(),
+            vehiclesServiced: (report.metrics?.vehiclesServiced ?? "").toString(),
+            summary: report.metrics?.summary || ""
+        });
+        setSelectedReport(null);
+        setView("create-report");
+    };
+
+    const handleDeleteReport = async (reportId: string) => {
+        if (!confirm("Are you sure you want to delete this report? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports/${reportId}`, {
+                method: "DELETE",
+                headers: token ? { "Authorization": `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+                showSnackbar("Report deleted successfully!", "success");
+                setSelectedReport(null);
+                fetchRecentReports();
+            } else {
+                showSnackbar("Failed to delete report.", "error");
+            }
+        } catch (error) {
+            console.error("Error deleting report:", error);
+            showSnackbar("Error deleting report", "error");
+        }
+    };
+
+    const handleDateChange = (newDate: string) => {
+        // If generating new report, auto-calculate. If editing existing report, user can still pick or recalculate
+        const metrics = calculateMetricsForDate(newDate);
+        setFormData(prev => ({
+            ...prev,
+            date: newDate,
+            revenue: metrics.revenue,
+            incompleteServices: metrics.incompleteServices,
+            vehiclesServiced: metrics.vehiclesServiced
+        }));
     };
 
     useEffect(() => {
@@ -189,28 +331,61 @@ function ServiceReportsContent() {
                 revenue: Number(formData.revenue) || 0,
                 incompleteServices: Number(formData.incompleteServices) || 0,
                 vehiclesServiced: Number(formData.vehiclesServiced) || 0,
-                summary: formData.summary || ""
+                summary: formData.summary || "",
+                reportDate: formData.date
             };
 
             const payload = {
                 name: `Daily Operations Report - ${formData.date}`,
-                type: "DAILY_OPERATIONS",
+                type: "OPERATIONS",
                 format: "JSON",
                 fileContentBase64: JSON.stringify(reportPayload)
             };
 
             const token = localStorage.getItem("token");
-            const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                showSnackbar("Report Created successfully!", "success");
+            const headers = { 
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            };
+
+            let res;
+            if (editingReportId) {
+                try {
+                    res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports/${editingReportId}`, {
+                        method: "PUT",
+                        headers,
+                        body: JSON.stringify(payload)
+                    });
+                } catch(err) {
+                    console.warn("PUT failed, attempting fallback:", err);
+                }
+
+                // If PUT failed or method not allowed on running instance, fallback to update via delete + create
+                if (!res || !res.ok) {
+                    try {
+                        await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports/${editingReportId}`, {
+                            method: "DELETE",
+                            headers
+                        });
+                    } catch(e) {}
+                    res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify(payload)
+                    });
+                }
+            } else {
+                res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res && res.ok) {
+                showSnackbar(editingReportId ? "Report updated successfully!" : "Report saved successfully!", "success");
                 setView("list");
+                setEditingReportId(null);
                 setFormData({
                     date: new Date().toISOString().split('T')[0],
                     revenue: "",
@@ -218,14 +393,14 @@ function ServiceReportsContent() {
                     vehiclesServiced: "",
                     summary: ""
                 });
-                // Fetch reports again to show the newly added report
+                // Fetch reports again to show the updated report
                 fetchRecentReports();
             } else {
-                showSnackbar("Failed to create report.", "error");
+                showSnackbar("Failed to save report.", "error");
             }
         } catch (err) {
             console.error("Error submitting report:", err);
-            showSnackbar("Error creating report", "error");
+            showSnackbar("Error saving report", "error");
         }
     };
 
@@ -620,23 +795,23 @@ function ServiceReportsContent() {
                             </div>
                             <Button
                                 variant="primary"
-                                className="w-full md:w-auto flex justify-center items-center gap-2 !bg-orange-600 !hover:bg-orange-700 !text-white border-0 px-6 py-2.5"
-                                onClick={() => setView("create-report")}
+                                className="w-full md:w-auto flex justify-center items-center gap-2 !bg-orange-600 !hover:bg-orange-700 !text-white border-0 px-6 py-2.5 shadow-sm font-semibold"
+                                onClick={handleOpenGenerateReport}
                             >
-                                <FiPlus /> Create Today Report
+                                <FiFileText /> Generate Report
                             </Button>
                         </div>
                     </div>
 
                     {/* Side-by-Side History Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                         
                         {/* Left: Recent Invoices */}
                         <div className="flex flex-col">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <FiClock className="text-primary" /> Recent Invoices
                             </h3>
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[420px] justify-between">
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[420px] max-h-[580px] justify-between">
                                 {/* Rich Filters UI */}
                                 <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row gap-3">
                                     <div className="relative flex-1">
@@ -664,9 +839,9 @@ function ServiceReportsContent() {
                                 {isLoadingInvoices ? (
                                     <div className="p-8 text-center text-slate-500 my-auto">Loading invoices...</div>
                                 ) : filteredInvoices.length > 0 ? (
-                                    <div className="flex-1">
+                                    <div className="flex-1 overflow-y-auto">
                                         <table className="w-full text-left border-collapse relative">
-                                            <thead className="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
+                                            <thead className="bg-slate-50 text-slate-600 text-sm border-b border-slate-200 sticky top-0 z-10">
                                                 <tr>
                                                     <th className="py-3 px-4 font-medium">Customer & Invoice</th>
                                                     <th className="py-3 px-4 font-medium">Status</th>
@@ -724,10 +899,10 @@ function ServiceReportsContent() {
                                                                         </button>
                                                                         <button
                                                                             onClick={() => {
-                                                                                setInvoiceBookingId(inv.bookingId);
-                                                                                fetchBookingDetails(inv.bookingId);
-                                                                                setView("generate-invoice");
-                                                                            }}
+                                                                            setInvoiceBookingId(inv.bookingId);
+                                                                            fetchBookingDetails(inv.bookingId);
+                                                                            setView("generate-invoice");
+                                                                        }}
                                                                             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
                                                                             title="View & Edit Invoice"
                                                                         >
@@ -784,43 +959,73 @@ function ServiceReportsContent() {
                             </div>
                         </div>
 
-                        {/* Right: Last 3 Days Reports */}
+                        {/* Right: Scrollable Past Operations Reports */}
                         <div className="flex flex-col">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <FiList className="text-emerald-600" /> Past Operations Reports
                             </h3>
-                            <div className="space-y-4">
-                                {isLoadingReports ? (
-                                    <div className="text-center text-slate-500 my-auto p-8">Loading reports...</div>
-                                ) : recentReports.length > 0 ? recentReports.map((report) => (
-                                    <div 
-                                        key={report.id} 
-                                        onClick={() => setSelectedReport(report)}
-                                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer"
-                                    >
-                                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
-                                            <div>
-                                                <h3 className="text-base font-bold text-slate-800 uppercase tracking-wide">{report.date}</h3>
-                                                <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                                                    Incomplete: <span className={`font-semibold ${report.metrics.incompleteServices > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                                        {report.metrics.incompleteServices}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="block text-xl font-bold text-emerald-600">Rs {(report.metrics.revenue || 0).toLocaleString()}</span>
-                                                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{report.metrics.vehiclesServiced} Vehicles</span>
-                                            </div>
-                                        </div>
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[420px] max-h-[580px]">
+                                <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                        Archived Reports ({recentReports.length})
+                                    </span>
+                                    <span className="text-xs text-slate-400">
+                                        Click any report to view details
+                                    </span>
+                                </div>
+                                <div className="p-4 overflow-y-auto space-y-3 flex-1">
+                                    {isLoadingReports ? (
+                                        <div className="text-center text-slate-500 my-auto p-8">Loading reports...</div>
+                                    ) : recentReports.length > 0 ? (
+                                        recentReports.map((report, idx) => (
+                                            <div 
+                                                key={report.id || `report-${idx}`} 
+                                                onClick={() => setSelectedReport(report)}
+                                                className="bg-slate-50 hover:bg-white rounded-xl border border-slate-200/80 hover:border-orange-400 p-4 hover:shadow-md transition-all cursor-pointer group"
+                                            >
+                                                <div className="flex justify-between items-start mb-2.5">
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-orange-600 transition-colors flex items-center gap-2">
+                                                            <FiFileText className="text-orange-500" /> {report.date || report.name}
+                                                        </h4>
+                                                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                                                            <span>Vehicles: <strong className="text-slate-700">{report.metrics?.vehiclesServiced || 0}</strong></span>
+                                                            <span>•</span>
+                                                            <span>Incomplete: <strong className={Number(report.metrics?.incompleteServices) > 0 ? "text-red-500" : "text-emerald-600"}>{report.metrics?.incompleteServices || 0}</strong></span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1.5">
+                                                        <span className="block text-base font-bold text-emerald-600">
+                                                            Rs {(Number(report.metrics?.revenue) || 0).toLocaleString()}
+                                                        </span>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditReport(report);
+                                                            }}
+                                                            className="px-2.5 py-1 text-[11px] font-semibold text-orange-600 hover:text-white hover:bg-orange-600 border border-orange-200 hover:border-orange-600 rounded-md transition-all flex items-center gap-1 shadow-xs"
+                                                            title="Edit report"
+                                                        >
+                                                            <FiEdit2 className="w-3 h-3" /> Edit
+                                                        </button>
+                                                    </div>
+                                                </div>
 
-                                        <div>
-                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Daily Summary</h4>
-                                            <p className="text-slate-600 text-sm leading-relaxed">{report.metrics.summary}</p>
+                                                {report.metrics?.summary && (
+                                                    <div className="pt-2 border-t border-slate-200/60">
+                                                        <p className="text-xs text-slate-600 line-clamp-2 italic">
+                                                            "{report.metrics.summary}"
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-slate-400 text-sm my-auto p-8">
+                                            No reports generated yet. Click "Generate Report" above to create one.
                                         </div>
-                                    </div>
-                                )) : (
-                                    <div className="text-center text-slate-500 my-auto p-8">No reports generated yet.</div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -833,13 +1038,16 @@ function ServiceReportsContent() {
                 <>
                     <div className="flex justify-between items-start mb-6">
                         <PageHeader
-                            title={view === "create-report" ? "Create Daily Report" : "Generate Invoice"}
-                            description={view === "create-report" ? "Submit the daily summary and metrics." : "Create an invoice for a completed service."}
+                            title={view === "create-report" ? (editingReportId ? "Edit Daily Report" : "Generate Daily Report") : "Generate Invoice"}
+                            description={view === "create-report" ? (editingReportId ? "Update the operational metrics and daily summary notes for this report." : "Review today's auto-calculated operational metrics, add summary notes, and save.") : "Create an invoice for a completed service."}
                         />
                         <Button
                             variant="secondary"
                             className="flex items-center gap-2"
-                            onClick={() => setView("list")}
+                            onClick={() => {
+                                setView("list");
+                                setEditingReportId(null);
+                            }}
                         >
                             <FiList /> Back to Reports
                         </Button>
@@ -847,8 +1055,8 @@ function ServiceReportsContent() {
                     {view === "create-report" ? (
                         <div className="max-w-2xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-slate-100 bg-slate-50">
-                                <h2 className="text-lg font-bold text-slate-900">New Daily Report</h2>
-                                <p className="text-slate-500 text-sm mt-1">Enter today's operational metrics and summary.</p>
+                                <h2 className="text-lg font-bold text-slate-900">{editingReportId ? "Edit Daily Report" : "Generate Daily Report"}</h2>
+                                <p className="text-slate-500 text-sm mt-1">{editingReportId ? "Update operational metrics and summary notes for this report." : "Review auto-calculated operational metrics for the selected date, add your summary notes, and save."}</p>
                             </div>
                             <form onSubmit={handleReportSubmit} className="p-6 space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -859,7 +1067,7 @@ function ServiceReportsContent() {
                                             name="date"
                                             required
                                             value={formData.date}
-                                            onChange={handleInputChange}
+                                            onChange={(e) => handleDateChange(e.target.value)}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         />
                                     </div>
@@ -911,7 +1119,7 @@ function ServiceReportsContent() {
                                     <textarea
                                         name="summary"
                                         rows={4}
-                                        placeholder="Brief summary of the day..."
+                                        placeholder="Brief summary of the day or paste comments here..."
                                         required
                                         value={formData.summary}
                                         onChange={handleInputChange}
@@ -922,16 +1130,19 @@ function ServiceReportsContent() {
                                 <div className="pt-4 flex gap-3 justify-end">
                                     <button
                                         type="button"
-                                        onClick={() => setView("list")}
+                                        onClick={() => {
+                                            setView("list");
+                                            setEditingReportId(null);
+                                        }}
                                         className="px-6 py-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 font-medium transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors shadow-sm"
+                                        className="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors shadow-sm flex items-center gap-2"
                                     >
-                                        Create Report
+                                        <FiCheck className="w-4 h-4" /> {editingReportId ? "Update Report" : "Save Report"}
                                     </button>
                                 </div>
                             </form>
@@ -1493,7 +1704,7 @@ function ServiceReportsContent() {
                         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
                             <div>
                                 <Typography variant="h6" fontWeight="bold" color="#0f172a">Operations Report Details</Typography>
-                                <Typography variant="caption" color="text.secondary">{selectedReport.name} - {selectedReport.date}</Typography>
+                                <Typography variant="caption" color="text.secondary">{selectedReport.date || selectedReport.name}</Typography>
                             </div>
                             <IconButton onClick={() => setSelectedReport(null)} size="small">
                                 <FiX className="w-5 h-5" />
@@ -1503,7 +1714,7 @@ function ServiceReportsContent() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                                     <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Total Revenue</p>
-                                    <p className="text-2xl font-bold text-emerald-900">Rs {(selectedReport.metrics?.revenue || 0).toLocaleString()}</p>
+                                    <p className="text-2xl font-bold text-emerald-900">Rs {(Number(selectedReport.metrics?.revenue) || 0).toLocaleString()}</p>
                                 </div>
                                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                                     <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Vehicles Serviced</p>
@@ -1516,15 +1727,30 @@ function ServiceReportsContent() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Daily Summary</p>
-                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 text-sm whitespace-pre-wrap">
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 text-sm whitespace-pre-wrap min-h-[70px]">
                                     {selectedReport.metrics?.summary || "No summary provided."}
                                 </div>
                             </div>
                         </DialogContent>
-                        <DialogActions sx={{ p: 2.5, px: 3, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
-                            <Button variant="secondary" onClick={() => setSelectedReport(null)}>
-                                Close
-                            </Button>
+                        <DialogActions sx={{ p: 2.5, px: 3, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <button
+                                onClick={() => handleDeleteReport(selectedReport.id)}
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200 flex items-center justify-center cursor-pointer group"
+                                title="Delete this report"
+                            >
+                                <FiTrash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleEditReport(selectedReport)}
+                                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <FiEdit2 className="w-3.5 h-3.5" /> Edit Report
+                                </button>
+                                <Button variant="secondary" onClick={() => setSelectedReport(null)}>
+                                    Close
+                                </Button>
+                            </div>
                         </DialogActions>
                     </>
                 )}
