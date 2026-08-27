@@ -65,64 +65,104 @@ interface InvoiceDTO { invoiceId: number; status: string; centerId: string; tota
  */
 const branchPerformanceColumns: GridColDef[] = [
     { 
-        field: 'name', headerName: 'Service Center / Branch', flex: 1.8,
+        field: 'name', 
+        headerName: 'Service Center / Branch', 
+        flex: 2,
         renderCell: (p: GridRenderCellParams) => (
-            <Box display="flex" alignItems="center" gap={1.5} height="100%">
-                <Avatar sx={{ width: 32, height: 32, fontSize: '0.85rem', bgcolor: '#EA580C', color: '#fff', fontWeight: 'bold' }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: '100%' }}>
+                <Avatar 
+                    sx={{ 
+                        width: 36, 
+                        height: 36, 
+                        fontSize: '0.85rem', 
+                        bgcolor: 'rgba(234, 88, 12, 0.12)', 
+                        color: '#EA580C', 
+                        fontWeight: 700,
+                        border: '1px solid rgba(234, 88, 12, 0.2)'
+                    }}
+                >
                     {(p.value || 'C').charAt(0)}
                 </Avatar>
-                <Box>
-                    <Typography variant="body2" fontWeight="bold" color="text.primary">{p.value}</Typography>
-                    <Typography variant="caption" color="text.secondary">Active Branch</Typography>
+                <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography variant="body2" fontWeight="700" color="text.primary" sx={{ lineHeight: 1.2 }}>
+                        {p.value}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.72rem', mt: 0.2 }}>
+                        Active Branch
+                    </Typography>
                 </Box>
             </Box>
         )
     },
     { 
-        field: 'jobs', headerName: 'Completed Jobs', flex: 1, align: 'center', headerAlign: 'center',
+        field: 'jobs', 
+        headerName: 'Completed Jobs', 
+        flex: 1.1, 
+        align: 'center', 
+        headerAlign: 'center',
         renderCell: (p: GridRenderCellParams) => (
-            <Chip 
-                label={`${p.value || 0} Jobs`} 
-                size="small" 
-                sx={{ bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#c2410c', fontWeight: 'bold' }} 
-            />
+            <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                <Chip 
+                    label={`${p.value || 0} Jobs`} 
+                    size="small" 
+                    sx={{ 
+                        bgcolor: Number(p.value) > 0 ? 'rgba(234, 88, 12, 0.1)' : 'rgba(100, 116, 139, 0.08)', 
+                        color: Number(p.value) > 0 ? '#c2410c' : '#64748b', 
+                        fontWeight: 700,
+                        borderRadius: '6px'
+                    }} 
+                />
+            </Box>
         )
     },
     { 
-        field: 'avgTicket', headerName: 'Avg. Job Value', flex: 1.2,
+        field: 'avgTicket', 
+        headerName: 'Avg. Job Value', 
+        flex: 1.2,
         renderCell: (p: GridRenderCellParams) => (
-            <Typography variant="body2" fontWeight="600" color="text.secondary">
-                Rs. {Number(p.value || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}
-            </Typography>
+            <Box display="flex" alignItems="center" height="100%">
+                <Typography variant="body2" fontWeight="600" color="text.secondary">
+                    Rs. {Number(p.value || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}
+                </Typography>
+            </Box>
         )
     },
     { 
-        field: 'revenue', headerName: 'Total Revenue', flex: 1.3,
+        field: 'revenue', 
+        headerName: 'Total Revenue', 
+        flex: 1.3,
         renderCell: (p: GridRenderCellParams) => (
-            <Typography variant="body2" fontWeight="bold" color="#2e7d32">
-                Rs. {Number(p.value || 0).toLocaleString('en-LK')}
-            </Typography>
+            <Box display="flex" alignItems="center" height="100%">
+                <Typography variant="body2" fontWeight="bold" sx={{ color: Number(p.value) > 0 ? '#15803d' : '#64748b' }}>
+                    Rs. {Number(p.value || 0).toLocaleString('en-LK')}
+                </Typography>
+            </Box>
         )
     },
     { 
-        field: 'share', headerName: 'Revenue Contribution', flex: 1.6,
+        field: 'share', 
+        headerName: 'Revenue Contribution', 
+        flex: 1.6,
         renderCell: (p: GridRenderCellParams) => {
             const sharePct = Number(p.value || 0);
             return (
-                <Box width="100%" display="flex" alignItems="center" gap={1.5}>
+                <Box width="100%" display="flex" alignItems="center" gap={1.5} pr={2} height="100%">
                     <Box flex={1}>
                         <LinearProgress 
                             variant="determinate" 
                             value={Math.min(100, Math.max(0, sharePct))} 
                             sx={{ 
-                                height: 6, 
-                                borderRadius: 3, 
+                                height: 7, 
+                                borderRadius: 4, 
                                 bgcolor: 'rgba(0,0,0,0.06)',
-                                '& .MuiLinearProgress-bar': { bgcolor: sharePct >= 40 ? '#10b981' : '#EA580C' }
+                                '& .MuiLinearProgress-bar': { 
+                                    borderRadius: 4,
+                                    bgcolor: sharePct >= 40 ? '#10b981' : (sharePct > 0 ? '#EA580C' : 'transparent') 
+                                }
                             }} 
                         />
                     </Box>
-                    <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 35 }}>
+                    <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 32, textAlign: 'right', color: sharePct > 0 ? 'text.primary' : 'text.disabled' }}>
                         {sharePct}%
                     </Typography>
                 </Box>
@@ -396,11 +436,12 @@ export default function FinancePage() {
                             <Typography variant="caption" color="text.secondary">Macro-level financial comparison and revenue contribution across all registered service centers.</Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ height: 350, width: '100%' }}>
+                    <Box sx={{ height: 380, width: '100%' }}>
                         <DataGrid 
                             rows={branchPerformanceRows} 
                             columns={branchPerformanceColumns} 
                             getRowId={(row) => row.id || row.name || Math.random().toString()}
+                            rowHeight={64}
                             pageSizeOptions={[5, 10]} 
                             initialState={{
                                 pagination: { paginationModel: { pageSize: 5 } }
@@ -414,10 +455,18 @@ export default function FinancePage() {
                                     color: '#475569',
                                     fontWeight: 700,
                                     fontSize: '0.75rem',
-                                    textTransform: 'uppercase'
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
                                 },
                                 '& .MuiDataGrid-cell': {
-                                    borderBottom: '1px solid #f1f5f9'
+                                    borderBottom: '1px solid #f1f5f9',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                },
+                                '& .MuiDataGrid-row': {
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(234, 88, 12, 0.02)'
+                                    }
                                 }
                             }}
                         />
