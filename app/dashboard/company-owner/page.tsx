@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import axios from "@/lib/axios";
 import Link from "next/link";
 import {
@@ -8,8 +8,6 @@ import {
     Box,
     Typography,
     Button,
-    Tabs,
-    Tab,
     Card,
     CircularProgress,
     Alert
@@ -17,14 +15,12 @@ import {
 
 import StatCard from "@/components/dashboard/StatCard";
 import OverviewTab from "@/components/dashboard/OverviewTab";
-import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import { APP_CONFIG } from "@/utils/config";
 import {
     FiBriefcase,
     FiDollarSign,
     FiUsers,
     FiGrid,
-    FiBarChart2,
     FiPlus,
     FiFileText,
     FiArrowRight,
@@ -204,7 +200,6 @@ import { useDashboardData } from "@/context/DashboardDataContext";
  * Now optimized with DashboardDataContext to prevent unnecessary re-fetching.
  */
 export default function CompanyOwnerDashboard() {
-    const [activeTab, setActiveTab] = useState<string>('overview');
     const { 
         analyticsData: analytics, 
         ownerData, 
@@ -258,33 +253,9 @@ export default function CompanyOwnerDashboard() {
             
             <StatsGrid stats={statistics} />
 
-            {/* TAB SECTION: Separates Overview metrics from Performance charts. */}
+            {/* UNIFIED OVERVIEW & PERFORMANCE SECTION */}
             <Box mb={4}>
-                <Box borderBottom={1} borderColor="divider" mb={3}>
-                    <Tabs 
-                        value={activeTab} 
-                        onChange={(_, val) => setActiveTab(val)} 
-                        textColor="primary" 
-                        indicatorColor="primary"
-                        sx={{
-                            '& .MuiTabs-indicator': { backgroundColor: '#ea580c', height: 3, borderRadius: '3px 3px 0 0' },
-                            '& .MuiTab-root': { 
-                                textTransform: 'none', 
-                                fontWeight: 700,
-                                fontSize: '0.95rem',
-                                color: '#64748b', 
-                                '&.Mui-selected': { color: '#ea580c' } 
-                            }
-                        }}
-                    >
-                        <Tab label="Overview" value="overview" icon={<FiGrid />} iconPosition="start" />
-                        <Tab label="Performance" value="performance" icon={<FiBarChart2 />} iconPosition="start" />
-                    </Tabs>
-                </Box>
-                <Box minHeight={400}>
-                    {activeTab === 'overview' && <OverviewTab data={analytics} />}
-                    {activeTab === 'performance' && <PerformanceTab data={analytics} />}
-                </Box>
+                <OverviewTab data={analytics} />
             </Box>
 
             {/* QUICK ACTIONS: High-visibility shortcuts for common admin tasks. */}
