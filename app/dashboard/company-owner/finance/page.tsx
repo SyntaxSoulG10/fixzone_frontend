@@ -263,7 +263,7 @@ export default function FinancePage() {
                             label: 'In-person'
                         }} 
                         icon={<FiDollarSign />} 
-                        color="warning" 
+                        color="primary" 
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>

@@ -1291,13 +1291,13 @@ export default function ServicesPage() {
                     <StatCard title="Total Packages" count={packages.length.toString()} percentage={{ color: 'primary', amount: `${packages.length}`, label: 'configured' }} icon={<FiLayers />} color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard title="Active Packages" count={activeCount.toString()} percentage={{ color: 'success', amount: `${packages.length > 0 ? Math.round((activeCount / packages.length) * 100) : 0}%`, label: 'online' }} icon={<FiCheckCircle />} color="success" />
+                    <StatCard title="Active Packages" count={activeCount.toString()} percentage={{ color: 'success', amount: `${packages.length > 0 ? Math.round((activeCount / packages.length) * 100) : 0}%`, label: 'online' }} icon={<FiCheckCircle />} color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                     <StatCard title="Assigned Centers" count={distinctCentersCount.toString()} percentage={{ color: 'primary', amount: `${distinctCentersCount} / ${centers.length}`, label: 'branches' }} icon={<FiMapPin />} color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard title="Avg. Package Price" count={`Rs. ${Math.round(avgPrice).toLocaleString()}`} percentage={{ color: 'warning', amount: 'Active', label: 'valid avg' }} icon={<FiDollarSign />} color="warning" />
+                    <StatCard title="Avg. Package Price" count={`Rs. ${Math.round(avgPrice).toLocaleString()}`} percentage={{ color: 'warning', amount: 'Active', label: 'valid avg' }} icon={<FiDollarSign />} color="primary" />
                 </Grid>
             </Grid>
 

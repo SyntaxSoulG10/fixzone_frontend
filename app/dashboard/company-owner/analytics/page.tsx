@@ -223,7 +223,7 @@ export default function AnalyticsPage() {
                             amount: data?.revenueChange || '0%',
                             label: 'than last month'
                         } : undefined}
-                        color="success"
+                        color="primary"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -249,7 +249,7 @@ export default function AnalyticsPage() {
                             amount: 'Cash',
                             label: 'In-person'
                         } : undefined}
-                        color="warning"
+                        color="primary"
                     />
                 </Grid>
             </Grid>
