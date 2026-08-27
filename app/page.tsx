@@ -2,6 +2,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import StatsSection from "@/components/landing/StatsSection";
 import AboutSection from "@/components/landing/AboutSection";
 import KeyFeaturesSection from "@/components/landing/KeyFeaturesSection";
+import FeaturedPackagesSection from "@/components/landing/FeaturedPackagesSection";
 import TargetAudienceSection from "@/components/landing/TargetAudienceSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import PricingSection from "@/components/landing/PricingSection";
@@ -17,6 +18,7 @@ export default function LandingPage() {
       <StatsSection />
       <AboutSection />
       <KeyFeaturesSection />
+      <FeaturedPackagesSection />
       <TargetAudienceSection />
       <TestimonialsSection />
       <PricingSection />
