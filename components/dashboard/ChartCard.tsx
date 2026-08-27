@@ -38,6 +38,7 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
         return boxShadows ? boxShadows.md : '';
     };
 
+    return (
         <Card sx={{ 
             height: '100%', 
             overflow: 'visible', 
