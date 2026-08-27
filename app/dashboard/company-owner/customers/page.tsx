@@ -259,7 +259,7 @@ export default function CustomersPage() {
                         title="Repeat Customers"
                         count={`${repeatRate}%`}
                         percentage={{
-                            color: 'info',
+                            color: 'primary',
                             amount: `${repeatCustomers} clients`,
                             label: 'with multiple completed bookings'
                         }}

@@ -348,9 +348,9 @@ function ServicePackageCard({
                                         fontWeight: 700,
                                         fontSize: '0.72rem',
                                         height: 22,
-                                        bgcolor: isUniversalBrand ? '#f1f5f9' : 'rgba(59, 130, 246, 0.1)',
-                                        color: isUniversalBrand ? '#64748b' : '#1d4ed8',
-                                        border: `1px solid ${isUniversalBrand ? '#e2e8f0' : 'rgba(59, 130, 246, 0.3)'}`
+                                        bgcolor: isUniversalBrand ? '#f1f5f9' : 'rgba(234, 88, 12, 0.1)',
+                                        color: isUniversalBrand ? '#64748b' : '#c2410c',
+                                        border: `1px solid ${isUniversalBrand ? '#e2e8f0' : 'rgba(234, 88, 12, 0.25)'}`
                                     }}
                                 />
                                 <Chip
@@ -768,9 +768,9 @@ function ServicePackageDialog({
                                             borderRadius: '0.5rem',
                                             fontWeight: 600,
                                             fontSize: '0.72rem',
-                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(59, 130, 246, 0.15)' : '#f1f5f9',
-                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#1d4ed8' : '#475569',
-                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent'
+                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(234, 88, 12, 0.12)' : '#f1f5f9',
+                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#c2410c' : '#475569',
+                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid transparent'
                                         }}
                                     />
                                 ))}
@@ -1288,13 +1288,13 @@ export default function ServicesPage() {
 
             <Grid container spacing={3} mb={4}>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard title="Total Packages" count={packages.length.toString()} percentage={{ color: 'info', amount: `${packages.length}`, label: 'configured' }} icon={<FiLayers />} color="primary" />
+                    <StatCard title="Total Packages" count={packages.length.toString()} percentage={{ color: 'primary', amount: `${packages.length}`, label: 'configured' }} icon={<FiLayers />} color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                     <StatCard title="Active Packages" count={activeCount.toString()} percentage={{ color: 'success', amount: `${packages.length > 0 ? Math.round((activeCount / packages.length) * 100) : 0}%`, label: 'online' }} icon={<FiCheckCircle />} color="success" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <StatCard title="Assigned Centers" count={distinctCentersCount.toString()} percentage={{ color: 'info', amount: `${distinctCentersCount} / ${centers.length}`, label: 'branches' }} icon={<FiMapPin />} color="info" />
+                    <StatCard title="Assigned Centers" count={distinctCentersCount.toString()} percentage={{ color: 'primary', amount: `${distinctCentersCount} / ${centers.length}`, label: 'branches' }} icon={<FiMapPin />} color="primary" />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                     <StatCard title="Avg. Package Price" count={`Rs. ${Math.round(avgPrice).toLocaleString()}`} percentage={{ color: 'warning', amount: 'Active', label: 'valid avg' }} icon={<FiDollarSign />} color="warning" />

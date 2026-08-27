@@ -471,8 +471,8 @@ function OverviewTab({
                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
                         <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                            <Box p={1} bgcolor="#eff6ff" borderRadius="10px">
-                                <FiUser color="#2563eb" size={20} />
+                            <Box p={1} bgcolor="rgba(234, 88, 12, 0.1)" borderRadius="10px">
+                                <FiUser color="#ea580c" size={20} />
                             </Box>
                             <Box>
                                 <Typography variant="h6" fontWeight={700} color="#1e293b">
@@ -510,7 +510,7 @@ function OverviewTab({
                                     />
                                 ) : (
                                     <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
-                                        <FiUser color="#2563eb" size={16} />
+                                        <FiUser color="#ea580c" size={16} />
                                         <Typography variant="body2" fontWeight={600} color="#1e293b">
                                             {formState.fullName || "—"}
                                         </Typography>
@@ -589,7 +589,7 @@ function OverviewTab({
                                     />
                                 ) : (
                                     <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
-                                        <FiPhone color="#2563eb" size={16} />
+                                        <FiPhone color="#ea580c" size={16} />
                                         <Typography variant="body2" color="#334155">
                                             {formState.phone || "—"}
                                         </Typography>

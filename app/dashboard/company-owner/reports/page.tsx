@@ -612,7 +612,7 @@ export default function ReportsPage() {
                 let color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" = "default";
                 switch(params.value) {
                     case 'Financial': color = 'success'; break;
-                    case 'Analytics': color = 'info'; break;
+                    case 'Analytics': color = 'primary'; break;
                     case 'Audit': color = 'warning'; break;
                     case 'Feedback': color = 'secondary'; break;
                     default: color = 'primary';

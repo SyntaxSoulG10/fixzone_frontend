@@ -397,7 +397,7 @@ function CenterCard({
                     <Grid size={{ xs: 4 }}>
                         <Box sx={{ p: 1, bgcolor: "#f8fafc", borderRadius: "0.75rem", textAlign: "center", border: "1px solid #f1f5f9" }}>
                             <Box display="flex" alignItems="center" justifyContent="center" gap={0.5} mb={0.25}>
-                                <GroupsRounded sx={{ color: "#3b82f6", fontSize: 16 }} />
+                                <GroupsRounded sx={{ color: "#ea580c", fontSize: 16 }} />
                                 <Typography variant="caption" color="#64748b" fontWeight="700">Team</Typography>
                             </Box>
                             <Typography variant="body2" color="#1e293b" fontWeight="800">

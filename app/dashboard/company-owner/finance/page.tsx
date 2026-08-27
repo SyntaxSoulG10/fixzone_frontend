@@ -80,7 +80,7 @@ const transactionColumns: GridColDef[] = [
     { 
         field: 'method', headerName: 'Method', flex: 1,
         renderCell: (p: GridRenderCellParams) => (
-            <Chip label={p.value} size="small" variant="filled" sx={{ bgcolor: p.value === 'CASH' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)', color: p.value === 'CASH' ? '#2e7d32' : '#1976d2', fontWeight: 'bold' }} />
+            <Chip label={p.value} size="small" variant="filled" sx={{ bgcolor: p.value === 'CASH' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(234, 88, 12, 0.1)', color: p.value === 'CASH' ? '#2e7d32' : '#c2410c', fontWeight: 'bold' }} />
         )
     },
     { 
@@ -245,7 +245,7 @@ export default function FinancePage() {
                             amount: contextData.revenueChange,
                             label: 'vs. last month'
                         } : {
-                            color: 'info',
+                            color: 'primary',
                             amount: '',
                             label: 'Overall earnings'
                         }} 
@@ -271,12 +271,12 @@ export default function FinancePage() {
                         title="Online Revenue" 
                         count={`Rs. ${(financeData.onlineRevenue || 0).toLocaleString('en-LK')}`} 
                         percentage={{
-                            color: 'info',
+                            color: 'primary',
                             amount: 'Stripe',
                             label: 'Digital card'
                         }} 
                         icon={<FiCreditCard />} 
-                        color="info" 
+                        color="primary" 
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, lg: 3 }}>

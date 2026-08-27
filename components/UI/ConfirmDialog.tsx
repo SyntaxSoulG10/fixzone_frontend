@@ -52,10 +52,10 @@ const variantConfig: Record<
     icon: <FiCheckCircle size={24} />,
   },
   info: {
-    iconBg: "#eff6ff",
-    iconColor: "#2563eb",
-    btnColor: "#2563eb",
-    btnHover: "#1d4ed8",
+    iconBg: "rgba(234, 88, 12, 0.1)",
+    iconColor: "#ea580c",
+    btnColor: "#ea580c",
+    btnHover: "#c2410c",
     icon: <FiHelpCircle size={24} />,
   },
 };
