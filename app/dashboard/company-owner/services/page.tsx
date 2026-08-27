@@ -101,12 +101,37 @@ export const VEHICLE_BRAND_OPTIONS = [
 
 export const COMPATIBLE_BRANDS_BY_TYPE: Record<string, string[]> = {
     "ALL": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Tata", "Mahindra", "Subaru", "Lexus", "Land Rover", "Yamaha", "Bajaj", "TVS", "OTHER"],
-    "CAR": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Subaru", "Lexus", "OTHER"],
-    "SUV": ["ALL", "Toyota", "Honda", "Nissan", "Mitsubishi", "Hyundai", "Kia", "BMW", "Mercedes-Benz", "Audi", "Land Rover", "Ford", "Subaru", "Lexus", "OTHER"],
+    "CAR": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Tata", "Mahindra", "Subaru", "Lexus", "OTHER"],
+    "SUV": ["ALL", "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Kia", "Mazda", "BMW", "Mercedes-Benz", "Audi", "Ford", "Tata", "Mahindra", "Subaru", "Lexus", "Land Rover", "OTHER"],
     "VAN": ["ALL", "Toyota", "Nissan", "Suzuki", "Mitsubishi", "Hyundai", "Mercedes-Benz", "Ford", "Tata", "Mahindra", "OTHER"],
     "BUS": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Mercedes-Benz", "Tata", "Mahindra", "OTHER"],
-    "TRUCK": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Ford", "Tata", "Mahindra", "Mercedes-Benz", "OTHER"],
+    "TRUCK": ["ALL", "Toyota", "Nissan", "Mitsubishi", "Mercedes-Benz", "Ford", "Tata", "Mahindra", "OTHER"],
     "BIKE": ["ALL", "Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "BMW", "OTHER"]
+};
+
+export const COMPATIBLE_TYPES_BY_BRAND: Record<string, string[]> = {
+    "ALL": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK", "BIKE"],
+    "Toyota": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Honda": ["ALL", "CAR", "SUV", "BIKE"],
+    "Nissan": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Suzuki": ["ALL", "CAR", "SUV", "VAN", "BIKE"],
+    "Mitsubishi": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Hyundai": ["ALL", "CAR", "SUV", "VAN"],
+    "Kia": ["ALL", "CAR", "SUV"],
+    "Mazda": ["ALL", "CAR", "SUV"],
+    "BMW": ["ALL", "CAR", "SUV", "BIKE"],
+    "Mercedes-Benz": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Audi": ["ALL", "CAR", "SUV"],
+    "Ford": ["ALL", "CAR", "SUV", "VAN", "TRUCK"],
+    "Tata": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Mahindra": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK"],
+    "Subaru": ["ALL", "CAR", "SUV"],
+    "Lexus": ["ALL", "CAR", "SUV"],
+    "Land Rover": ["SUV"],
+    "Yamaha": ["BIKE"],
+    "Bajaj": ["BIKE"],
+    "TVS": ["BIKE"],
+    "OTHER": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK", "BIKE"]
 };
 
 export function validateBrandAndType(vehicleType?: string, vehicleBrand?: string): { isValid: boolean; error?: string } {
@@ -513,6 +538,13 @@ function ServicePackageDialog({
         return validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
     }, [currentPackage.vehicleType, currentPackage.vehicleBrand]);
 
+    // Available vehicle classification options dynamically filtered by selected vehicle brand
+    const availableVehicleTypeOptions = useMemo(() => {
+        const brandKey = isCustomBrand ? "OTHER" : (currentPackage.vehicleBrand || "ALL");
+        const allowed = COMPATIBLE_TYPES_BY_BRAND[brandKey] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
+        return VEHICLE_TYPE_OPTIONS.filter(opt => allowed.includes(opt.value));
+    }, [currentPackage.vehicleBrand, isCustomBrand]);
+
     // Available brand options dynamically filtered by selected vehicle classification
     const availableBrandOptions = useMemo(() => {
         const typeKey = currentPackage.vehicleType || "ALL";
@@ -525,6 +557,12 @@ function ServicePackageDialog({
         const typeKey = currentPackage.vehicleType || "ALL";
         return COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
     }, [currentPackage.vehicleType]);
+
+    // Recommended vehicle classification presets based on vehicle brand
+    const popularTypes = useMemo(() => {
+        const brandKey = isCustomBrand ? "OTHER" : (currentPackage.vehicleBrand || "ALL");
+        return COMPATIBLE_TYPES_BY_BRAND[brandKey] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
+    }, [currentPackage.vehicleBrand, isCustomBrand]);
 
     const handleVehicleTypeChange = (newType: string) => {
         const allowedBrands = COMPATIBLE_BRANDS_BY_TYPE[newType] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
@@ -541,6 +579,38 @@ function ServicePackageDialog({
             ...currentPackage,
             vehicleType: newType,
             vehicleBrand: updatedBrand
+        });
+    };
+
+    const handleBrandChange = (brand: string) => {
+        if (brand === "OTHER") {
+            setIsCustomBrand(true);
+            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
+            return;
+        }
+
+        setIsCustomBrand(false);
+        const allowedTypes = COMPATIBLE_TYPES_BY_BRAND[brand] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
+        const currentType = currentPackage.vehicleType || "ALL";
+
+        let updatedType = currentType;
+        // If currently selected type is not compatible with the newly selected brand, auto-switch to a valid type
+        if (!allowedTypes.includes(currentType)) {
+            if (["Yamaha", "Bajaj", "TVS"].includes(brand)) {
+                updatedType = "BIKE";
+            } else if (brand === "Land Rover") {
+                updatedType = "SUV";
+            } else if (allowedTypes.includes("CAR")) {
+                updatedType = "CAR";
+            } else {
+                updatedType = allowedTypes[0] || "ALL";
+            }
+        }
+
+        setCurrentPackage({
+            ...currentPackage,
+            vehicleBrand: brand,
+            vehicleType: updatedType
         });
     };
 
@@ -665,14 +735,25 @@ function ServicePackageDialog({
 
                         {/* STEP 1: VEHICLE TYPE CLASSIFICATION (Placed First for natural workflow) */}
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <FormControl fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel>Vehicle Classification</InputLabel>
+                            <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                                <InputLabel>
+                                    {currentPackage.vehicleBrand && currentPackage.vehicleBrand !== "ALL"
+                                        ? `Vehicle Classification (${currentPackage.vehicleBrand})`
+                                        : "Vehicle Classification"}
+                                </InputLabel>
                                 <Select
-                                    value={currentPackage.vehicleType || "ALL"}
-                                    label="Vehicle Classification"
+                                    value={
+                                        availableVehicleTypeOptions.some(v => v.value === (currentPackage.vehicleType || "ALL"))
+                                            ? (currentPackage.vehicleType || "ALL")
+                                            : "ALL"
+                                    }
+                                    label={
+                                        currentPackage.vehicleBrand && currentPackage.vehicleBrand !== "ALL"
+                                            ? `Vehicle Classification (${currentPackage.vehicleBrand})`
+                                            : "Vehicle Classification"}
                                     onChange={(e) => handleVehicleTypeChange(e.target.value)}
                                 >
-                                    {VEHICLE_TYPE_OPTIONS.map((opt) => {
+                                    {availableVehicleTypeOptions.map((opt) => {
                                         const IconComp = opt.Icon;
                                         return (
                                             <MenuItem key={opt.value} value={opt.value}>
@@ -685,6 +766,35 @@ function ServicePackageDialog({
                                     })}
                                 </Select>
                             </FormControl>
+
+                            {/* Quick Compatible Vehicle Type Preset Chips */}
+                            <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
+                                {popularTypes.map((typeVal: string) => {
+                                    const opt = VEHICLE_TYPE_OPTIONS.find(v => v.value === typeVal);
+                                    if (!opt) return null;
+                                    const IconComp = opt.Icon;
+                                    const isSelected = (currentPackage.vehicleType || "ALL") === typeVal;
+                                    return (
+                                        <Chip
+                                            key={typeVal}
+                                            data-testid={`type-chip-${typeVal}`}
+                                            icon={<IconComp size={13} style={{ color: isSelected ? '#c2410c' : '#64748b' }} />}
+                                            label={opt.label}
+                                            size="small"
+                                            clickable
+                                            onClick={() => handleVehicleTypeChange(typeVal)}
+                                            sx={{
+                                                borderRadius: '0.5rem',
+                                                fontWeight: 600,
+                                                fontSize: '0.72rem',
+                                                bgcolor: isSelected ? 'rgba(234, 88, 12, 0.12)' : '#f1f5f9',
+                                                color: isSelected ? '#c2410c' : '#475569',
+                                                border: isSelected ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid transparent'
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </Box>
 
                             <Box 
                                 mt={1.5}
@@ -729,15 +839,7 @@ function ServicePackageDialog({
                                             ? `Vehicle Make / Brand (${selectedVehicleMeta.label})`
                                             : "Vehicle Make / Brand"
                                     }
-                                    onChange={(e) => {
-                                        if (e.target.value === "OTHER") {
-                                            setIsCustomBrand(true);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
-                                        } else {
-                                            setIsCustomBrand(false);
-                                            setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value });
-                                        }
-                                    }}
+                                    onChange={(e) => handleBrandChange(e.target.value)}
                                 >
                                     {availableBrandOptions.map((opt) => (
                                         <MenuItem key={opt.value} value={opt.value}>
@@ -752,18 +854,11 @@ function ServicePackageDialog({
                                 {popularBrands.map((brand: string) => (
                                     <Chip
                                         key={brand}
+                                        data-testid={`brand-chip-${brand}`}
                                         label={brand === "ALL" ? "All Brands" : brand}
                                         size="small"
                                         clickable
-                                        onClick={() => {
-                                            if (brand === "OTHER") {
-                                                setIsCustomBrand(true);
-                                                setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
-                                            } else {
-                                                setIsCustomBrand(false);
-                                                setCurrentPackage({ ...currentPackage, vehicleBrand: brand });
-                                            }
-                                        }}
+                                        onClick={() => handleBrandChange(brand)}
                                         sx={{
                                             borderRadius: '0.5rem',
                                             fontWeight: 600,

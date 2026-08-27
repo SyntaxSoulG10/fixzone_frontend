@@ -104,22 +104,38 @@ describe('Company Owner Services Tab Page', () => {
     // Check modal open
     expect(screen.getAllByText('Create Service Package')[0]).toBeInTheDocument()
     
-    // Initially shows All Brands presets
-    expect(screen.getByText('Toyota')).toBeInTheDocument()
+    // Initially shows Toyota in brand options/chips
+    expect(screen.getByTestId('brand-chip-Toyota')).toBeInTheDocument()
     
-    // Find Vehicle Classification select
-    const vehicleTypeSelect = screen.getByLabelText(/Vehicle Classification/i)
-    fireEvent.mouseDown(vehicleTypeSelect)
-    
-    // Select Motorcycle
-    const bikeOption = await screen.findByText('Motorcycle')
-    fireEvent.click(bikeOption)
+    // Click on Motorcycle classification chip
+    const bikeChip = screen.getByTestId('type-chip-BIKE')
+    fireEvent.click(bikeChip)
     
     // Now motorcycle specific brands like Yamaha, Bajaj, TVS should be displayed
     await waitFor(() => {
-      expect(screen.getByText('Yamaha')).toBeInTheDocument()
-      expect(screen.getByText('Bajaj')).toBeInTheDocument()
-      expect(screen.getByText('TVS')).toBeInTheDocument()
+      expect(screen.getByTestId('brand-chip-Yamaha')).toBeInTheDocument()
+      expect(screen.getByTestId('brand-chip-Bajaj')).toBeInTheDocument()
+      expect(screen.getByTestId('brand-chip-TVS')).toBeInTheDocument()
+    })
+  })
+
+  it('automatically filters and switches vehicle classification when selecting a brand', async () => {
+    render(<ServicesPage />)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Full Engine Tune')).toBeInTheDocument()
+    })
+    
+    const newBtn = screen.getByRole('button', { name: /Create Package/i })
+    fireEvent.click(newBtn)
+    
+    // Click on Yamaha brand chip
+    const yamahaChip = screen.getByTestId('brand-chip-Yamaha')
+    fireEvent.click(yamahaChip)
+    
+    // Classification should automatically switch to Motorcycle / BIKE and label indicates Yamaha
+    await waitFor(() => {
+      expect(screen.getAllByText(/Vehicle Classification \(Yamaha\)/i)[0]).toBeInTheDocument()
     })
   })
 })
