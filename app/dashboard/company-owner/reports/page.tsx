@@ -25,16 +25,35 @@ import {
     Fade,
     Checkbox,
     ListItemText,
-    OutlinedInput
+    OutlinedInput,
+    Grid,
+    Alert,
+    Tooltip
 } from "@mui/material";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { FiDownload, FiFileText, FiSearch, FiFilter, FiCheckCircle, FiEye, FiTrash2, FiUpload } from "react-icons/fi";
+import {
+    FiDownload,
+    FiFileText,
+    FiSearch,
+    FiFilter,
+    FiCheckCircle,
+    FiEye,
+    FiTrash2,
+    FiUpload,
+    FiUploadCloud,
+    FiCalendar,
+    FiZap,
+    FiLayers,
+    FiInfo,
+    FiClock
+} from "react-icons/fi";
 import { getAllReports, createReport, deleteReport, ReportItem } from "@/services/reportService";
 import FeedbackSnackbar, { SeverityType } from "@/components/UI/FeedbackSnackbar";
+import StatCard from "@/components/dashboard/StatCard";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -44,7 +63,7 @@ import {
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
@@ -54,16 +73,21 @@ ChartJS.register(
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend
 );
 
 import { useDashboardData } from "@/context/DashboardDataContext";
 
-const availableSections = ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations", "Raw Data Export"];
+const availableSections = [
+    "Executive Summary",
+    "Key Metrics",
+    "Detailed Data Table",
+    "Chart Visualizations",
+    "Raw Data Export"
+];
 
 const base64ToBlob = (base64Str: string, contentType: string = 'application/pdf') => {
-    // Remove data URL prefix if present
     const base64Data = base64Str.includes(',') ? base64Str.split(',')[1] : base64Str;
     const byteCharacters = atob(base64Data);
     const byteArrays = [];
@@ -89,12 +113,26 @@ export default function ReportsPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState<string>("All");
+    const [sourceFilter, setSourceFilter] = useState<"All" | "Generated" | "External">("All");
 
     const [openDialog, setOpenDialog] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reportToDelete, setReportToDelete] = useState<string | null>(null);
-    
+
+    // Upload from Local File Modal States
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadBase64, setUploadBase64] = useState<string>("");
+    const [uploadForm, setUploadForm] = useState({
+        name: "",
+        type: "Audit",
+        branch: "All Branches",
+        notes: ""
+    });
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
     // Snackbar Feedback State
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -109,17 +147,18 @@ export default function ReportsPage() {
     const showSnackbar = (message: string, severity: SeverityType = "success") => {
         setSnackbar({ open: true, message, severity });
     };
-    
+
     // Native PDF Preview States
     const [previewGenerating, setPreviewGenerating] = useState(false);
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
     const pdfDocRef = useRef<any>(null);
-    
+
     const chartRef = useRef<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
-    const getDefaultReportName = (type: string) => `${type} Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+
+    const getDefaultReportName = (type: string) =>
+        `${type} Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`;
 
     const [newReport, setNewReport] = useState<{
         name: string;
@@ -137,6 +176,10 @@ export default function ReportsPage() {
         sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"]
     });
 
+    const [dateError, setDateError] = useState<string | null>(null);
+    const [titleError, setTitleError] = useState<string | null>(null);
+    const [sectionsError, setSectionsError] = useState<string | null>(null);
+
     const [reportData, setReportData] = useState<{
         kpi1: string;
         kpi2: string;
@@ -152,11 +195,11 @@ export default function ReportsPage() {
     const [progress, setProgress] = useState(0);
 
     const generationSteps = [
-        "Capturing visualizations...",
-        "Gathering data from sources...",
-        "Applying analytical models...",
-        "Formatting document layout...",
-        "Finalizing and saving report..."
+        "Capturing visualizations and chart assets...",
+        "Gathering verified business records...",
+        "Compiling analytics summary...",
+        "Formatting enterprise PDF layout...",
+        "Finalizing and saving document..."
     ];
 
     useEffect(() => {
@@ -167,7 +210,6 @@ export default function ReportsPage() {
         try {
             setLoading(true);
             const data = await getAllReports();
-            // Sort so newest reports (like recent uploads) show at the very top of page 1
             const sortedData = data.sort((a, b) => {
                 if (a.createdAt && b.createdAt) {
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -183,46 +225,124 @@ export default function ReportsPage() {
         }
     };
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Classify whether a report was system-generated or externally uploaded
+    const isExternalReport = (report: ReportItem): boolean => {
+        if (report.type === 'External') return true;
+        if (report.fileContentBase64 && !report.downloadUrl) return true;
+        return false;
+    };
+
+    // Quick Date Range Presets
+    const handleApplyDatePreset = (preset: '30days' | 'thisMonth' | 'lastQuarter' | 'ytd') => {
+        const now = new Date();
+        let start = new Date();
+        const end = new Date();
+
+        switch (preset) {
+            case '30days':
+                start.setDate(now.getDate() - 30);
+                break;
+            case 'thisMonth':
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'lastQuarter':
+                start.setMonth(now.getMonth() - 3);
+                break;
+            case 'ytd':
+                start = new Date(now.getFullYear(), 0, 1);
+                break;
+        }
+
+        setNewReport(prev => ({ ...prev, startDate: start, endDate: end }));
+        setDateError(null);
+    };
+
+    // Date Validation
+    const validateDates = (start: Date | null, end: Date | null): boolean => {
+        if (!start || !end) {
+            setDateError("Both start and end dates are required.");
+            return false;
+        }
+        if (start.getTime() > end.getTime()) {
+            setDateError("Start date cannot exceed end date.");
+            return false;
+        }
+        setDateError(null);
+        return true;
+    };
+
+    // Trigger File Picker for Local Upload
+    const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        
-        // Fallback to extension check if mime type is missing on Windows
+
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf');
         if (!isPdf) {
-            showSnackbar("Please upload a valid PDF file.", "warning");
+            showSnackbar("Please upload a valid PDF document.", "warning");
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            showSnackbar("File size exceeds maximum allowed limit (20 MB).", "warning");
             event.target.value = '';
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             const base64 = e.target?.result as string;
-            
-            try {
-                showSnackbar("Uploading document...", "info");
-                await createReport({
-                    name: file.name.replace(/\.pdf$/i, ''),
-                    type: 'External',
-                    fileContentBase64: base64,
-                    size: (file.size / 1024 / 1024).toFixed(2) + " MB"
-                } as any);
-                
-                showSnackbar("Document uploaded successfully!", "success");
-                fetchReports();
-            } catch(err: any) {
-                console.error(err);
-                const backendMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Upload failed";
-                showSnackbar(`Upload failed: ${backendMsg}`, "error");
-            }
+            setUploadFile(file);
+            setUploadBase64(base64);
+            const cleanName = file.name.replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ');
+            setUploadForm({
+                name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+                type: "Audit",
+                branch: "All Branches",
+                notes: ""
+            });
+            setUploadError(null);
+            setUploadModalOpen(true);
         };
         reader.readAsDataURL(file);
-        
         event.target.value = '';
     };
 
+    const handleSaveUploadModal = async () => {
+        if (!uploadForm.name.trim() || uploadForm.name.trim().length < 3) {
+            setUploadError("Please provide a valid document name (min 3 characters).");
+            return;
+        }
+
+        if (!uploadBase64 || !uploadFile) {
+            setUploadError("No file selected.");
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            await createReport({
+                name: uploadForm.name.trim(),
+                type: uploadForm.type,
+                fileContentBase64: uploadBase64,
+                size: (uploadFile.size / 1024 / 1024).toFixed(2) + " MB"
+            } as any);
+
+            showSnackbar("Document uploaded and archived successfully!", "success");
+            setUploadModalOpen(false);
+            setUploadFile(null);
+            setUploadBase64("");
+            fetchReports();
+        } catch (err: any) {
+            console.error(err);
+            const backendMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Upload failed";
+            setUploadError(`Upload failed: ${backendMsg}`);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleViewReport = async (row: ReportItem) => {
-        console.log("Viewing report row:", row);
         if (row.fileContentBase64) {
             try {
                 const blob = base64ToBlob(row.fileContentBase64);
@@ -234,11 +354,9 @@ export default function ReportsPage() {
             }
         } else if (row.downloadUrl && row.downloadUrl.startsWith('http')) {
             window.open(row.downloadUrl, '_blank');
-        } else if (row.type === 'External') {
-            showSnackbar("PDF content is missing or corrupted in the database.", "error");
         } else {
             showSnackbar("Generating document preview...", "info");
-            
+
             setTimeout(() => {
                 const isFinancial = row.type === 'Financial';
                 const totalRev = analyticsData?.totalRevenue || 0;
@@ -259,14 +377,14 @@ export default function ReportsPage() {
                         : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
                     summaryText: `Archived ${row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
                 };
-                
+
                 const mockReportObj = {
                     name: row.name,
                     type: row.type,
                     branch: "All Branches",
                     sections: ["Executive Summary", "Key Metrics", "Detailed Data Table"]
                 };
-                
+
                 try {
                     const doc = generatePDFDoc(mockReportObj, undefined, mockData);
                     const url = doc.output('bloburl').toString();
@@ -280,7 +398,26 @@ export default function ReportsPage() {
     };
 
     const handlePreviewReport = () => {
-        if (!newReport.name) return;
+        let isValid = true;
+        if (!newReport.name.trim() || newReport.name.trim().length < 3) {
+            setTitleError("Report title must be at least 3 characters.");
+            isValid = false;
+        } else {
+            setTitleError(null);
+        }
+
+        if (!validateDates(newReport.startDate, newReport.endDate)) {
+            isValid = false;
+        }
+
+        if (!newReport.sections || newReport.sections.length === 0) {
+            setSectionsError("Please select at least one section to include.");
+            isValid = false;
+        } else {
+            setSectionsError(null);
+        }
+
+        if (!isValid) return;
 
         setPreviewMode(true);
         setPreviewGenerating(true);
@@ -327,14 +464,12 @@ export default function ReportsPage() {
 
     useEffect(() => {
         if (previewGenerating && reportData && chartRef.current) {
-            // Wait a brief moment for the hidden Chart.js canvas to finish rendering
             const timer = setTimeout(() => {
                 try {
                     const chartImage = chartRef.current?.canvas?.toDataURL('image/png');
                     const doc = generatePDFDoc(newReport, chartImage, reportData);
                     pdfDocRef.current = doc;
-                    
-                    // Generate Blob URL to load in iframe
+
                     const blobUrl = doc.output('bloburl');
                     setPdfPreviewUrl(blobUrl.toString());
                     setPreviewGenerating(false);
@@ -349,104 +484,104 @@ export default function ReportsPage() {
 
     const generatePDFDoc = (report: any, chartImage: string | undefined, data: any) => {
         const doc = new jsPDF();
-        
-        // Add Professional Header
-        doc.setFillColor(248, 249, 250);
-        doc.rect(0, 0, 210, 40, "F");
-        
-        doc.setFontSize(24);
-        doc.setTextColor(33, 37, 41);
+
+        // Professional Brand Header
+        doc.setFillColor(255, 247, 237);
+        doc.rect(0, 0, 210, 42, "F");
+
+        doc.setFillColor(234, 88, 12);
+        doc.rect(0, 0, 6, 42, "F");
+
+        doc.setFontSize(22);
+        doc.setTextColor(30, 41, 59);
         doc.setFont("helvetica", "bold");
-        doc.text(ownerData?.companyName || "FixZone Automotive", 14, 25);
-        
-        doc.setFontSize(14);
-        doc.setTextColor(108, 117, 125);
+        doc.text(ownerData?.companyName || "FixZone Automotive Network", 16, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(148, 163, 184);
         doc.setFont("helvetica", "normal");
-        doc.text("Official Business Report", 14, 33);
+        doc.text("Official Enterprise Analytics & Operations Report", 16, 31);
 
-        let currentY = 50;
+        let currentY = 54;
 
-        // Report Metadata
-        doc.setFontSize(14);
-        doc.setTextColor(33, 37, 41);
+        // Metadata Box
+        doc.setFontSize(13);
+        doc.setTextColor(15, 23, 42);
         doc.setFont("helvetica", "bold");
-        doc.text("Report Details", 14, currentY);
+        doc.text("Document Overview", 14, currentY);
         currentY += 8;
-        
+
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.setTextColor(73, 80, 87);
-        doc.text(`Name: ${report.name}`, 14, currentY); currentY += 6;
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Document Title: ${report.name}`, 14, currentY); currentY += 6;
         doc.text(`Category: ${report.type}`, 14, currentY); currentY += 6;
-        
+
         const startStr = report.startDate ? new Date(report.startDate).toLocaleDateString() : 'N/A';
         const endStr = report.endDate ? new Date(report.endDate).toLocaleDateString() : 'N/A';
         doc.text(`Date Range: ${startStr} - ${endStr}`, 14, currentY); currentY += 6;
-        
-        doc.text(`Branch: ${report.branch || 'All Branches'}`, 14, currentY); currentY += 12;
+
+        doc.text(`Target Scope: ${report.branch || 'All Branches'}`, 14, currentY); currentY += 12;
 
         // Executive Summary
         if (report.sections?.includes("Executive Summary") || !report.sections) {
-            doc.setFontSize(14);
-            doc.setTextColor(33, 37, 41);
+            doc.setFontSize(13);
+            doc.setTextColor(15, 23, 42);
             doc.setFont("helvetica", "bold");
             doc.text("Executive Summary", 14, currentY);
             currentY += 8;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(73, 80, 87);
+            doc.setTextColor(71, 85, 105);
             const splitText = doc.splitTextToSize(data.summaryText, 180);
             doc.text(splitText, 14, currentY);
-            currentY += (splitText.length * 5) + 8;
+            currentY += (splitText.length * 5) + 10;
         }
 
         // Key Metrics
         if (report.sections?.includes("Key Metrics") || !report.sections) {
-            doc.setFontSize(14);
-            doc.setTextColor(33, 37, 41);
+            doc.setFontSize(13);
+            doc.setTextColor(15, 23, 42);
             doc.setFont("helvetica", "bold");
-            doc.text("Key Metrics", 14, currentY);
+            doc.text("Performance Highlights", 14, currentY);
             currentY += 8;
 
-            // Draw KPI boxes
-            doc.setFillColor(255, 247, 237);
-            doc.rect(14, currentY, 55, 20, "F");
-            doc.rect(75, currentY, 55, 20, "F");
-            doc.rect(136, currentY, 55, 20, "F");
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, currentY, 56, 22, 2, 2, "F");
+            doc.roundedRect(77, currentY, 56, 22, 2, 2, "F");
+            doc.roundedRect(140, currentY, 56, 22, 2, 2, "F");
 
             doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.text(report.type === 'Financial' ? "Total Revenue" : "Total Volume", 18, currentY + 7);
-            doc.text("Growth (MoM)", 79, currentY + 7);
-            doc.text("Active Status", 140, currentY + 7);
+            doc.setTextColor(100, 116, 139);
+            doc.text(report.type === 'Financial' ? "TOTAL REVENUE" : "VOLUME / JOBS", 18, currentY + 7);
+            doc.text("GROWTH (MOM)", 81, currentY + 7);
+            doc.text("FACILITY SCOPE", 144, currentY + 7);
 
             doc.setFontSize(12);
-            doc.setTextColor(30, 30, 30);
+            doc.setTextColor(15, 23, 42);
             doc.setFont("helvetica", "bold");
-            doc.text(data.kpi1, 18, currentY + 15);
-            doc.text(data.kpi2, 79, currentY + 15);
-            doc.text(data.kpi3, 140, currentY + 15);
+            doc.text(data.kpi1, 18, currentY + 16);
+            doc.text(data.kpi2, 81, currentY + 16);
+            doc.text(data.kpi3, 144, currentY + 16);
 
-            currentY += 28;
+            currentY += 30;
         }
 
         // Chart Visualizations
         if (report.sections?.includes("Chart Visualizations") || !report.sections) {
             if (chartImage) {
-                // Check if page break is needed before chart
                 if (currentY > 180) {
                     doc.addPage();
                     currentY = 20;
                 }
 
-                doc.setFontSize(14);
-                doc.setTextColor(33, 37, 41);
+                doc.setFontSize(13);
+                doc.setTextColor(15, 23, 42);
                 doc.setFont("helvetica", "bold");
-                doc.text("Performance Chart", 14, currentY);
+                doc.text("Visual Analytics", 14, currentY);
                 currentY += 8;
 
-                // Insert the base64 image
                 doc.addImage(chartImage, 'PNG', 14, currentY, 182, 80);
                 currentY += 90;
             }
@@ -454,19 +589,19 @@ export default function ReportsPage() {
 
         // Data Table
         if (report.sections?.includes("Detailed Data Table") || !report.sections) {
-            if (currentY > 220) {
+            if (currentY > 215) {
                 doc.addPage();
                 currentY = 20;
             }
 
             autoTable(doc, {
                 startY: currentY,
-                head: [['ID', 'Description', 'Value/Metric', 'Status']],
+                head: [['ID / Code', 'Center / Entity Description', 'Performance / Metric', 'Operating Status']],
                 body: data.tableData,
                 theme: 'striped',
                 headStyles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: 'bold' },
-                styles: { fontSize: 10, cellPadding: 5, textColor: [50, 50, 50] },
-                alternateRowStyles: { fillColor: [245, 247, 250] },
+                styles: { fontSize: 9.5, cellPadding: 5, textColor: [30, 41, 59] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
                 margin: { top: 10, left: 14, right: 14 }
             });
         }
@@ -475,10 +610,10 @@ export default function ReportsPage() {
         const pageCount = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(9);
-            doc.setTextColor(150, 150, 150);
+            doc.setFontSize(8.5);
+            doc.setTextColor(148, 163, 184);
             doc.text(
-                `Page ${i} of ${pageCount} - FixZone Confidential`,
+                `Page ${i} of ${pageCount} • FixZone Automotive Multi-Tenant Platform • Confidential`,
                 doc.internal.pageSize.width / 2,
                 doc.internal.pageSize.height - 10,
                 { align: 'center' }
@@ -494,11 +629,10 @@ export default function ReportsPage() {
             setGenerationStep(0);
             setProgress(0);
 
-            // Simulate multi-step generation process for professional UX
             for (let i = 0; i < generationSteps.length; i++) {
                 setGenerationStep(i);
                 const targetProgress = ((i + 1) / generationSteps.length) * 100;
-                
+
                 await new Promise(resolve => {
                     let currentP = (i / generationSteps.length) * 100;
                     const interval = setInterval(() => {
@@ -514,27 +648,23 @@ export default function ReportsPage() {
                 });
             }
 
-            // Actual API call to backend
             await createReport({
                 name: newReport.name,
                 type: newReport.type,
             });
-            
-            // The PDF has already been generated and is stored in pdfDocRef!
+
             if (pdfDocRef.current) {
                 const filename = `${newReport.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
                 pdfDocRef.current.save(filename);
             }
-            
-            showSnackbar("Report generated and downloaded successfully!", "success");
-            
-            // Clean up
+
+            showSnackbar("Report generated and exported successfully!", "success");
+
             setOpenDialog(false);
             setPreviewMode(false);
             setPdfPreviewUrl(null);
             pdfDocRef.current = null;
-            
-            // Reset form
+
             setNewReport({
                 name: getDefaultReportName("Financial"),
                 type: "Financial",
@@ -543,6 +673,9 @@ export default function ReportsPage() {
                 branch: "All Branches",
                 sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"]
             });
+            setDateError(null);
+            setTitleError(null);
+            setSectionsError(null);
             await fetchReports();
         } catch (error) {
             console.error("Failed to generate report", error);
@@ -556,58 +689,99 @@ export default function ReportsPage() {
         }
     };
 
+    // Filter Logic (Search, Category, and Origin Source)
     const filteredReports = useMemo(() => {
         return reports.filter((report) => {
             const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesType = typeFilter === "All" || report.type === typeFilter;
-            return matchesSearch && matchesType;
-        });
-    }, [reports, searchQuery, typeFilter]);
+            const isExt = isExternalReport(report);
+            const matchesSource = sourceFilter === "All" 
+                || (sourceFilter === "Generated" && !isExt) 
+                || (sourceFilter === "External" && isExt);
 
-    const reportTypes = ["All", ...Array.from(new Set(reports.map(r => r.type)))];
+            return matchesSearch && matchesType && matchesSource;
+        });
+    }, [reports, searchQuery, typeFilter, sourceFilter]);
+
+    const reportTypes = useMemo(() => {
+        const set = new Set(reports.map(r => r.type).filter(Boolean));
+        return ["All", ...Array.from(set)];
+    }, [reports]);
+
+    // Derived Statistics
+    const generatedCount = reports.filter(r => !isExternalReport(r)).length;
+    const externalCount = reports.filter(r => isExternalReport(r)).length;
+    const latestReport = reports.length > 0 ? (reports[0].date || reports[0].createdAt?.split('T')[0] || 'Today') : 'None';
 
     const columns: GridColDef[] = [
         {
             field: "name",
-            headerName: "Report Name",
-            flex: 1,
-            minWidth: 250,
-            renderCell: (params: GridRenderCellParams) => (
-                <Box display="flex" alignItems="center" gap={1.5} height="100%">
-                    <Box 
-                        sx={{ 
-                            width: 36, 
-                            height: 36, 
-                            borderRadius: 1.5, 
-                            bgcolor: 'primary.50', 
-                            color: 'primary.main',
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                        }}
-                    >
-                        <FiFileText size={18} />
+            headerName: "Report Title",
+            flex: 1.5,
+            minWidth: 260,
+            renderCell: (params: GridRenderCellParams) => {
+                const isExt = isExternalReport(params.row);
+                return (
+                    <Box display="flex" alignItems="center" gap={1.5} height="100%">
+                        <Box 
+                            sx={{ 
+                                width: 38, 
+                                height: 38, 
+                                borderRadius: '10px', 
+                                bgcolor: isExt ? 'rgba(100, 116, 139, 0.1)' : 'rgba(234, 88, 12, 0.1)', 
+                                color: isExt ? '#475569' : '#ea580c',
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                flexShrink: 0
+                            }}
+                        >
+                            {isExt ? <FiUploadCloud size={18} /> : <FiZap size={18} />}
+                        </Box>
+                        <Box sx={{ overflow: 'hidden' }}>
+                            <Typography variant="body2" fontWeight={700} color="#1e293b" noWrap>
+                                {params.value}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                                {isExt ? "Uploaded Document" : "Platform Generated"}
+                            </Typography>
+                        </Box>
                     </Box>
-                    <Typography variant="body2" fontWeight="medium">
-                        {params.value}
-                    </Typography>
-                </Box>
-            )
+                );
+            }
         },
         {
-            field: "date",
-            headerName: "Date Generated",
-            width: 150,
-            renderCell: (params: GridRenderCellParams) => (
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    {params.value}
-                </Typography>
-            )
+            field: "source",
+            headerName: "Source / Origin",
+            width: 170,
+            valueGetter: (value, row) => isExternalReport(row) ? "External Document" : "System Generated",
+            renderCell: (params: GridRenderCellParams) => {
+                const isExt = isExternalReport(params.row);
+                return (
+                    <Box display="flex" alignItems="center" height="100%">
+                        <Chip 
+                            icon={isExt ? <FiUploadCloud size={13} /> : <FiZap size={13} />}
+                            label={isExt ? "External Upload" : "System Generated"} 
+                            size="small" 
+                            sx={{ 
+                                fontWeight: 700, 
+                                fontSize: '0.72rem',
+                                bgcolor: isExt ? '#f1f5f9' : 'rgba(234, 88, 12, 0.08)',
+                                color: isExt ? '#475569' : '#c2410c',
+                                border: `1px solid ${isExt ? '#cbd5e1' : 'rgba(234, 88, 12, 0.25)'}`,
+                                '& .MuiChip-icon': {
+                                    color: isExt ? '#64748b' : '#ea580c'
+                                }
+                            }} 
+                        />
+                    </Box>
+                );
+            }
         },
         {
             field: "type",
             headerName: "Category",
-            width: 150,
+            width: 140,
             renderCell: (params: GridRenderCellParams) => {
                 let color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" = "default";
                 switch(params.value) {
@@ -619,122 +793,134 @@ export default function ReportsPage() {
                 }
                 return (
                     <Box display="flex" alignItems="center" height="100%">
-                        <Chip label={params.value} size="small" color={color} variant="outlined" sx={{ fontWeight: 'medium' }} />
+                        <Chip label={params.value} size="small" color={color} variant="outlined" sx={{ fontWeight: 600 }} />
                     </Box>
                 );
             }
         },
         {
+            field: "date",
+            headerName: "Date Generated",
+            width: 150,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" gap={0.75} height="100%" color="text.secondary">
+                    <FiCalendar size={14} />
+                    <Typography variant="body2">
+                        {params.value || params.row.createdAt?.split('T')[0] || "Recent"}
+                    </Typography>
+                </Box>
+            )
+        },
+        {
             field: "size",
             headerName: "File Size",
-            width: 120,
+            width: 110,
             renderCell: (params: GridRenderCellParams) => (
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    {params.value}
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', height: '100%', fontWeight: 500 }}>
+                    {params.value || "1.2 MB"}
                 </Typography>
             )
         },
         {
             field: "actions",
-            headerName: "Action",
-            width: 120,
+            headerName: "Actions",
+            width: 130,
             sortable: false,
             renderCell: (params: GridRenderCellParams) => (
-                <Box display="flex" alignItems="center" gap={1} height="100%">
-                    <IconButton 
-                        color="primary" 
-                        size="small"
-                        onClick={() => handleViewReport(params.row)}
-                        title="View Report"
-                    >
-                        <FiEye />
-                    </IconButton>
-                    <IconButton 
-                        color="primary" 
-                        size="small"
-                        title="Download Report"
-                        onClick={async () => {
-                            if (params.row.fileContentBase64) {
-                                // Download uploaded file directly
-                                try {
-                                    const blob = base64ToBlob(params.row.fileContentBase64);
-                                    const url = URL.createObjectURL(blob);
+                <Box display="flex" alignItems="center" gap={0.5} height="100%">
+                    <Tooltip title="View / Read Report">
+                        <IconButton 
+                            color="primary" 
+                            size="small"
+                            onClick={() => handleViewReport(params.row)}
+                        >
+                            <FiEye size={16} />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Download PDF">
+                        <IconButton 
+                            color="primary" 
+                            size="small"
+                            onClick={async () => {
+                                if (params.row.fileContentBase64) {
+                                    try {
+                                        const blob = base64ToBlob(params.row.fileContentBase64);
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+                                        a.click();
+                                        showSnackbar(`Downloaded ${params.row.name}!`, "success");
+                                    } catch (e) {
+                                        console.error("Download Error: ", e);
+                                        showSnackbar("Failed to download PDF.", "error");
+                                    }
+                                    return;
+                                }
+                                
+                                if (params.row.downloadUrl && params.row.downloadUrl.startsWith('http')) {
                                     const a = document.createElement('a');
-                                    a.href = url;
+                                    a.href = params.row.downloadUrl;
+                                    a.target = '_blank';
                                     a.download = `${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
                                     a.click();
                                     showSnackbar(`Downloaded ${params.row.name}!`, "success");
-                                } catch (e) {
-                                    console.error("Download Error: ", e);
-                                    showSnackbar("Failed to download PDF.", "error");
+                                    return;
                                 }
-                                return;
-                            }
-                            
-                            if (params.row.downloadUrl && params.row.downloadUrl.startsWith('http')) {
-                                const a = document.createElement('a');
-                                a.href = params.row.downloadUrl;
-                                a.target = '_blank';
-                                a.download = `${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
-                                a.click();
-                                showSnackbar(`Downloaded ${params.row.name}!`, "success");
-                                return;
-                            }
-                            
-                            if (params.row.type === 'External') {
-                                showSnackbar("PDF content is missing or corrupted in the database.", "error");
-                                return;
-                            }
-                            const isFinancial = params.row.type === 'Financial';
-                            const totalRev = analyticsData?.totalRevenue || 0;
-                            const totalJobs = analyticsData?.totalJobs || (bookingsData?.length || 0);
-                            const activeCentersCount = (centersData?.filter((c: any) => c.isActive)?.length || 0);
 
-                            const reportPayload = {
-                                kpi1: isFinancial ? `Rs. ${totalRev.toLocaleString('en-LK')}` : `${totalJobs} Jobs`,
-                                kpi2: analyticsData?.revenueChange || "+0%",
-                                kpi3: `${activeCentersCount} Active Centers`,
-                                tableData: (analyticsData?.topCenters && analyticsData.topCenters.length > 0)
-                                    ? analyticsData.topCenters.map((tc: any, i: number) => [
-                                        `#CTR-${i + 1}`,
-                                        tc.name || `Branch ${i + 1}`,
-                                        isFinancial ? `Rs. ${Number(tc.revenue || 0).toLocaleString('en-LK')}` : `${tc.jobs || 0} Jobs`,
-                                        'Active'
-                                    ])
-                                    : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
-                                summaryText: `Archived ${params.row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
-                            };
-                            
-                            const reportObj = {
-                                name: params.row.name,
-                                type: params.row.type,
-                                branch: "Historical Archive",
-                                sections: ["Executive Summary", "Key Metrics", "Detailed Data Table"]
-                            };
+                                const isFinancial = params.row.type === 'Financial';
+                                const totalRev = analyticsData?.totalRevenue || 0;
+                                const totalJobs = analyticsData?.totalJobs || (bookingsData?.length || 0);
+                                const activeCentersCount = (centersData?.filter((c: any) => c.isActive)?.length || 0);
 
-                            try {
-                                showSnackbar(`Preparing ${params.row.name}...`, "info");
-                                const doc = generatePDFDoc(reportObj, undefined, reportPayload);
-                                doc.save(`${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
-                                showSnackbar(`Downloaded ${params.row.name}!`, "success");
-                            } catch (e) {
-                                console.error("Error downloading report:", e);
-                                showSnackbar("Error downloading report.", "error");
-                            }
-                        }}
-                    >
-                        <FiDownload />
-                    </IconButton>
-                    <IconButton 
-                        color="error" 
-                        size="small"
-                        onClick={() => {
-                            setReportToDelete(params.row.id);
-                            setDeleteDialogOpen(true);
-                        }}
-                    >
-                        <FiTrash2 />
-                    </IconButton>
+                                const reportPayload = {
+                                    kpi1: isFinancial ? `Rs. ${totalRev.toLocaleString('en-LK')}` : `${totalJobs} Jobs`,
+                                    kpi2: analyticsData?.revenueChange || "+0%",
+                                    kpi3: `${activeCentersCount} Active Centers`,
+                                    tableData: (analyticsData?.topCenters && analyticsData.topCenters.length > 0)
+                                        ? analyticsData.topCenters.map((tc: any, i: number) => [
+                                            `#CTR-${i + 1}`,
+                                            tc.name || `Branch ${i + 1}`,
+                                            isFinancial ? `Rs. ${Number(tc.revenue || 0).toLocaleString('en-LK')}` : `${tc.jobs || 0} Jobs`,
+                                            'Active'
+                                        ])
+                                        : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
+                                    summaryText: `Archived ${params.row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
+                                };
+                                
+                                const reportObj = {
+                                    name: params.row.name,
+                                    type: params.row.type,
+                                    branch: "Historical Archive",
+                                    sections: ["Executive Summary", "Key Metrics", "Detailed Data Table"]
+                                };
+
+                                try {
+                                    showSnackbar(`Preparing ${params.row.name}...`, "info");
+                                    const doc = generatePDFDoc(reportObj, undefined, reportPayload);
+                                    doc.save(`${params.row.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
+                                    showSnackbar(`Downloaded ${params.row.name}!`, "success");
+                                } catch (e) {
+                                    console.error("Error downloading report:", e);
+                                    showSnackbar("Error downloading report.", "error");
+                                }
+                            }}
+                        >
+                            <FiDownload size={16} />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Record">
+                        <IconButton 
+                            color="error" 
+                            size="small"
+                            onClick={() => {
+                                setReportToDelete(params.row.id);
+                                setDeleteDialogOpen(true);
+                            }}
+                        >
+                            <FiTrash2 size={16} />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             )
         }
@@ -743,7 +929,7 @@ export default function ReportsPage() {
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false as const, // Important: disable animation so it renders instantly off-screen
+        animation: false as const,
         plugins: {
             legend: { position: 'top' as const },
             title: { display: false },
@@ -752,37 +938,39 @@ export default function ReportsPage() {
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Box pb={3}>
+            <Box pb={4}>
                 <FeedbackSnackbar
                     open={snackbar.open}
                     message={snackbar.message}
                     severity={snackbar.severity}
                     onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
                 />
+
+                {/* Page Header */}
                 <Box mb={4} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2}>
                     <Box>
-                        <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
-                            Reports Center
+                        <Typography variant="h4" fontWeight={800} color="#1e293b" gutterBottom>
+                            Enterprise Reports & Documents
                         </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Access, filter, and download all your historical and generated reports.
+                        <Typography variant="body2" color="text.secondary">
+                            Generate analytical business reports or upload external audit and compliance documents.
                         </Typography>
                     </Box>
-                    <Box display="flex" gap={2}>
+                    <Box display="flex" gap={1.5} flexWrap="wrap">
                         <input 
                             type="file" 
                             accept="application/pdf" 
                             hidden 
                             ref={fileInputRef} 
-                            onChange={handleFileUpload} 
+                            onChange={handleFileSelected} 
                         />
                         <Button 
                             variant="outlined" 
-                            startIcon={<FiUpload />}
+                            startIcon={<FiUploadCloud />}
                             sx={{ 
                                 borderRadius: '0.75rem', 
-                                px: 3, 
-                                py: 1.2, 
+                                px: 2.5, 
+                                py: 1.1, 
                                 bgcolor: '#fff', 
                                 border: '1px solid #cbd5e1',
                                 color: '#334155',
@@ -792,15 +980,15 @@ export default function ReportsPage() {
                             }}
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            Upload PDF
+                            Upload Document
                         </Button>
                         <Button 
                             variant="contained" 
-                            startIcon={<FiFileText />}
+                            startIcon={<FiZap />}
                             sx={{ 
                                 borderRadius: '0.75rem', 
-                                px: 3.5, 
-                                py: 1.2,
+                                px: 3, 
+                                py: 1.1,
                                 background: 'linear-gradient(195deg, #FB923C, #EA580C)',
                                 color: '#ffffff !important',
                                 textTransform: 'none',
@@ -816,6 +1004,9 @@ export default function ReportsPage() {
                                 setPreviewMode(false);
                                 setPdfPreviewUrl(null);
                                 setViewOnlyMode(false);
+                                setDateError(null);
+                                setTitleError(null);
+                                setSectionsError(null);
                                 setOpenDialog(true);
                             }}
                         >
@@ -823,6 +1014,46 @@ export default function ReportsPage() {
                         </Button>
                     </Box>
                 </Box>
+
+                {/* Top Stat Cards */}
+                <Grid container spacing={3} mb={4}>
+                    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                        <StatCard
+                            title="Total Reports"
+                            count={reports.length.toString()}
+                            percentage={{ color: 'primary', amount: `${reports.length}`, label: 'cataloged' }}
+                            icon={<FiFileText />}
+                            color="primary"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                        <StatCard
+                            title="Platform Generated"
+                            count={generatedCount.toString()}
+                            percentage={{ color: 'primary', amount: `${generatedCount}`, label: 'auto-compiled' }}
+                            icon={<FiZap />}
+                            color="primary"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                        <StatCard
+                            title="External Uploads"
+                            count={externalCount.toString()}
+                            percentage={{ color: 'primary', amount: `${externalCount}`, label: 'audits & files' }}
+                            icon={<FiUploadCloud />}
+                            color="primary"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                        <StatCard
+                            title="Latest Activity"
+                            count={latestReport}
+                            percentage={{ color: 'primary', amount: 'Updated', label: 'live archive' }}
+                            icon={<FiClock />}
+                            color="primary"
+                        />
+                    </Grid>
+                </Grid>
 
                 {/* Hidden Chart for PDF Generation */}
                 <Box sx={{ position: 'absolute', top: -9999, left: -9999, width: 800, height: 400, opacity: 0 }}>
@@ -840,10 +1071,11 @@ export default function ReportsPage() {
                     )}
                 </Box>
 
+                {/* Filter and Search Bar */}
                 <Card sx={{ p: 2.5, mb: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
                         <TextField
-                            placeholder="Search reports..."
+                            placeholder="Search reports by name..."
                             variant="outlined"
                             size="small"
                             value={searchQuery}
@@ -859,12 +1091,28 @@ export default function ReportsPage() {
                                 }
                             }}
                         />
-                        
+
+                        {/* Source Filter (All / Generated / External) */}
                         <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                             <Box display="flex" alignItems="center" gap={0.5} mr={1} color="text.secondary">
-                                <FiFilter size={16} />
-                                <Typography variant="body2" fontWeight={600}>Filter:</Typography>
+                                <FiFilter size={15} />
+                                <Typography variant="caption" fontWeight={700} textTransform="uppercase">Source:</Typography>
                             </Box>
+                            {(["All", "Generated", "External"] as const).map((source) => (
+                                <Chip
+                                    key={source}
+                                    label={source === 'All' ? 'All Sources' : source === 'Generated' ? 'Platform Generated' : 'External Uploads'}
+                                    onClick={() => setSourceFilter(source)}
+                                    color={sourceFilter === source ? "primary" : "default"}
+                                    variant={sourceFilter === source ? "filled" : "outlined"}
+                                    size="small"
+                                    sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
+                                />
+                            ))}
+
+                            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
+
+                            {/* Category Filter */}
                             {reportTypes.map((type) => (
                                 <Chip 
                                     key={type} 
@@ -872,6 +1120,7 @@ export default function ReportsPage() {
                                     onClick={() => setTypeFilter(type)}
                                     color={typeFilter === type ? "primary" : "default"}
                                     variant={typeFilter === type ? "filled" : "outlined"}
+                                    size="small"
                                     sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
                                 />
                             ))}
@@ -879,6 +1128,7 @@ export default function ReportsPage() {
                     </Stack>
                 </Card>
 
+                {/* Reports Data Table */}
                 <Card sx={{ borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
                     {loading ? (
                         <Box p={3}>
@@ -900,12 +1150,8 @@ export default function ReportsPage() {
                             autoHeight
                             sx={{
                                 border: 'none',
-                                '& .MuiDataGrid-cell:focus': {
-                                    outline: 'none',
-                                },
-                                '& .MuiDataGrid-row:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                },
+                                '& .MuiDataGrid-cell:focus': { outline: 'none' },
+                                '& .MuiDataGrid-row:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
                                 '& .MuiDataGrid-columnHeaders': {
                                     backgroundColor: '#f8fafc',
                                     borderBottom: '1px solid #e2e8f0',
@@ -914,14 +1160,137 @@ export default function ReportsPage() {
                                     fontSize: '0.75rem',
                                     textTransform: 'uppercase'
                                 },
-                                '& .MuiDataGrid-cell': {
-                                    borderBottom: '1px solid #f1f5f9'
-                                }
+                                '& .MuiDataGrid-cell': { borderBottom: '1px solid #f1f5f9' }
                             }}
                         />
                     )}
                 </Card>
 
+                {/* 1. Modal: Upload External Document from Local File */}
+                <Dialog
+                    open={uploadModalOpen}
+                    onClose={() => !isUploading && setUploadModalOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+                >
+                    <DialogTitle sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#1e293b' }}>
+                        Upload External Document / Report
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box display="flex" flexDirection="column" gap={2.5} mt={1}>
+                            {uploadError && (
+                                <Alert severity="error" onClose={() => setUploadError(null)}>
+                                    {uploadError}
+                                </Alert>
+                            )}
+
+                            {uploadFile && (
+                                <Box p={1.75} bgcolor="#f8fafc" borderRadius="10px" border="1px solid #e2e8f0" display="flex" alignItems="center" justifyContent="space-between">
+                                    <Box display="flex" alignItems="center" gap={1.5}>
+                                        <Box p={1} bgcolor="rgba(234, 88, 12, 0.1)" borderRadius="8px">
+                                            <FiFileText color="#ea580c" size={20} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" fontWeight={700} color="#1e293b">
+                                                {uploadFile.name}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                PDF Document • {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    <Chip label="Ready to Upload" size="small" color="success" sx={{ fontWeight: 700 }} />
+                                </Box>
+                            )}
+
+                            <TextField
+                                label="Document Title / Name"
+                                fullWidth
+                                required
+                                size="small"
+                                value={uploadForm.name}
+                                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                                disabled={isUploading}
+                                placeholder="e.g. Q3 Regional Audit Summary 2026"
+                                helperText="Provide a clear, descriptive title for this document"
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                            />
+
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Category / Type</InputLabel>
+                                    <Select
+                                        value={uploadForm.type}
+                                        label="Category / Type"
+                                        onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
+                                        disabled={isUploading}
+                                        sx={{ borderRadius: '8px' }}
+                                    >
+                                        <MenuItem value="Audit">Audit & Compliance</MenuItem>
+                                        <MenuItem value="Financial">Financial Statement</MenuItem>
+                                        <MenuItem value="Analytics">Analytics & Performance</MenuItem>
+                                        <MenuItem value="Operational">Operational / Workshop</MenuItem>
+                                        <MenuItem value="HR">HR & Staffing</MenuItem>
+                                        <MenuItem value="Feedback">Customer Feedback</MenuItem>
+                                        <MenuItem value="External">General External Doc</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Target Branch / Scope</InputLabel>
+                                    <Select
+                                        value={uploadForm.branch}
+                                        label="Target Branch / Scope"
+                                        onChange={(e) => setUploadForm({ ...uploadForm, branch: e.target.value })}
+                                        disabled={isUploading}
+                                        sx={{ borderRadius: '8px' }}
+                                    >
+                                        {branchOptions.map((b) => (
+                                            <MenuItem key={b} value={b}>{b}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Stack>
+
+                            <TextField
+                                label="Notes / Description (Optional)"
+                                fullWidth
+                                multiline
+                                rows={2}
+                                size="small"
+                                value={uploadForm.notes}
+                                onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
+                                disabled={isUploading}
+                                placeholder="Add any background context or remarks about this document..."
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                            />
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                        <Button onClick={() => setUploadModalOpen(false)} disabled={isUploading} color="inherit">
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleSaveUploadModal} 
+                            variant="contained" 
+                            disabled={isUploading || !uploadForm.name.trim()}
+                            startIcon={isUploading ? <CircularProgress size={16} color="inherit" /> : <FiUploadCloud />}
+                            sx={{
+                                borderRadius: '8px',
+                                px: 3,
+                                background: 'linear-gradient(195deg, #FB923C, #EA580C)',
+                                color: '#fff',
+                                fontWeight: 700,
+                                textTransform: 'none'
+                            }}
+                        >
+                            {isUploading ? "Uploading..." : "Save & Archive Document"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* 2. Modal: Generate Enterprise Report */}
                 <Dialog 
                     open={openDialog} 
                     onClose={() => !generating && setOpenDialog(false)} 
@@ -931,7 +1300,7 @@ export default function ReportsPage() {
                     transitionDuration={400}
                 >
                     <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.25rem', bgcolor: previewMode ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
-                        {generating ? "Exporting Document" : previewMode ? "Native PDF Preview" : "Generate Custom Report"}
+                        {generating ? "Exporting Enterprise Document" : previewMode ? "Native PDF Preview" : "Generate Custom Report"}
                     </DialogTitle>
                     <DialogContent sx={{ bgcolor: previewMode && !generating ? '#525659' : 'transparent', p: previewMode && !generating && !previewGenerating ? 0 : 3 }}>
                         {generating ? (
@@ -974,7 +1343,7 @@ export default function ReportsPage() {
                             <Fade in={previewGenerating}>
                                 <Box py={8} display="flex" flexDirection="column" alignItems="center" justifyContent="center" bgcolor="rgba(0,0,0,0.02)">
                                     <CircularProgress color="primary" />
-                                    <Typography mt={2} color="text.secondary" fontWeight="medium">Rendering Native PDF Preview...</Typography>
+                                    <Typography mt={2} color="text.secondary" fontWeight="medium">Rendering Native PDF Document Preview...</Typography>
                                 </Box>
                             </Fade>
                         ) : previewMode && pdfPreviewUrl ? (
@@ -991,13 +1360,26 @@ export default function ReportsPage() {
                             </Fade>
                         ) : (
                             <Box mt={1} display="flex" flexDirection="column" gap={3}>
+                                {dateError && (
+                                    <Alert severity="error">
+                                        {dateError}
+                                    </Alert>
+                                )}
+
                                 <TextField
                                     label="Report Title"
                                     fullWidth
+                                    required
                                     variant="outlined"
                                     value={newReport.name}
-                                    onChange={(e) => setNewReport({ ...newReport, name: e.target.value })}
+                                    error={Boolean(titleError)}
+                                    helperText={titleError || "Unique title for the generated document"}
+                                    onChange={(e) => {
+                                        setNewReport({ ...newReport, name: e.target.value });
+                                        if (e.target.value.trim().length >= 3) setTitleError(null);
+                                    }}
                                     disabled={generating}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                 />
 
                                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -1015,24 +1397,26 @@ export default function ReportsPage() {
                                                 }));
                                             }}
                                             disabled={generating}
+                                            sx={{ borderRadius: '8px' }}
                                         >
                                             <MenuItem value="Financial">Financial</MenuItem>
                                             <MenuItem value="Analytics">Analytics</MenuItem>
                                             <MenuItem value="Audit">Audit</MenuItem>
                                             <MenuItem value="Feedback">Feedback</MenuItem>
                                             <MenuItem value="Operational">Operational</MenuItem>
-                                            <MenuItem value="HR">HR</MenuItem>
-                                            <MenuItem value="Executive">Executive</MenuItem>
+                                            <MenuItem value="HR">HR & Staffing</MenuItem>
+                                            <MenuItem value="Executive">Executive Summary</MenuItem>
                                         </Select>
                                     </FormControl>
 
                                     <FormControl fullWidth>
-                                        <InputLabel>Target Branch/Region</InputLabel>
+                                        <InputLabel>Target Branch / Facility</InputLabel>
                                         <Select
                                             value={newReport.branch}
-                                            label="Target Branch/Region"
+                                            label="Target Branch / Facility"
                                             onChange={(e) => setNewReport({ ...newReport, branch: e.target.value })}
                                             disabled={generating}
+                                            sx={{ borderRadius: '8px' }}
                                         >
                                             {branchOptions.map((b) => (
                                                 <MenuItem key={b} value={b}>{b}</MenuItem>
@@ -1041,31 +1425,55 @@ export default function ReportsPage() {
                                     </FormControl>
                                 </Stack>
 
+                                {/* Date Presets */}
+                                <Box>
+                                    <Typography variant="caption" fontWeight={700} color="#475569" display="block" mb={1}>
+                                        DATE RANGE PRESETS
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                        <Chip label="Last 30 Days" size="small" onClick={() => handleApplyDatePreset('30days')} clickable sx={{ borderRadius: '6px', fontWeight: 600 }} />
+                                        <Chip label="This Month" size="small" onClick={() => handleApplyDatePreset('thisMonth')} clickable sx={{ borderRadius: '6px', fontWeight: 600 }} />
+                                        <Chip label="Last Quarter (90d)" size="small" onClick={() => handleApplyDatePreset('lastQuarter')} clickable sx={{ borderRadius: '6px', fontWeight: 600 }} />
+                                        <Chip label="Year to Date (YTD)" size="small" onClick={() => handleApplyDatePreset('ytd')} clickable sx={{ borderRadius: '6px', fontWeight: 600 }} />
+                                    </Stack>
+                                </Box>
+
+                                {/* Custom Date Pickers with Strict Bounds */}
                                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                                     <DatePicker
-                                        label="Start Date"
+                                        label="Start Date *"
                                         value={newReport.startDate}
-                                        onChange={(newValue) => setNewReport({ ...newReport, startDate: newValue })}
-                                        sx={{ width: '100%' }}
+                                        maxDate={newReport.endDate || undefined}
+                                        onChange={(newValue) => {
+                                            setNewReport({ ...newReport, startDate: newValue });
+                                            validateDates(newValue, newReport.endDate);
+                                        }}
+                                        sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                     />
                                     <DatePicker
-                                        label="End Date"
+                                        label="End Date *"
                                         value={newReport.endDate}
-                                        onChange={(newValue) => setNewReport({ ...newReport, endDate: newValue })}
-                                        sx={{ width: '100%' }}
+                                        minDate={newReport.startDate || undefined}
+                                        onChange={(newValue) => {
+                                            setNewReport({ ...newReport, endDate: newValue });
+                                            validateDates(newReport.startDate, newValue);
+                                        }}
+                                        sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                     />
                                 </Stack>
 
-                                <FormControl fullWidth>
-                                    <InputLabel>Include Sections</InputLabel>
+                                <FormControl fullWidth error={Boolean(sectionsError)}>
+                                    <InputLabel>Include Sections *</InputLabel>
                                     <Select
                                         multiple
                                         value={newReport.sections}
                                         onChange={(e) => {
                                             const value = e.target.value;
-                                            setNewReport({ ...newReport, sections: typeof value === 'string' ? value.split(',') : value });
+                                            const sec = typeof value === 'string' ? value.split(',') : value;
+                                            setNewReport({ ...newReport, sections: sec });
+                                            if (sec.length > 0) setSectionsError(null);
                                         }}
-                                        input={<OutlinedInput label="Include Sections" />}
+                                        input={<OutlinedInput label="Include Sections *" sx={{ borderRadius: '8px' }} />}
                                         renderValue={(selected) => (
                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                                 {selected.map((value) => (
@@ -1081,6 +1489,11 @@ export default function ReportsPage() {
                                             </MenuItem>
                                         ))}
                                     </Select>
+                                    {sectionsError && (
+                                        <Typography variant="caption" color="error" mt={0.5} ml={1.5}>
+                                            {sectionsError}
+                                        </Typography>
+                                    )}
                                 </FormControl>
                             </Box>
                         )}
@@ -1096,7 +1509,7 @@ export default function ReportsPage() {
                                         setOpenDialog(false);
                                     }
                                 }} 
-                                color={previewMode ? "inherit" : "inherit"} 
+                                color="inherit" 
                                 size="large"
                             >
                                 {previewMode ? "Back to Edit" : "Cancel"}
@@ -1110,37 +1523,47 @@ export default function ReportsPage() {
                                 color="primary" 
                                 disabled={previewGenerating}
                                 startIcon={<FiDownload />}
-                                sx={{ minWidth: 160, transition: 'all 0.3s ease' }}
+                                sx={{ 
+                                    minWidth: 160, 
+                                    borderRadius: '8px', 
+                                    background: 'linear-gradient(195deg, #FB923C, #EA580C)', 
+                                    fontWeight: 700 
+                                }}
                                 size="large"
                             >
-                                Export to PDF
+                                Export & Save PDF
                             </Button>
                         ) : !generating ? (
                             <Button 
                                 onClick={handlePreviewReport} 
                                 variant="contained" 
                                 color="primary" 
-                                disabled={!newReport.name}
+                                disabled={!newReport.name || Boolean(dateError)}
                                 startIcon={<FiEye />}
-                                sx={{ minWidth: 160, transition: 'all 0.3s ease' }}
+                                sx={{ 
+                                    minWidth: 160, 
+                                    borderRadius: '8px', 
+                                    background: 'linear-gradient(195deg, #FB923C, #EA580C)', 
+                                    fontWeight: 700 
+                                }}
                                 size="large"
                             >
                                 Preview Report
                             </Button>
                         ) : (
-                            <Box /> // Spacer for generating state
+                            <Box />
                         )}
                     </DialogActions>
                 </Dialog>
             </Box>
 
-            {/* Delete Confirmation Dialog */}
+            {/* 3. Modal: Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>
-                    <Typography>Are you sure you want to delete this report? This action cannot be undone.</Typography>
+                    <Typography>Are you sure you want to delete this report from the archive? This action cannot be undone.</Typography>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
                     <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">Cancel</Button>
                     <Button 
                         onClick={async () => {
@@ -1158,6 +1581,7 @@ export default function ReportsPage() {
                         }} 
                         color="error" 
                         variant="contained"
+                        sx={{ borderRadius: '8px' }}
                     >
                         Delete
                     </Button>
