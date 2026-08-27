@@ -17,7 +17,11 @@ import {
     FiHome,
     FiSettings,
     FiBriefcase,
-    FiHash
+    FiHash,
+    FiLock,
+    FiEye,
+    FiEyeOff,
+    FiAlertCircle
 } from "react-icons/fi";
 import axios from "@/lib/axios";
 import { APP_CONFIG } from "@/utils/config";
@@ -31,7 +35,10 @@ import {
     Button as MuiButton,
     CircularProgress,
     Box,
-    Typography
+    Typography,
+    IconButton,
+    InputAdornment,
+    LinearProgress
 } from "@mui/material";
 
 const MIN_NAME_LENGTH = 2;
@@ -80,8 +87,35 @@ export default function ServiceManagerProfile() {
     // Password Dialog State
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [passwordTouched, setPasswordTouched] = useState({ current: false, new: false, confirm: false });
     const [passwordError, setPasswordError] = useState("");
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+    // Password validations matching signup
+    const passwordValidations = {
+        length: passwords.new.length >= MIN_PASSWORD_LENGTH,
+        uppercase: /[A-Z]/.test(passwords.new),
+        lowercase: /[a-z]/.test(passwords.new),
+        number: /[0-9]/.test(passwords.new),
+        special: /[^A-Za-z0-9]/.test(passwords.new)
+    };
+
+    const isPasswordStrong = Object.values(passwordValidations).every(Boolean);
+    const metPasswordConditionsCount = Object.values(passwordValidations).filter(Boolean).length;
+    const isSameAsCurrentPassword = Boolean(passwords.current && passwords.new && passwords.current === passwords.new);
+    const doPasswordsMatch = Boolean(passwords.new && passwords.confirm && passwords.new === passwords.confirm);
+
+    const getPasswordStrength = () => {
+        if (!passwords.new) return { percent: 0, label: "", color: "#e2e8f0" };
+        if (metPasswordConditionsCount === 5) return { percent: 100, label: "Strong", color: "#10b981" };
+        if (metPasswordConditionsCount >= 3) return { percent: 65, label: "Moderate", color: "#f97316" };
+        return { percent: 30, label: "Weak", color: "#ef4444" };
+    };
+
+    const passwordStrength = getPasswordStrength();
 
     // Fetch manager details directly from DB
     const fetchManagerProfile = async () => {
@@ -214,9 +248,26 @@ export default function ServiceManagerProfile() {
     };
 
     const handlePasswordChange = async () => {
-        if (!passwords.current) return setPasswordError("Current password is required");
-        if (passwords.new.length < MIN_PASSWORD_LENGTH) return setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-        if (passwords.new !== passwords.confirm) return setPasswordError("New passwords do not match");
+        if (!passwords.current) {
+            setPasswordError("Current password is required");
+            return;
+        }
+        if (!isPasswordStrong) {
+            setPasswordError("New password must satisfy all 5 requirements listed below");
+            return;
+        }
+        if (isSameAsCurrentPassword) {
+            setPasswordError("New password cannot be the same as your current password");
+            return;
+        }
+        if (!passwords.confirm) {
+            setPasswordError("Please confirm your new password");
+            return;
+        }
+        if (passwords.new !== passwords.confirm) {
+            setPasswordError("New passwords do not match");
+            return;
+        }
 
         setPasswordError("");
         setIsUpdatingPassword(true);
@@ -227,13 +278,25 @@ export default function ServiceManagerProfile() {
             });
             showSnackbar("Password updated successfully!", "success");
             setPasswords({ current: "", new: "", confirm: "" });
+            setPasswordTouched({ current: false, new: false, confirm: false });
             setOpenPasswordDialog(false);
         } catch (error: any) {
-            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password";
+            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to update password. Please verify your current password.";
             setPasswordError(msg);
         } finally {
             setIsUpdatingPassword(false);
         }
+    };
+
+    const handleClosePasswordDialog = () => {
+        if (isUpdatingPassword) return;
+        setOpenPasswordDialog(false);
+        setPasswords({ current: "", new: "", confirm: "" });
+        setPasswordTouched({ current: false, new: false, confirm: false });
+        setPasswordError("");
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
     };
 
     if (isLoading) {
@@ -340,27 +403,27 @@ export default function ServiceManagerProfile() {
                             </div>
                         </div>
 
-                        {/* Navigation Tabs */}
-                        <div className="flex items-center justify-center sm:justify-end gap-2 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0">
+                        {/* Navigation Tabs (Compact sizing) */}
+                        <div className="flex items-center justify-center sm:justify-end gap-1.5 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0">
                             <button
                                 onClick={() => setActiveTab("overview")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                     activeTab === "overview"
-                                        ? "bg-orange-50 text-orange-600 border border-orange-200"
+                                        ? "bg-orange-50 text-orange-600 border border-orange-200 shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
                                 }`}
                             >
-                                <FiHome /> Overview
+                                <FiHome className="text-xs" /> Overview
                             </button>
                             <button
                                 onClick={() => setActiveTab("security")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                     activeTab === "security"
-                                        ? "bg-orange-50 text-orange-600 border border-orange-200"
+                                        ? "bg-orange-50 text-orange-600 border border-orange-200 shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
                                 }`}
                             >
-                                <FiSettings /> Security & Password
+                                <FiSettings className="text-xs" /> Security & Password
                             </button>
                         </div>
                     </div>
@@ -400,103 +463,96 @@ export default function ServiceManagerProfile() {
                                             )}
                                         </div>
 
-                                        {/* Role */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                                Platform Role
-                                            </label>
-                                            <div className="py-2 flex items-center gap-2">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-700 text-xs font-bold rounded-lg border border-orange-200">
-                                                    <FiCheckCircle className="text-orange-500" />
-                                                    {profileData.role}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Email Address */}
+                                        {/* Email */}
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                                                 Email Address
                                             </label>
                                             {isEditing ? (
-                                                <div className="relative">
-                                                    <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                    <input
-                                                        type="email"
-                                                        name="email"
-                                                        value={tempData.email}
-                                                        onChange={handleChange}
-                                                        className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
-                                                        placeholder="name@fixzone.lk"
-                                                    />
-                                                </div>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={tempData.email}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                                    placeholder="name@fixzone.com"
+                                                />
                                             ) : (
-                                                <div className="text-sm font-medium text-slate-800 py-2 flex items-center gap-2">
+                                                <div className="text-sm font-semibold text-slate-900 py-2 flex items-center gap-1.5">
                                                     <FiMail className="text-slate-400" />
-                                                    {profileData.email}
+                                                    <span>{profileData.email || "manager@fixzone.com"}</span>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Phone Number */}
+                                        {/* Phone */}
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                                Phone Number
+                                                Contact Number
                                             </label>
                                             {isEditing ? (
-                                                <div className="relative">
-                                                    <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                    <input
-                                                        type="tel"
-                                                        name="phone"
-                                                        value={tempData.phone}
-                                                        onChange={handleChange}
-                                                        className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
-                                                        placeholder="+94 77 123 4567"
-                                                    />
-                                                </div>
+                                                <input
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={tempData.phone}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                                    placeholder="+94 77 123 4567"
+                                                />
                                             ) : (
-                                                <div className="text-sm font-medium text-slate-800 py-2 flex items-center gap-2">
+                                                <div className="text-sm font-semibold text-slate-900 py-2 flex items-center gap-1.5">
                                                     <FiPhone className="text-slate-400" />
-                                                    {profileData.phone || "Not specified"}
+                                                    <span>{profileData.phone || "Not specified"}</span>
                                                 </div>
                                             )}
+                                        </div>
+
+                                        {/* Role Designation */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                                Role Designation
+                                            </label>
+                                            <div className="text-sm font-semibold text-slate-900 py-2 flex items-center gap-1.5">
+                                                <FiShield className="text-orange-600" />
+                                                <span>{profileData.role}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Service Center & Branch Info */}
+                            {/* Service Center Assignment Card */}
                             <div className="space-y-6">
                                 <div className="bg-slate-50/60 rounded-xl p-6 border border-slate-200/80">
                                     <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
                                         <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                            <FiBriefcase className="text-orange-600" /> Assigned Center
+                                            <FiBriefcase className="text-orange-600" /> Service Center
                                         </h3>
                                     </div>
 
                                     <div className="space-y-4">
                                         <div>
                                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                                                Center Name
+                                                Assigned Center
                                             </span>
-                                            <p className="text-sm font-bold text-slate-900">{profileData.centerName || "Not Assigned"}</p>
+                                            <p className="text-sm font-bold text-slate-800">
+                                                {profileData.centerName}
+                                            </p>
                                         </div>
 
                                         <div>
                                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                                                Branch Location
+                                                Location
                                             </span>
                                             {isEditing ? (
-                                                <div className="relative">
-                                                    <FiMapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <div className="space-y-1.5">
                                                     <input
                                                         type="text"
                                                         name="location"
                                                         value={tempData.location}
                                                         onChange={handleChange}
-                                                        className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
-                                                        placeholder="e.g. Kandy Branch"
+                                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                                        placeholder="Center location"
                                                     />
                                                 </div>
                                             ) : (
@@ -523,37 +579,40 @@ export default function ServiceManagerProfile() {
                         </div>
                     )}
 
-                    {/* TAB CONTENT: Security */}
+                    {/* TAB CONTENT: Security (Compact sizing) */}
                     {activeTab === "security" && (
-                        <div className="max-w-2xl mx-auto space-y-6 pt-4">
-                            <div className="bg-slate-50/60 rounded-xl p-6 border border-slate-200/80">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                                        <FiKey size={20} />
+                        <div className="max-w-2xl mx-auto space-y-4 pt-2">
+                            <div className="bg-slate-50/60 rounded-xl p-5 border border-slate-200/80">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                                        <FiKey size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900">Account Password</h3>
+                                        <h3 className="text-sm font-bold text-slate-900">Account Password</h3>
                                         <p className="text-xs text-slate-500">Keep your account safe by updating your password periodically</p>
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end">
+                                <div className="mt-3 pt-3 border-t border-slate-200 flex justify-end">
                                     <button
                                         type="button"
-                                        onClick={() => setOpenPasswordDialog(true)}
-                                        className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all"
+                                        onClick={() => {
+                                            setOpenPasswordDialog(true);
+                                            setPasswordError("");
+                                        }}
+                                        className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold text-xs shadow-sm transition-all"
                                     >
                                         Change Password
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50/60 rounded-xl p-6 border border-slate-200/80">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                        <FiShield size={20} />
+                            <div className="bg-slate-50/60 rounded-xl p-5 border border-slate-200/80">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                        <FiShield size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900">Security Credentials</h3>
+                                        <h3 className="text-sm font-bold text-slate-900">Security Credentials</h3>
                                         <p className="text-xs text-slate-500">Your role allows managing repairs, invoices, and service center schedules.</p>
                                     </div>
                                 </div>
@@ -563,60 +622,266 @@ export default function ServiceManagerProfile() {
                 </div>
             </div>
 
-            {/* Change Password Dialog */}
+            {/* Change Password Dialog with Live Password Checker & Compact Sizing */}
             <Dialog
                 open={openPasswordDialog}
-                onClose={() => {
-                    setOpenPasswordDialog(false);
-                    setPasswordError("");
-                }}
+                onClose={handleClosePasswordDialog}
                 fullWidth
                 maxWidth="sm"
+                PaperProps={{
+                    sx: { borderRadius: '1.25rem', overflow: 'hidden' }
+                }}
             >
-                <DialogTitle sx={{ fontWeight: "bold" }}>Change Password</DialogTitle>
-                <DialogContent>
-                    <Box display="flex" flexDirection="column" gap={2} pt={1}>
-                        {passwordError && (
-                            <Typography color="error" variant="caption" sx={{ bgcolor: "#fef2f2", p: 1, borderRadius: 1 }}>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        <Box sx={{ p: 1, borderRadius: '0.625rem', bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
+                            <FiKey size={18} />
+                        </Box>
+                        <Box>
+                            <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.95rem', color: '#0f172a', lineHeight: 1.2 }}>
+                                Change Password
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                Enter your current and new credentials
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <IconButton onClick={handleClosePasswordDialog} size="small" disabled={isUpdatingPassword} sx={{ color: '#94a3b8' }}>
+                        <FiX size={18} />
+                    </IconButton>
+                </DialogTitle>
+
+                <DialogContent sx={{ p: 2.5, pt: '1.25rem !important' }}>
+                    {passwordError && (
+                        <Box mb={2} p={1.25} bgcolor="#fef2f2" borderRadius="0.625rem" border="1px solid #fecaca" display="flex" alignItems="center" gap={1}>
+                            <FiAlertCircle color="#ef4444" size={16} className="shrink-0" />
+                            <Typography variant="caption" color="error.main" fontWeight={600} sx={{ fontSize: '0.75rem' }}>
                                 {passwordError}
                             </Typography>
-                        )}
-                        <TextField
-                            label="Current Password"
-                            type="password"
-                            fullWidth
-                            value={passwords.current}
-                            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                        />
-                        <TextField
-                            label="New Password"
-                            type="password"
-                            fullWidth
-                            value={passwords.new}
-                            onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                            helperText="Must be at least 8 characters"
-                        />
-                        <TextField
-                            label="Confirm New Password"
-                            type="password"
-                            fullWidth
-                            value={passwords.confirm}
-                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                        />
+                        </Box>
+                    )}
+
+                    <Box display="flex" flexDirection="column" gap={2}>
+                        {/* Current Password */}
+                        <Box>
+                            <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.75rem', color: '#475569', display: 'block', mb: 0.5 }}>
+                                CURRENT PASSWORD *
+                            </Typography>
+                            <TextField
+                                placeholder="Enter current password"
+                                type={showCurrentPassword ? "text" : "password"}
+                                fullWidth
+                                size="small"
+                                disabled={isUpdatingPassword}
+                                value={passwords.current}
+                                onChange={(e) => {
+                                    setPasswords({ ...passwords, current: e.target.value });
+                                    if (passwordError) setPasswordError("");
+                                }}
+                                onBlur={() => setPasswordTouched(prev => ({ ...prev, current: true }))}
+                                error={passwordTouched.current && !passwords.current}
+                                helperText={passwordTouched.current && !passwords.current ? "Current password is required" : ""}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <FiKey color="#94a3b8" size={15} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                edge="end"
+                                                disabled={isUpdatingPassword}
+                                                aria-label="toggle current password visibility"
+                                            >
+                                                {showCurrentPassword ? <FiEyeOff size={15} color="#ea580c" /> : <FiEye size={15} color="#94a3b8" />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                    sx: { borderRadius: '0.625rem', fontSize: '0.85rem' }
+                                }}
+                            />
+                        </Box>
+
+                        {/* New Password */}
+                        <Box>
+                            <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.75rem', color: '#475569', display: 'block', mb: 0.5 }}>
+                                NEW PASSWORD *
+                            </Typography>
+                            <TextField
+                                placeholder="Enter new password"
+                                type={showNewPassword ? "text" : "password"}
+                                fullWidth
+                                size="small"
+                                disabled={isUpdatingPassword}
+                                value={passwords.new}
+                                onChange={(e) => {
+                                    setPasswords({ ...passwords, new: e.target.value });
+                                    if (passwordError) setPasswordError("");
+                                }}
+                                onBlur={() => setPasswordTouched(prev => ({ ...prev, new: true }))}
+                                error={(passwordTouched.new && passwords.new.length > 0 && !isPasswordStrong) || isSameAsCurrentPassword}
+                                helperText={
+                                    isSameAsCurrentPassword 
+                                        ? "New password cannot be the same as current password" 
+                                        : ""
+                                }
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <FiLock color="#94a3b8" size={15} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                                edge="end"
+                                                disabled={isUpdatingPassword}
+                                                aria-label="toggle new password visibility"
+                                            >
+                                                {showNewPassword ? <FiEyeOff size={15} color="#ea580c" /> : <FiEye size={15} color="#94a3b8" />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                    sx: { borderRadius: '0.625rem', fontSize: '0.85rem' }
+                                }}
+                            />
+
+                            {/* Password Strength Indicator */}
+                            {passwords.new.length > 0 && (
+                                <Box mt={1} p={1.25} bgcolor="#f8fafc" borderRadius="0.625rem" border="1px solid #f1f5f9">
+                                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                                        <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                            Password Strength:
+                                        </Typography>
+                                        <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.72rem', color: passwordStrength.color }}>
+                                            {passwordStrength.label}
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={passwordStrength.percent}
+                                        sx={{
+                                            height: 5,
+                                            borderRadius: 3,
+                                            bgcolor: '#e2e8f0',
+                                            '& .MuiLinearProgress-bar': {
+                                                bgcolor: passwordStrength.color,
+                                                borderRadius: 3,
+                                                transition: 'all 0.3s ease'
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            )}
+
+                            {/* Password Requirements Checklist (Same as Signup) */}
+                            <Box mt={1} p={1.25} bgcolor="#f8fafc" borderRadius="0.625rem" border="1px solid #e2e8f0">
+                                <Typography variant="caption" fontWeight={700} sx={{ fontSize: '0.72rem', color: '#475569', display: 'block', mb: 0.75 }}>
+                                    Password Requirements:
+                                </Typography>
+                                <ul className="text-xs space-y-1 pl-0.5">
+                                    <li className={`flex items-center gap-1.5 text-[11px] ${passwordValidations.length ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${passwordValidations.length ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                        At least 8 characters
+                                    </li>
+                                    <li className={`flex items-center gap-1.5 text-[11px] ${passwordValidations.uppercase ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${passwordValidations.uppercase ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                        Contains an uppercase letter
+                                    </li>
+                                    <li className={`flex items-center gap-1.5 text-[11px] ${passwordValidations.lowercase ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${passwordValidations.lowercase ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                        Contains a lowercase letter
+                                    </li>
+                                    <li className={`flex items-center gap-1.5 text-[11px] ${passwordValidations.number ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${passwordValidations.number ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                        Contains a number
+                                    </li>
+                                    <li className={`flex items-center gap-1.5 text-[11px] ${passwordValidations.special ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${passwordValidations.special ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                        Contains a special character
+                                    </li>
+                                </ul>
+                            </Box>
+                        </Box>
+
+                        {/* Confirm New Password */}
+                        <Box>
+                            <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.75rem', color: '#475569', display: 'block', mb: 0.5 }}>
+                                CONFIRM NEW PASSWORD *
+                            </Typography>
+                            <TextField
+                                placeholder="Re-enter new password"
+                                type={showConfirmPassword ? "text" : "password"}
+                                fullWidth
+                                size="small"
+                                disabled={isUpdatingPassword}
+                                value={passwords.confirm}
+                                onChange={(e) => {
+                                    setPasswords({ ...passwords, confirm: e.target.value });
+                                    if (passwordError) setPasswordError("");
+                                }}
+                                onBlur={() => setPasswordTouched(prev => ({ ...prev, confirm: true }))}
+                                error={passwordTouched.confirm && (Boolean(passwords.confirm && passwords.new !== passwords.confirm) || !passwords.confirm)}
+                                helperText={
+                                    passwordTouched.confirm && passwords.confirm && passwords.new !== passwords.confirm
+                                        ? "Passwords do not match"
+                                        : ""
+                                }
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <FiLock color="#94a3b8" size={15} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                edge="end"
+                                                disabled={isUpdatingPassword}
+                                                aria-label="toggle confirm password visibility"
+                                            >
+                                                {showConfirmPassword ? <FiEyeOff size={15} color="#ea580c" /> : <FiEye size={15} color="#94a3b8" />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                    sx: { borderRadius: '0.625rem', fontSize: '0.85rem' }
+                                }}
+                            />
+                        </Box>
                     </Box>
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <MuiButton onClick={() => setOpenPasswordDialog(false)} disabled={isUpdatingPassword}>
-                        Cancel
-                    </MuiButton>
-                    <MuiButton
-                        onClick={handlePasswordChange}
+
+                <DialogActions sx={{ p: 2, px: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9', gap: 1 }}>
+                    <button
+                        type="button"
+                        onClick={handleClosePasswordDialog}
                         disabled={isUpdatingPassword}
-                        variant="contained"
-                        sx={{ bgcolor: "#EA580C", color: "#fff", "&:hover": { bgcolor: "#c2410c" } }}
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/70 rounded-lg transition-colors border border-slate-200"
                     >
-                        {isUpdatingPassword ? <CircularProgress size={20} color="inherit" /> : "Update Password"}
-                    </MuiButton>
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handlePasswordChange}
+                        disabled={
+                            isUpdatingPassword ||
+                            !passwords.current ||
+                            !isPasswordStrong ||
+                            isSameAsCurrentPassword ||
+                            !doPasswordsMatch
+                        }
+                        className="px-4 py-1.5 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                    >
+                        {isUpdatingPassword ? <CircularProgress size={14} color="inherit" /> : null}
+                        {isUpdatingPassword ? "Updating..." : "Update Password"}
+                    </button>
                 </DialogActions>
             </Dialog>
 
