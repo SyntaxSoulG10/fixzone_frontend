@@ -60,40 +60,74 @@ interface InvoiceDTO { invoiceId: number; status: string; centerId: string; tota
  */
 const transactionColumns: GridColDef[] = [
     { 
-        field: 'id', headerName: 'ID', width: 100,
-        renderCell: (p: GridRenderCellParams) => <Typography variant="caption" fontWeight="bold">{p.value}</Typography> 
-    },
-    { 
-        field: 'date', headerName: 'Date', width: 130,
-        renderCell: (p: GridRenderCellParams) => <Typography variant="body2" color="text.secondary">{p.value}</Typography>
-    },
-    { 
-        field: 'customer', headerName: 'Customer', flex: 1.5,
+        field: 'id', headerName: 'Transaction ID', width: 140,
         renderCell: (p: GridRenderCellParams) => (
-            <Box display="flex" alignItems="center" gap={1} height="100%">
-                <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>{(p.value || 'U').charAt(0)}</Avatar>
-                <Typography variant="body2" fontWeight="medium">{p.value}</Typography>
+            <Typography variant="caption" fontWeight="bold" sx={{ fontFamily: 'monospace', color: 'text.primary', bgcolor: 'rgba(0,0,0,0.04)', px: 1, py: 0.5, borderRadius: 1 }}>
+                #{p.value || 'N/A'}
+            </Typography>
+        ) 
+    },
+    { 
+        field: 'date', headerName: 'Date', width: 140,
+        renderCell: (p: GridRenderCellParams) => <Typography variant="body2" color="text.secondary">{p.value || '-'}</Typography>
+    },
+    { 
+        field: 'customer', headerName: 'Customer', flex: 1.5, minWidth: 160,
+        renderCell: (p: GridRenderCellParams) => (
+            <Box display="flex" alignItems="center" gap={1.2} height="100%">
+                <Avatar sx={{ width: 26, height: 26, fontSize: '0.75rem', bgcolor: '#EA580C', fontWeight: 'bold' }}>
+                    {(p.value || 'U').charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="body2" fontWeight={600} color="text.primary">{p.value || 'Walk-in Customer'}</Typography>
             </Box>
         )
     },
-    { field: 'amount', headerName: 'Amount', flex: 1, renderCell: (p: GridRenderCellParams) => <Typography variant="body2" fontWeight="bold">Rs. {p.value?.toLocaleString()}</Typography> },
     { 
-        field: 'method', headerName: 'Method', flex: 1,
+        field: 'amount', headerName: 'Amount', flex: 1, minWidth: 130, 
         renderCell: (p: GridRenderCellParams) => (
-            <Chip label={p.value} size="small" variant="filled" sx={{ bgcolor: p.value === 'CASH' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(234, 88, 12, 0.1)', color: p.value === 'CASH' ? '#2e7d32' : '#c2410c', fontWeight: 'bold' }} />
-        )
+            <Typography variant="body2" fontWeight={700} color="text.primary">
+                Rs. {Number(p.value || 0).toLocaleString('en-LK')}
+            </Typography>
+        ) 
     },
     { 
-        field: 'status', headerName: 'Status', flex: 1, align: 'center', 
-        renderCell: (p: GridRenderCellParams) => (
-            <Chip 
-                label={p.value === 'PAID' ? 'Completed' : p.value} 
-                size="small" 
-                color={p.value === 'PAID' ? 'success' : 'warning'} 
-                variant="outlined" 
-                sx={{ fontWeight: 'bold' }} 
-            />
-        )
+        field: 'method', headerName: 'Method', flex: 1, minWidth: 120,
+        renderCell: (p: GridRenderCellParams) => {
+            const method = String(p.value || '').toUpperCase();
+            const isCash = method === 'CASH' || method === 'HAND_COLLECTION';
+            return (
+                <Chip 
+                    label={isCash ? 'Cash' : (method === 'CARD' || method === 'STRIPE' || method === 'ONLINE') ? 'Card / Online' : (p.value || 'N/A')} 
+                    size="small" 
+                    variant="filled" 
+                    sx={{ 
+                        bgcolor: isCash ? 'rgba(34, 197, 94, 0.12)' : 'rgba(59, 130, 246, 0.12)', 
+                        color: isCash ? '#15803d' : '#1d4ed8', 
+                        fontWeight: 600,
+                        fontSize: '0.75rem' 
+                    }} 
+                />
+            );
+        }
+    },
+    { 
+        field: 'status', headerName: 'Status', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center',
+        renderCell: (p: GridRenderCellParams) => {
+            const rawStatus = String(p.value || '').toUpperCase();
+            const isCompleted = rawStatus === 'PAID' || rawStatus === 'SUCCESS' || rawStatus === 'COMPLETED';
+            const isPending = rawStatus === 'PENDING' || rawStatus === 'PROCESSING';
+            const isFailed = rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'REFUNDED';
+
+            return (
+                <Chip 
+                    label={isCompleted ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : (p.value || 'N/A')} 
+                    size="small" 
+                    color={isCompleted ? 'success' : isPending ? 'warning' : isFailed ? 'error' : 'default'} 
+                    variant="outlined" 
+                    sx={{ fontWeight: 600, fontSize: '0.75rem' }} 
+                />
+            );
+        }
     }
 ];
 
@@ -153,6 +187,21 @@ export default function FinancePage() {
     useEffect(() => { 
         loadUnifiedFinanceData(); 
     }, [selectedCenter, period, startDate, endDate]);
+
+    // Sync default dashboard view with global context data when available
+    useEffect(() => {
+        if (contextData && selectedCenter === 'all' && !startDate && !endDate && period === 'monthly') {
+            setFinanceData({
+                totalRevenue: contextData.totalRevenue || 0, 
+                onlineRevenue: contextData.onlineRevenue || 0, 
+                cashRevenue: contextData.handCollectionRevenue || 0, 
+                avgTransaction: contextData.avgJobValue || 0,
+                revenueByCenter: (contextData.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
+                growthData: (contextData.revenueOverview || []).map((m: any) => ({ month: m.name, amount: m.revenue, online: m.onlineRevenue, cash: m.cashRevenue })),
+                recentTransactions: (contextData.recentTransactions || []).map((t: any) => ({ id: t.id, customer: t.customer, amount: t.amount, method: t.method, status: t.status, date: t.date }))
+            });
+        }
+    }, [contextData]);
 
     /**
      * LOAD FINANCE DATA
@@ -350,17 +399,32 @@ export default function FinancePage() {
             {/* RECENT TRANSACTIONS TABLE */}
             <Box mb={4}>
                 <Card sx={{ p: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                    <Typography variant="h6" fontWeight={700} color="text.primary" mb={2.5}>Recent Transactions</Typography>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700} color="text.primary">Recent Transactions</Typography>
+                            <Typography variant="caption" color="text.secondary">Latest customer payments across your service centers</Typography>
+                        </Box>
+                        <Chip label={`${financeData.recentTransactions?.length || 0} Records`} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                    </Box>
                     <Box sx={{ height: 400, width: '100%' }}>
                         <DataGrid 
                             rows={financeData.recentTransactions} 
                             columns={transactionColumns} 
-                            getRowId={(row) => row.id || Math.random().toString()}
-                            pageSizeOptions={[5, 10]} 
+                            getRowId={(row, index) => row.id || `txn-${index}`}
+                            pageSizeOptions={[5, 10, 20]} 
                             initialState={{
                                 pagination: { paginationModel: { pageSize: 5 } }
                             }}
                             disableRowSelectionOnClick 
+                            slots={{
+                                noRowsOverlay: () => (
+                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%" py={4}>
+                                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                            No transaction records found for the selected filter.
+                                        </Typography>
+                                    </Box>
+                                )
+                            }}
                             sx={{
                                 border: 'none',
                                 '& .MuiDataGrid-columnHeaders': {
