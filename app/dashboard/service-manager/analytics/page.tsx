@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { FiBarChart2, FiTrendingUp, FiTrendingDown, FiDollarSign, FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { FiBarChart2, FiDollarSign, FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import APP_CONFIG from "@/config";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
 function formatDateToISO(d: Date): string {
     const year = d.getFullYear();
@@ -13,10 +14,13 @@ function formatDateToISO(d: Date): string {
 }
 
 export default function AnalyticsPage() {
+    const { centersData, bookingsData, invoicesData } = useDashboardData();
     const [weekOffset, setWeekOffset] = useState<number>(0);
-    const [analyticsData, setAnalyticsData] = useState<any>(null);
+    const [savedReports, setSavedReports] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFetching, setIsFetching] = useState(false);
+
+    const currentCenter = centersData && centersData.length > 0 ? centersData[0] : null;
+    const managerCenterId = currentCenter?.centerId || currentCenter?.id;
 
     // Calculate dates for the selected week (Monday to Sunday)
     const { monday, sunday, days, startDateStr, endDateStr } = useMemo(() => {
@@ -48,53 +52,151 @@ export default function AnalyticsPage() {
         };
     }, [weekOffset]);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            setIsFetching(true);
-            try {
-                const token = localStorage.getItem("token");
-                const url = `${APP_CONFIG.API_BASE_URL}/api/analytics/current?startDate=${startDateStr}&endDate=${endDateStr}&period=daily`;
-                const res = await fetch(url, {
-                    headers: token ? { "Authorization": `Bearer ${token}` } : {}
+    // Fetch saved operations reports
+    const fetchSavedReports = useCallback(async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/reports`, {
+                headers: token ? { "Authorization": `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const parsedReports = data.map((r: any) => {
+                    let metrics = { revenue: 0, vehiclesServiced: 0, incompleteServices: 0, summary: "", reportDate: "" };
+                    try {
+                        if (r.fileContentBase64) {
+                            const parsed = typeof r.fileContentBase64 === "string" ? JSON.parse(r.fileContentBase64) : r.fileContentBase64;
+                            if (parsed && typeof parsed === "object") {
+                                metrics = {
+                                    revenue: Number(parsed.revenue) || 0,
+                                    vehiclesServiced: Number(parsed.vehiclesServiced) || 0,
+                                    incompleteServices: Number(parsed.incompleteServices) || 0,
+                                    summary: parsed.summary || "",
+                                    reportDate: parsed.reportDate || ""
+                                };
+                            }
+                        }
+                    } catch(e) {}
+                    const reportDate = metrics.reportDate || (r.date ? String(r.date).split("T")[0] : null) || r.name?.replace("Daily Operations Report - ", "") || (r.createdAt ? r.createdAt.split("T")[0] : "Report");
+                    return { ...r, date: reportDate, metrics };
                 });
-                if (res.ok) {
-                    const data = await res.json();
-                    setAnalyticsData(data);
+                setSavedReports(parsedReports);
+            }
+        } catch (error) {
+            console.error("Failed to fetch reports for analytics:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSavedReports();
+    }, [fetchSavedReports]);
+
+    // Calculate exact daily revenue and bookings matching reports page logic
+    const { dailyChartData, totalWeekRevenue, totalWeekBookings } = useMemo(() => {
+        const isMatchingDate = (dStr: any, targetDate: string) => {
+            if (!dStr) return false;
+            try {
+                const str = String(dStr).split("T")[0].trim();
+                if (str === targetDate) return true;
+                const dateObj = new Date(dStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    if (localStr === targetDate) return true;
                 }
-            } catch (error) {
-                console.error("Failed to fetch analytics:", error);
-            } finally {
-                setIsLoading(false);
-                setIsFetching(false);
+                return false;
+            } catch {
+                return false;
             }
         };
 
-        fetchAnalytics();
-    }, [startDateStr, endDateStr]);
+        let weekRevenueSum = 0;
+        let weekBookingsSum = 0;
 
-    // Build complete 7-day daily data for the chart
-    const dailyChartData = useMemo(() => {
-        const backendOverview = analyticsData?.revenueOverview || [];
-
-        return days.map((dateObj) => {
+        const chartItems = days.map((dateObj) => {
+            const dateISO = formatDateToISO(dateObj);
             const dayNum = dateObj.getDate();
             const monthShort = dateObj.toLocaleString('en-US', { month: 'short' });
             const weekdayShort = dateObj.toLocaleString('en-US', { weekday: 'short' });
 
-            // Backend formats daily names as "{day} {MonthShort}", e.g. "27 Aug"
-            const backendKey = `${dayNum} ${monthShort}`;
-            const matchedItem = backendOverview.find((item: any) => item.name === backendKey);
+            // 1. Check if a saved daily report exists for this date
+            const savedReport = savedReports.find(
+                (r: any) => r.date === dateISO || r.metrics?.reportDate === dateISO || r.name?.includes(dateISO)
+            );
 
-            const revenue = matchedItem ? Number(matchedItem.revenue) || 0 : 0;
+            let dayRevenue = 0;
+
+            if (savedReport && savedReport.metrics && savedReport.metrics.revenue !== undefined && savedReport.metrics.revenue !== null) {
+                dayRevenue = Number(savedReport.metrics.revenue) || 0;
+            } else {
+                // 2. Compute dynamically using invoices and bookings
+                const countedBookingIds = new Set<string>();
+
+                (invoicesData || []).forEach((inv: any) => {
+                    if (managerCenterId && inv.centerId && inv.centerId !== managerCenterId) return;
+                    const isPaid = String(inv.status || "").toUpperCase() === "PAID";
+                    if (!isPaid) return;
+
+                    const isDate = isMatchingDate(inv.updatedAt, dateISO) || 
+                                   isMatchingDate(inv.issuedAt, dateISO) || 
+                                   isMatchingDate(inv.createdAt, dateISO) || 
+                                   isMatchingDate(inv.createdDate, dateISO);
+                    if (isDate) {
+                        const amt = Number(inv.total) || Number(inv.amount) || Number(inv.subtotal) || 0;
+                        dayRevenue += amt;
+                        if (inv.bookingId) countedBookingIds.add(String(inv.bookingId));
+                    }
+                });
+
+                (bookingsData || []).forEach((b: any) => {
+                    if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
+                    const isDate = isMatchingDate(b.updatedAt, dateISO) || 
+                                   isMatchingDate(b.bookingDate, dateISO) || 
+                                   isMatchingDate(b.createdAt, dateISO);
+                    if (!isDate) return;
+
+                    const s = String(b.status || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
+                    if (s === "PAID") {
+                        if (!countedBookingIds.has(String(b.bookingId))) {
+                            const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
+                            dayRevenue += cost;
+                            if (b.bookingId) countedBookingIds.add(String(b.bookingId));
+                        }
+                    }
+                });
+            }
+
+            // Count bookings for this day
+            let dayBookingsCount = 0;
+            (bookingsData || []).forEach((b: any) => {
+                if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
+                const isDate = isMatchingDate(b.bookingDate, dateISO) || 
+                               isMatchingDate(b.createdAt, dateISO) || 
+                               isMatchingDate(b.updatedAt, dateISO);
+                if (isDate) {
+                    dayBookingsCount++;
+                }
+            });
+
+            weekRevenueSum += dayRevenue;
+            weekBookingsSum += dayBookingsCount;
 
             return {
                 dayName: weekdayShort,
                 date: `${dayNum} ${monthShort}`,
                 fullLabel: `${weekdayShort}, ${dayNum} ${monthShort}`,
-                revenue: revenue
+                revenue: dayRevenue,
+                bookings: dayBookingsCount
             };
         });
-    }, [days, analyticsData]);
+
+        return {
+            dailyChartData: chartItems,
+            totalWeekRevenue: weekRevenueSum,
+            totalWeekBookings: weekBookingsSum
+        };
+    }, [days, savedReports, invoicesData, bookingsData, managerCenterId]);
 
     if (isLoading) {
         return (
@@ -106,9 +208,6 @@ export default function AnalyticsPage() {
             </div>
         );
     }
-
-    const rev = analyticsData?.totalRevenue || 0;
-    const jobs = analyticsData?.totalJobs || 0;
 
     const formattedRange = `${monday.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${sunday.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
@@ -167,21 +266,17 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            {/* Key Metrics Row - 2 Cards */}
+            {/* Key Metrics Row - 2 Cards without Growth Badges */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <MetricCard
                     title="Total Revenue"
-                    value={`Rs ${rev.toLocaleString()}`}
-                    change={analyticsData?.revenueChange || "0%"}
-                    trend={analyticsData?.revenueChange?.startsWith('-') ? "down" : "up"}
+                    value={`Rs ${totalWeekRevenue.toLocaleString()}`}
                     icon={<FiDollarSign />}
                     color="green"
                 />
                 <MetricCard
                     title="Total Bookings"
-                    value={jobs}
-                    change={analyticsData?.jobsChange || "0%"}
-                    trend={analyticsData?.jobsChange?.startsWith('-') ? "down" : "up"}
+                    value={totalWeekBookings}
                     icon={<FiBarChart2 />}
                     color="blue"
                 />
@@ -202,11 +297,6 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="h-80 w-full relative">
-                    {isFetching && (
-                        <div className="absolute inset-0 bg-white/60 backdrop-blur-xs flex items-center justify-center z-10 rounded-lg">
-                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    )}
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <BarChart data={dailyChartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -247,19 +337,16 @@ function CustomTooltip({ active, payload, label }: any) {
                 <p className="text-orange-400 font-bold text-sm">
                     Revenue: Rs {Number(payload[0].value || 0).toLocaleString()}
                 </p>
+                <p className="text-slate-400 text-[11px]">
+                    Bookings: {itemData.bookings || 0}
+                </p>
             </div>
         );
     }
     return null;
 }
 
-function MetricCard({ title, value, change, trend, icon, color, goodTrend = false }: any) {
-    let trendColor = "text-green-600";
-    if (trend === 'down' && !goodTrend) trendColor = "text-red-600";
-    if (trend === 'up' && goodTrend === 'false') trendColor = "text-red-600";
-
-    const trendIcon = trend === 'up' ? <FiTrendingUp /> : <FiTrendingDown />;
-
+function MetricCard({ title, value, icon, color }: any) {
     const colors: any = {
         green: "bg-green-100 text-green-600",
         blue: "bg-blue-100 text-blue-600",
@@ -272,10 +359,6 @@ function MetricCard({ title, value, change, trend, icon, color, goodTrend = fals
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-3 rounded-lg ${colors[color]}`}>
                     <div className="text-xl">{icon}</div>
-                </div>
-                <div className={`flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-slate-50 ${trendColor}`}>
-                    {trendIcon}
-                    <span className="ml-1">{change}</span>
                 </div>
             </div>
             <h3 className="text-slate-500 text-sm font-medium">{title}</h3>
