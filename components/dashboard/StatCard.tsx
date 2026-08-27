@@ -11,7 +11,7 @@ interface StatCardProps {
     title: string;
     count: React.ReactNode;
     percentage?: {
-        color: 'success' | 'danger' | 'warning' | 'info';
+        color: 'success' | 'danger' | 'warning' | 'info' | 'primary' | 'secondary' | 'dark' | 'error';
         amount: string;
         label: string;
     };
