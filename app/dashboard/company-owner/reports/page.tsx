@@ -43,13 +43,14 @@ import {
     FiCheckCircle,
     FiEye,
     FiTrash2,
-    FiUpload,
     FiUploadCloud,
     FiCalendar,
     FiZap,
-    FiLayers,
     FiInfo,
-    FiClock
+    FiClock,
+    FiFile,
+    FiMapPin,
+    FiTag
 } from "react-icons/fi";
 import { getAllReports, createReport, deleteReport, ReportItem } from "@/services/reportService";
 import FeedbackSnackbar, { SeverityType } from "@/components/UI/FeedbackSnackbar";
@@ -120,6 +121,10 @@ export default function ReportsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reportToDelete, setReportToDelete] = useState<string | null>(null);
 
+    // Report Details & Notes View Modal
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [selectedReportDetails, setSelectedReportDetails] = useState<ReportItem | null>(null);
+
     // Upload from Local File Modal States
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -128,7 +133,7 @@ export default function ReportsPage() {
         name: "",
         type: "Audit",
         branch: "All Branches",
-        notes: ""
+        description: ""
     });
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -157,8 +162,18 @@ export default function ReportsPage() {
     const chartRef = useRef<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const getDefaultReportName = (type: string) =>
-        `${type} Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+    // Compute unique default report name that does not collide with existing reports
+    const getDefaultReportName = (type: string, existingList: ReportItem[] = reports) => {
+        const baseName = `${type} Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+        if (!existingList.some(r => r.name.trim().toLowerCase() === baseName.toLowerCase())) {
+            return baseName;
+        }
+        let counter = 2;
+        while (existingList.some(r => r.name.trim().toLowerCase() === `${baseName} (${counter})`.toLowerCase())) {
+            counter++;
+        }
+        return `${baseName} (${counter})`;
+    };
 
     const [newReport, setNewReport] = useState<{
         name: string;
@@ -167,13 +182,15 @@ export default function ReportsPage() {
         endDate: Date | null;
         branch: string;
         sections: string[];
+        description: string;
     }>({
-        name: getDefaultReportName("Financial"),
+        name: getDefaultReportName("Financial", []),
         type: "Financial",
         startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
         endDate: new Date(),
         branch: "All Branches",
-        sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"]
+        sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"],
+        description: ""
     });
 
     const [dateError, setDateError] = useState<string | null>(null);
@@ -230,6 +247,13 @@ export default function ReportsPage() {
         if (report.type === 'External') return true;
         if (report.fileContentBase64 && !report.downloadUrl) return true;
         return false;
+    };
+
+    // Duplicate Name Validation
+    const checkDuplicateName = (name: string, excludeId?: string): boolean => {
+        const trimmed = name.trim().toLowerCase();
+        if (!trimmed) return false;
+        return reports.some(r => r.name.trim().toLowerCase() === trimmed && (!excludeId || r.id !== excludeId));
     };
 
     // Quick Date Range Presets
@@ -294,12 +318,23 @@ export default function ReportsPage() {
             const base64 = e.target?.result as string;
             setUploadFile(file);
             setUploadBase64(base64);
-            const cleanName = file.name.replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ');
+            const rawClean = file.name.replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ');
+            let candidateTitle = rawClean.charAt(0).toUpperCase() + rawClean.slice(1);
+            
+            // Check if uploaded candidate title already exists, if so append counter
+            if (checkDuplicateName(candidateTitle)) {
+                let count = 2;
+                while (checkDuplicateName(`${candidateTitle} (${count})`)) {
+                    count++;
+                }
+                candidateTitle = `${candidateTitle} (${count})`;
+            }
+
             setUploadForm({
-                name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+                name: candidateTitle,
                 type: "Audit",
                 branch: "All Branches",
-                notes: ""
+                description: ""
             });
             setUploadError(null);
             setUploadModalOpen(true);
@@ -309,8 +344,14 @@ export default function ReportsPage() {
     };
 
     const handleSaveUploadModal = async () => {
-        if (!uploadForm.name.trim() || uploadForm.name.trim().length < 3) {
+        const cleanName = uploadForm.name.trim();
+        if (!cleanName || cleanName.length < 3) {
             setUploadError("Please provide a valid document name (min 3 characters).");
+            return;
+        }
+
+        if (checkDuplicateName(cleanName)) {
+            setUploadError("A report with this title already exists. Please choose a unique name.");
             return;
         }
 
@@ -322,8 +363,9 @@ export default function ReportsPage() {
         setIsUploading(true);
         try {
             await createReport({
-                name: uploadForm.name.trim(),
+                name: cleanName,
                 type: uploadForm.type,
+                description: uploadForm.description.trim() || undefined,
                 fileContentBase64: uploadBase64,
                 size: (uploadFile.size / 1024 / 1024).toFixed(2) + " MB"
             } as any);
@@ -340,6 +382,11 @@ export default function ReportsPage() {
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleOpenDetails = (report: ReportItem) => {
+        setSelectedReportDetails(report);
+        setDetailsModalOpen(true);
     };
 
     const handleViewReport = async (row: ReportItem) => {
@@ -375,7 +422,7 @@ export default function ReportsPage() {
                             'Active'
                         ])
                         : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
-                    summaryText: `Archived ${row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
+                    summaryText: row.description || `Archived ${row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
                 };
 
                 const mockReportObj = {
@@ -399,8 +446,13 @@ export default function ReportsPage() {
 
     const handlePreviewReport = () => {
         let isValid = true;
-        if (!newReport.name.trim() || newReport.name.trim().length < 3) {
+        const cleanName = newReport.name.trim();
+
+        if (!cleanName || cleanName.length < 3) {
             setTitleError("Report title must be at least 3 characters.");
+            isValid = false;
+        } else if (checkDuplicateName(cleanName)) {
+            setTitleError("A report with this title already exists. Please choose a unique name.");
             isValid = false;
         } else {
             setTitleError(null);
@@ -457,7 +509,9 @@ export default function ReportsPage() {
                 ])
                 : [['#1001', 'General Service Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']];
 
-        const summaryText = `This report provides a comprehensive overview of ${newReport.type.toLowerCase()} operations for ${newReport.branch || 'all branches'} within the selected timeframe for ${ownerData?.companyName || 'FixZone Automotive'}. All metrics reflect real-time business activity and verified customer transactions. Ensure all confidential information is handled appropriately according to FixZone policies.`;
+        const summaryText = newReport.description.trim() 
+            ? newReport.description.trim() 
+            : `This report provides a comprehensive overview of ${newReport.type.toLowerCase()} operations for ${newReport.branch || 'all branches'} within the selected timeframe for ${ownerData?.companyName || 'FixZone Automotive'}. All metrics reflect real-time business activity and verified customer transactions. Ensure all confidential information is handled appropriately according to FixZone policies.`;
 
         setReportData({ kpi1, kpi2, kpi3, chartLabels, chartDataValues, tableData, summaryText });
     };
@@ -528,7 +582,7 @@ export default function ReportsPage() {
             doc.setFontSize(13);
             doc.setTextColor(15, 23, 42);
             doc.setFont("helvetica", "bold");
-            doc.text("Executive Summary", 14, currentY);
+            doc.text("Executive Summary & Remarks", 14, currentY);
             currentY += 8;
 
             doc.setFontSize(10);
@@ -649,8 +703,9 @@ export default function ReportsPage() {
             }
 
             await createReport({
-                name: newReport.name,
+                name: newReport.name.trim(),
                 type: newReport.type,
+                description: newReport.description.trim() || undefined
             });
 
             if (pdfDocRef.current) {
@@ -671,7 +726,8 @@ export default function ReportsPage() {
                 startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
                 endDate: new Date(),
                 branch: "All Branches",
-                sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"]
+                sections: ["Executive Summary", "Key Metrics", "Detailed Data Table", "Chart Visualizations"],
+                description: ""
             });
             setDateError(null);
             setTitleError(null);
@@ -692,7 +748,8 @@ export default function ReportsPage() {
     // Filter Logic (Search, Category, and Origin Source)
     const filteredReports = useMemo(() => {
         return reports.filter((report) => {
-            const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase())
+                || (report.description && report.description.toLowerCase().includes(searchQuery.toLowerCase()));
             const matchesType = typeFilter === "All" || report.type === typeFilter;
             const isExt = isExternalReport(report);
             const matchesSource = sourceFilter === "All" 
@@ -716,11 +773,12 @@ export default function ReportsPage() {
     const columns: GridColDef[] = [
         {
             field: "name",
-            headerName: "Report Title",
-            flex: 1.5,
-            minWidth: 260,
+            headerName: "Report Title & Notes",
+            flex: 1.6,
+            minWidth: 280,
             renderCell: (params: GridRenderCellParams) => {
                 const isExt = isExternalReport(params.row);
+                const hasNotes = Boolean(params.row.description && params.row.description.trim());
                 return (
                     <Box display="flex" alignItems="center" gap={1.5} height="100%">
                         <Box 
@@ -742,9 +800,26 @@ export default function ReportsPage() {
                             <Typography variant="body2" fontWeight={700} color="#1e293b" noWrap>
                                 {params.value}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                                {isExt ? "Uploaded Document" : "Platform Generated"}
-                            </Typography>
+                            {hasNotes ? (
+                                <Typography 
+                                    variant="caption" 
+                                    color="primary.main" 
+                                    sx={{ 
+                                        display: 'block', 
+                                        fontWeight: 600, 
+                                        cursor: 'pointer',
+                                        '&:hover': { textDecoration: 'underline' } 
+                                    }} 
+                                    onClick={() => handleOpenDetails(params.row)}
+                                    noWrap
+                                >
+                                    💬 {params.row.description}
+                                </Typography>
+                            ) : (
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                    {isExt ? "Uploaded Document" : "Platform Generated"}
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
                 );
@@ -824,11 +899,21 @@ export default function ReportsPage() {
         {
             field: "actions",
             headerName: "Actions",
-            width: 130,
+            width: 150,
             sortable: false,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" gap={0.5} height="100%">
-                    <Tooltip title="View / Read Report">
+                    <Tooltip title="View Details & Notes">
+                        <IconButton 
+                            color="default" 
+                            size="small"
+                            onClick={() => handleOpenDetails(params.row)}
+                            sx={{ color: '#64748b', '&:hover': { color: '#ea580c' } }}
+                        >
+                            <FiInfo size={16} />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="View / Open PDF">
                         <IconButton 
                             color="primary" 
                             size="small"
@@ -885,7 +970,7 @@ export default function ReportsPage() {
                                             'Active'
                                         ])
                                         : [['#1001', 'General Operations', isFinancial ? 'Rs. 0' : '0 Jobs', 'Completed']],
-                                    summaryText: `Archived ${params.row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
+                                    summaryText: params.row.description || `Archived ${params.row.type.toLowerCase()} report summary for ${ownerData?.companyName || 'FixZone Automotive'}.`
                                 };
                                 
                                 const reportObj = {
@@ -1007,6 +1092,10 @@ export default function ReportsPage() {
                                 setDateError(null);
                                 setTitleError(null);
                                 setSectionsError(null);
+                                setNewReport(prev => ({
+                                    ...prev,
+                                    name: getDefaultReportName(prev.type)
+                                }));
                                 setOpenDialog(true);
                             }}
                         >
@@ -1071,48 +1160,54 @@ export default function ReportsPage() {
                     )}
                 </Box>
 
-                {/* Filter and Search Bar */}
+                {/* Polished Clean Filter Card without Stretching Divider */}
                 <Card sx={{ p: 2.5, mb: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
-                        <TextField
-                            placeholder="Search reports by name..."
-                            variant="outlined"
-                            size="small"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{ minWidth: { xs: '100%', md: 320 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <FiSearch color="#94a3b8" />
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                        />
+                    <Stack spacing={2}>
+                        {/* Row 1: Search Input & Source Origin Chips */}
+                        <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between" gap={2}>
+                            <TextField
+                                placeholder="Search reports by title or notes..."
+                                variant="outlined"
+                                size="small"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                sx={{ minWidth: { xs: '100%', md: 340 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <FiSearch color="#94a3b8" />
+                                            </InputAdornment>
+                                        ),
+                                    }
+                                }}
+                            />
 
-                        {/* Source Filter (All / Generated / External) */}
-                        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                            <Box display="flex" alignItems="center" gap={0.5} mr={1} color="text.secondary">
-                                <FiFilter size={15} />
-                                <Typography variant="caption" fontWeight={700} textTransform="uppercase">Source:</Typography>
+                            {/* Source Filter (All / Generated / External) */}
+                            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                                <Box display="flex" alignItems="center" gap={0.5} mr={0.5} color="text.secondary">
+                                    <FiFilter size={15} />
+                                    <Typography variant="caption" fontWeight={700} color="#475569" textTransform="uppercase">Origin:</Typography>
+                                </Box>
+                                {(["All", "Generated", "External"] as const).map((source) => (
+                                    <Chip
+                                        key={source}
+                                        label={source === 'All' ? 'All Sources' : source === 'Generated' ? 'Platform Generated' : 'External Uploads'}
+                                        onClick={() => setSourceFilter(source)}
+                                        color={sourceFilter === source ? "primary" : "default"}
+                                        variant={sourceFilter === source ? "filled" : "outlined"}
+                                        size="small"
+                                        sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700 }}
+                                    />
+                                ))}
                             </Box>
-                            {(["All", "Generated", "External"] as const).map((source) => (
-                                <Chip
-                                    key={source}
-                                    label={source === 'All' ? 'All Sources' : source === 'Generated' ? 'Platform Generated' : 'External Uploads'}
-                                    onClick={() => setSourceFilter(source)}
-                                    color={sourceFilter === source ? "primary" : "default"}
-                                    variant={sourceFilter === source ? "filled" : "outlined"}
-                                    size="small"
-                                    sx={{ borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
-                                />
-                            ))}
+                        </Box>
 
-                            <Box sx={{ width: 1, height: 20, bgcolor: 'divider', mx: 0.5 }} />
-
-                            {/* Category Filter */}
+                        {/* Row 2: Category Filter Chips */}
+                        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" pt={1.5} borderTop="1px dashed #e2e8f0">
+                            <Typography variant="caption" fontWeight={700} color="#475569" textTransform="uppercase" mr={0.5}>
+                                Categories:
+                            </Typography>
                             {reportTypes.map((type) => (
                                 <Chip 
                                     key={type} 
@@ -1210,10 +1305,18 @@ export default function ReportsPage() {
                                 required
                                 size="small"
                                 value={uploadForm.name}
-                                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                                error={checkDuplicateName(uploadForm.name)}
+                                helperText={
+                                    checkDuplicateName(uploadForm.name)
+                                        ? "A report with this title already exists. Please choose a unique name."
+                                        : "Provide a unique, descriptive title for this document"
+                                }
+                                onChange={(e) => {
+                                    setUploadForm({ ...uploadForm, name: e.target.value });
+                                    setUploadError(null);
+                                }}
                                 disabled={isUploading}
                                 placeholder="e.g. Q3 Regional Audit Summary 2026"
-                                helperText="Provide a clear, descriptive title for this document"
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                             />
 
@@ -1259,10 +1362,11 @@ export default function ReportsPage() {
                                 multiline
                                 rows={2}
                                 size="small"
-                                value={uploadForm.notes}
-                                onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
+                                value={uploadForm.description}
+                                onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                                 disabled={isUploading}
-                                placeholder="Add any background context or remarks about this document..."
+                                placeholder="Add context, auditing remarks, or memo details for this document..."
+                                helperText="Notes will be saved and visible in the document details modal"
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                             />
                         </Box>
@@ -1274,7 +1378,7 @@ export default function ReportsPage() {
                         <Button 
                             onClick={handleSaveUploadModal} 
                             variant="contained" 
-                            disabled={isUploading || !uploadForm.name.trim()}
+                            disabled={isUploading || !uploadForm.name.trim() || checkDuplicateName(uploadForm.name)}
                             startIcon={isUploading ? <CircularProgress size={16} color="inherit" /> : <FiUploadCloud />}
                             sx={{
                                 borderRadius: '8px',
@@ -1372,11 +1476,19 @@ export default function ReportsPage() {
                                     required
                                     variant="outlined"
                                     value={newReport.name}
-                                    error={Boolean(titleError)}
-                                    helperText={titleError || "Unique title for the generated document"}
+                                    error={Boolean(titleError) || checkDuplicateName(newReport.name)}
+                                    helperText={
+                                        titleError 
+                                            ? titleError 
+                                            : checkDuplicateName(newReport.name)
+                                                ? "A report with this title already exists. Please choose a unique name."
+                                                : "Unique title for the generated document"
+                                    }
                                     onChange={(e) => {
                                         setNewReport({ ...newReport, name: e.target.value });
-                                        if (e.target.value.trim().length >= 3) setTitleError(null);
+                                        if (e.target.value.trim().length >= 3 && !checkDuplicateName(e.target.value)) {
+                                            setTitleError(null);
+                                        }
                                     }}
                                     disabled={generating}
                                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
@@ -1393,7 +1505,7 @@ export default function ReportsPage() {
                                                 setNewReport(prev => ({ 
                                                     ...prev, 
                                                     type,
-                                                    name: prev.name === getDefaultReportName(prev.type) ? getDefaultReportName(type) : prev.name
+                                                    name: prev.name.startsWith(prev.type) ? getDefaultReportName(type) : prev.name
                                                 }));
                                             }}
                                             disabled={generating}
@@ -1495,6 +1607,20 @@ export default function ReportsPage() {
                                         </Typography>
                                     )}
                                 </FormControl>
+
+                                <TextField
+                                    label="Notes & Context (Optional)"
+                                    fullWidth
+                                    multiline
+                                    rows={2}
+                                    size="small"
+                                    value={newReport.description}
+                                    onChange={(e) => setNewReport({ ...newReport, description: e.target.value })}
+                                    disabled={generating}
+                                    placeholder="Add executive remarks, auditing context, or specific notes to accompany this report..."
+                                    helperText="Notes are saved with the report and included in the executive summary"
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                />
                             </Box>
                         )}
                     </DialogContent>
@@ -1538,7 +1664,7 @@ export default function ReportsPage() {
                                 onClick={handlePreviewReport} 
                                 variant="contained" 
                                 color="primary" 
-                                disabled={!newReport.name || Boolean(dateError)}
+                                disabled={!newReport.name || checkDuplicateName(newReport.name) || Boolean(dateError)}
                                 startIcon={<FiEye />}
                                 sx={{ 
                                     minWidth: 160, 
@@ -1557,7 +1683,121 @@ export default function ReportsPage() {
                 </Dialog>
             </Box>
 
-            {/* 3. Modal: Delete Confirmation Dialog */}
+            {/* 3. Modal: Report Details & Notes Modal */}
+            <Dialog 
+                open={detailsModalOpen} 
+                onClose={() => setDetailsModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#1e293b', pb: 1 }}>
+                    Document Details & Notes
+                </DialogTitle>
+                <DialogContent>
+                    {selectedReportDetails && (
+                        <Box display="flex" flexDirection="column" gap={2.5} mt={1}>
+                            <Box p={2} bgcolor="#f8fafc" borderRadius="10px" border="1px solid #e2e8f0">
+                                <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                                    <Box display="flex" alignItems="center" gap={1.5}>
+                                        <Box p={1} bgcolor="rgba(234, 88, 12, 0.1)" borderRadius="8px">
+                                            <FiFileText color="#ea580c" size={22} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
+                                                {selectedReportDetails.name}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                ID: {selectedReportDetails.id}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    <Chip 
+                                        label={isExternalReport(selectedReportDetails) ? "External Upload" : "System Generated"}
+                                        size="small"
+                                        sx={{
+                                            fontWeight: 700,
+                                            bgcolor: isExternalReport(selectedReportDetails) ? '#f1f5f9' : 'rgba(234, 88, 12, 0.1)',
+                                            color: isExternalReport(selectedReportDetails) ? '#475569' : '#ea580c'
+                                        }}
+                                    />
+                                </Box>
+
+                                <Grid container spacing={2} pt={1} borderTop="1px dashed #e2e8f0">
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            CATEGORY
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={700} color="#334155">
+                                            {selectedReportDetails.type}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            DATE
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={700} color="#334155">
+                                            {selectedReportDetails.date || selectedReportDetails.createdAt?.split('T')[0] || "Recent"}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            FILE SIZE
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={700} color="#334155">
+                                            {selectedReportDetails.size || "1.2 MB"}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            FORMAT
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={700} color="#334155">
+                                            PDF Document
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+
+                            {/* Notes / Description Section */}
+                            <Box>
+                                <Typography variant="caption" fontWeight={800} color="#475569" textTransform="uppercase" display="block" mb={1}>
+                                    NOTES & REMARKS
+                                </Typography>
+                                <Box p={2} bgcolor="rgba(234, 88, 12, 0.04)" borderRadius="10px" border="1px solid rgba(234, 88, 12, 0.15)">
+                                    <Typography variant="body2" color="#334155" sx={{ fontStyle: selectedReportDetails.description ? 'normal' : 'italic', lineHeight: 1.6 }}>
+                                        {selectedReportDetails.description 
+                                            ? selectedReportDetails.description 
+                                            : "No custom notes were provided for this document."}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, justifyContent: 'space-between' }}>
+                    <Button onClick={() => setDetailsModalOpen(false)} color="inherit">
+                        Close
+                    </Button>
+                    {selectedReportDetails && (
+                        <Box display="flex" gap={1}>
+                            <Button 
+                                onClick={() => {
+                                    setDetailsModalOpen(false);
+                                    handleViewReport(selectedReportDetails);
+                                }}
+                                variant="outlined"
+                                startIcon={<FiEye />}
+                                sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
+                            >
+                                View PDF
+                            </Button>
+                        </Box>
+                    )}
+                </DialogActions>
+            </Dialog>
+
+            {/* 4. Modal: Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>
