@@ -56,27 +56,49 @@ interface Customer {
     totalSpent: number;
     lastVisit: string;
     status: string;
+    centerName: string;
+    visitedCenterIds: string[];
     avatarUrl: string;
 }
 
 export default function CustomersPage() {
     const theme = useTheme();
-    const { customersData, analyticsData } = useDashboardData();
+    const { customersData, centersData, invoicesData } = useDashboardData();
     const mapCustomers = (data: CustomerDTO[]): Customer[] => {
-        return (data || []).map((customer: CustomerDTO) => ({
-            id: customer.userId || customer.id || Math.random().toString(),
-            name: customer.fullName || customer.name || "Unknown Customer",
-            email: customer.email || "N/A",
-            visits: customer.visits || 0,
-            totalSpent: customer.totalSpent || 0,
-            lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-            status: customer.status || "Active",
-            avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=ea580c&color=fff`
-        }));
+        const centersMap: Record<string, string> = {};
+        (centersData || []).forEach((c: any) => {
+            if (c.centerId) centersMap[c.centerId] = c.name;
+            if (c.id) centersMap[c.id] = c.name;
+        });
+
+        return (data || []).map((customer: CustomerDTO) => {
+            const cId = customer.userId || customer.id;
+            const matchedInvoices = (invoicesData || []).filter((inv: any) => 
+                (inv.issuedToCustomerId && String(inv.issuedToCustomerId) === String(cId)) || 
+                (inv.customerId && String(inv.customerId) === String(cId))
+            );
+            const visitedIds = Array.from(new Set(matchedInvoices.map((inv: any) => inv.centerId).filter(Boolean)));
+            const visitedNames = visitedIds.map((id: any) => centersMap[id]).filter(Boolean);
+            const primaryBranch = visitedNames.length > 0 ? visitedNames[0] : (centersData && centersData.length > 0 ? centersData[0]?.name : "All Branches");
+
+            return {
+                id: cId || Math.random().toString(),
+                name: customer.fullName || customer.name || "Unknown Customer",
+                email: customer.email || "N/A",
+                visits: customer.visits || 0,
+                totalSpent: customer.totalSpent || 0,
+                lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                status: customer.status || "Active",
+                centerName: primaryBranch,
+                visitedCenterIds: (visitedIds as string[]).length > 0 ? (visitedIds as string[]) : (centersData && centersData[0]?.centerId ? [centersData[0].centerId] : []),
+                avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=ea580c&color=fff`
+            };
+        });
     };
 
     const [customers, setCustomers] = useState<Customer[]>(() => mapCustomers(customersData));
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCenterFilter, setSelectedCenterFilter] = useState("ALL");
     const [loyaltyFilter, setLoyaltyFilter] = useState("ALL");
     const [sortFilter, setSortFilter] = useState("DEFAULT");
     const [loading, setLoading] = useState<boolean>(() => !customersData || customersData.length === 0);
@@ -85,7 +107,7 @@ export default function CustomersPage() {
     useEffect(() => {
         setCustomers(mapCustomers(customersData || []));
         setLoading(false);
-    }, [customersData]);
+    }, [customersData, centersData, invoicesData]);
 
     const formatCurrency = (amount: number) => {
         return `Rs. ${Number(amount || 0).toLocaleString('en-LK')}`;
@@ -106,7 +128,12 @@ export default function CustomersPage() {
             const matchSearch = !q ||
                 c.name.toLowerCase().includes(q) ||
                 c.email.toLowerCase().includes(q) ||
-                c.status.toLowerCase().includes(q);
+                c.status.toLowerCase().includes(q) ||
+                c.centerName.toLowerCase().includes(q);
+
+            const matchCenter = selectedCenterFilter === "ALL" ||
+                c.centerName === selectedCenterFilter ||
+                (c.visitedCenterIds && c.visitedCenterIds.includes(selectedCenterFilter));
 
             const matchLoyalty = 
                 loyaltyFilter === "ALL" ? true :
@@ -115,7 +142,7 @@ export default function CustomersPage() {
                 loyaltyFilter === "NEW_LEAD" ? c.visits === 0 :
                 loyaltyFilter === "VIP" ? (c.visits >= 5 || c.totalSpent >= 25000) : true;
 
-            return matchSearch && matchLoyalty;
+            return matchSearch && matchCenter && matchLoyalty;
         });
 
         if (sortFilter === "SPENT_DESC") {
@@ -125,7 +152,7 @@ export default function CustomersPage() {
         }
 
         return result;
-    }, [customers, searchTerm, loyaltyFilter, sortFilter]);
+    }, [customers, searchTerm, selectedCenterFilter, loyaltyFilter, sortFilter]);
 
     const columns: GridColDef[] = [
         {
@@ -161,6 +188,28 @@ export default function CustomersPage() {
                     </Box>
                 </Box>
             ),
+        },
+        {
+            field: 'centerName',
+            headerName: 'Branch / Center',
+            flex: 1.4,
+            minWidth: 190,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    <Chip
+                        label={params.value || "All Branches"}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            color: '#475569',
+                            borderColor: '#cbd5e1',
+                            bgcolor: 'rgba(241, 245, 249, 0.6)'
+                        }}
+                    />
+                </Box>
+            )
         },
         {
             field: 'visits',
@@ -331,6 +380,18 @@ export default function CustomersPage() {
                         />
 
                         <FormControl size="small" sx={{ minWidth: 170, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>All Branches</InputLabel>
+                            <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Service Centers</MenuItem>
+                                {(centersData || []).map((c: any) => (
+                                    <MenuItem key={c.centerId || c.id || c.name} value={c.name}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl size="small" sx={{ minWidth: 160, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                             <InputLabel>Client Category</InputLabel>
                             <Select value={loyaltyFilter} label="Client Category" onChange={(e) => setLoyaltyFilter(e.target.value)}>
                                 <MenuItem value="ALL">All Clients</MenuItem>
@@ -350,11 +411,11 @@ export default function CustomersPage() {
                             </Select>
                         </FormControl>
 
-                        {(searchTerm || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
+                        {(searchTerm || selectedCenterFilter !== "ALL" || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
                             <Button 
                                 size="small" 
                                 variant="text" 
-                                onClick={() => { setSearchTerm(""); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
+                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
                                 sx={{ color: '#ea580c', fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
                             >
                                 Reset
