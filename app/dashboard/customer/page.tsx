@@ -90,6 +90,22 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function getCleanNotificationPreview(htmlString: string) {
+  if (!htmlString) return "";
+  // Strip img tags and base64 data URIs completely
+  let clean = htmlString.replace(/<img[^>]*>/gi, "");
+  // Replace <br> and paragraph endings with spaces
+  clean = clean.replace(/<br\s*\/?>/gi, " ").replace(/<\/p>/gi, " ").replace(/&nbsp;/gi, " ");
+  // Strip all remaining HTML tags
+  clean = clean.replace(/<[^>]+>/g, "");
+  // Normalize whitespace
+  clean = clean.replace(/\s+/g, " ").trim();
+  if (!clean && htmlString.includes("<img")) {
+    return "📷 [Image Announcement] Click to view details";
+  }
+  return clean || "Click to view full notification details";
+}
+
 /* ─── Notification type config ─────────────────────────────── */
 const NOTIF_CONFIG: Record<string, { bg: string; dot: string; Icon: React.ElementType; iconColor: string }> = {
   SUCCESS:  { bg: "bg-emerald-100", dot: "bg-emerald-500", Icon: CheckCircleIcon,  iconColor: "text-emerald-600" },
@@ -544,7 +560,7 @@ export default function CustomerDashboard() {
                         {n.title}
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
-                        {n.message}
+                        {getCleanNotificationPreview(n.message)}
                       </p>
                     </div>
 
