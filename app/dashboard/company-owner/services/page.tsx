@@ -865,40 +865,36 @@ function ServicePackageDialog({
                             </FormControl>
                         </Grid>
 
-                        {/* STEP 1: VEHICLE TYPE CLASSIFICATION (Supports Multi-Selection) */}
+                        {/* STEP 1: VEHICLE BRAND (Supports Preset & Custom Selection) */}
                         <Grid size={{ xs: 12, md: 6 }}>
                             <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel id="vehicle-type-multi-label">
-                                    {selectedBrands.length > 0 && !selectedBrands.includes("ALL")
-                                        ? `Vehicle Classification (${selectedBrands.join(", ")})`
-                                        : "Vehicle Classification"}
-                                </InputLabel>
+                                <InputLabel>Vehicle Brand</InputLabel>
                                 <Select
-                                    multiple
-                                    labelId="vehicle-type-multi-label"
-                                    value={selectedTypes}
-                                    label={
-                                        selectedBrands.length > 0 && !selectedBrands.includes("ALL")
-                                            ? `Vehicle Classification (${selectedBrands.join(", ")})`
-                                            : "Vehicle Classification"
-                                    }
-                                    renderValue={(selected) => {
-                                        const arr = selected as string[];
-                                        if (arr.includes("ALL") || arr.length === 0) return "All Vehicle Classifications";
-                                        return arr.map(val => VEHICLE_TYPE_OPTIONS.find(v => v.value === val)?.label.split('/')[0].trim() || val).join(", ");
-                                    }}
+                                    value={isCustomBrand ? "OTHER" : (currentPackage.vehicleBrand || "ALL")}
+                                    label="Vehicle Brand"
                                     onChange={(e) => {
-                                        const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
-                                        const lastSelected = val[val.length - 1];
-                                        if (lastSelected === "ALL" || val.length === 0) {
-                                            handleToggleVehicleType("ALL");
+                                        const val = e.target.value;
+                                        if (val === "OTHER") {
+                                            setIsCustomBrand(true);
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
                                         } else {
-                                            const filtered = val.filter(v => v !== "ALL");
-                                            setCurrentPackage({ ...currentPackage, vehicleType: serializeList(filtered) });
+                                            setIsCustomBrand(false);
+                                            const type = currentPackage.vehicleType || "ALL";
+                                            const validation = validateBrandAndType(type, val);
+                                            setCurrentPackage({ 
+                                                ...currentPackage, 
+                                                vehicleBrand: val,
+                                                vehicleType: validation.isValid ? type : "ALL"
+                                            });
                                         }
                                     }}
                                 >
-                                    {availableVehicleTypeOptions.map((opt) => {
+                                    {availableBrandOptions.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
                             </FormControl>
 
                             {/* Quick Compatible Brand Preset Chips */}
@@ -947,26 +943,40 @@ function ServicePackageDialog({
                             )}
                         </Grid>
 
-                        {/* VEHICLE TYPE CLASSIFICATION */}
+                        {/* STEP 2: VEHICLE TYPE CLASSIFICATION (Supports Multi-Selection) */}
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel>Vehicle Classification</InputLabel>
+                            <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                                <InputLabel id="vehicle-type-multi-label">
+                                    {selectedBrands.length > 0 && !selectedBrands.includes("ALL")
+                                        ? `Vehicle Classification (${selectedBrands.join(", ")})`
+                                        : "Vehicle Classification"}
+                                </InputLabel>
                                 <Select
-                                    value={currentPackage.vehicleType || "ALL"}
-                                    label="Vehicle Classification"
+                                    multiple
+                                    labelId="vehicle-type-multi-label"
+                                    value={selectedTypes}
+                                    label={
+                                        selectedBrands.length > 0 && !selectedBrands.includes("ALL")
+                                            ? `Vehicle Classification (${selectedBrands.join(", ")})`
+                                            : "Vehicle Classification"
+                                    }
+                                    renderValue={(selected) => {
+                                        const arr = selected as string[];
+                                        if (arr.includes("ALL") || arr.length === 0) return "All Vehicle Classifications";
+                                        return arr.map(val => VEHICLE_TYPE_OPTIONS.find(v => v.value === val)?.label.split('/')[0].trim() || val).join(", ");
+                                    }}
                                     onChange={(e) => {
-                                        const newType = e.target.value;
-                                        const brand = currentPackage.vehicleBrand || "ALL";
-                                        const validation = validateBrandAndType(newType, brand);
-                                        setCurrentPackage({ 
-                                            ...currentPackage, 
-                                            vehicleType: newType,
-                                            vehicleBrand: validation.isValid ? brand : "ALL"
-                                        });
+                                        const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
+                                        const lastSelected = val[val.length - 1];
+                                        if (lastSelected === "ALL" || val.length === 0) {
+                                            handleToggleVehicleType("ALL");
+                                        } else {
+                                            const filtered = val.filter(v => v !== "ALL");
+                                            setCurrentPackage({ ...currentPackage, vehicleType: serializeList(filtered) });
+                                        }
                                     }}
                                 >
-                                    {compatibleVehicleTypesList.map((opt) => {
->>>>>>> 7827bb78503e62a3edac346adb44a41dbe5bf0bf
+                                    {availableVehicleTypeOptions.map((opt) => {
                                         const IconComp = opt.Icon;
                                         const isChecked = selectedTypes.includes(opt.value);
                                         return (
