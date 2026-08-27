@@ -47,6 +47,7 @@ function SectionCard({
   icon: Icon,
   accent = "text-orange-600",
   accentBg = "bg-orange-50",
+  action,
   children,
 }: {
   title: string;
@@ -54,18 +55,22 @@ function SectionCard({
   icon: React.ElementType;
   accent?: string;
   accentBg?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
-        <div className={`w-9 h-9 ${accentBg} ${accent} rounded-xl flex items-center justify-center shrink-0`}>
-          <Icon size={17} />
+      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 ${accentBg} ${accent} rounded-xl flex items-center justify-center shrink-0`}>
+            <Icon size={17} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 leading-none">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-bold text-slate-900 leading-none">{title}</h3>
-          {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
-        </div>
+        {action && <div>{action}</div>}
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -117,6 +122,8 @@ export default function CustomerProfilePage() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [vehicleAddedSuccess, setVehicleAddedSuccess] = useState(false);
+  const [showAddVehicleForm, setShowAddVehicleForm] = useState(false);
+  const [vehicleAdding, setVehicleAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vehicleId: string }>({ open: false, vehicleId: "" });
 
   // Change Password state
@@ -129,6 +136,12 @@ export default function CustomerProfilePage() {
   const [showPwCurrent, setShowPwCurrent] = useState(false);
   const [showPwNew, setShowPwNew] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
+
+  const pwHasLength = pwNew.length >= 8;
+  const pwHasUpper = /[A-Z]/.test(pwNew);
+  const pwHasLower = /[a-z]/.test(pwNew);
+  const pwHasNumber = /[0-9]/.test(pwNew);
+  const pwHasSpecial = /[^A-Za-z0-9]/.test(pwNew);
 
   const loadVehicles = async () => {
     const data = await getVehicles();
@@ -245,12 +258,28 @@ export default function CustomerProfilePage() {
       setPwError("All password fields are required.");
       return;
     }
-    if (pwNew !== pwConfirm) {
-      setPwError("New passwords do not match.");
+    if (!pwHasLength) {
+      setPwError("New password must be at least 8 characters.");
       return;
     }
-    if (pwNew.length < 8) {
-      setPwError("New password must be at least 8 characters.");
+    if (!pwHasUpper) {
+      setPwError("New password must contain at least one uppercase letter (A-Z).");
+      return;
+    }
+    if (!pwHasLower) {
+      setPwError("New password must contain at least one lowercase letter (a-z).");
+      return;
+    }
+    if (!pwHasNumber) {
+      setPwError("New password must contain at least one number (0-9).");
+      return;
+    }
+    if (!pwHasSpecial) {
+      setPwError("New password must contain at least one special character / symbol.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("New passwords do not match.");
       return;
     }
     setPwLoading(true);
@@ -275,6 +304,7 @@ export default function CustomerProfilePage() {
       return;
     }
     setVehiclesError("");
+    setVehicleAdding(true);
     try {
       await addVehicle({
         brand: newVehicle.brand.trim(),
@@ -286,11 +316,14 @@ export default function CustomerProfilePage() {
       setNewVehicle({ brand: "", model: "", plateNumber: "", vehicleType: "CAR" });
       setNewVehicleImageData(null);
       setNewVehicleImageName("");
+      setShowAddVehicleForm(false);
       await loadVehicles();
       setVehicleAddedSuccess(true);
       setTimeout(() => setVehicleAddedSuccess(false), 3000);
     } catch (error) {
       setVehiclesError(toApiErrorMessage(error));
+    } finally {
+      setVehicleAdding(false);
     }
   };
 
@@ -441,7 +474,7 @@ export default function CustomerProfilePage() {
                   value={profile.phoneNumber}
                   onChange={(e) => setProfile((p) => ({ ...p, phoneNumber: e.target.value }))}
                   className={inputCls}
-                  placeholder="+94 7xx xxx xxxx"
+                  placeholder="0774653123"
                 />
               </FormField>
 
@@ -484,7 +517,10 @@ export default function CustomerProfilePage() {
                   type={showPwCurrent ? "text" : "password"}
                   placeholder="Current password"
                   value={pwCurrent}
-                  onChange={(e) => setPwCurrent(e.target.value)}
+                  onChange={(e) => {
+                    setPwCurrent(e.target.value);
+                    if (pwError) setPwError("");
+                  }}
                   className={inputCls + " pr-10"}
                 />
                 <button type="button" onClick={() => setShowPwCurrent((v) => !v)}
@@ -498,7 +534,10 @@ export default function CustomerProfilePage() {
                   type={showPwNew ? "text" : "password"}
                   placeholder="New password (min. 8 characters)"
                   value={pwNew}
-                  onChange={(e) => setPwNew(e.target.value)}
+                  onChange={(e) => {
+                    setPwNew(e.target.value);
+                    if (pwError) setPwError("");
+                  }}
                   className={inputCls + " pr-10"}
                 />
                 <button type="button" onClick={() => setShowPwNew((v) => !v)}
@@ -507,12 +546,43 @@ export default function CustomerProfilePage() {
                 </button>
               </div>
 
+              {pwNew.length > 0 && (
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                  <p className="font-semibold text-slate-600 text-[11px] uppercase tracking-wider">Password Requirements</p>
+                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                    <span className={`flex items-center gap-1.5 ${pwHasLength ? "text-emerald-600 font-medium" : "text-slate-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pwHasLength ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      8+ characters
+                    </span>
+                    <span className={`flex items-center gap-1.5 ${pwHasUpper ? "text-emerald-600 font-medium" : "text-slate-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pwHasUpper ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      Uppercase (A-Z)
+                    </span>
+                    <span className={`flex items-center gap-1.5 ${pwHasLower ? "text-emerald-600 font-medium" : "text-slate-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pwHasLower ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      Lowercase (a-z)
+                    </span>
+                    <span className={`flex items-center gap-1.5 ${pwHasNumber ? "text-emerald-600 font-medium" : "text-slate-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pwHasNumber ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      Number (0-9)
+                    </span>
+                    <span className={`flex items-center gap-1.5 col-span-2 ${pwHasSpecial ? "text-emerald-600 font-medium" : "text-slate-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pwHasSpecial ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      Symbol / special char (!@#$...)
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="relative">
                 <input
                   type={showPwConfirm ? "text" : "password"}
                   placeholder="Confirm new password"
                   value={pwConfirm}
-                  onChange={(e) => setPwConfirm(e.target.value)}
+                  onChange={(e) => {
+                    setPwConfirm(e.target.value);
+                    if (pwError) setPwError("");
+                  }}
                   className={inputCls + " pr-10"}
                 />
                 <button type="button" onClick={() => setShowPwConfirm((v) => !v)}
@@ -556,10 +626,120 @@ export default function CustomerProfilePage() {
             icon={Car}
             accent="text-indigo-600"
             accentBg="bg-indigo-50"
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddVehicleForm((p) => !p);
+                  if (vehiclesError) setVehiclesError("");
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 transition-all border border-orange-200 shadow-sm cursor-pointer"
+              >
+                <Plus size={15} />
+                Add Vehicle
+              </button>
+            }
           >
+            {/* add vehicle form (appears when Add Vehicle button is clicked) */}
+            {showAddVehicleForm && (
+              <div className="p-4 mb-5 rounded-2xl bg-orange-50/40 border border-orange-200 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-orange-700">Vehicle Details</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Vehicle brand (e.g. Toyota)"
+                    value={newVehicle.brand}
+                    onChange={(e) => {
+                      setNewVehicle((p) => ({ ...p, brand: e.target.value }));
+                      if (vehiclesError) setVehiclesError("");
+                    }}
+                    className={inputCls + " bg-white"}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Model (e.g. Corolla)"
+                    value={newVehicle.model}
+                    onChange={(e) => {
+                      setNewVehicle((p) => ({ ...p, model: e.target.value }));
+                      if (vehiclesError) setVehiclesError("");
+                    }}
+                    className={inputCls + " bg-white"}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Plate number (e.g. CAB-1234)"
+                    value={newVehicle.plateNumber}
+                    onChange={(e) => {
+                      setNewVehicle((p) => ({ ...p, plateNumber: e.target.value }));
+                      if (vehiclesError) setVehiclesError("");
+                    }}
+                    className={inputCls + " bg-white"}
+                  />
+                  <select
+                    value={newVehicle.vehicleType}
+                    onChange={(e) => setNewVehicle((p) => ({ ...p, vehicleType: e.target.value as "CAR" | "BIKE" | "VAN" | "TRUCK" }))}
+                    className={inputCls + " bg-white"}
+                  >
+                    <option value="CAR">Car</option>
+                    <option value="BIKE">Bike</option>
+                    <option value="VAN">Van</option>
+                    <option value="TRUCK">Truck</option>
+                  </select>
+                </div>
+
+                <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all text-sm ${
+                  newVehicleImageData
+                    ? "border-orange-300 bg-orange-50 text-orange-700"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-orange-300 hover:text-orange-600"
+                }`}>
+                  <Camera size={15} className="shrink-0" />
+                  <span className="truncate">
+                    {newVehicleImageData ? newVehicleImageName || "Photo selected" : "Vehicle Photo"}
+                  </span>
+                  {newVehicleImageData && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setNewVehicleImageData(null); setNewVehicleImageName(""); }}
+                      className="ml-auto text-orange-400 hover:text-orange-600 shrink-0"
+                    >
+                      ×
+                    </button>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleNewVehicleImagePick}
+                  />
+                </label>
+
+                {vehiclesError && (
+                  <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl border border-red-100">
+                    {vehiclesError}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleVehicleAdd}
+                  disabled={vehicleAdding}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all shadow-md bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200 hover:-translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                >
+                  <Save size={16} />
+                  {vehicleAdding ? "Saving Vehicle..." : "Save Vehicle"}
+                </button>
+              </div>
+            )}
+
+            {vehicleAddedSuccess && (
+              <p className="text-sm text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-200 flex items-center gap-2 mb-4">
+                <Check size={16} /> Vehicle added successfully!
+              </p>
+            )}
+
             {/* vehicles grid */}
-            {vehicles.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 mb-5">
+            {vehicles.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
                 {vehicles.map((vehicle) => (
                   <Link
                     key={vehicle.id}
@@ -624,92 +804,14 @@ export default function CustomerProfilePage() {
                   </Link>
                 ))}
               </div>
+            ) : (
+              !showAddVehicleForm && (
+                <div className="text-center py-8 px-4 border border-dashed border-slate-200 rounded-2xl">
+                  <p className="text-sm text-slate-500">No vehicles registered yet.</p>
+                  <p className="text-xs text-slate-400 mt-1">Click the &quot;+ Add Vehicle&quot; button above to add your first vehicle.</p>
+                </div>
+              )
             )}
-
-            {/* add vehicle */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Vehicle brand (e.g. Toyota)"
-                  value={newVehicle.brand}
-                  onChange={(e) => setNewVehicle((p) => ({ ...p, brand: e.target.value }))}
-                  className={inputCls}
-                />
-                <input
-                  type="text"
-                  placeholder="Model (e.g. Corolla)"
-                  value={newVehicle.model}
-                  onChange={(e) => setNewVehicle((p) => ({ ...p, model: e.target.value }))}
-                  className={inputCls}
-                />
-                <input
-                  type="text"
-                  placeholder="Plate number"
-                  value={newVehicle.plateNumber}
-                  onChange={(e) => setNewVehicle((p) => ({ ...p, plateNumber: e.target.value }))}
-                  className={inputCls}
-                />
-              </div>
-              <select
-                value={newVehicle.vehicleType}
-                onChange={(e) => setNewVehicle((p) => ({ ...p, vehicleType: e.target.value as "CAR" | "BIKE" | "VAN" | "TRUCK" }))}
-                className={inputCls}
-              >
-                <option value="CAR">Car</option>
-                <option value="BIKE">Bike</option>
-                <option value="VAN">Van</option>
-                <option value="TRUCK">Truck</option>
-              </select>
-
-              
-              <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all text-sm ${
-                newVehicleImageData
-                  ? "border-orange-300 bg-orange-50 text-orange-700"
-                  : "border-slate-200 bg-slate-50 text-slate-500 hover:border-orange-300 hover:text-orange-600"
-              }`}>
-                <Camera size={15} className="shrink-0" />
-                <span className="truncate">
-                  {newVehicleImageData ? newVehicleImageName || "Photo selected" : "Vehicle Photo"}
-                </span>
-                {newVehicleImageData && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); setNewVehicleImageData(null); setNewVehicleImageName(""); }}
-                    className="ml-auto text-orange-400 hover:text-orange-600 shrink-0"
-                  >
-                    ×
-                  </button>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleNewVehicleImagePick}
-                />
-              </label>
-
-              {vehiclesError && (
-                <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl border border-red-100">
-                  {vehiclesError}
-                </p>
-              )}
-
-              {vehicleAddedSuccess && (
-                <p className="text-sm text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 flex items-center gap-2">
-                  <Check size={16} /> Vehicle added successfully!
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={handleVehicleAdd}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-orange-300 hover:border-orange-400 hover:bg-orange-50 text-orange-500 hover:text-orange-600 text-sm font-semibold transition-all"
-              >
-                <Plus size={16} />
-                Add Vehicle
-              </button>
-            </div>
           </SectionCard>
 
           {/* Platform Settings — END of right column content above, now full-width below */}

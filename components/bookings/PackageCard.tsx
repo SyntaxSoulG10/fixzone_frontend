@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+
 import { FiCheckCircle, FiClock } from "react-icons/fi";
 
 export interface Package {
@@ -36,22 +36,14 @@ export default function PackageCard({ pkg, isSelected, onSelect }: PackageCardPr
         </div>
       )}
 
-      {/* Banner Image */}
-      <div className="w-full h-44 relative overflow-hidden flex-shrink-0 bg-slate-100">
-        <img
-          src={pkg.image.startsWith('file://') ? 'https://images.unsplash.com/photo-15057404209ce-096b99092408?auto=format&fit=crop&q=80&w=400' : pkg.image}
-          alt={pkg.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-15057404209ce-096b99092408?auto=format&fit=crop&q=80&w=400';
-          }}
-        />
-        {pkg.isRecommended && (
-          <div className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-lg">
+      {/* Recommended Badge */}
+      {pkg.isRecommended && (
+        <div className="mx-6 mt-5 mb-0">
+          <span className="inline-block bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-sm">
             Recommended
-          </div>
-        )}
-      </div>
+          </span>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 flex flex-col p-6">
