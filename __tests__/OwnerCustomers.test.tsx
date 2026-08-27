@@ -102,4 +102,9 @@ describe('Company Owner Customers Tab Page', () => {
     // cust1 has 5 visits, so it should NOT be labeled 'VIP Client' (threshold is > 10)
     expect(screen.queryByText('VIP Client')).not.toBeInTheDocument()
   })
+
+  it('renders Active status label correctly for active clients', () => {
+    render(<CustomersPage />)
+    expect(screen.getAllByText('Active').length).toBeGreaterThan(0)
+  })
 })

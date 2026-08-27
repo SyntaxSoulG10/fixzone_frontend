@@ -140,7 +140,8 @@ export default function CustomersPage() {
                 loyaltyFilter === "REPEAT" ? c.visits > 1 :
                 loyaltyFilter === "FIRST_TIME" ? c.visits === 1 :
                 loyaltyFilter === "NEW_LEAD" ? c.visits === 0 :
-                loyaltyFilter === "VIP" ? (c.visits >= 5 || c.totalSpent >= 25000) : true;
+                loyaltyFilter === "VIP" ? (c.visits >= 5 || c.totalSpent >= 25000) :
+                loyaltyFilter === "SUSPENDED" ? (c.status || "").toUpperCase() === "SUSPENDED" : true;
 
             return matchSearch && matchCenter && matchLoyalty;
         });
@@ -270,8 +271,33 @@ export default function CustomersPage() {
             align: 'center',
             minWidth: 130,
             renderCell: (params: GridRenderCellParams) => {
-                const isVIP = params.row.visits > 10;
-                const label = isVIP ? 'VIP Client' : (params.value || 'Active');
+                const rawStatus = (params.row.status || '').toUpperCase();
+                const isSuspended = rawStatus === 'SUSPENDED';
+                const isInactive = rawStatus === 'INACTIVE';
+                const isVIP = !isSuspended && params.row.visits > 10;
+                
+                let label = 'Active';
+                let bgcolor = 'rgba(76, 175, 80, 0.12)';
+                let color = '#2e7d32';
+                let border = '1px solid rgba(76, 175, 80, 0.3)';
+
+                if (isSuspended) {
+                    label = 'Suspended';
+                    bgcolor = 'rgba(239, 68, 68, 0.12)';
+                    color = '#dc2626';
+                    border = '1px solid rgba(239, 68, 68, 0.3)';
+                } else if (isVIP) {
+                    label = 'VIP Client';
+                    bgcolor = 'rgba(234, 88, 12, 0.12)';
+                    color = '#c2410c';
+                    border = '1px solid rgba(234, 88, 12, 0.3)';
+                } else if (isInactive) {
+                    label = 'Inactive';
+                    bgcolor = '#f1f5f9';
+                    color = '#64748b';
+                    border = '1px solid #e2e8f0';
+                }
+
                 return (
                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                         <Chip
@@ -280,9 +306,9 @@ export default function CustomersPage() {
                             sx={{
                                 fontWeight: 700,
                                 fontSize: '0.72rem',
-                                bgcolor: isVIP ? 'rgba(234, 88, 12, 0.12)' : 'rgba(76, 175, 80, 0.12)',
-                                color: isVIP ? '#c2410c' : '#2e7d32',
-                                border: `1px solid ${isVIP ? 'rgba(234, 88, 12, 0.3)' : 'rgba(76, 175, 80, 0.3)'}`
+                                bgcolor,
+                                color,
+                                border
                             }}
                         />
                     </Box>
@@ -428,6 +454,7 @@ export default function CustomersPage() {
                             <MenuItem value="FIRST_TIME">First-Time Clients (1)</MenuItem>
                             <MenuItem value="NEW_LEAD">New Leads (0 Visits)</MenuItem>
                             <MenuItem value="VIP">VIP Clients (High Value)</MenuItem>
+                            <MenuItem value="SUSPENDED">Suspended Clients</MenuItem>
                         </Select>
                     </FormControl>
 
