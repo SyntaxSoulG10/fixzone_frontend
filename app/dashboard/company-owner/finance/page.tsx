@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "@/lib/axios";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import {
@@ -228,14 +228,7 @@ export default function FinancePage() {
         loadUnifiedFinanceData(); 
     }, [selectedCenter, period, startDate, endDate]);
 
-    /**
-     * LOAD FINANCE DATA
-     * Why: Instead of making multiple scattered API calls, we use a single 
-     * unified "Analytics" endpoint. This is a "Backends-for-Frontends" (BFF) 
-     * pattern that reduces latency and ensures data consistency across the page.
-     */
     const loadUnifiedFinanceData = async () => {
-        // Validates date range before executing fetch
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
             console.warn("Invalid date range selected for finance data");
             setSnackbar({ open: true, message: "Invalid date range selected", severity: 'error' });
@@ -260,14 +253,10 @@ export default function FinancePage() {
                 cashRevenue: analyticsPayload.handCollectionRevenue || 0,
                 avgTransaction: analyticsPayload.avgJobValue || 0,
                 topCenters: analyticsPayload.topCenters || [],
-                
-                // Map branch performance
                 revenueByCenter: (analyticsPayload.topCenters || []).map((branch: any) => ({ 
                     name: branch.name, 
                     revenue: branch.revenue 
                 })),
-                
-                // Map historical growth data
                 growthData: (analyticsPayload.revenueOverview || []).map((monthlyData: any) => ({ 
                     month: monthlyData.name, 
                     amount: monthlyData.revenue, 
@@ -284,14 +273,20 @@ export default function FinancePage() {
         }
     };
 
-    const branchPerformanceRows = (financeData.topCenters || []).map((branch: any, index: number) => {
-        const rev = Number(branch.revenue || 0);
-        const jobsCount = Number(branch.jobs || 0);
-        const avgTicket = jobsCount > 0 ? rev / jobsCount : (rev > 0 ? rev : 0);
-        const share = financeData.totalRevenue > 0 ? Math.round((rev / Number(financeData.totalRevenue)) * 100) : 0;
-        return {
-            id: branch.id || `center-${index}`,
-            name: branch.name,
+    const branchPerformanceRows = useMemo(() => {
+        return (financeData.topCenters || []).map((branch: any, index: number) => {
+            const rev = Number(branch.revenue || 0);
+            const jobsCount = Number(branch.jobs || 0);
+            const avgTicket = jobsCount > 0 ? rev / jobsCount : (rev > 0 ? rev : 0);
+            const share = financeData.totalRevenue > 0 ? Math.round((rev / Number(financeData.totalRevenue)) * 100) : 0;
+            return {
+                id: branch.id || `center-${index}`,
+                name: branch.name,
+                revenue: rev,
+                jobs: jobsCount,
+                avgTicket,
+                share
+            };
         });
     }, [financeData]);
 
