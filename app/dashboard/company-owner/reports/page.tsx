@@ -244,8 +244,10 @@ export default function ReportsPage() {
 
     // Classify whether a report was system-generated or externally uploaded
     const isExternalReport = (report: ReportItem): boolean => {
+        if (report.source === 'EXTERNAL' || report.source === 'External') return true;
         if (report.type === 'External') return true;
-        if (report.fileContentBase64 && !report.downloadUrl) return true;
+        if (report.downloadUrl && (report.downloadUrl.startsWith('http://') || report.downloadUrl.startsWith('https://') || report.downloadUrl.includes('imagekit'))) return true;
+        if (report.fileContentBase64 && report.fileContentBase64.length > 0) return true;
         return false;
     };
 
@@ -365,10 +367,11 @@ export default function ReportsPage() {
             await createReport({
                 name: cleanName,
                 type: uploadForm.type,
+                source: "EXTERNAL",
                 description: uploadForm.description.trim() || undefined,
                 fileContentBase64: uploadBase64,
                 size: (uploadFile.size / 1024 / 1024).toFixed(2) + " MB"
-            } as any);
+            });
 
             showSnackbar("Document uploaded and archived successfully!", "success");
             setUploadModalOpen(false);
@@ -705,6 +708,7 @@ export default function ReportsPage() {
             await createReport({
                 name: newReport.name.trim(),
                 type: newReport.type,
+                source: "GENERATED",
                 description: newReport.description.trim() || undefined
             });
 
