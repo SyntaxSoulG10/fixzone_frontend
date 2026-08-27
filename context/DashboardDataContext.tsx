@@ -78,11 +78,11 @@ export const DashboardDataProvider = ({ children }: { children: ReactNode }) => 
                     axios.get(APP_CONFIG.api.invoices + "/current").catch((e) => { console.warn("invoices/current failed", e); return { data: [] }; }),
                 ]);
                 setOwnerProfile(ownerRes.data || null);
-                setCentersData(centersRes.data || []);
-                setManagersData(managersRes.data || []);
-                setCustomersData(customersRes.data || []);
+                setCentersData(Array.isArray(centersRes.data) ? centersRes.data : []);
+                setManagersData(Array.isArray(managersRes.data) ? managersRes.data : (managersRes.data ? [managersRes.data] : []));
+                setCustomersData(Array.isArray(customersRes.data) ? customersRes.data : []);
                 setAnalyticsData(analyticsRes.data || null);
-                setInvoicesData(invoicesRes.data || []);
+                setInvoicesData(Array.isArray(invoicesRes.data) ? invoicesRes.data : []);
             } else if (role === "ROLE_SERVICE_MANAGER") {
                 const managerRes = await axios.get(APP_CONFIG.api.managers + "/current").catch((e) => { console.warn("managers/current failed", e); return { data: null }; });
                 const mData = managerRes.data;

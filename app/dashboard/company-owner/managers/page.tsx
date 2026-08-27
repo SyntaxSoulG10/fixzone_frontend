@@ -337,19 +337,27 @@ export default function ManagersPage() {
     const theme = useTheme();
     const { managersData, centersData, ownerData, isLoading: contextLoading, refreshManagers } = useDashboardData();
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
-    const mapManagers = (mgrData: any[], ctrData: any[]) => {
-        const centersMap = (ctrData || []).reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-        return (mgrData || []).map((m: any) => ({
-            id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
-            center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
-            status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
+    
+    const mapManagers = (mgrData: any, ctrData: any): ManagerView[] => {
+        const safeMgrs = Array.isArray(mgrData) ? mgrData : (mgrData && typeof mgrData === 'object' && mgrData.userId ? [mgrData] : []);
+        const safeCenters = Array.isArray(ctrData) ? ctrData : [];
+        const centersMap = safeCenters.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
+        return safeMgrs.map((m: any) => ({
+            id: m.userId, 
+            name: m.fullName || "Unnamed Manager", 
+            email: m.email || "", 
+            phone: m.phone || "", 
+            center: centersMap[m.managedCenterId] || "Unassigned", 
+            centerId: m.managedCenterId,
+            status: m.status || "Active", 
+            lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName || "Manager")}`
         }));
     };
 
     const [managers, setManagers] = useState<ManagerView[]>(() => mapManagers(managersData, centersData));
     const [centersList, setCentersList] = useState<string[]>(() => (centersData || []).map((c: any) => c.name));
-    const [loading, setLoading] = useState<boolean>(() => contextLoading && (!managersData || managersData.length === 0));
+    const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -360,10 +368,44 @@ export default function ManagersPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [resendingId, setResendingId] = useState<string | null>(null);
 
+    const fetchDirectManagers = async () => {
+        setLoading(true);
+        try {
+            const [mgrRes, ctrRes] = await Promise.all([
+                axios.get(`${APP_CONFIG.api.managers}/current`).catch((e) => {
+                    console.warn("Direct managers fetch failed", e);
+                    return { data: [] };
+                }),
+                axios.get(`${APP_CONFIG.api.serviceCenters}/current`).catch((e) => {
+                    console.warn("Direct centers fetch failed", e);
+                    return { data: [] };
+                })
+            ]);
+            const rawMgr = Array.isArray(mgrRes.data) ? mgrRes.data : (mgrRes.data ? [mgrRes.data] : []);
+            const rawCtr = Array.isArray(ctrRes.data) ? ctrRes.data : [];
+            if (rawCtr.length > 0) {
+                setCentersList(rawCtr.map((c: any) => c.name));
+            }
+            setManagers(mapManagers(rawMgr, rawCtr));
+        } catch (err) {
+            console.error("Failed to fetch managers", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDirectManagers();
+    }, []);
+
     useEffect(() => { 
-        setCentersList((centersData || []).map((c: any) => c.name));
-        setManagers(mapManagers(managersData || [], centersData || []));
-        setLoading(false);
+        if (centersData && centersData.length > 0) {
+            setCentersList((centersData || []).map((c: any) => c.name));
+        }
+        if (managersData && managersData.length > 0) {
+            setManagers(mapManagers(managersData, centersData || []));
+            setLoading(false);
+        }
     }, [managersData, centersData]);
 
     const handleFormChange = (e: any) => {
