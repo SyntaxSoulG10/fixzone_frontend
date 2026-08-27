@@ -359,6 +359,8 @@ export default function ManagersPage() {
     const [centersList, setCentersList] = useState<string[]>(() => (centersData || []).map((c: any) => c.name));
     const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCenterFilter, setSelectedCenterFilter] = useState("ALL");
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState("ALL");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -534,7 +536,16 @@ export default function ManagersPage() {
         }
     };
 
-    const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filtered = managers.filter(m => {
+        const q = searchTerm.toLowerCase().trim();
+        const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q) || m.center.toLowerCase().includes(q);
+        const matchCenter = selectedCenterFilter === "ALL" || m.center === selectedCenterFilter;
+        const matchStatus = selectedStatusFilter === "ALL" || 
+            (selectedStatusFilter === "Active" && m.status === "Active") ||
+            (selectedStatusFilter === "Pending" && (m.status === "INVITED" || m.status === "Pending")) ||
+            (selectedStatusFilter === "Inactive" && m.status !== "Active" && m.status !== "INVITED" && m.status !== "Pending");
+        return matchSearch && matchCenter && matchStatus;
+    });
 
     if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress sx={{ color: '#ea580c' }} /></Box>;
 
@@ -543,25 +554,59 @@ export default function ManagersPage() {
             <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setDialogError(null); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
 
             <Card sx={{ borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                <Box p={2.5} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} bgcolor="#ffffff">
-                    <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
-                    <TextField 
-                        size="small" 
-                        placeholder="Search managers..." 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{ 
-                            startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
-                            endAdornment: searchTerm ? (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setSearchTerm("")}>
-                                        <FiX size={15} />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null
-                        }} 
-                        sx={{ minWidth: 280, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
-                    />
+                <Box p={2.5} display="flex" flexDirection={{ xs: 'column', lg: 'row' }} justifyContent="space-between" alignItems={{ lg: 'center' }} gap={2} bgcolor="#ffffff">
+                    <Box>
+                        <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
+                        <Typography variant="caption" color="text.secondary">View and manage service center managers across your company</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+                        <TextField 
+                            size="small" 
+                            placeholder="Search managers..." 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{ 
+                                startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
+                                endAdornment: searchTerm ? (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                            <FiX size={15} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null
+                            }} 
+                            sx={{ minWidth: { xs: '100%', sm: 220 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
+                        />
+
+                        <FormControl size="small" sx={{ minWidth: 170, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>All Branches</InputLabel>
+                            <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Service Centers</MenuItem>
+                                {centersList.map((cName: string) => <MenuItem key={cName} value={cName}>{cName}</MenuItem>)}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl size="small" sx={{ minWidth: 140, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>All Statuses</InputLabel>
+                            <Select value={selectedStatusFilter} label="All Statuses" onChange={(e) => setSelectedStatusFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Statuses</MenuItem>
+                                <MenuItem value="Active">Active</MenuItem>
+                                <MenuItem value="Pending">Pending Invite</MenuItem>
+                                <MenuItem value="Inactive">Inactive</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {(searchTerm || selectedCenterFilter !== "ALL" || selectedStatusFilter !== "ALL") && (
+                            <Button 
+                                size="small" 
+                                variant="text" 
+                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setSelectedStatusFilter("ALL"); }}
+                                sx={{ color: '#ea580c', fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
+                            >
+                                Reset
+                            </Button>
+                        )}
+                    </Box>
                 </Box>
                 
                 {filtered.length === 0 ? (

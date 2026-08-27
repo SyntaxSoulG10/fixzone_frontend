@@ -11,7 +11,12 @@ import {
     CircularProgress,
     TextField,
     InputAdornment,
-    IconButton
+    IconButton,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Button
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import { useTheme } from "@mui/material/styles";
@@ -20,7 +25,8 @@ import {
     FiRefreshCw,
     FiSearch,
     FiX,
-    FiMail
+    FiMail,
+    FiFilter
 } from "react-icons/fi";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -71,6 +77,8 @@ export default function CustomersPage() {
 
     const [customers, setCustomers] = useState<Customer[]>(() => mapCustomers(customersData));
     const [searchTerm, setSearchTerm] = useState("");
+    const [loyaltyFilter, setLoyaltyFilter] = useState("ALL");
+    const [sortFilter, setSortFilter] = useState("DEFAULT");
     const [loading, setLoading] = useState<boolean>(() => !customersData || customersData.length === 0);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
@@ -93,14 +101,31 @@ export default function CustomersPage() {
     };
 
     const filteredCustomers = useMemo(() => {
-        if (!searchTerm.trim()) return customers;
         const q = searchTerm.toLowerCase().trim();
-        return customers.filter(c =>
-            c.name.toLowerCase().includes(q) ||
-            c.email.toLowerCase().includes(q) ||
-            c.status.toLowerCase().includes(q)
-        );
-    }, [customers, searchTerm]);
+        let result = customers.filter(c => {
+            const matchSearch = !q ||
+                c.name.toLowerCase().includes(q) ||
+                c.email.toLowerCase().includes(q) ||
+                c.status.toLowerCase().includes(q);
+
+            const matchLoyalty = 
+                loyaltyFilter === "ALL" ? true :
+                loyaltyFilter === "REPEAT" ? c.visits > 1 :
+                loyaltyFilter === "FIRST_TIME" ? c.visits === 1 :
+                loyaltyFilter === "NEW_LEAD" ? c.visits === 0 :
+                loyaltyFilter === "VIP" ? (c.visits >= 5 || c.totalSpent >= 25000) : true;
+
+            return matchSearch && matchLoyalty;
+        });
+
+        if (sortFilter === "SPENT_DESC") {
+            result = [...result].sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0));
+        } else if (sortFilter === "VISITS_DESC") {
+            result = [...result].sort((a, b) => (b.visits || 0) - (a.visits || 0));
+        }
+
+        return result;
+    }, [customers, searchTerm, loyaltyFilter, sortFilter]);
 
     const columns: GridColDef[] = [
         {
@@ -270,7 +295,7 @@ export default function CustomersPage() {
             </Grid>
 
             <Card sx={{ p: 3, borderRadius: '1rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-                <Box mb={3} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+                <Box mb={3} display="flex" flexDirection={{ xs: 'column', lg: 'row' }} alignItems={{ lg: 'center' }} justifyContent="space-between" gap={2}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold" color="#1e293b">
                             Client List ({filteredCustomers.length})
@@ -279,30 +304,63 @@ export default function CustomersPage() {
                             Search and inspect customer loyalty across your company
                         </Typography>
                     </Box>
-                    <TextField
-                        size="small"
-                        placeholder="Search customers..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <FiSearch color="#94a3b8" />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchTerm ? (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setSearchTerm("")}>
-                                        <FiX size={14} />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null
-                        }}
-                        sx={{ 
-                            minWidth: { xs: '100%', sm: 260 },
-                            '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
-                        }}
-                    />
+                    <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+                        <TextField
+                            size="small"
+                            placeholder="Search customers..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <FiSearch color="#94a3b8" />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: searchTerm ? (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                            <FiX size={14} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null
+                            }}
+                            sx={{ 
+                                minWidth: { xs: '100%', sm: 220 },
+                                '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
+                            }}
+                        />
+
+                        <FormControl size="small" sx={{ minWidth: 170, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>Client Category</InputLabel>
+                            <Select value={loyaltyFilter} label="Client Category" onChange={(e) => setLoyaltyFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Clients</MenuItem>
+                                <MenuItem value="REPEAT">Repeat Clients (2+)</MenuItem>
+                                <MenuItem value="FIRST_TIME">First-Time Clients (1)</MenuItem>
+                                <MenuItem value="NEW_LEAD">New Leads (0 Visits)</MenuItem>
+                                <MenuItem value="VIP">VIP Clients (High Value)</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <FormControl size="small" sx={{ minWidth: 150, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>Sort By</InputLabel>
+                            <Select value={sortFilter} label="Sort By" onChange={(e) => setSortFilter(e.target.value)}>
+                                <MenuItem value="DEFAULT">Default Order</MenuItem>
+                                <MenuItem value="SPENT_DESC">Highest Spent</MenuItem>
+                                <MenuItem value="VISITS_DESC">Most Bookings</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {(searchTerm || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
+                            <Button 
+                                size="small" 
+                                variant="text" 
+                                onClick={() => { setSearchTerm(""); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
+                                sx={{ color: '#ea580c', fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
+                            >
+                                Reset
+                            </Button>
+                        )}
+                    </Box>
                 </Box>
 
                 {filteredCustomers.length === 0 ? (
