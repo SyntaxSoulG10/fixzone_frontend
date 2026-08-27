@@ -26,7 +26,8 @@ import {
     Tab,
     Stack,
     alpha,
-    Tooltip
+    Tooltip,
+    Checkbox
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import ConfirmDialog from "@/components/UI/ConfirmDialog";
@@ -134,66 +135,89 @@ export const COMPATIBLE_TYPES_BY_BRAND: Record<string, string[]> = {
     "OTHER": ["ALL", "CAR", "SUV", "VAN", "BUS", "TRUCK", "BIKE"]
 };
 
+export function parseList(val?: string | null): string[] {
+    if (!val || val.trim() === "" || val.toUpperCase() === "ALL") {
+        return ["ALL"];
+    }
+    const items = val.split(",").map(s => s.trim()).filter(Boolean);
+    return items.length > 0 ? items : ["ALL"];
+}
+
+export function serializeList(arr: string[]): string {
+    if (!arr || arr.length === 0 || arr.includes("ALL")) {
+        return "ALL";
+    }
+    const valid = arr.filter(x => x !== "ALL");
+    return valid.length > 0 ? valid.join(",") : "ALL";
+}
+
 export function validateBrandAndType(vehicleType?: string, vehicleBrand?: string): { isValid: boolean; error?: string } {
     if (!vehicleBrand || vehicleBrand === "ALL" || !vehicleType || vehicleType === "ALL") {
         return { isValid: true };
     }
 
-    const type = vehicleType.toUpperCase();
-    const brand = vehicleBrand.trim();
+    const types = vehicleType.split(",").map(t => t.trim().toUpperCase()).filter(Boolean);
+    const brands = vehicleBrand.split(",").map(b => b.trim()).filter(Boolean);
 
-    // 1. BIKE (Motorcycle / Scooter)
-    if (type === "BIKE") {
-        const incompatibleForBike = ["Toyota", "Nissan", "Hyundai", "Kia", "Mazda", "Audi", "Mercedes-Benz", "Subaru", "Lexus", "Tata", "Mahindra", "Ford", "Land Rover"];
-        if (incompatibleForBike.some(b => b.toLowerCase() === brand.toLowerCase())) {
-            return {
-                isValid: false,
-                error: `${brand} does not manufacture motorcycles or scooters. Please select a valid motorcycle brand (e.g. Honda, Yamaha, Suzuki, Bajaj, TVS, BMW) or change the vehicle classification.`
-            };
-        }
-    }
+    for (const type of types) {
+        if (type === "ALL") continue;
+        for (const brand of brands) {
+            if (brand === "ALL" || brand === "OTHER") continue;
 
-    // 2. BUS (Commercial Buses & Coaches)
-    if (type === "BUS") {
-        const incompatibleForBus = ["BMW", "Audi", "Honda", "Suzuki", "Mazda", "Subaru", "Lexus", "Yamaha", "Bajaj", "TVS", "Kia", "Hyundai", "Land Rover", "Ford"];
-        if (incompatibleForBus.some(b => b.toLowerCase() === brand.toLowerCase())) {
-            return {
-                isValid: false,
-                error: `${brand} does not manufacture commercial passenger buses. Compatible bus brands include Toyota (Coaster), Nissan (Civilian), Mercedes-Benz, Tata, Ashok Leyland, Mitsubishi (Rosa), etc.`
-            };
-        }
-    }
+            // 1. BIKE (Motorcycle / Scooter)
+            if (type === "BIKE") {
+                const incompatibleForBike = ["Toyota", "Nissan", "Hyundai", "Kia", "Mazda", "Audi", "Mercedes-Benz", "Subaru", "Lexus", "Tata", "Mahindra", "Ford", "Land Rover"];
+                if (incompatibleForBike.some(b => b.toLowerCase() === brand.toLowerCase())) {
+                    return {
+                        isValid: false,
+                        error: `${brand} does not manufacture motorcycles or scooters. Please remove ${brand} or update the vehicle classification.`
+                    };
+                }
+            }
 
-    // 3. CAR & SUV (Sedans, Hatchbacks, SUVs)
-    if (type === "CAR" || type === "SUV") {
-        const bikeOnlyBrands = ["Yamaha", "Bajaj", "TVS"];
-        if (bikeOnlyBrands.some(b => b.toLowerCase() === brand.toLowerCase())) {
-            return {
-                isValid: false,
-                error: `${brand} is a two-wheeler / motorcycle manufacturer and does not produce passenger cars or SUVs. Please select Motorcycle (BIKE) or a car manufacturer.`
-            };
-        }
-    }
+            // 2. BUS (Commercial Buses & Coaches)
+            if (type === "BUS") {
+                const incompatibleForBus = ["BMW", "Audi", "Honda", "Suzuki", "Mazda", "Subaru", "Lexus", "Yamaha", "Bajaj", "TVS", "Kia", "Hyundai", "Land Rover", "Ford"];
+                if (incompatibleForBus.some(b => b.toLowerCase() === brand.toLowerCase())) {
+                    return {
+                        isValid: false,
+                        error: `${brand} does not manufacture commercial passenger buses.`
+                    };
+                }
+            }
 
-    // 4. VAN (Commercial Passenger & Cargo Vans)
-    if (type === "VAN") {
-        const incompatibleForVan = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus", "Land Rover"];
-        if (incompatibleForVan.some(b => b.toLowerCase() === brand.toLowerCase())) {
-            return {
-                isValid: false,
-                error: `${brand} does not manufacture commercial passenger or cargo vans. Valid van brands include Toyota, Nissan, Suzuki, Mitsubishi, Hyundai, Ford, Tata, etc.`
-            };
-        }
-    }
+            // 3. CAR & SUV (Sedans, Hatchbacks, SUVs)
+            if (type === "CAR" || type === "SUV") {
+                const bikeOnlyBrands = ["Yamaha", "Bajaj", "TVS"];
+                if (bikeOnlyBrands.some(b => b.toLowerCase() === brand.toLowerCase())) {
+                    return {
+                        isValid: false,
+                        error: `${brand} is a motorcycle manufacturer and does not produce passenger cars or SUVs.`
+                    };
+                }
+            }
 
-    // 5. TRUCK (Light Commercial Lorries & Heavy Pickups)
-    if (type === "TRUCK") {
-        const incompatibleForTruck = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus"];
-        if (incompatibleForTruck.some(b => b.toLowerCase() === brand.toLowerCase())) {
-            return {
-                isValid: false,
-                error: `${brand} does not manufacture commercial lorries or pickup trucks. Valid truck brands include Toyota, Nissan, Mitsubishi, Ford, Tata, Mahindra, Isuzu, etc.`
-            };
+            // 4. VAN (Commercial Passenger & Cargo Vans)
+            if (type === "VAN") {
+                const incompatibleForVan = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus", "Land Rover"];
+                if (incompatibleForVan.some(b => b.toLowerCase() === brand.toLowerCase())) {
+                    return {
+                        isValid: false,
+                        error: `${brand} does not manufacture commercial passenger or cargo vans.`
+                    };
+                }
+            }
+
+            // 5. TRUCK (Light Commercial Lorries & Heavy Pickups)
+            if (type === "TRUCK") {
+                const incompatibleForTruck = ["Yamaha", "Bajaj", "TVS", "Audi", "BMW", "Subaru", "Lexus"];
+                if (incompatibleForTruck.some(b => b.toLowerCase() === brand.toLowerCase())) {
+                    return {
+                        isValid: false,
+                        error: `${brand} does not manufacture commercial lorries or pickup trucks.`
+                    };
+                }
+            }
         }
     }
 
@@ -303,9 +327,12 @@ function ServicePackageCard({
     onDelete: (id: string) => void; 
     isExpired: boolean; 
 }) {
-    const vehicleMeta = VEHICLE_TYPE_OPTIONS.find(v => v.value === (pkg.vehicleType || "ALL")) || VEHICLE_TYPE_OPTIONS[0];
+    const parsedTypes = parseList(pkg.vehicleType);
+    const parsedBrands = parseList(pkg.vehicleBrand);
+    const primaryType = parsedTypes[0] || "ALL";
+    const vehicleMeta = VEHICLE_TYPE_OPTIONS.find(v => v.value === primaryType) || VEHICLE_TYPE_OPTIONS[0];
     const VehicleIcon = vehicleMeta.Icon;
-    const isUniversalBrand = !pkg.vehicleBrand || pkg.vehicleBrand === "ALL";
+    const isUniversalBrand = parsedBrands.includes("ALL");
 
     return (
         <Card sx={{
@@ -354,30 +381,70 @@ function ServicePackageCard({
                         </Box>
                         <Box>
                             <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.75}>
-                                <Chip
-                                    label={vehicleMeta.label.split('/')[0].trim()}
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 700,
-                                        fontSize: '0.72rem',
-                                        height: 22,
-                                        bgcolor: 'rgba(234, 88, 12, 0.08)',
-                                        color: '#c2410c',
-                                        border: '1px solid rgba(234, 88, 12, 0.2)'
-                                    }}
-                                />
-                                <Chip
-                                    label={isUniversalBrand ? "All Brands" : pkg.vehicleBrand}
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 700,
-                                        fontSize: '0.72rem',
-                                        height: 22,
-                                        bgcolor: isUniversalBrand ? '#f1f5f9' : 'rgba(234, 88, 12, 0.1)',
-                                        color: isUniversalBrand ? '#64748b' : '#c2410c',
-                                        border: `1px solid ${isUniversalBrand ? '#e2e8f0' : 'rgba(234, 88, 12, 0.25)'}`
-                                    }}
-                                />
+                                {parsedTypes.includes("ALL") ? (
+                                    <Chip
+                                        label="All Vehicles"
+                                        size="small"
+                                        sx={{
+                                            fontWeight: 700,
+                                            fontSize: '0.72rem',
+                                            height: 22,
+                                            bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                            color: '#c2410c',
+                                            border: '1px solid rgba(234, 88, 12, 0.2)'
+                                        }}
+                                    />
+                                ) : (
+                                    parsedTypes.map(t => {
+                                        const meta = VEHICLE_TYPE_OPTIONS.find(v => v.value === t);
+                                        return (
+                                            <Chip
+                                                key={t}
+                                                label={meta?.label.split('/')[0].trim() || t}
+                                                size="small"
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    fontSize: '0.72rem',
+                                                    height: 22,
+                                                    bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                                    color: '#c2410c',
+                                                    border: '1px solid rgba(234, 88, 12, 0.2)'
+                                                }}
+                                            />
+                                        );
+                                    })
+                                )}
+
+                                {isUniversalBrand ? (
+                                    <Chip
+                                        label="All Brands"
+                                        size="small"
+                                        sx={{
+                                            fontWeight: 700,
+                                            fontSize: '0.72rem',
+                                            height: 22,
+                                            bgcolor: '#f1f5f9',
+                                            color: '#64748b',
+                                            border: '1px solid #e2e8f0'
+                                        }}
+                                    />
+                                ) : (
+                                    parsedBrands.map(b => (
+                                        <Chip
+                                            key={b}
+                                            label={b}
+                                            size="small"
+                                            sx={{
+                                                fontWeight: 700,
+                                                fontSize: '0.72rem',
+                                                height: 22,
+                                                bgcolor: 'rgba(234, 88, 12, 0.1)',
+                                                color: '#c2410c',
+                                                border: '1px solid rgba(234, 88, 12, 0.25)'
+                                            }}
+                                        />
+                                    ))
+                                )}
                                 <Chip
                                     label={pkg.isActive ? 'Active' : 'Inactive'}
                                     size="small"
@@ -533,84 +600,149 @@ function ServicePackageDialog({
     const [activePresetCategory, setActivePresetCategory] = useState("Lubrication & Fluids");
     const [isCustomBrand, setIsCustomBrand] = useState(false);
 
+    const selectedTypes = useMemo(() => parseList(currentPackage.vehicleType), [currentPackage.vehicleType]);
+    const selectedBrands = useMemo(() => parseList(currentPackage.vehicleBrand), [currentPackage.vehicleBrand]);
+
     // Dynamic compatibility evaluation
     const compatibility = useMemo(() => {
         return validateBrandAndType(currentPackage.vehicleType, currentPackage.vehicleBrand);
     }, [currentPackage.vehicleType, currentPackage.vehicleBrand]);
 
-    // Available vehicle classification options dynamically filtered by selected vehicle brand
+    // Available vehicle classification options dynamically filtered by selected vehicle brands
     const availableVehicleTypeOptions = useMemo(() => {
-        const brandKey = isCustomBrand ? "OTHER" : (currentPackage.vehicleBrand || "ALL");
-        const allowed = COMPATIBLE_TYPES_BY_BRAND[brandKey] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
-        return VEHICLE_TYPE_OPTIONS.filter(opt => allowed.includes(opt.value));
-    }, [currentPackage.vehicleBrand, isCustomBrand]);
+        if (selectedBrands.includes("ALL") || selectedBrands.length === 0) {
+            return VEHICLE_TYPE_OPTIONS;
+        }
+        const allowedTypeSet = new Set<string>(["ALL"]);
+        selectedBrands.forEach(b => {
+            const types = COMPATIBLE_TYPES_BY_BRAND[b] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
+            types.forEach(t => allowedTypeSet.add(t));
+        });
+        return VEHICLE_TYPE_OPTIONS.filter(opt => allowedTypeSet.has(opt.value));
+    }, [selectedBrands]);
 
-    // Available brand options dynamically filtered by selected vehicle classification
+    // Available brand options dynamically filtered by selected vehicle classifications
     const availableBrandOptions = useMemo(() => {
-        const typeKey = currentPackage.vehicleType || "ALL";
-        const allowed = COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
-        return VEHICLE_BRAND_OPTIONS.filter(opt => allowed.includes(opt.value));
-    }, [currentPackage.vehicleType]);
+        if (selectedTypes.includes("ALL") || selectedTypes.length === 0) {
+            return VEHICLE_BRAND_OPTIONS;
+        }
+        const allowedBrandSet = new Set<string>(["ALL", "OTHER"]);
+        selectedTypes.forEach(t => {
+            const brands = COMPATIBLE_BRANDS_BY_TYPE[t] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+            brands.forEach(b => allowedBrandSet.add(b));
+        });
+        return VEHICLE_BRAND_OPTIONS.filter(opt => allowedBrandSet.has(opt.value));
+    }, [selectedTypes]);
 
     // Recommended brand presets based on vehicle classification
     const popularBrands = useMemo(() => {
-        const typeKey = currentPackage.vehicleType || "ALL";
-        return COMPATIBLE_BRANDS_BY_TYPE[typeKey] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
-    }, [currentPackage.vehicleType]);
+        if (selectedTypes.includes("ALL") || selectedTypes.length === 0) {
+            return COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+        }
+        const brandSet = new Set<string>(["ALL"]);
+        selectedTypes.forEach(t => {
+            const brands = COMPATIBLE_BRANDS_BY_TYPE[t] || [];
+            brands.forEach(b => brandSet.add(b));
+        });
+        return Array.from(brandSet);
+    }, [selectedTypes]);
 
     // Recommended vehicle classification presets based on vehicle brand
     const popularTypes = useMemo(() => {
-        const brandKey = isCustomBrand ? "OTHER" : (currentPackage.vehicleBrand || "ALL");
-        return COMPATIBLE_TYPES_BY_BRAND[brandKey] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
-    }, [currentPackage.vehicleBrand, isCustomBrand]);
+        if (selectedBrands.includes("ALL") || selectedBrands.length === 0) {
+            return COMPATIBLE_TYPES_BY_BRAND["ALL"];
+        }
+        const typeSet = new Set<string>(["ALL"]);
+        selectedBrands.forEach(b => {
+            const types = COMPATIBLE_TYPES_BY_BRAND[b] || [];
+            types.forEach(t => typeSet.add(t));
+        });
+        return Array.from(typeSet);
+    }, [selectedBrands]);
 
-    const handleVehicleTypeChange = (newType: string) => {
-        const allowedBrands = COMPATIBLE_BRANDS_BY_TYPE[newType] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
-        const currentBrand = currentPackage.vehicleBrand || "ALL";
+    const handleToggleVehicleType = (typeVal: string) => {
+        let nextTypes: string[];
+        if (typeVal === "ALL") {
+            nextTypes = ["ALL"];
+        } else {
+            if (selectedTypes.includes("ALL")) {
+                nextTypes = [typeVal];
+            } else if (selectedTypes.includes(typeVal)) {
+                nextTypes = selectedTypes.filter(t => t !== typeVal);
+                if (nextTypes.length === 0) nextTypes = ["ALL"];
+            } else {
+                nextTypes = [...selectedTypes, typeVal];
+            }
+        }
 
-        let updatedBrand = currentBrand;
-        // If currently selected brand is not compatible with the newly selected vehicle type, reset to "ALL"
-        if (currentBrand !== "ALL" && !allowedBrands.includes(currentBrand)) {
-            updatedBrand = "ALL";
-            setIsCustomBrand(false);
+        // Filter selected brands so that they are still compatible with the newly selected types
+        let nextBrands = selectedBrands;
+        if (!nextBrands.includes("ALL") && !nextTypes.includes("ALL")) {
+            const allowedBrandSet = new Set<string>(["ALL", "OTHER"]);
+            nextTypes.forEach(t => {
+                const brands = COMPATIBLE_BRANDS_BY_TYPE[t] || COMPATIBLE_BRANDS_BY_TYPE["ALL"];
+                brands.forEach(b => allowedBrandSet.add(b));
+            });
+            const filteredBrands = nextBrands.filter(b => allowedBrandSet.has(b));
+            nextBrands = filteredBrands.length > 0 ? filteredBrands : ["ALL"];
         }
 
         setCurrentPackage({
             ...currentPackage,
-            vehicleType: newType,
-            vehicleBrand: updatedBrand
+            vehicleType: serializeList(nextTypes),
+            vehicleBrand: serializeList(nextBrands)
         });
     };
 
-    const handleBrandChange = (brand: string) => {
-        if (brand === "OTHER") {
-            setIsCustomBrand(true);
-            setCurrentPackage({ ...currentPackage, vehicleBrand: "" });
+    const handleToggleBrand = (brandVal: string) => {
+        if (brandVal === "OTHER") {
+            setIsCustomBrand(!isCustomBrand);
             return;
         }
 
-        setIsCustomBrand(false);
-        const allowedTypes = COMPATIBLE_TYPES_BY_BRAND[brand] || COMPATIBLE_TYPES_BY_BRAND["ALL"];
-        const currentType = currentPackage.vehicleType || "ALL";
-
-        let updatedType = currentType;
-        // If currently selected type is not compatible with the newly selected brand, auto-switch to a valid type
-        if (!allowedTypes.includes(currentType)) {
-            if (["Yamaha", "Bajaj", "TVS"].includes(brand)) {
-                updatedType = "BIKE";
-            } else if (brand === "Land Rover") {
-                updatedType = "SUV";
-            } else if (allowedTypes.includes("CAR")) {
-                updatedType = "CAR";
+        let nextBrands: string[];
+        if (brandVal === "ALL") {
+            nextBrands = ["ALL"];
+            setIsCustomBrand(false);
+        } else {
+            if (selectedBrands.includes("ALL")) {
+                nextBrands = [brandVal];
+            } else if (selectedBrands.includes(brandVal)) {
+                nextBrands = selectedBrands.filter(b => b !== brandVal);
+                if (nextBrands.length === 0) nextBrands = ["ALL"];
             } else {
-                updatedType = allowedTypes[0] || "ALL";
+                nextBrands = [...selectedBrands, brandVal];
+            }
+        }
+
+        // Auto-switch / add vehicle type if needed (e.g. Yamaha/Bajaj/TVS -> BIKE, Land Rover -> SUV)
+        let nextTypes = [...selectedTypes];
+        if (!nextTypes.includes("ALL")) {
+            const bikeOnlyBrands = ["Yamaha", "Bajaj", "TVS"];
+            const hasBikeOnly = nextBrands.some(b => bikeOnlyBrands.includes(b));
+            if (hasBikeOnly && !nextTypes.includes("BIKE")) {
+                if (nextBrands.every(b => bikeOnlyBrands.includes(b))) {
+                    nextTypes = ["BIKE"];
+                } else {
+                    nextTypes.push("BIKE");
+                }
+            }
+
+            const suvOnlyBrands = ["Land Rover"];
+            const hasSuvOnly = nextBrands.some(b => suvOnlyBrands.includes(b));
+            if (hasSuvOnly && !nextTypes.includes("SUV")) {
+                if (nextBrands.every(b => suvOnlyBrands.includes(b))) {
+                    nextTypes = ["SUV"];
+                } else {
+                    nextTypes.push("SUV");
+                }
             }
         }
 
         setCurrentPackage({
             ...currentPackage,
-            vehicleBrand: brand,
-            vehicleType: updatedType
+            vehicleBrand: serializeList(nextBrands),
+            vehicleType: serializeList(nextTypes)
         });
     };
 
@@ -733,30 +865,45 @@ function ServicePackageDialog({
                             </FormControl>
                         </Grid>
 
-                        {/* STEP 1: VEHICLE TYPE CLASSIFICATION (Placed First for natural workflow) */}
+                        {/* STEP 1: VEHICLE TYPE CLASSIFICATION (Supports Multi-Selection) */}
                         <Grid size={{ xs: 12, md: 6 }}>
                             <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel>
-                                    {currentPackage.vehicleBrand && currentPackage.vehicleBrand !== "ALL"
-                                        ? `Vehicle Classification (${currentPackage.vehicleBrand})`
+                                <InputLabel id="vehicle-type-multi-label">
+                                    {selectedBrands.length > 0 && !selectedBrands.includes("ALL")
+                                        ? `Vehicle Classification (${selectedBrands.join(", ")})`
                                         : "Vehicle Classification"}
                                 </InputLabel>
                                 <Select
-                                    value={
-                                        availableVehicleTypeOptions.some(v => v.value === (currentPackage.vehicleType || "ALL"))
-                                            ? (currentPackage.vehicleType || "ALL")
-                                            : "ALL"
-                                    }
+                                    multiple
+                                    labelId="vehicle-type-multi-label"
+                                    value={selectedTypes}
                                     label={
-                                        currentPackage.vehicleBrand && currentPackage.vehicleBrand !== "ALL"
-                                            ? `Vehicle Classification (${currentPackage.vehicleBrand})`
-                                            : "Vehicle Classification"}
-                                    onChange={(e) => handleVehicleTypeChange(e.target.value)}
+                                        selectedBrands.length > 0 && !selectedBrands.includes("ALL")
+                                            ? `Vehicle Classification (${selectedBrands.join(", ")})`
+                                            : "Vehicle Classification"
+                                    }
+                                    renderValue={(selected) => {
+                                        const arr = selected as string[];
+                                        if (arr.includes("ALL") || arr.length === 0) return "All Vehicle Classifications";
+                                        return arr.map(val => VEHICLE_TYPE_OPTIONS.find(v => v.value === val)?.label.split('/')[0].trim() || val).join(", ");
+                                    }}
+                                    onChange={(e) => {
+                                        const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
+                                        const lastSelected = val[val.length - 1];
+                                        if (lastSelected === "ALL" || val.length === 0) {
+                                            handleToggleVehicleType("ALL");
+                                        } else {
+                                            const filtered = val.filter(v => v !== "ALL");
+                                            setCurrentPackage({ ...currentPackage, vehicleType: serializeList(filtered) });
+                                        }
+                                    }}
                                 >
                                     {availableVehicleTypeOptions.map((opt) => {
                                         const IconComp = opt.Icon;
+                                        const isChecked = selectedTypes.includes(opt.value);
                                         return (
-                                            <MenuItem key={opt.value} value={opt.value}>
+                                            <MenuItem key={opt.value} value={opt.value} onClick={() => handleToggleVehicleType(opt.value)}>
+                                                <Checkbox checked={isChecked} size="small" sx={{ mr: 1, p: 0 }} />
                                                 <Box display="flex" alignItems="center" gap={1.25}>
                                                     <IconComp size={16} color="#64748b" />
                                                     <Typography variant="body2" fontWeight={500}>{opt.label}</Typography>
@@ -773,7 +920,7 @@ function ServicePackageDialog({
                                     const opt = VEHICLE_TYPE_OPTIONS.find(v => v.value === typeVal);
                                     if (!opt) return null;
                                     const IconComp = opt.Icon;
-                                    const isSelected = (currentPackage.vehicleType || "ALL") === typeVal;
+                                    const isSelected = selectedTypes.includes(typeVal);
                                     return (
                                         <Chip
                                             key={typeVal}
@@ -782,7 +929,7 @@ function ServicePackageDialog({
                                             label={opt.label}
                                             size="small"
                                             clickable
-                                            onClick={() => handleVehicleTypeChange(typeVal)}
+                                            onClick={() => handleToggleVehicleType(typeVal)}
                                             sx={{
                                                 borderRadius: '0.5rem',
                                                 fontWeight: 600,
@@ -820,55 +967,78 @@ function ServicePackageDialog({
                             </Box>
                         </Grid>
 
-                        {/* STEP 2: VEHICLE BRAND SELECTION (Automatically filtered by Vehicle Type) */}
+                        {/* STEP 2: VEHICLE BRAND SELECTION (Supports Multi-Selection) */}
                         <Grid size={{ xs: 12, md: 6 }}>
                             <FormControl fullWidth required error={!compatibility.isValid} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                                <InputLabel>
-                                    {currentPackage.vehicleType && currentPackage.vehicleType !== "ALL"
-                                        ? `Vehicle Make / Brand (${selectedVehicleMeta.label})`
+                                <InputLabel id="vehicle-brand-multi-label">
+                                    {selectedTypes.length > 0 && !selectedTypes.includes("ALL")
+                                        ? `Vehicle Make / Brand (${selectedTypes.map(t => VEHICLE_TYPE_OPTIONS.find(v => v.value === t)?.label.split('/')[0].trim() || t).join(", ")})`
                                         : "Vehicle Make / Brand"}
                                 </InputLabel>
                                 <Select
+                                    multiple
+                                    labelId="vehicle-brand-multi-label"
                                     value={
-                                        isCustomBrand || (!availableBrandOptions.some(b => b.value === (currentPackage.vehicleBrand || "ALL")))
-                                            ? "OTHER"
-                                            : (currentPackage.vehicleBrand || "ALL")
+                                        isCustomBrand
+                                            ? [...selectedBrands.filter(b => b !== "OTHER"), "OTHER"]
+                                            : selectedBrands
                                     }
                                     label={
-                                        currentPackage.vehicleType && currentPackage.vehicleType !== "ALL"
-                                            ? `Vehicle Make / Brand (${selectedVehicleMeta.label})`
+                                        selectedTypes.length > 0 && !selectedTypes.includes("ALL")
+                                            ? `Vehicle Make / Brand (${selectedTypes.map(t => VEHICLE_TYPE_OPTIONS.find(v => v.value === t)?.label.split('/')[0].trim() || t).join(", ")})`
                                             : "Vehicle Make / Brand"
                                     }
-                                    onChange={(e) => handleBrandChange(e.target.value)}
+                                    renderValue={(selected) => {
+                                        const arr = selected as string[];
+                                        if (arr.includes("ALL") || arr.length === 0) return "All Brands (Universal)";
+                                        return arr.filter(x => x !== "ALL").join(", ");
+                                    }}
+                                    onChange={(e) => {
+                                        const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
+                                        const lastSelected = val[val.length - 1];
+                                        if (lastSelected === "ALL" || val.length === 0) {
+                                            handleToggleBrand("ALL");
+                                        } else {
+                                            const filtered = val.filter(v => v !== "ALL");
+                                            setCurrentPackage({ ...currentPackage, vehicleBrand: serializeList(filtered) });
+                                        }
+                                    }}
                                 >
-                                    {availableBrandOptions.map((opt) => (
-                                        <MenuItem key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </MenuItem>
-                                    ))}
+                                    {availableBrandOptions.map((opt) => {
+                                        const isChecked = opt.value === "OTHER" ? isCustomBrand : selectedBrands.includes(opt.value);
+                                        return (
+                                            <MenuItem key={opt.value} value={opt.value} onClick={() => handleToggleBrand(opt.value)}>
+                                                <Checkbox checked={isChecked} size="small" sx={{ mr: 1, p: 0 }} />
+                                                <Typography variant="body2" fontWeight={500}>{opt.label}</Typography>
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
 
                             {/* Quick Compatible Brand Preset Chips */}
                             <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
-                                {popularBrands.map((brand: string) => (
-                                    <Chip
-                                        key={brand}
-                                        data-testid={`brand-chip-${brand}`}
-                                        label={brand === "ALL" ? "All Brands" : brand}
-                                        size="small"
-                                        clickable
-                                        onClick={() => handleBrandChange(brand)}
-                                        sx={{
-                                            borderRadius: '0.5rem',
-                                            fontWeight: 600,
-                                            fontSize: '0.72rem',
-                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(234, 88, 12, 0.12)' : '#f1f5f9',
-                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#c2410c' : '#475569',
-                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid transparent'
-                                        }}
-                                    />
-                                ))}
+                                {popularBrands.map((brand: string) => {
+                                    const isSelected = brand === "OTHER" ? isCustomBrand : (selectedBrands.includes(brand) && !isCustomBrand);
+                                    return (
+                                        <Chip
+                                            key={brand}
+                                            data-testid={`brand-chip-${brand}`}
+                                            label={brand === "ALL" ? "All Brands" : brand}
+                                            size="small"
+                                            clickable
+                                            onClick={() => handleToggleBrand(brand)}
+                                            sx={{
+                                                borderRadius: '0.5rem',
+                                                fontWeight: 600,
+                                                fontSize: '0.72rem',
+                                                bgcolor: isSelected ? 'rgba(234, 88, 12, 0.12)' : '#f1f5f9',
+                                                color: isSelected ? '#c2410c' : '#475569',
+                                                border: isSelected ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid transparent'
+                                            }}
+                                        />
+                                    );
+                                })}
                             </Box>
 
                             {/* Custom Brand Input when OTHER is selected */}
@@ -878,7 +1048,7 @@ function ServicePackageDialog({
                                     size="small"
                                     label="Custom Brand Name"
                                     placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
-                                    value={currentPackage.vehicleBrand || ""}
+                                    value={currentPackage.vehicleBrand === "ALL" ? "" : currentPackage.vehicleBrand}
                                     onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
                                     sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
                                 />
@@ -1350,16 +1520,27 @@ export default function ServicesPage() {
     const availableBrands = useMemo(() => {
         const brandSet = new Set<string>();
         packages.forEach(p => {
-            if (p.vehicleBrand && p.vehicleBrand !== "ALL") brandSet.add(p.vehicleBrand);
+            if (p.vehicleBrand && p.vehicleBrand !== "ALL") {
+                p.vehicleBrand.split(",").forEach(b => {
+                    const trimmed = b.trim();
+                    if (trimmed && trimmed !== "ALL") brandSet.add(trimmed);
+                });
+            }
         });
         return Array.from(brandSet);
     }, [packages]);
 
     const filteredPackages = useMemo(() => {
         return packages.filter(pkg => {
-            if (selectedVehicleFilter !== "ALL" && (pkg.vehicleType || "ALL") !== selectedVehicleFilter) return false;
+            if (selectedVehicleFilter !== "ALL") {
+                const types = (pkg.vehicleType || "ALL").split(",").map(t => t.trim());
+                if (!types.includes("ALL") && !types.includes(selectedVehicleFilter)) return false;
+            }
             if (selectedCenterFilter !== "ALL" && pkg.centerId !== selectedCenterFilter) return false;
-            if (selectedBrandFilter !== "ALL" && (pkg.vehicleBrand || "ALL") !== selectedBrandFilter) return false;
+            if (selectedBrandFilter !== "ALL") {
+                const brands = (pkg.vehicleBrand || "ALL").split(",").map(b => b.trim());
+                if (!brands.includes("ALL") && !brands.includes(selectedBrandFilter)) return false;
+            }
             if (searchQuery.trim()) {
                 const query = searchQuery.toLowerCase();
                 return (
@@ -1469,7 +1650,11 @@ export default function ServicesPage() {
                     }}
                 >
                     {VEHICLE_TYPE_OPTIONS.map((opt) => {
-                        const count = packages.filter(p => opt.value === "ALL" ? true : (p.vehicleType || "ALL") === opt.value).length;
+                        const count = packages.filter(p => {
+                            if (opt.value === "ALL") return true;
+                            const types = (p.vehicleType || "ALL").split(",").map(t => t.trim());
+                            return types.includes("ALL") || types.includes(opt.value);
+                        }).length;
                         const IconComponent = opt.Icon;
                         return (
                             <Tab 

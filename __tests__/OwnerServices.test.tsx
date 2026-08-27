@@ -138,4 +138,31 @@ describe('Company Owner Services Tab Page', () => {
       expect(screen.getAllByText(/Vehicle Classification \(Yamaha\)/i)[0]).toBeInTheDocument()
     })
   })
+
+  it('supports selecting multiple vehicle types and multiple brands simultaneously', async () => {
+    render(<ServicesPage />)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Full Engine Tune')).toBeInTheDocument()
+    })
+    
+    const newBtn = screen.getByRole('button', { name: /Create Package/i })
+    fireEvent.click(newBtn)
+    
+    // Select Car
+    fireEvent.click(screen.getByTestId('type-chip-CAR'))
+    // Select SUV as well
+    fireEvent.click(screen.getByTestId('type-chip-SUV'))
+    
+    // Both Car and SUV should be active
+    // Select Toyota
+    fireEvent.click(screen.getByTestId('brand-chip-Toyota'))
+    // Select Nissan
+    fireEvent.click(screen.getByTestId('brand-chip-Nissan'))
+    
+    // Both brands should be in the selection label
+    await waitFor(() => {
+      expect(screen.getAllByText(/Vehicle Classification \(Toyota, Nissan\)/i)[0]).toBeInTheDocument()
+    })
+  })
 })
