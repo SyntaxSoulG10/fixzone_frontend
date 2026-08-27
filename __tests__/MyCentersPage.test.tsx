@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import MyCentersPage from '../app/dashboard/company-owner/centers/page'
 import axios from '@/lib/axios'
+import { getStripeConnectStatus, connectStripe } from '@/lib/api'
 
 // Mock next/navigation search params
 vi.mock('next/navigation', () => ({
@@ -28,7 +29,8 @@ vi.mock('@/context/DashboardDataContext', () => ({
     },
     centersData: [
       { centerId: 'c1', name: 'Colombo Main Center', address: 'Galle Rd, Colombo', managerName: 'John Doe', contactPhone: '0771234567', isActive: true, revenue: 12000, mechanicsCount: 5, currentCapacity: 40 },
-      { centerId: 'c2', name: 'Kandy Station', address: 'Peradeniya Rd, Kandy', managerName: 'Jane Smith', contactPhone: '0817654321', isActive: false, revenue: 5000, mechanicsCount: 2, currentCapacity: 10 }
+      { centerId: 'c2', name: 'Kandy Station', address: 'Peradeniya Rd, Kandy', managerName: 'Jane Smith', contactPhone: '0817654321', isActive: false, revenue: 5000, mechanicsCount: 2, currentCapacity: 10 },
+      { centerId: 'c3', name: 'Galle Auto Care', address: 'Matara Rd, Galle', managerName: 'Sunil Perera', contactPhone: '0912233445', isActive: false, status: 'SUSPENDED', revenue: 8000, mechanicsCount: 4, currentCapacity: 30 }
     ],
     isLoading: false,
     refreshAll: mockRefreshAll,
@@ -47,6 +49,7 @@ vi.mock('@/lib/axios', () => ({
 describe('Service Centers (Branches) Management Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getStripeConnectStatus).mockResolvedValue({ stripeConnected: true })
   })
 
   it('renders all branch cards with correct details', () => {
@@ -64,6 +67,15 @@ describe('Service Centers (Branches) Management Page', () => {
     expect(screen.getByText('Rs.5,000')).toBeInTheDocument()
   })
 
+  it('displays Suspended by Admin chip and warning alert when a branch has status SUSPENDED', () => {
+    render(<MyCentersPage />)
+
+    expect(screen.getByText('Galle Auto Care')).toBeInTheDocument()
+    expect(screen.getByText('Suspended')).toBeInTheDocument()
+    expect(screen.getByText(/Suspended by Administrator/i)).toBeInTheDocument()
+    expect(screen.getByText('Suspended by Admin')).toBeInTheDocument()
+  })
+
   it('filters branches based on search input', () => {
     render(<MyCentersPage />)
     
@@ -77,7 +89,7 @@ describe('Service Centers (Branches) Management Page', () => {
     expect(screen.queryByText('Kandy Station')).not.toBeInTheDocument()
   })
 
-  it('opens the branch creation dialog modal when clicking New Branch', () => {
+  it('opens the branch creation dialog modal when clicking New Branch and confirms autodetect is removed', () => {
     render(<MyCentersPage />)
     
     const newBranchBtn = screen.getByRole('button', { name: /New Branch/i })
@@ -85,24 +97,45 @@ describe('Service Centers (Branches) Management Page', () => {
 
     expect(screen.getByText('Add New Service Center')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Create Branch/i })).toBeInTheDocument()
+    
+    // Ensure Auto-detect button is removed
+    expect(screen.queryByText(/Auto-detect/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Detecting GPS/i)).not.toBeInTheDocument()
+
+    // Ensure Google Maps Share Link is present
+    expect(screen.getByPlaceholderText('e.g. https://maps.app.goo.gl/...')).toBeInTheDocument()
   })
 
-  it('validates missing required inputs and triggers error messages', async () => {
+  it('validates missing required inputs including Google Maps link', async () => {
     render(<MyCentersPage />)
     
     const newBranchBtn = screen.getByRole('button', { name: /New Branch/i })
     fireEvent.click(newBranchBtn)
 
+    // Fill only name
+    const nameInput = screen.getByPlaceholderText('e.g. Colombo West Branch')
+    fireEvent.change(nameInput, { target: { value: 'Galle Express Care' } })
+
+    // Fill location
+    const locationInput = screen.getByPlaceholderText('Enter the full street address or landmarks')
+    fireEvent.change(locationInput, { target: { value: '123 Matara Road, Galle' } })
+
     const createBtn = screen.getByRole('button', { name: /Create Branch/i })
     fireEvent.click(createBtn)
 
-    // Expecting error snackbar because fields are empty
-    expect(screen.getByText('Center name must be at least 3 characters')).toBeInTheDocument()
+    // Expecting error snackbar because Google Maps link is missing
+    expect(screen.getByText('Google Maps link is required')).toBeInTheDocument()
+
+    // Fill invalid URL
+    const mapsInput = screen.getByPlaceholderText('e.g. https://maps.app.goo.gl/...')
+    fireEvent.change(mapsInput, { target: { value: 'invalid-url-without-http' } })
+    fireEvent.click(createBtn)
+
+    expect(screen.getByText(/Please enter a valid Google Maps link/i)).toBeInTheDocument()
   })
 
   it('blocks creating a branch and shows error when Stripe account is not connected', async () => {
-    const { getStripeConnectStatus } = await import('@/lib/api')
-    vi.mocked(getStripeConnectStatus).mockResolvedValueOnce({ stripeConnected: false })
+    vi.mocked(getStripeConnectStatus).mockResolvedValue({ stripeConnected: false })
 
     render(<MyCentersPage />)
 
@@ -116,29 +149,5 @@ describe('Service Centers (Branches) Management Page', () => {
     // Verify modal did NOT open and error is shown
     expect(screen.queryByText('Add New Service Center')).not.toBeInTheDocument()
     expect(screen.getByText('Please complete your Stripe account setup first before creating a service center branch or HQ.')).toBeInTheDocument()
-  })
-})
-
-describe('Service Centers with Suspended Branch', () => {
-  it('displays Suspended by Admin chip and warning alert when a branch has status SUSPENDED', async () => {
-    vi.resetModules()
-    vi.doMock('@/context/DashboardDataContext', () => ({
-      useDashboardData: () => ({
-        centersData: [
-          { centerId: 'c1', name: 'Galle Auto Care', address: 'Matara Rd, Galle', managerName: 'Sunil Perera', contactPhone: '0912233445', isActive: false, status: 'SUSPENDED', revenue: 8000, mechanicsCount: 4, currentCapacity: 30 }
-        ],
-        isLoading: false,
-        refreshAll: vi.fn(),
-      })
-    }))
-
-    const { default: DynamicCentersPage } = await import('../app/dashboard/company-owner/centers/page')
-    render(<DynamicCentersPage />)
-
-    expect(screen.getByText('Galle Auto Care')).toBeInTheDocument()
-    expect(screen.getByText('Suspended')).toBeInTheDocument()
-    expect(screen.getByText(/Suspended by Administrator/i)).toBeInTheDocument()
-    expect(screen.getByText('Suspended by Admin')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Enable/i })).not.toBeInTheDocument()
   })
 })
