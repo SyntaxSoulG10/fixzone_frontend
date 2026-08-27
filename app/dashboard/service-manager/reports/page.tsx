@@ -95,7 +95,7 @@ function ServiceReportsContent() {
     const [isFetchingBooking, setIsFetchingBooking] = useState(false);
     const [fetchError, setFetchError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [savedInvoiceModal, setSavedInvoiceModal] = useState<{ open: boolean; invoiceId: string; customer: string; total: number; bookingId: string } | null>(null);
+    const [savedInvoiceModal, setSavedInvoiceModal] = useState<{ open: boolean; invoiceId: string; customer: string; total: number; bookingId: string; isUpdate?: boolean } | null>(null);
     
     const [invoiceItems, setInvoiceItems] = useState<{ name: string; price: string }[]>([
         { name: "", price: "" }
@@ -414,6 +414,7 @@ function ServiceReportsContent() {
         try {
             const token = localStorage.getItem("token");
             const existingId = existingInvoice?.invoiceId || existingInvoice?.id;
+            const isUpdate = Boolean(existingId);
             const targetUrl = existingId 
                 ? `${APP_CONFIG.API_BASE_URL}/api/invoices/${existingId}`
                 : `${APP_CONFIG.API_BASE_URL}/api/invoices`;
@@ -429,13 +430,13 @@ function ServiceReportsContent() {
             });
 
             if (!res.ok) {
-                throw new Error("Failed to generate invoice");
+                throw new Error(isUpdate ? "Failed to update invoice" : "Failed to generate invoice");
             }
             
             const savedData = await res.json();
             const meta = getBookingMeta(bookingDetails);
 
-            showSnackbar("Invoice successfully generated and issued!", "success");
+            showSnackbar(isUpdate ? "Invoice successfully updated and issued!" : "Invoice successfully generated and issued!", "success");
             fetchRecentInvoices();
             if (refreshInvoices) await refreshInvoices();
             if (refreshBookings) await refreshBookings();
@@ -444,11 +445,12 @@ function ServiceReportsContent() {
                 invoiceId: savedData.invoiceId || previewInvoiceNo,
                 customer: meta.customer,
                 total: balanceDue,
-                bookingId: bookingDetails.bookingId
+                bookingId: bookingDetails.bookingId,
+                isUpdate: isUpdate
             });
         } catch (error) {
-            console.error("Error generating invoice:", error);
-            showSnackbar("Failed to generate invoice. Please try again.", "error");
+            console.error("Error saving invoice:", error);
+            showSnackbar("Failed to save invoice. Please try again.", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -1308,13 +1310,15 @@ function ServiceReportsContent() {
                 fullWidth
                 PaperProps={{ sx: { borderRadius: '1.25rem', p: 1 } }}
             >
-                <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
+                <DialogTitle component="div" sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
                     <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
                         <FiCheckCircle className="w-8 h-8" />
                     </div>
-                    <Typography variant="h6" fontWeight="bold" color="#0f172a">Invoice Generated!</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        {savedInvoiceModal?.invoiceId} successfully created for {savedInvoiceModal?.customer}
+                    <Typography variant="h6" component="div" fontWeight="bold" color="#0f172a">
+                        {savedInvoiceModal?.isUpdate ? "Invoice Updated!" : "Invoice Generated!"}
+                    </Typography>
+                    <Typography variant="body2" component="p" color="text.secondary">
+                        {savedInvoiceModal?.invoiceId} successfully {savedInvoiceModal?.isUpdate ? "updated" : "created"} for {savedInvoiceModal?.customer}
                     </Typography>
                 </DialogTitle>
                 <DialogContent sx={{ textAlign: 'center', py: 2 }}>
@@ -1355,10 +1359,10 @@ function ServiceReportsContent() {
             >
                 {selectedReport && (
                     <>
-                        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
+                        <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
                             <div>
-                                <Typography variant="h6" fontWeight="bold" color="#0f172a">Operations Report Details</Typography>
-                                <Typography variant="caption" color="text.secondary">{selectedReport.name} - {selectedReport.date}</Typography>
+                                <Typography variant="h6" component="div" fontWeight="bold" color="#0f172a">Operations Report Details</Typography>
+                                <Typography variant="caption" component="span" color="text.secondary">{selectedReport.name} - {selectedReport.date}</Typography>
                             </div>
                             <IconButton onClick={() => setSelectedReport(null)} size="small">
                                 <FiX className="w-5 h-5" />

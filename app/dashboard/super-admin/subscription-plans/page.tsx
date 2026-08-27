@@ -253,12 +253,12 @@ export default function SubscriptionPlansPage() {
                 fullWidth
                 PaperProps={{ sx: { borderRadius: '1.25rem', overflow: 'hidden' } }}
             >
-                <DialogTitle sx={{ p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <DialogTitle component="div" sx={{ p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <Typography variant="h6" fontWeight="bold" color="#0f172a">
+                        <Typography variant="h6" component="div" fontWeight="bold" color="#0f172a">
                             {editingPlan ? "Edit Plan" : "Create New Plan"}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" component="span" color="text.secondary">
                             {editingPlan ? "Update plan details and features" : "Add a new subscription tier"}
                         </Typography>
                     </div>

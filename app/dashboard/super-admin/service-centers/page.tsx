@@ -358,14 +358,14 @@ export default function ServiceStationsPage() {
             >
                 {selectedStation && (
                     <>
-                        <DialogTitle sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <DialogTitle component="div" sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-100">
                                     <FiBriefcase className="text-xl" />
                                 </div>
                                 <div>
-                                    <Typography variant="h6" fontWeight="bold" color="#0f172a">{selectedStation.name}</Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <Typography variant="h6" component="div" fontWeight="bold" color="#0f172a">{selectedStation.name}</Typography>
+                                    <Typography variant="body2" component="div" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         <FiMapPin className="text-orange-500" /> {selectedStation.location}
                                     </Typography>
                                 </div>

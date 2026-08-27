@@ -394,14 +394,14 @@ export default function SubscriptionsPage() {
             >
                 {selectedSub && (
                     <>
-                        <DialogTitle sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <DialogTitle component="div" sx={{ p: 3, px: 4, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
                                     <FiFileText className="text-2xl" />
                                 </div>
                                 <div>
-                                    <Typography variant="h6" fontWeight="bold" color="#0f172a">Billing History</Typography>
-                                    <Typography variant="caption" color="text.secondary">{selectedSub.companyName} • {selectedSub.plan?.name || selectedSub.planType} Plan</Typography>
+                                    <Typography variant="h6" component="div" fontWeight="bold" color="#0f172a">Billing History</Typography>
+                                    <Typography variant="caption" component="span" color="text.secondary">{selectedSub.companyName} • {selectedSub.plan?.name || selectedSub.planType} Plan</Typography>
                                 </div>
                             </div>
                             <IconButton onClick={() => setIsHistoryModalOpen(false)} size="small">

@@ -1120,13 +1120,13 @@ function ChangePasswordDialog({ open, onClose, onSuccess, onError }: any) {
                 sx: { borderRadius: 3 }
             }}
         >
-            <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <DialogTitle component="div" sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#EA580C', display: 'flex' }}>
                     <FiKey size={20} />
                 </Box>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>Change Password</Typography>
-                    <Typography variant="caption" color="text.secondary">Update your account credentials to keep your account safe</Typography>
+                    <Typography variant="h6" component="div" fontWeight={700}>Change Password</Typography>
+                    <Typography variant="caption" component="span" color="text.secondary">Update your account credentials to keep your account safe</Typography>
                 </Box>
             </DialogTitle>
             

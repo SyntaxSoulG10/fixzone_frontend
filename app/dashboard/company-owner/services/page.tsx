@@ -591,7 +591,7 @@ function ServicePackageDialog({
                 } 
             }}
         >
-            <DialogTitle sx={{ p: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
+            <DialogTitle component="div" sx={{ p: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
                 <Box display="flex" alignItems="center" gap={1.5}>
                     <Box sx={{
                         width: 44,
@@ -608,10 +608,10 @@ function ServicePackageDialog({
                         <FiPackage color="#ffffff" />
                     </Box>
                     <Box>
-                        <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1.2 }}>
+                        <Typography variant="h6" component="div" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1.2 }}>
                             {isEditing ? `Edit Service Package` : "Create Service Package"}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" component="span" color="text.secondary">
                             Configure vehicle classification, target brand (Honda, Toyota, etc.), pricing, and checklists.
                         </Typography>
                     </Box>
