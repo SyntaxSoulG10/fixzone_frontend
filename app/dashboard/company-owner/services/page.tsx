@@ -1581,14 +1581,19 @@ export default function ServicesPage() {
                 <Box display="flex" flexDirection={{ xs: 'column', lg: 'row' }} gap={2} alignItems={{ lg: 'center' }} justifyContent="space-between">
                     <TextField
                         size="small"
-                        placeholder="Search packages or brands..."
+                        placeholder="Search packages..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
                             endAdornment: searchQuery ? <InputAdornment position="end"><IconButton size="small" onClick={() => setSearchQuery("")}><FiX size={15} /></IconButton></InputAdornment> : null
                         }}
-                        sx={{ minWidth: { xs: '100%', sm: 300 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem', bgcolor: '#ffffff' } }}
+                        sx={{ 
+                            flex: { xs: '1 1 100%', md: 1 },
+                            maxWidth: { md: 420 },
+                            minWidth: { sm: 260 },
+                            '& .MuiOutlinedInput-root': { borderRadius: '0.75rem', bgcolor: '#ffffff' } 
+                        }}
                     />
                     <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
                         <FormControl size="small" sx={{ minWidth: 180, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
