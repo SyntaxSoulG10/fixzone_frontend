@@ -851,52 +851,6 @@ export default function MyCentersPage() {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-
-    const handleDetectLocation = () => {
-        if (typeof window === "undefined" || !navigator.geolocation) {
-            setSnackbar({ open: true, message: "Geolocation is not supported by your browser", severity: "error" });
-            return;
-        }
-
-        setDetecting(true);
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-                        { headers: { "User-Agent": "FixZone-Client-Application" } }
-                    );
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.display_name) {
-                            setFormData(prev => ({ ...prev, location: data.display_name }));
-                            setSnackbar({ open: true, message: "Location detected successfully!", severity: "success" });
-                            return;
-                        }
-                    }
-                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
-                    setSnackbar({ open: true, message: "Location coordinates detected!", severity: "success" });
-                } catch (error) {
-                    console.error("Reverse geocoding failed", error);
-                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
-                    setSnackbar({ open: true, message: "Location coordinates detected (address lookup failed)", severity: "success" });
-                } finally {
-                    setDetecting(false);
-                }
-            },
-            (error) => {
-                console.error("Geolocation error", error);
-                let msg = "Failed to get your location";
-                if (error.code === error.PERMISSION_DENIED) {
-                    msg = "Location access denied. Please enable location permissions.";
-                }
-                setSnackbar({ open: true, message: msg, severity: "error" });
-                setDetecting(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    };
     const mapCentersData = (data: any[]): ServiceCenterView[] => {
         return (data || []).map((c: any) => {
             let status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected" = "Active";
