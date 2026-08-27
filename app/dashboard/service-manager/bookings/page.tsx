@@ -128,7 +128,7 @@ export default function BookingsPage() {
         dateTitle = selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
-    const completedCount = filteredBookings.filter((b: any) => b.status === "COMPLETED").length;
+    const completedCount = filteredBookings.filter((b: any) => b.status === "COMPLETED" || b.status === "PAID").length;
     const inProgressCount = filteredBookings.filter((b: any) => b.status === "IN_PROGRESS").length;
 
     return (
