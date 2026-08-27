@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import BookingHeader from "@/components/bookings/BookingHeader";
 import PackageCard, { Package } from "@/components/bookings/PackageCard";
 import DatePicker from "@/components/bookings/DatePicker";
@@ -134,6 +134,32 @@ export default function StationDetailPage() {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const dateRef = useRef<HTMLElement>(null);
+  const timeRef = useRef<HTMLElement>(null);
+  const vehicleRef = useRef<HTMLElement>(null);
+
+  const handlePackageSelect = (pkg: Package) => {
+    setSelectedPackage(pkg);
+    setTimeout(() => {
+      dateRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+    setTimeout(() => {
+      timeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setTimeout(() => {
+      vehicleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  };
 
   const filteredPackages = useMemo(() => {
     return packages.filter(pkg => 
@@ -436,7 +462,7 @@ export default function StationDetailPage() {
                 key={pkg.id} 
                 pkg={pkg} 
                 isSelected={selectedPackage?.id === pkg.id}
-                onSelect={station?.paymentReady ? setSelectedPackage : () => undefined}
+                onSelect={station?.paymentReady ? handlePackageSelect : () => undefined}
               />
             ))
           ) : (
@@ -449,26 +475,23 @@ export default function StationDetailPage() {
 
       {/* Step 2: Date */}
       {selectedPackage && (
-        <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm h-fit animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section ref={dateRef} className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm h-fit animate-in fade-in slide-in-from-bottom-4 duration-500">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-8">2. Select Date</h2>
           <DatePicker 
             selectedDate={selectedDate} 
-            onDateSelect={(date) => {
-              setSelectedDate(date);
-              setSelectedTime(null);
-            }} 
+            onDateSelect={handleDateSelect} 
           />
         </section>
       )}
 
       {/* Step 3: Time Slot */}
       {selectedPackage && selectedDate && (
-        <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section ref={timeRef} className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight">3. Select Time Slot</h2>
           <TimeSlotSelector 
             slots={availableSlots} 
             selectedTime={selectedTime} 
-            onTimeSelect={setSelectedTime} 
+            onTimeSelect={handleTimeSelect} 
             durationMins={selectedPackage?.estimatedDurationMins || 60}
             isLoading={slotsLoading}
             selectedDate={selectedDate}
@@ -479,7 +502,7 @@ export default function StationDetailPage() {
       {/* Step 4 & 5: Vehicle & Summary */}
       {selectedPackage && selectedDate && selectedTime && (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <section className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8">
+          <section ref={vehicleRef} className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8">
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">4. Select Vehicle</h2>
             {vehiclesLoading ? (
               <div className="py-4 text-center text-slate-400 italic">Loading your vehicles...</div>

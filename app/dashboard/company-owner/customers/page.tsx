@@ -297,7 +297,6 @@ export default function CustomersPage() {
                     color = '#64748b';
                     border = '1px solid #e2e8f0';
                 }
-
                 return (
                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                         <Chip
@@ -477,10 +476,11 @@ export default function CustomersPage() {
                         />
                     </Box>
                 ) : (
-                    <Box sx={{ height: 600, width: '100%' }}>
+                    <Box sx={{ width: '100%' }}>
                         <DataGrid
                             rows={filteredCustomers}
                             columns={columns}
+                            autoHeight
                             initialState={{
                                 pagination: {
                                     paginationModel: {

@@ -899,6 +899,74 @@ function ServicePackageDialog({
                                     }}
                                 >
                                     {availableVehicleTypeOptions.map((opt) => {
+                            </FormControl>
+
+                            {/* Quick Compatible Brand Preset Chips */}
+                            <Box display="flex" flexWrap="wrap" gap={0.75} mt={1}>
+                                {popularBrands.map((brand: string) => (
+                                    <Chip
+                                        key={brand}
+                                        label={brand === "ALL" ? "All Brands" : brand}
+                                        size="small"
+                                        clickable
+                                        onClick={() => {
+                                            setIsCustomBrand(false);
+                                            const type = currentPackage.vehicleType || "ALL";
+                                            const validation = validateBrandAndType(type, brand);
+                                            setCurrentPackage({ 
+                                                ...currentPackage, 
+                                                vehicleBrand: brand,
+                                                vehicleType: validation.isValid ? type : "ALL"
+                                            });
+                                        }}
+                                        sx={{
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            fontSize: '0.72rem',
+                                            bgcolor: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? 'rgba(59, 130, 246, 0.15)' : '#f1f5f9',
+                                            color: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '#1d4ed8' : '#475569',
+                                            border: (currentPackage.vehicleBrand || "ALL") === brand && !isCustomBrand ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid transparent'
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+
+                            {/* Custom Brand Input when OTHER is selected */}
+                            {isCustomBrand && (
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Custom Brand Name"
+                                    placeholder="Enter vehicle brand (e.g. Daihatsu, Isuzu)"
+                                    value={currentPackage.vehicleBrand || ""}
+                                    onChange={(e) => setCurrentPackage({ ...currentPackage, vehicleBrand: e.target.value })}
+                                    error={!compatibility.isValid}
+                                    helperText={!compatibility.isValid ? compatibility.error : ""}
+                                    sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}
+                                />
+                            )}
+                        </Grid>
+
+                        {/* VEHICLE TYPE CLASSIFICATION */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                                <InputLabel>Vehicle Classification</InputLabel>
+                                <Select
+                                    value={currentPackage.vehicleType || "ALL"}
+                                    label="Vehicle Classification"
+                                    onChange={(e) => {
+                                        const newType = e.target.value;
+                                        const brand = currentPackage.vehicleBrand || "ALL";
+                                        const validation = validateBrandAndType(newType, brand);
+                                        setCurrentPackage({ 
+                                            ...currentPackage, 
+                                            vehicleType: newType,
+                                            vehicleBrand: validation.isValid ? brand : "ALL"
+                                        });
+                                    }}
+                                >
+                                    {compatibleVehicleTypesList.map((opt) => {
+>>>>>>> 7827bb78503e62a3edac346adb44a41dbe5bf0bf
                                         const IconComp = opt.Icon;
                                         const isChecked = selectedTypes.includes(opt.value);
                                         return (

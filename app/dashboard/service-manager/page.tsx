@@ -130,30 +130,61 @@ export default function ServiceManagerDashboard() {
             const centerBookings = (bookingsData || []).filter((b: any) => !managerCenterId || b.centerId === managerCenterId);
 
             const isDateToday = (dStr: any) => {
-                if (!dStr) return true;
-                return String(dStr).split("T")[0] === today;
+                if (!dStr) return false;
+                try {
+                    const str = String(dStr).split("T")[0].trim();
+                    if (str === today) return true;
+                    const dateObj = new Date(dStr);
+                    if (!isNaN(dateObj.getTime())) {
+                        const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                        if (localStr === today) return true;
+                        const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
+                        if (diffHours <= 24) return true;
+                    }
+                    return false;
+                } catch {
+                    return false;
+                }
             };
 
             const upcoming = centerBookings.filter((b: any) => {
                 const s = normalizeStatus(b.status);
                 const isUpcomingStatus = s === "PENDING_PAYMENT" || s === "CONFIRMED" || s === "PENDING";
-                const bDate = b.bookingDate || (b.createdAt ? String(b.createdAt).split("T")[0] : null);
-                return isUpcomingStatus && isDateToday(bDate);
+                return isUpcomingStatus && (isDateToday(b.bookingDate) || isDateToday(b.createdAt));
             });
             
-            // Keep all IN_PROGRESS, and today's COMPLETED/CANCELLED in active list
-            const active = centerBookings.filter((b: any) => {
-                const s = normalizeStatus(b.status);
-                if (s === "IN_PROGRESS") return true;
-                
-                const bDate = b.bookingDate || (b.createdAt ? String(b.createdAt).split("T")[0] : null) || (b.updatedAt ? String(b.updatedAt).split("T")[0] : null);
-                return (s === "COMPLETED" || s === "CANCELLED") && isDateToday(bDate);
+            // Map of paid booking IDs from invoicesData
+            const paidInvoiceBookingIds = new Set<string>();
+            (invoicesData || []).forEach((inv: any) => {
+                if (String(inv.status || "").toUpperCase() === "PAID" && inv.bookingId) {
+                    paidInvoiceBookingIds.add(String(inv.bookingId));
+                }
             });
+
+            // Keep all IN_PROGRESS, and today's / recent COMPLETED, PAID, and CANCELLED in active list
+            const active = centerBookings
+                .filter((b: any) => {
+                    const s = normalizeStatus(b.status);
+                    const isPaidByInvoice = b.bookingId && paidInvoiceBookingIds.has(String(b.bookingId));
+                    if (s === "IN_PROGRESS") return true;
+                    
+                    if (s === "COMPLETED" || s === "CANCELLED" || s === "PAID" || isPaidByInvoice) {
+                        return isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+                    }
+                    return false;
+                })
+                .map((b: any) => {
+                    const isPaidByInvoice = b.bookingId && paidInvoiceBookingIds.has(String(b.bookingId));
+                    if (isPaidByInvoice && normalizeStatus(b.status) !== "CANCELLED") {
+                        return { ...b, status: "PAID" };
+                    }
+                    return b;
+                });
 
             // Filter invoices issued today for this center
             const centerInvoices = (invoicesData || []).filter((inv: any) => {
                 const invDate = inv.issuedAt ? inv.issuedAt.split("T")[0] : (inv.createdDate || inv.createdAt ? String(inv.createdDate || inv.createdAt).split("T")[0] : null);
-                const matchesDate = invDate === today;
+                const matchesDate = isDateToday(invDate) || isDateToday(inv.issuedAt) || isDateToday(inv.createdAt) || isDateToday(inv.updatedAt);
                 const matchesCenter = !managerCenterId || inv.centerId === managerCenterId;
                 return matchesDate && matchesCenter;
             });
@@ -170,11 +201,30 @@ export default function ServiceManagerDashboard() {
         const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const managerCenterId = managersData?.[0]?.managedCenterId;
 
-        return (bookingsData || []).filter((b: any) => 
-            b.status === "COMPLETED" && 
-            b.bookingDate === today &&
-            (!managerCenterId || b.centerId === managerCenterId)
-        ).length;
+        const isDateToday = (dStr: any) => {
+            if (!dStr) return false;
+            try {
+                const str = String(dStr).split("T")[0].trim();
+                if (str === today) return true;
+                const dateObj = new Date(dStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    if (localStr === today) return true;
+                    const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
+                    if (diffHours <= 24) return true;
+                }
+                return false;
+            } catch {
+                return false;
+            }
+        };
+
+        return (bookingsData || []).filter((b: any) => {
+            const s = normalizeStatus(b.status);
+            if (s !== "COMPLETED" && s !== "PAID") return false;
+            if (managerCenterId && b.centerId !== managerCenterId) return false;
+            return isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+        }).length;
     }, [bookingsData, managersData]);
 
     const inProgressCount = useMemo(() => {
@@ -185,11 +235,64 @@ export default function ServiceManagerDashboard() {
         ).length;
     }, [bookingsData, managersData]);
 
+    // Income Today: Total of all services that have PAID status belonging to current date
     const totalIncome = useMemo(() => {
-        return todaysInvoices
-            .filter((inv: any) => String(inv.status).toUpperCase() === "PAID")
-            .reduce((sum, invoice) => sum + (Number(invoice.total) || Number(invoice.amount) || 0), 0);
-    }, [todaysInvoices]);
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const managerCenterId = managersData?.[0]?.managedCenterId;
+
+        const isDateToday = (dStr: any) => {
+            if (!dStr) return false;
+            try {
+                const str = String(dStr).split("T")[0].trim();
+                if (str === today) return true;
+                const dateObj = new Date(dStr);
+                if (!isNaN(dateObj.getTime())) {
+                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    if (localStr === today) return true;
+                    const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
+                    if (diffHours <= 24) return true;
+                }
+                return false;
+            } catch {
+                return false;
+            }
+        };
+
+        const countedBookingIds = new Set<string>();
+        let income = 0;
+
+        // 1. Sum from paid invoices issued/updated today for this center
+        (invoicesData || []).forEach((inv: any) => {
+            if (managerCenterId && inv.centerId && inv.centerId !== managerCenterId) return;
+            const isPaid = String(inv.status || "").toUpperCase() === "PAID";
+            if (!isPaid) return;
+
+            const isToday = isDateToday(inv.updatedAt) || isDateToday(inv.issuedAt) || isDateToday(inv.createdAt) || isDateToday(inv.createdDate);
+            if (isToday) {
+                const amt = Number(inv.total) || Number(inv.amount) || Number(inv.subtotal) || 0;
+                income += amt;
+                if (inv.bookingId) countedBookingIds.add(String(inv.bookingId));
+            }
+        });
+
+        // 2. Add from paid bookings for today that might not have a separate invoice record
+        (bookingsData || []).forEach((b: any) => {
+            if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
+            const isPaid = normalizeStatus(b.status) === "PAID";
+            if (!isPaid) return;
+            if (b.bookingId && countedBookingIds.has(String(b.bookingId))) return;
+
+            const isToday = isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+            if (isToday) {
+                const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
+                income += cost;
+                if (b.bookingId) countedBookingIds.add(String(b.bookingId));
+            }
+        });
+
+        return income;
+    }, [invoicesData, bookingsData, managersData]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleStatusChange = async (id: string, newStatus: string) => {
@@ -296,11 +399,13 @@ export default function ServiceManagerDashboard() {
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                                                 statusNorm === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
                                                 statusNorm === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                                statusNorm === 'PAID' ? 'bg-purple-100 text-purple-800' :
                                                 statusNorm === 'CANCELLED' ? 'bg-red-100 text-red-800' :
                                                 'bg-slate-100 text-slate-800'
                                             }`}>
                                                 {statusNorm === 'IN_PROGRESS' ? 'In Progress' : 
                                                  statusNorm === 'COMPLETED' ? 'Completed' :
+                                                 statusNorm === 'PAID' ? 'Paid' :
                                                  statusNorm === 'CANCELLED' ? 'Cancelled' : (booking.status || 'Pending')}
                                             </span>
                                         </td>

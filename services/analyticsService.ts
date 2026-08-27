@@ -3,6 +3,7 @@ import { APP_CONFIG } from "@/utils/config";
 
 const API_BASE_URL = APP_CONFIG.api.baseUrl;
 
+// Data structure for analytics dashboard
 export interface AnalyticsData {
     totalRevenue: number;
     revenueChange: string;
@@ -28,6 +29,7 @@ export interface AnalyticsData {
     }[];
 }
 
+// Fetch analytics for a specific company with optional filters
 export const getCompanyAnalytics = async (
     companyCode: string,
     params?: { centerId?: string; startDate?: string; endDate?: string; period?: string }
@@ -41,6 +43,7 @@ export const getCompanyAnalytics = async (
     }
 };
 
+// Fetch analytics for current logged-in owner with optional filters
 export const getCurrentOwnerAnalytics = async (
     params?: { centerId?: string; startDate?: string; endDate?: string; period?: string }
 ): Promise<AnalyticsData> => {

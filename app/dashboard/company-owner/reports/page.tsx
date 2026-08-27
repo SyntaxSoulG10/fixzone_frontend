@@ -489,9 +489,16 @@ export default function ReportsPage() {
         const kpi2 = analyticsData?.revenueChange || "+0%";
         const kpi3 = `${activeCentersCount} Active Locations`;
 
+        const dynamicLast6Months = Array.from({ length: 6 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - (5 - i));
+            return d.toLocaleString('en-US', { month: 'short' });
+        });
+
         const chartLabels = (analyticsData?.revenueOverview && analyticsData.revenueOverview.length > 0)
             ? analyticsData.revenueOverview.map((item: any) => item.name)
-            : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            : dynamicLast6Months;
         const chartDataValues = (analyticsData?.revenueOverview && analyticsData.revenueOverview.length > 0)
             ? analyticsData.revenueOverview.map((item: any) => item.revenue)
             : [0, 0, 0, 0, 0, 0];

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 import { APP_CONFIG } from '../utils/config';
 
+// Dashboard data structure containing analytics and entity info
 interface DashboardData {
     analytics: any;
     centers: any[];
@@ -12,6 +13,7 @@ interface DashboardData {
     lastFetched: number | null;
 }
 
+// Context type with data and methods
 interface DashboardContextType {
     data: DashboardData;
     isLoading: boolean;
@@ -33,9 +35,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Fetch dashboard data with 2-minute caching to reduce API calls
     const fetchDashboardData = useCallback(async (force = false) => {
-        // CACHE LOGIC: If we fetched in the last 2 minutes, don't re-fetch unless forced
-        const CACHE_DURATION = 2 * 60 * 1000; 
+        // Skip fetch if cache is still valid and not forced
+        const CACHE_DURATION = 2 * 60 * 1000;
         if (!force && data.lastFetched && (Date.now() - data.lastFetched < CACHE_DURATION)) {
             return;
         }
@@ -44,6 +47,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setError(null);
 
         try {
+            // Fetch all dashboard data in parallel
             const [centersRes, custRes, analyticsRes, ownerRes] = await Promise.all([
                 axios.get(APP_CONFIG.api.serviceCenters + "/current"),
                 axios.get(APP_CONFIG.api.customers + "/current"),
@@ -66,6 +70,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
     }, [data.lastFetched]);
 
+    // Update centers in state without re-fetching
     const updateCenters = (centers: any[]) => {
         setData(prev => ({ ...prev, centers }));
     };
@@ -77,6 +82,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
 };
 
+// Hook to access dashboard context - throws error if used outside provider
 export const useDashboard = () => {
     const context = useContext(DashboardContext);
     if (context === undefined) {

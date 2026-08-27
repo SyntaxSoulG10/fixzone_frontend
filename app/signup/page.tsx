@@ -239,13 +239,8 @@ export default function SignupPage() {
                 if (data.fullName) localStorage.setItem("fullName", data.fullName);
             }
 
-            // Redirect based on role
-            if (data.role === "ROLE_CUSTOMER") {
-                router.push("/dashboard/customer");
-            } else {
-                // For new owners, they must wait for approval, so redirect to verification page
-                router.push("/verification");
-            }
+            // Redirect to verify email
+            router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
         } catch (error: any) {
             console.error("Signup error:", error);
             setError(error.message || "Failed to register. Please check your inputs.");

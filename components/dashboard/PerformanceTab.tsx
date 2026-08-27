@@ -26,13 +26,20 @@ export default function PerformanceTab({ data }: { data: any }) {
         setIsMounted(true);
     }, []);
 
-    const chartData = data?.revenueOverview?.map((item: any) => ({
-        name: item.name,
-        revenue: item.revenue
-    })) || [
-        { name: 'Mon', revenue: 0 },
-        { name: 'Tue', revenue: 0 },
-    ];
+    const chartData = (data?.revenueOverview && data.revenueOverview.length > 0)
+        ? data.revenueOverview.map((item: any) => ({
+            name: item.name,
+            revenue: Number(item.revenue || 0)
+        }))
+        : Array.from({ length: 6 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - (5 - i));
+            return {
+                name: d.toLocaleString('en-US', { month: 'short' }),
+                revenue: 0
+            };
+        });
 
     const centerPerformance = data?.topCenters?.map((c: any) => ({
         name: c.name,
@@ -67,6 +74,7 @@ export default function PerformanceTab({ data }: { data: any }) {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
+                                            interval={0}
                                         />
                                         <YAxis
                                             fontSize={12}
