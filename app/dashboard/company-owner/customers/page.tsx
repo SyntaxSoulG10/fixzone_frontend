@@ -344,84 +344,101 @@ export default function CustomersPage() {
             </Grid>
 
             <Card sx={{ p: 3, borderRadius: '1rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-                <Box mb={3} display="flex" flexDirection={{ xs: 'column', lg: 'row' }} alignItems={{ lg: 'center' }} justifyContent="space-between" gap={2}>
+                {/* Header Row */}
+                <Box mb={2.5} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold" color="#1e293b">
                             Client List ({filteredCustomers.length})
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            Search and inspect customer loyalty across your company
+                            Search and inspect customer loyalty across your company branches
                         </Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-                        <TextField
-                            size="small"
-                            placeholder="Search customers..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <FiSearch color="#94a3b8" />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchTerm ? (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={() => setSearchTerm("")}>
-                                            <FiX size={14} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null
-                            }}
+                    {(searchTerm || selectedCenterFilter !== "ALL" || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
+                        <Button 
+                            size="small" 
+                            variant="outlined" 
+                            onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
                             sx={{ 
-                                minWidth: { xs: '100%', sm: 220 },
-                                '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
+                                color: '#ea580c', 
+                                borderColor: 'rgba(234, 88, 12, 0.3)',
+                                bgcolor: 'rgba(234, 88, 12, 0.04)',
+                                fontWeight: 700, 
+                                textTransform: 'none', 
+                                borderRadius: '0.5rem',
+                                px: 1.75,
+                                py: 0.5,
+                                fontSize: '0.8rem',
+                                '&:hover': {
+                                    bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                    borderColor: '#ea580c'
+                                }
                             }}
-                        />
+                        >
+                            Reset Filters
+                        </Button>
+                    )}
+                </Box>
 
-                        <FormControl size="small" sx={{ minWidth: 170, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                            <InputLabel>All Branches</InputLabel>
-                            <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
-                                <MenuItem value="ALL">All Service Centers</MenuItem>
-                                {(centersData || []).map((c: any) => (
-                                    <MenuItem key={c.centerId || c.id || c.name} value={c.name}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                {/* Filter Toolbar Row */}
+                <Box mb={3} display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+                    <TextField
+                        size="small"
+                        placeholder="Search customers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <FiSearch color="#94a3b8" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchTerm ? (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                        <FiX size={14} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null
+                        }}
+                        sx={{ 
+                            flex: { xs: '1 1 100%', sm: 1 },
+                            minWidth: { sm: 220 },
+                            '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
+                        }}
+                    />
 
-                        <FormControl size="small" sx={{ minWidth: 160, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                            <InputLabel>Client Category</InputLabel>
-                            <Select value={loyaltyFilter} label="Client Category" onChange={(e) => setLoyaltyFilter(e.target.value)}>
-                                <MenuItem value="ALL">All Clients</MenuItem>
-                                <MenuItem value="REPEAT">Repeat Clients (2+)</MenuItem>
-                                <MenuItem value="FIRST_TIME">First-Time Clients (1)</MenuItem>
-                                <MenuItem value="NEW_LEAD">New Leads (0 Visits)</MenuItem>
-                                <MenuItem value="VIP">VIP Clients (High Value)</MenuItem>
-                            </Select>
-                        </FormControl>
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 170 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>All Branches</InputLabel>
+                        <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
+                            <MenuItem value="ALL">All Service Centers</MenuItem>
+                            {(centersData || []).map((c: any) => (
+                                <MenuItem key={c.centerId || c.id || c.name} value={c.name}>
+                                    {c.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
 
-                        <FormControl size="small" sx={{ minWidth: 150, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
-                            <InputLabel>Sort By</InputLabel>
-                            <Select value={sortFilter} label="Sort By" onChange={(e) => setSortFilter(e.target.value)}>
-                                <MenuItem value="DEFAULT">Default Order</MenuItem>
-                                <MenuItem value="SPENT_DESC">Highest Spent</MenuItem>
-                                <MenuItem value="VISITS_DESC">Most Bookings</MenuItem>
-                            </Select>
-                        </FormControl>
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>Client Category</InputLabel>
+                        <Select value={loyaltyFilter} label="Client Category" onChange={(e) => setLoyaltyFilter(e.target.value)}>
+                            <MenuItem value="ALL">All Clients</MenuItem>
+                            <MenuItem value="REPEAT">Repeat Clients (2+)</MenuItem>
+                            <MenuItem value="FIRST_TIME">First-Time Clients (1)</MenuItem>
+                            <MenuItem value="NEW_LEAD">New Leads (0 Visits)</MenuItem>
+                            <MenuItem value="VIP">VIP Clients (High Value)</MenuItem>
+                        </Select>
+                    </FormControl>
 
-                        {(searchTerm || selectedCenterFilter !== "ALL" || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
-                            <Button 
-                                size="small" 
-                                variant="text" 
-                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
-                                sx={{ color: '#ea580c', fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
-                            >
-                                Reset
-                            </Button>
-                        )}
-                    </Box>
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 140 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>Sort By</InputLabel>
+                        <Select value={sortFilter} label="Sort By" onChange={(e) => setSortFilter(e.target.value)}>
+                            <MenuItem value="DEFAULT">Default Order</MenuItem>
+                            <MenuItem value="SPENT_DESC">Highest Spent</MenuItem>
+                            <MenuItem value="VISITS_DESC">Most Bookings</MenuItem>
+                        </Select>
+                    </FormControl>
                 </Box>
 
                 {filteredCustomers.length === 0 ? (

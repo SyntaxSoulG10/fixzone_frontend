@@ -554,11 +554,40 @@ export default function ManagersPage() {
             <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setDialogError(null); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
 
             <Card sx={{ borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                <Box p={2.5} display="flex" flexDirection={{ xs: 'column', lg: 'row' }} justifyContent="space-between" alignItems={{ lg: 'center' }} gap={2} bgcolor="#ffffff">
-                    <Box>
-                        <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
-                        <Typography variant="caption" color="text.secondary">View and manage service center managers across your company</Typography>
+                <Box p={2.5} bgcolor="#ffffff">
+                    {/* Header Row */}
+                    <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
+                            <Typography variant="caption" color="text.secondary">View and manage service center managers across your company</Typography>
+                        </Box>
+                        {(searchTerm || selectedCenterFilter !== "ALL" || selectedStatusFilter !== "ALL") && (
+                            <Button 
+                                size="small" 
+                                variant="outlined" 
+                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setSelectedStatusFilter("ALL"); }}
+                                sx={{ 
+                                    color: '#ea580c', 
+                                    borderColor: 'rgba(234, 88, 12, 0.3)',
+                                    bgcolor: 'rgba(234, 88, 12, 0.04)',
+                                    fontWeight: 700, 
+                                    textTransform: 'none', 
+                                    borderRadius: '0.5rem',
+                                    px: 1.75,
+                                    py: 0.5,
+                                    fontSize: '0.8rem',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                        borderColor: '#ea580c'
+                                    }
+                                }}
+                            >
+                                Reset Filters
+                            </Button>
+                        )}
                     </Box>
+
+                    {/* Filter Toolbar Row */}
                     <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
                         <TextField 
                             size="small" 
@@ -575,10 +604,14 @@ export default function ManagersPage() {
                                     </InputAdornment>
                                 ) : null
                             }} 
-                            sx={{ minWidth: { xs: '100%', sm: 220 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
+                            sx={{ 
+                                flex: { xs: '1 1 100%', sm: 1 },
+                                minWidth: { sm: 220 },
+                                '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
+                            }} 
                         />
 
-                        <FormControl size="small" sx={{ minWidth: 170, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 170 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                             <InputLabel>All Branches</InputLabel>
                             <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
                                 <MenuItem value="ALL">All Service Centers</MenuItem>
@@ -586,7 +619,7 @@ export default function ManagersPage() {
                             </Select>
                         </FormControl>
 
-                        <FormControl size="small" sx={{ minWidth: 140, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
                             <InputLabel>All Statuses</InputLabel>
                             <Select value={selectedStatusFilter} label="All Statuses" onChange={(e) => setSelectedStatusFilter(e.target.value)}>
                                 <MenuItem value="ALL">All Statuses</MenuItem>
@@ -595,17 +628,6 @@ export default function ManagersPage() {
                                 <MenuItem value="Inactive">Inactive</MenuItem>
                             </Select>
                         </FormControl>
-
-                        {(searchTerm || selectedCenterFilter !== "ALL" || selectedStatusFilter !== "ALL") && (
-                            <Button 
-                                size="small" 
-                                variant="text" 
-                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setSelectedStatusFilter("ALL"); }}
-                                sx={{ color: '#ea580c', fontWeight: 700, textTransform: 'none', whiteSpace: 'nowrap' }}
-                            >
-                                Reset
-                            </Button>
-                        )}
                     </Box>
                 </Box>
                 
