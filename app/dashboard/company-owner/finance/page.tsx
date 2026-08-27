@@ -58,74 +58,74 @@ interface InvoiceDTO { invoiceId: number; status: string; centerId: string; tota
  * TABLE CONFIGURATION: Defining column structures outside the component 
  * reduces render complexity and makes it easier to update the table layout.
  */
-const transactionColumns: GridColDef[] = [
+/**
+ * BRANCH FINANCIAL TABLE CONFIGURATION:
+ * Provides the Company Owner with macro-level financial governance per branch,
+ * comparing job volumes, average job ticket size, total revenue, and contribution shares.
+ */
+const branchPerformanceColumns: GridColDef[] = [
     { 
-        field: 'id', headerName: 'Transaction ID', width: 140,
+        field: 'name', headerName: 'Service Center / Branch', flex: 1.8,
         renderCell: (p: GridRenderCellParams) => (
-            <Typography variant="caption" fontWeight="bold" sx={{ fontFamily: 'monospace', color: 'text.primary', bgcolor: 'rgba(0,0,0,0.04)', px: 1, py: 0.5, borderRadius: 1 }}>
-                #{p.value || 'N/A'}
-            </Typography>
-        ) 
-    },
-    { 
-        field: 'date', headerName: 'Date', width: 140,
-        renderCell: (p: GridRenderCellParams) => <Typography variant="body2" color="text.secondary">{p.value || '-'}</Typography>
-    },
-    { 
-        field: 'customer', headerName: 'Customer', flex: 1.5, minWidth: 160,
-        renderCell: (p: GridRenderCellParams) => (
-            <Box display="flex" alignItems="center" gap={1.2} height="100%">
-                <Avatar sx={{ width: 26, height: 26, fontSize: '0.75rem', bgcolor: '#EA580C', fontWeight: 'bold' }}>
-                    {(p.value || 'U').charAt(0).toUpperCase()}
+            <Box display="flex" alignItems="center" gap={1.5} height="100%">
+                <Avatar sx={{ width: 32, height: 32, fontSize: '0.85rem', bgcolor: '#EA580C', color: '#fff', fontWeight: 'bold' }}>
+                    {(p.value || 'C').charAt(0)}
                 </Avatar>
-                <Typography variant="body2" fontWeight={600} color="text.primary">{p.value || 'Walk-in Customer'}</Typography>
+                <Box>
+                    <Typography variant="body2" fontWeight="bold" color="text.primary">{p.value}</Typography>
+                    <Typography variant="caption" color="text.secondary">Active Branch</Typography>
+                </Box>
             </Box>
         )
     },
     { 
-        field: 'amount', headerName: 'Amount', flex: 1, minWidth: 130, 
+        field: 'jobs', headerName: 'Completed Jobs', flex: 1, align: 'center', headerAlign: 'center',
         renderCell: (p: GridRenderCellParams) => (
-            <Typography variant="body2" fontWeight={700} color="text.primary">
+            <Chip 
+                label={`${p.value || 0} Jobs`} 
+                size="small" 
+                sx={{ bgcolor: 'rgba(234, 88, 12, 0.1)', color: '#c2410c', fontWeight: 'bold' }} 
+            />
+        )
+    },
+    { 
+        field: 'avgTicket', headerName: 'Avg. Job Value', flex: 1.2,
+        renderCell: (p: GridRenderCellParams) => (
+            <Typography variant="body2" fontWeight="600" color="text.secondary">
+                Rs. {Number(p.value || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 })}
+            </Typography>
+        )
+    },
+    { 
+        field: 'revenue', headerName: 'Total Revenue', flex: 1.3,
+        renderCell: (p: GridRenderCellParams) => (
+            <Typography variant="body2" fontWeight="bold" color="#2e7d32">
                 Rs. {Number(p.value || 0).toLocaleString('en-LK')}
             </Typography>
-        ) 
+        )
     },
     { 
-        field: 'method', headerName: 'Method', flex: 1, minWidth: 120,
+        field: 'share', headerName: 'Revenue Contribution', flex: 1.6,
         renderCell: (p: GridRenderCellParams) => {
-            const method = String(p.value || '').toUpperCase();
-            const isCash = method === 'CASH' || method === 'HAND_COLLECTION';
+            const sharePct = Number(p.value || 0);
             return (
-                <Chip 
-                    label={isCash ? 'Cash' : (method === 'CARD' || method === 'STRIPE' || method === 'ONLINE') ? 'Card / Online' : (p.value || 'N/A')} 
-                    size="small" 
-                    variant="filled" 
-                    sx={{ 
-                        bgcolor: isCash ? 'rgba(34, 197, 94, 0.12)' : 'rgba(59, 130, 246, 0.12)', 
-                        color: isCash ? '#15803d' : '#1d4ed8', 
-                        fontWeight: 600,
-                        fontSize: '0.75rem' 
-                    }} 
-                />
-            );
-        }
-    },
-    { 
-        field: 'status', headerName: 'Status', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center',
-        renderCell: (p: GridRenderCellParams) => {
-            const rawStatus = String(p.value || '').toUpperCase();
-            const isCompleted = rawStatus === 'PAID' || rawStatus === 'SUCCESS' || rawStatus === 'COMPLETED';
-            const isPending = rawStatus === 'PENDING' || rawStatus === 'PROCESSING';
-            const isFailed = rawStatus === 'FAILED' || rawStatus === 'CANCELLED' || rawStatus === 'REFUNDED';
-
-            return (
-                <Chip 
-                    label={isCompleted ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : (p.value || 'N/A')} 
-                    size="small" 
-                    color={isCompleted ? 'success' : isPending ? 'warning' : isFailed ? 'error' : 'default'} 
-                    variant="outlined" 
-                    sx={{ fontWeight: 600, fontSize: '0.75rem' }} 
-                />
+                <Box width="100%" display="flex" alignItems="center" gap={1.5}>
+                    <Box flex={1}>
+                        <LinearProgress 
+                            variant="determinate" 
+                            value={Math.min(100, Math.max(0, sharePct))} 
+                            sx={{ 
+                                height: 6, 
+                                borderRadius: 3, 
+                                bgcolor: 'rgba(0,0,0,0.06)',
+                                '& .MuiLinearProgress-bar': { bgcolor: sharePct >= 40 ? '#10b981' : '#EA580C' }
+                            }} 
+                        />
+                    </Box>
+                    <Typography variant="caption" fontWeight="bold" sx={{ minWidth: 35 }}>
+                        {sharePct}%
+                    </Typography>
+                </Box>
             );
         }
     }
@@ -177,9 +177,9 @@ export default function FinancePage() {
         onlineRevenue: contextData?.onlineRevenue || 0, 
         cashRevenue: contextData?.handCollectionRevenue || 0, 
         avgTransaction: contextData?.avgJobValue || 0,
+        topCenters: contextData?.topCenters || [],
         revenueByCenter: (contextData?.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
-        growthData: (contextData?.revenueOverview || []).map((m: any) => ({ month: m.name, amount: m.revenue, online: m.onlineRevenue, cash: m.cashRevenue })),
-        recentTransactions: (contextData?.recentTransactions || []).map((t: any) => ({ id: t.id, customer: t.customer, amount: t.amount, method: t.method, status: t.status, date: t.date }))
+        growthData: (contextData?.revenueOverview || []).map((m: any) => ({ month: m.name, amount: m.revenue, online: m.onlineRevenue, cash: m.cashRevenue }))
     });
 
     const centersList = centersData;
@@ -187,21 +187,6 @@ export default function FinancePage() {
     useEffect(() => { 
         loadUnifiedFinanceData(); 
     }, [selectedCenter, period, startDate, endDate]);
-
-    // Sync default dashboard view with global context data when available
-    useEffect(() => {
-        if (contextData && selectedCenter === 'all' && !startDate && !endDate && period === 'monthly') {
-            setFinanceData({
-                totalRevenue: contextData.totalRevenue || 0, 
-                onlineRevenue: contextData.onlineRevenue || 0, 
-                cashRevenue: contextData.handCollectionRevenue || 0, 
-                avgTransaction: contextData.avgJobValue || 0,
-                revenueByCenter: (contextData.topCenters || []).map((c: any) => ({ name: c.name, revenue: c.revenue })),
-                growthData: (contextData.revenueOverview || []).map((m: any) => ({ month: m.name, amount: m.revenue, online: m.onlineRevenue, cash: m.cashRevenue })),
-                recentTransactions: (contextData.recentTransactions || []).map((t: any) => ({ id: t.id, customer: t.customer, amount: t.amount, method: t.method, status: t.status, date: t.date }))
-            });
-        }
-    }, [contextData]);
 
     /**
      * LOAD FINANCE DATA
@@ -234,6 +219,7 @@ export default function FinancePage() {
                 onlineRevenue: analyticsPayload.onlineRevenue || 0,
                 cashRevenue: analyticsPayload.handCollectionRevenue || 0,
                 avgTransaction: analyticsPayload.avgJobValue || 0,
+                topCenters: analyticsPayload.topCenters || [],
                 
                 // Map branch performance
                 revenueByCenter: (analyticsPayload.topCenters || []).map((branch: any) => ({ 
@@ -247,16 +233,6 @@ export default function FinancePage() {
                     amount: monthlyData.revenue, 
                     online: monthlyData.onlineRevenue, 
                     cash: monthlyData.cashRevenue 
-                })),
-                
-                // Map recent transaction logs
-                recentTransactions: (analyticsPayload.recentTransactions || []).map((transaction: any) => ({
-                    id: transaction.id,
-                    customer: transaction.customer,
-                    amount: transaction.amount,
-                    method: transaction.method,
-                    status: transaction.status,
-                    date: transaction.date
                 }))
             });
         } catch (fetchError: any) {
@@ -268,11 +244,26 @@ export default function FinancePage() {
         }
     };
 
+    const branchPerformanceRows = (financeData.topCenters || []).map((branch: any, index: number) => {
+        const rev = Number(branch.revenue || 0);
+        const jobsCount = Number(branch.jobs || 0);
+        const avgTicket = jobsCount > 0 ? rev / jobsCount : (rev > 0 ? rev : 0);
+        const share = financeData.totalRevenue > 0 ? Math.round((rev / Number(financeData.totalRevenue)) * 100) : 0;
+        return {
+            id: branch.id || `center-${index}`,
+            name: branch.name,
+            jobs: jobsCount,
+            avgTicket: avgTicket,
+            revenue: rev,
+            share: share
+        };
+    });
+
     return (
         <Box pb={3}>
             <Box mb={4}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>Finance & Revenue</Typography>
-                <Typography variant="body1" color="text.secondary">Track earnings and financial health.</Typography>
+                <Typography variant="body1" color="text.secondary">Track earnings and financial health across all service centers.</Typography>
             </Box>
 
             <FinanceFilters 
@@ -396,35 +387,25 @@ export default function FinancePage() {
                 </Grid>
             </Grid>
 
-            {/* RECENT TRANSACTIONS TABLE */}
+            {/* BRANCH FINANCIAL PERFORMANCE & REVENUE SHARE TABLE */}
             <Box mb={4}>
                 <Card sx={{ p: 3, borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                         <Box>
-                            <Typography variant="h6" fontWeight={700} color="text.primary">Recent Transactions</Typography>
-                            <Typography variant="caption" color="text.secondary">Latest customer payments across your service centers</Typography>
+                            <Typography variant="h6" fontWeight={700} color="text.primary">Branch Financial Performance & Revenue Share</Typography>
+                            <Typography variant="caption" color="text.secondary">Macro-level financial comparison and revenue contribution across all registered service centers.</Typography>
                         </Box>
-                        <Chip label={`${financeData.recentTransactions?.length || 0} Records`} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                     </Box>
-                    <Box sx={{ height: 400, width: '100%' }}>
+                    <Box sx={{ height: 350, width: '100%' }}>
                         <DataGrid 
-                            rows={financeData.recentTransactions} 
-                            columns={transactionColumns} 
-                            getRowId={(row, index) => row.id || `txn-${index}`}
-                            pageSizeOptions={[5, 10, 20]} 
+                            rows={branchPerformanceRows} 
+                            columns={branchPerformanceColumns} 
+                            getRowId={(row) => row.id || row.name || Math.random().toString()}
+                            pageSizeOptions={[5, 10]} 
                             initialState={{
                                 pagination: { paginationModel: { pageSize: 5 } }
                             }}
                             disableRowSelectionOnClick 
-                            slots={{
-                                noRowsOverlay: () => (
-                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%" py={4}>
-                                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                            No transaction records found for the selected filter.
-                                        </Typography>
-                                    </Box>
-                                )
-                            }}
                             sx={{
                                 border: 'none',
                                 '& .MuiDataGrid-columnHeaders': {

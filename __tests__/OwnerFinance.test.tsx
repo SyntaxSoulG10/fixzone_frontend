@@ -32,9 +32,9 @@ vi.mock('@mui/x-data-grid', () => ({
       {rows.map((row: any, idx: number) => (
         <div key={row.id || idx} data-testid="data-grid-row">
           <span>{row.id}</span>
-          <span>{row.customer}</span>
-          <span>{row.amount}</span>
-          <span>{row.status}</span>
+          <span>{row.name}</span>
+          <span>{row.jobs}</span>
+          <span>{row.revenue}</span>
         </div>
       ))}
     </div>
@@ -62,16 +62,18 @@ describe('Company Owner Finance Tab Page', () => {
     render(<FinancePage />)
     
     expect(screen.getByText('Finance & Revenue')).toBeInTheDocument()
-    expect(screen.getByText('Track earnings and financial health.')).toBeInTheDocument()
+    expect(screen.getByText(/Track earnings and financial health/i)).toBeInTheDocument()
     
     // Check earnings metric box
     expect(screen.getByText('Rs. 25,000')).toBeInTheDocument()
   })
 
-  it('renders transactions lists table', () => {
+  it('renders branch financial performance and revenue share table', () => {
     render(<FinancePage />)
     
     expect(screen.getByTestId('data-grid')).toBeInTheDocument()
-    expect(screen.getByText('John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Colombo Main Center')).toBeInTheDocument()
+    expect(screen.getByText('Branch Financial Performance & Revenue Share')).toBeInTheDocument()
   })
 })
+
