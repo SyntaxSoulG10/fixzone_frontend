@@ -281,7 +281,7 @@ export default function CustomersPage() {
                     </Box>
                     <TextField
                         size="small"
-                        placeholder="Search customers by name, email..."
+                        placeholder="Search customers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         InputProps={{
@@ -299,7 +299,7 @@ export default function CustomersPage() {
                             ) : null
                         }}
                         sx={{ 
-                            minWidth: { xs: '100%', sm: 300 },
+                            minWidth: { xs: '100%', sm: 260 },
                             '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
                         }}
                     />

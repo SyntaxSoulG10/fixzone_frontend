@@ -1170,7 +1170,7 @@ export default function ReportsPage() {
                         {/* Row 1: Search Input & Source Origin Chips */}
                         <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between" gap={2}>
                             <TextField
-                                placeholder="Search reports by title or notes..."
+                                placeholder="Search reports..."
                                 variant="outlined"
                                 size="small"
                                 value={searchQuery}
