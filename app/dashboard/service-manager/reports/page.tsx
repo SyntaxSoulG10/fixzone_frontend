@@ -567,6 +567,7 @@ function ServiceReportsContent() {
                 fetchRecentInvoices();
                 if (refreshInvoices) await refreshInvoices();
                 if (refreshBookings) await refreshBookings();
+                window.dispatchEvent(new Event("bookingsUpdated"));
             } else {
                 showSnackbar("Failed to mark invoice as paid.", "error");
             }
