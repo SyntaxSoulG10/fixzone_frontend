@@ -132,9 +132,6 @@ function ProfileHeader({
                             height: '18.75rem',
                             objectFit: 'cover',
                         }}
-                        onError={(e: any) => {
-                            e.target.style.opacity = '0';
-                        }}
                     />
                 )}
                 
@@ -440,10 +437,10 @@ function OverviewTab({
                                     <TextField
                                         fullWidth
                                         size="small"
-                                        value={formState.companyPhone}
-                                        onChange={(e) => handleFieldChange("companyPhone", e.target.value)}
-                                        error={Boolean(fieldErrors.companyPhone)}
-                                        helperText={fieldErrors.companyPhone || ""}
+                                        value={formState.companyNumber}
+                                        onChange={(e) => handleFieldChange("companyNumber", e.target.value)}
+                                        error={Boolean(fieldErrors.companyNumber)}
+                                        helperText={fieldErrors.companyNumber || ""}
                                         placeholder="e.g. +94 11 234 5678"
                                         InputProps={{
                                             startAdornment: (
@@ -458,7 +455,7 @@ function OverviewTab({
                                     <Box display="flex" alignItems="center" gap={1} p={1.25} bgcolor="#f8fafc" borderRadius="8px" border="1px solid #f1f5f9">
                                         <FiPhone color="#EA580C" size={16} />
                                         <Typography variant="body2" color="#334155">
-                                            {formState.companyPhone || "—"}
+                                            {formState.companyNumber || "—"}
                                         </Typography>
                                     </Box>
                                 )}
@@ -1596,12 +1593,13 @@ export default function ProfilePage() {
         setIsSaving(true);
         try {
             const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+            const userEmail = formState.email || fullOwnerData?.email || (typeof window !== 'undefined' ? localStorage.getItem('userEmail') : undefined);
 
-            // Note: Primary login email is deliberately NOT overwritten, preserving account credentials
             const updatedOwner = {
                 ...(fullOwnerData || {}),
                 userId: targetUserId,
-                fullName: formState.fullName.trim() || (fullOwnerData && fullOwnerData.fullName) || undefined,
+                email: userEmail,
+                fullName: formState.fullName.trim(),
                 companyName: formState.companyName.trim(),
                 companyNumber: formState.companyNumber.trim(),
                 companyEmail: formState.companyEmail.trim(),
@@ -1613,12 +1611,33 @@ export default function ProfilePage() {
                 instagramUrl: socialData.instagram.trim()
             };
 
-            const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+            const endpoint = `${APP_CONFIG.api.owners}/current`;
             const res = await axios.put(endpoint, updatedOwner);
             if (res.data) {
                 setFullOwnerData(res.data);
                 if (res.data.profilePictureUrl) setProfileImage(res.data.profilePictureUrl);
                 if (res.data.bannerImageUrl) setBannerImage(res.data.bannerImageUrl);
+                
+                const updatedState = {
+                    companyName: res.data.companyName ?? formState.companyName,
+                    ownerCode: res.data.ownerCode ?? formState.ownerCode,
+                    companyEmail: res.data.companyEmail ?? formState.companyEmail,
+                    companyNumber: res.data.companyNumber ?? formState.companyNumber,
+                    fullName: res.data.fullName ?? formState.fullName,
+                    email: res.data.email ?? formState.email,
+                    phone: res.data.phone ?? formState.phone,
+                    location: "Sri Lanka"
+                };
+                setFormState(updatedState);
+                setOriginalFormState(updatedState);
+
+                const updatedSocial = {
+                    facebook: res.data.facebookUrl ?? socialData.facebook,
+                    twitter: res.data.twitterUrl ?? socialData.twitter,
+                    instagram: res.data.instagramUrl ?? socialData.instagram
+                };
+                setSocialData(updatedSocial);
+                setOriginalSocialData(updatedSocial);
             }
 
             setIsEditing(false);
@@ -1631,7 +1650,7 @@ export default function ProfilePage() {
             setSnackbarOpen(true);
         } catch (error: any) {
             console.error("Save profile error:", error);
-            const msg = error.response?.data?.details || error.response?.data?.message || "Failed to save profile changes.";
+            const msg = error.response?.data?.details || error.response?.data?.message || (typeof error.response?.data === 'string' ? error.response.data : "Failed to save profile changes.");
             setSnackbarMessage(msg);
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
@@ -1657,11 +1676,22 @@ export default function ProfilePage() {
 
                 try {
                     const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
-                    const updatedOwner = { ...(fullOwnerData || {}), bannerImageUrl: base64 };
-                    const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+                    const userEmail = formState.email || fullOwnerData?.email || (typeof window !== 'undefined' ? localStorage.getItem('userEmail') : undefined);
+                    const updatedOwner = { 
+                        ...(fullOwnerData || {}),
+                        userId: targetUserId,
+                        email: userEmail,
+                        fullName: formState.fullName || fullOwnerData?.fullName,
+                        companyName: formState.companyName || fullOwnerData?.companyName,
+                        bannerImageUrl: base64 
+                    };
+                    const endpoint = `${APP_CONFIG.api.owners}/current`;
                     const res = await axios.put(endpoint, updatedOwner);
                     if (res.data?.bannerImageUrl) {
                         setBannerImage(res.data.bannerImageUrl);
+                    }
+                    if (res.data) {
+                        setFullOwnerData(res.data);
                     }
                     await refreshAll();
                     setSnackbarMessage("Cover banner updated successfully!");
@@ -1669,7 +1699,8 @@ export default function ProfilePage() {
                     setSnackbarOpen(true);
                 } catch (err: any) {
                     console.error("Banner upload error:", err);
-                    setSnackbarMessage("Failed to upload cover banner. Please try again.");
+                    const msg = err.response?.data?.message || err.response?.data?.details || (typeof err.response?.data === 'string' ? err.response.data : "Failed to upload cover banner. Please try again.");
+                    setSnackbarMessage(msg);
                     setSnackbarSeverity("error");
                     setSnackbarOpen(true);
                 }
@@ -1695,11 +1726,22 @@ export default function ProfilePage() {
 
                 try {
                     const targetUserId = userId || ownerData?.userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
-                    const updatedOwner = { ...(fullOwnerData || {}), profilePictureUrl: base64 };
-                    const endpoint = targetUserId ? `${APP_CONFIG.api.owners}/${targetUserId}` : `${APP_CONFIG.api.owners}/current`;
+                    const userEmail = formState.email || fullOwnerData?.email || (typeof window !== 'undefined' ? localStorage.getItem('userEmail') : undefined);
+                    const updatedOwner = { 
+                        ...(fullOwnerData || {}),
+                        userId: targetUserId,
+                        email: userEmail,
+                        fullName: formState.fullName || fullOwnerData?.fullName,
+                        companyName: formState.companyName || fullOwnerData?.companyName,
+                        profilePictureUrl: base64 
+                    };
+                    const endpoint = `${APP_CONFIG.api.owners}/current`;
                     const res = await axios.put(endpoint, updatedOwner);
                     if (res.data?.profilePictureUrl) {
                         setProfileImage(res.data.profilePictureUrl);
+                    }
+                    if (res.data) {
+                        setFullOwnerData(res.data);
                     }
                     await refreshAll();
                     if (typeof window !== 'undefined') {
@@ -1710,7 +1752,8 @@ export default function ProfilePage() {
                     setSnackbarOpen(true);
                 } catch (err: any) {
                     console.error("Profile picture upload error:", err);
-                    setSnackbarMessage("Failed to upload profile picture. Please try again.");
+                    const msg = err.response?.data?.message || err.response?.data?.details || (typeof err.response?.data === 'string' ? err.response.data : "Failed to upload profile picture. Please try again.");
+                    setSnackbarMessage(msg);
                     setSnackbarSeverity("error");
                     setSnackbarOpen(true);
                 }
