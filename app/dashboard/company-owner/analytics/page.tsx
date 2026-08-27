@@ -336,6 +336,7 @@ export default function AnalyticsPage() {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
+                                            interval={0}
                                         />
                                         <YAxis
                                             fontSize={12}
@@ -385,6 +386,7 @@ export default function AnalyticsPage() {
                                             tickLine={false}
                                             axisLine={false}
                                             tick={{ fill: '#fff', opacity: 0.8 }}
+                                            interval={0}
                                         />
                                         <YAxis
                                             fontSize={12}

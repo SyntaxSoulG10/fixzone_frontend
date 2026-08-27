@@ -678,17 +678,6 @@ function CenterDialog({
                             rows={2}
                             sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.75rem" } }}
                         />
-                        <Box display="flex" justifyContent="flex-end" mt={0.5}>
-                            <Button
-                                size="small"
-                                onClick={onDetectLocation}
-                                disabled={detecting}
-                                startIcon={<MyLocationRounded />}
-                                sx={{ color: BRAND_ORANGE, textTransform: "none", fontWeight: "700" }}
-                            >
-                                {detecting ? "Detecting GPS location..." : "Auto-detect My Location"}
-                            </Button>
-                        </Box>
                     </Box>
 
                     <TextField
@@ -861,6 +850,74 @@ export default function MyCentersPage() {
 
     const handleImageRemove = () => {
         setFormData(prev => ({ ...prev, imageUrl: "" }));
+    };
+
+    const handleFormChange = (e: any) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (name === "googleMapsUrl" && value) {
+            handleAutoDetectFromMapUrl(value);
+        }
+    };
+
+    const handleAutoDetectFromMapUrl = async (url: string) => {
+        const isGoogleMaps = /maps\.(google|app\.goo\.gl)/.test(url) || /google\.[a-z.]+\/maps/.test(url);
+        if (!isGoogleMaps) return;
+
+        setDetecting(true);
+        try {
+            let resolvedUrl = url;
+            if (url.includes("maps.app.goo.gl") || url.includes("goo.gl/maps")) {
+                const response = await axios.get(`${APP_CONFIG.api.serviceCenters}/resolve-map-url`, {
+                    params: { url }
+                });
+                if (response.data && response.data.resolvedUrl) {
+                    resolvedUrl = response.data.resolvedUrl;
+                }
+            }
+
+            const atRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+            const matchAt = resolvedUrl.match(atRegex);
+            let lat: number | null = null;
+            let lng: number | null = null;
+
+            if (matchAt) {
+                lat = parseFloat(matchAt[1]);
+                lng = parseFloat(matchAt[2]);
+            } else {
+                const queryRegex = /[?&](query|q)=(-?\d+\.\d+),(-?\d+\.\d+)/;
+                const matchQuery = resolvedUrl.match(queryRegex);
+                if (matchQuery) {
+                    lat = parseFloat(matchQuery[2]);
+                    lng = parseFloat(matchQuery[3]);
+                }
+            }
+
+            if (lat !== null && lng !== null) {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+                    { headers: { "User-Agent": "FixZone-Client-Application" } }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.display_name) {
+                        setFormData(prev => ({ ...prev, location: data.display_name }));
+                        setSnackbar({ open: true, message: "Location coordinates & address auto-detected from map link!", severity: "success" });
+                    } else {
+                        setFormData(prev => ({ ...prev, location: `${lat}, ${lng}` }));
+                        setSnackbar({ open: true, message: "Location coordinates auto-detected from map link!", severity: "success" });
+                    }
+                } else {
+                    setFormData(prev => ({ ...prev, location: `${lat}, ${lng}` }));
+                    setSnackbar({ open: true, message: "Location coordinates auto-detected from map link!", severity: "success" });
+                }
+            }
+        } catch (error) {
+            console.error("Auto detect from map URL failed", error);
+        } finally {
+            setDetecting(false);
+        }
     };
 
     const handleDetectLocation = () => {
@@ -1348,7 +1405,7 @@ export default function MyCentersPage() {
                 onClose={() => setOpenDialog(false)}
                 isEdit={isEditMode}
                 formData={formData}
-                onChange={(e: any) => setFormData({ ...formData, [e.target.name]: e.target.value })}
+                onChange={handleFormChange}
                 onImageChange={handleImageChange}
                 onImageRemove={handleImageRemove}
                 onSave={handleSave}

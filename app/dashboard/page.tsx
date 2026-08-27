@@ -12,6 +12,7 @@ export default function DashboardRedirect() {
             // Robust mapping from backend role to frontend dashboard path
             const roleToPath: Record<string, string> = {
                 "ROLE_COMPANY_OWNER": "company-owner",
+                "ROLE_OWNER": "company-owner",
                 "OWNER": "company-owner",
                 "ROLE_SERVICE_MANAGER": "service-manager",
                 "ROLE_SUPER_ADMIN": "super-admin",

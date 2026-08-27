@@ -139,7 +139,7 @@ export default function CustomersPage() {
         },
         {
             field: 'visits',
-            headerName: 'Completed Visits',
+            headerName: 'Completed Bookings',
             flex: 1,
             headerAlign: 'center',
             align: 'center',
@@ -147,7 +147,7 @@ export default function CustomersPage() {
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                     <Chip
-                        label={`${params.value} ${params.value === 1 ? 'visit' : 'visits'}`}
+                        label={`${params.value} ${params.value === 1 ? 'booking' : 'bookings'}`}
                         size="small"
                         sx={{
                             fontWeight: 700,
@@ -196,7 +196,7 @@ export default function CustomersPage() {
             align: 'center',
             minWidth: 130,
             renderCell: (params: GridRenderCellParams) => {
-                const isVIP = params.row.visits >= 3;
+                const isVIP = params.row.visits >= 10;
                 const label = isVIP ? 'VIP Client' : (params.value || 'Active');
                 return (
                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
@@ -314,10 +314,11 @@ export default function CustomersPage() {
                         />
                     </Box>
                 ) : (
-                    <Box sx={{ height: 600, width: '100%' }}>
+                    <Box sx={{ width: '100%' }}>
                         <DataGrid
                             rows={filteredCustomers}
                             columns={columns}
+                            autoHeight
                             initialState={{
                                 pagination: {
                                     paginationModel: {

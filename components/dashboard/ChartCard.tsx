@@ -39,7 +39,16 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
     };
 
     return (
-        <Card sx={{ height: '100%', overflow: 'visible', mt: 4 }}>
+        <Card sx={{ 
+            height: '100%', 
+            overflow: 'visible', 
+            mt: 4, 
+            mb: 2, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            borderRadius: 3, 
+            boxShadow: theme.shadows[2] 
+        }}>
             <Box
                 sx={{
                     background: getGradient(validColor),
@@ -48,9 +57,9 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
                     borderRadius: '0.75rem',
                     padding: '1rem',
                     position: 'relative',
-                    mt: '-40px',
+                    mt: '-32px',
                     mx: 2,
-                    height: '12.5rem',
+                    height: '13rem',
                     overflow: 'hidden'
                 }}
             >
@@ -58,19 +67,23 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
                     {chart}
                 </Box>
             </Box>
-            <Box p={2}>
-                <Typography variant="h6" textTransform="capitalize" fontWeight="bold">
-                    {title}
-                </Typography>
-                <Typography component="div" variant="button" color="text.secondary" fontWeight="light">
-                    {description}
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Box display="flex" alignItems="center" color="text.secondary">
-                    <FiClock style={{ marginRight: '5px' }} />
-                    <Typography variant="button" fontWeight="light" color="text.secondary">
-                        {date}
+            <Box p={2.5} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Box>
+                    <Typography variant="h6" textTransform="capitalize" fontWeight="bold">
+                        {title}
                     </Typography>
+                    <Typography component="div" variant="button" color="text.secondary" fontWeight="light">
+                        {description}
+                    </Typography>
+                </Box>
+                <Box sx={{ mt: 1.5 }}>
+                    <Divider sx={{ my: 1.5 }} />
+                    <Box display="flex" alignItems="center" color="text.secondary">
+                        <FiClock style={{ marginRight: '5px' }} />
+                        <Typography variant="button" fontWeight="light" color="text.secondary">
+                            {date}
+                        </Typography>
+                    </Box>
                 </Box>
             </Box>
         </Card>
