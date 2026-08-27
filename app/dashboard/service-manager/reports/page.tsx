@@ -9,6 +9,8 @@ import APP_CONFIG from "@/config";
 import { Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Typography } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import InvoiceDocument from "@/components/invoices/InvoiceDocument";
+import { printInvoiceElement } from "@/utils/printInvoice";
 
 // DTO Interfaces based on backend
 interface BookingResponseDTO {
@@ -289,8 +291,8 @@ function ServiceReportsContent() {
 
     // Listen to URL search parameters for direct navigation from dashboard
     useEffect(() => {
-        const action = searchParams.get("action");
-        const bookingId = searchParams.get("bookingId");
+        const action = searchParams?.get("action");
+        const bookingId = searchParams?.get("bookingId");
         if (action === "generate-invoice" || bookingId) {
             setView("generate-invoice");
             if (bookingId) {
@@ -368,76 +370,10 @@ function ServiceReportsContent() {
 
     // Direct, reliable print mechanism without popup blocker
     const handlePrint = () => {
-        const printContent = document.getElementById("printable-invoice");
-        if (!printContent) {
+        const printed = printInvoiceElement("printable-invoice", `Invoice - ${bookingDetails?.bookingId?.substring(0, 8) || 'Draft'}`);
+        if (!printed) {
             showSnackbar("Invoice content not found.", "warning");
-            return;
         }
-
-        let printFrame = document.getElementById("print-iframe") as HTMLIFrameElement;
-        if (!printFrame) {
-            printFrame = document.createElement("iframe");
-            printFrame.id = "print-iframe";
-            printFrame.style.position = "fixed";
-            printFrame.style.right = "0";
-            printFrame.style.bottom = "0";
-            printFrame.style.width = "0";
-            printFrame.style.height = "0";
-            printFrame.style.border = "0";
-            document.body.appendChild(printFrame);
-        }
-
-        const frameDoc = printFrame.contentWindow?.document || printFrame.contentDocument;
-        if (!frameDoc) {
-            showSnackbar("Could not initialize printing.", "error");
-            return;
-        }
-
-        frameDoc.open();
-        frameDoc.write(`
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <title>Invoice - ${bookingDetails?.bookingId?.substring(0, 8) || 'Draft'}</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <style>
-                        @page { margin: 0; size: A4 portrait; }
-                        html, body {
-                            width: 210mm;
-                            height: 297mm;
-                            margin: 0;
-                            padding: 0;
-                            background: white;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                            font-family: ui-sans-serif, system-ui, sans-serif;
-                        }
-                        #printable-invoice {
-                            width: 100% !important;
-                            height: 100% !important;
-                            box-sizing: border-box;
-                            padding: 15mm 20mm !important;
-                            margin: 0 !important;
-                            box-shadow: none !important;
-                            border-radius: 0 !important;
-                            border-top-width: 8px !important;
-                            transform: scale(0.95);
-                            transform-origin: top center;
-                        }
-                        * { page-break-inside: avoid; }
-                    </style>
-                </head>
-                <body>
-                    ${printContent.outerHTML}
-                </body>
-            </html>
-        `);
-        frameDoc.close();
-
-        setTimeout(() => {
-            printFrame.contentWindow?.focus();
-            printFrame.contentWindow?.print();
-        }, 500);
     };
 
     const handleGenerateInvoice = async () => {
@@ -1310,126 +1246,56 @@ function ServiceReportsContent() {
                                 </div>
 
                                 {/* Printable Invoice Card */}
-                                <div id="printable-invoice" className="bg-white shadow-xl overflow-hidden flex-1 print:shadow-none print:border-none p-8 sm:p-12 relative border-t-8 border-slate-900">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-start mb-16 mt-4">
-                                        <div className="space-y-1">
-                                            <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase mb-4">Invoice</h1>
-                                            <div className="grid grid-cols-[100px_1fr] gap-2 text-sm">
-                                                <span className="text-slate-500 font-medium">Invoice No.</span>
-                                                <span className="text-slate-900 font-bold">{previewInvoiceNo}</span>
-                                                <span className="text-slate-500 font-medium">Date</span>
-                                                <span className="text-slate-900 font-bold">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{bookingDetails?.serviceCenterName || "FIXZONE AUTO"}</h2>
-                                            <p className="text-slate-500 text-sm leading-relaxed">
-                                                {bookingDetails?.centerAddress || "123 Service Road, Auto City"}<br/>
-                                                contact@fixzone.lk<br/>
-                                                {bookingDetails?.contactPhone || "+94 (11) 234-5678"}
-                                            </p>
-                                        </div>
-                                    </div>
+                                {(() => {
+                                    const meta = getBookingMeta(bookingDetails);
+                                    const lineItems = [
+                                        {
+                                            name: bookingDetails?.packageName || 'Custom Service Package',
+                                            description: `Base maintenance and labor cost ${isBasePriceModified ? '(Customized for vehicle specifications)' : ''}`.trim(),
+                                            price: effectiveBasePrice,
+                                        },
+                                        ...validAdditionalItems.map(item => ({
+                                            name: item.name,
+                                            description: "Additional part / service",
+                                            price: parseFloat(item.price || "0"),
+                                        }))
+                                    ];
 
-                                    {/* Bill To */}
-                                    {(() => {
-                                        const meta = getBookingMeta(bookingDetails);
-                                        return (
-                                        <div className="mb-12 p-6 bg-slate-50 rounded-xl border border-slate-100">
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Bill To</h3>
-                                            <div className="grid grid-cols-2 gap-8">
-                                                <div>
-                                                    <p className="text-slate-900 font-bold text-lg mb-1">{meta.customer}</p>
-                                                    <p className="text-slate-600 text-sm">Vehicle: <span className="font-medium text-slate-800">{meta.vehicle} {meta.vehicleNumber ? `(${meta.vehicleNumber})` : ''}</span></p>
-                                                    <p className="text-slate-500 text-xs mt-1">Customer ID: <span className="font-mono text-slate-700">{bookingDetails?.customerId?.substring(0, 8) || 'N/A'}</span></p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-slate-900 font-bold text-lg mb-1">Service Details</p>
-                                                    <p className="text-slate-600 text-sm">Center: <span className="font-medium text-slate-800">{bookingDetails?.serviceCenterName || 'FixZone Auto Center'}</span></p>
-                                                    <p className="text-slate-600 text-sm mt-0.5">Booking Ref: <span className="font-mono font-medium text-slate-800">{bookingDetails?.bookingId?.substring(0,8) || 'N/A'}</span></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        );
-                                    })()}
-
-                                    <div className="mb-8">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr>
-                                                    <th className="py-4 px-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b-2 border-slate-900 w-full">Description</th>
-                                                    <th className="py-4 px-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b-2 border-slate-900 text-right whitespace-nowrap">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {/* Base Service */}
-                                                <tr>
-                                                    <td className="py-5 px-2">
-                                                        <p className="text-base text-slate-900 font-bold">{bookingDetails?.packageName || 'Custom Service Package'}</p>
-                                                        <p className="text-sm text-slate-500 mt-1">
-                                                            Base maintenance and labor cost {isBasePriceModified ? '(Customized for vehicle specifications)' : ''}
-                                                        </p>
-                                                    </td>
-                                                    <td className="py-5 px-2 text-base text-slate-900 text-right font-bold">
-                                                        Rs {effectiveBasePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                    </td>
-                                                </tr>
-                                                {/* Additional Items */}
-                                                {validAdditionalItems.map((item, idx) => (
-                                                    <tr key={idx}>
-                                                        <td className="py-5 px-2">
-                                                            <p className="text-base text-slate-700 font-medium">{item.name}</p>
-                                                            <p className="text-sm text-slate-400 mt-0.5">Additional part / service</p>
-                                                        </td>
-                                                        <td className="py-5 px-2 text-base text-slate-700 text-right font-medium">
-                                                            Rs {parseFloat(item.price || "0").toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Totals */}
-                                    <div className="flex justify-end">
-                                        <div className="w-full max-w-md">
-                                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 space-y-3">
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-slate-500 font-medium">Subtotal</span>
-                                                    <span className="text-slate-800 font-bold">Rs {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                                </div>
-                                                {safeDiscount > 0 && (
-                                                    <div className="flex justify-between text-sm text-orange-600">
-                                                        <span className="font-medium">
-                                                            Special Discount {discountType === "percentage" && rawDiscountNum > 0 ? `(${rawDiscountNum}%)` : ""}
-                                                        </span>
-                                                        <span className="font-bold">- Rs {safeDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                {advancePaid > 0 && (
-                                                    <div className="flex justify-between text-sm text-emerald-700">
-                                                        <span className="font-medium">Advance Fee Paid</span>
-                                                        <span className="font-bold">- Rs {advancePaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                <div className="pt-4 mt-2 border-t border-slate-200 flex justify-between items-center">
-                                                    <span className="text-sm font-bold text-slate-900 uppercase tracking-widest">Balance Due</span>
-                                                    <span className="text-3xl font-black text-slate-900 tracking-tight">
-                                                        Rs {balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Footer */}
-                                    <div className="mt-16 pt-8 border-t border-slate-100 text-center">
-                                        <p className="text-slate-400 text-sm font-medium">Thank you for choosing {bookingDetails?.serviceCenterName || 'FixZone Auto'}. We appreciate your business!</p>
-                                    </div>
-                                </div>
+                                    return (
+                                        <InvoiceDocument
+                                            id="printable-invoice"
+                                            invoiceNumber={previewInvoiceNo}
+                                            issuedDate={new Date()}
+                                            status={existingInvoice?.status || "ISSUED"}
+                                            serviceCenter={{
+                                                name: bookingDetails?.serviceCenterName || "FIXZONE AUTO",
+                                                address: bookingDetails?.centerAddress || "123 Service Road, Auto City",
+                                                email: "contact@fixzone.lk",
+                                                phone: bookingDetails?.contactPhone || "+94 (11) 234-5678",
+                                            }}
+                                            billTo={{
+                                                customerName: meta.customer,
+                                                vehicle: meta.vehicle,
+                                                vehicleNumber: meta.vehicleNumber,
+                                                customerId: bookingDetails?.customerId,
+                                            }}
+                                            serviceDetails={{
+                                                centerName: bookingDetails?.serviceCenterName || 'FixZone Auto Center',
+                                                bookingRef: bookingDetails?.bookingId,
+                                            }}
+                                            lineItems={lineItems}
+                                            subtotal={subtotal}
+                                            discount={safeDiscount}
+                                            discountLabel={discountType === "percentage" && rawDiscountNum > 0 ? `Special Discount (${rawDiscountNum}%)` : "Special Discount"}
+                                            advancePaid={advancePaid}
+                                            tax={taxAmount}
+                                            total={balanceDue}
+                                        />
+                                    );
+                                })()}
                             </div>
                         </div>
+
                     )}
                 </>
             )}
