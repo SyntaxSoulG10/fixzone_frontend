@@ -342,8 +342,17 @@ export default function ManagersPage() {
         const safeMgrs = Array.isArray(mgrData) ? mgrData : (mgrData && typeof mgrData === 'object' && mgrData.userId ? [mgrData] : []);
         const safeCenters = Array.isArray(ctrData) ? ctrData : [];
         const centersMap = safeCenters.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-        return safeMgrs.map((m: any) => ({
-            id: m.userId, 
+        
+        const seen = new Set<string>();
+        const uniqueMgrs = safeMgrs.filter((m: any) => {
+            const id = m.userId || m.id;
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+
+        return uniqueMgrs.map((m: any) => ({
+            id: m.userId || m.id, 
             name: m.fullName || "Unnamed Manager", 
             email: m.email || "", 
             phone: m.phone || "", 
@@ -507,18 +516,18 @@ export default function ManagersPage() {
 
     const handleDeleteManager = async (id: string) => {
         const managerToDelete = managers.find(m => m.id === id);
-        // Optimistic delete (0ms)
+        // Optimistic delete
         setManagers(prev => prev.filter(m => m.id !== id));
         setDeleteModal({ isOpen: false, id: '' });
-        setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
 
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
+            setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
             refreshManagers();
         } catch (e: any) { 
-            // Revert on error
+            // Revert on error without duplicate keys
             if (managerToDelete) {
-                setManagers(prev => [...prev, managerToDelete]);
+                setManagers(prev => prev.some(m => m.id === id) ? prev : [...prev, managerToDelete]);
             }
             setSnackbar({ open: true, message: e.response?.data?.message || 'Delete failed', severity: 'error' });
         }
