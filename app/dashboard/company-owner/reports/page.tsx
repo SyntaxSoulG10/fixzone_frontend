@@ -777,12 +777,11 @@ export default function ReportsPage() {
     const columns: GridColDef[] = [
         {
             field: "name",
-            headerName: "Report Title & Notes",
+            headerName: "Report Title",
             flex: 1.6,
             minWidth: 280,
             renderCell: (params: GridRenderCellParams) => {
                 const isExt = isExternalReport(params.row);
-                const hasNotes = Boolean(params.row.description && params.row.description.trim());
                 return (
                     <Box display="flex" alignItems="center" gap={1.5} height="100%">
                         <Box 
@@ -804,26 +803,9 @@ export default function ReportsPage() {
                             <Typography variant="body2" fontWeight={700} color="#1e293b" noWrap>
                                 {params.value}
                             </Typography>
-                            {hasNotes ? (
-                                <Typography 
-                                    variant="caption" 
-                                    color="primary.main" 
-                                    sx={{ 
-                                        display: 'block', 
-                                        fontWeight: 600, 
-                                        cursor: 'pointer',
-                                        '&:hover': { textDecoration: 'underline' } 
-                                    }} 
-                                    onClick={() => handleOpenDetails(params.row)}
-                                    noWrap
-                                >
-                                    💬 {params.row.description}
-                                </Typography>
-                            ) : (
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                    {isExt ? "Uploaded Document" : "Platform Generated"}
-                                </Typography>
-                            )}
+                            <Typography variant="caption" color="text.secondary" display="block">
+                                {isExt ? "Uploaded Document" : "Platform Generated"}
+                            </Typography>
                         </Box>
                     </Box>
                 );
