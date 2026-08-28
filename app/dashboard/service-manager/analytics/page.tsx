@@ -126,11 +126,13 @@ export default function AnalyticsPage() {
             );
 
             let dayRevenue = 0;
+            let dayBookingsCount = 0;
 
             if (savedReport && savedReport.metrics && savedReport.metrics.revenue !== undefined && savedReport.metrics.revenue !== null) {
                 dayRevenue = Number(savedReport.metrics.revenue) || 0;
+                dayBookingsCount = Number(savedReport.metrics.vehiclesServiced) || 0;
             } else {
-                // 2. Compute dynamically using invoices and bookings
+                // 2. Compute dynamically using paid invoices and paid bookings
                 const countedBookingIds = new Set<string>();
 
                 (invoicesData || []).forEach((inv: any) => {
@@ -145,39 +147,28 @@ export default function AnalyticsPage() {
                     if (isDate) {
                         const amt = Number(inv.total) || Number(inv.amount) || Number(inv.subtotal) || 0;
                         dayRevenue += amt;
+                        dayBookingsCount++;
                         if (inv.bookingId) countedBookingIds.add(String(inv.bookingId));
                     }
                 });
 
                 (bookingsData || []).forEach((b: any) => {
                     if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
+                    const s = String(b.status || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
+                    if (s !== "PAID") return;
+
                     const isDate = isMatchingDate(b.updatedAt, dateISO) || 
-                                   isMatchingDate(b.bookingDate, dateISO) || 
-                                   isMatchingDate(b.createdAt, dateISO);
+                                   isMatchingDate(b.bookingDate, dateISO);
                     if (!isDate) return;
 
-                    const s = String(b.status || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
-                    if (s === "PAID") {
-                        if (!countedBookingIds.has(String(b.bookingId))) {
-                            const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
-                            dayRevenue += cost;
-                            if (b.bookingId) countedBookingIds.add(String(b.bookingId));
-                        }
+                    if (!countedBookingIds.has(String(b.bookingId))) {
+                        const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
+                        dayRevenue += cost;
+                        dayBookingsCount++;
+                        if (b.bookingId) countedBookingIds.add(String(b.bookingId));
                     }
                 });
             }
-
-            // Count bookings for this day
-            let dayBookingsCount = 0;
-            (bookingsData || []).forEach((b: any) => {
-                if (managerCenterId && b.centerId && b.centerId !== managerCenterId) return;
-                const isDate = isMatchingDate(b.bookingDate, dateISO) || 
-                               isMatchingDate(b.createdAt, dateISO) || 
-                               isMatchingDate(b.updatedAt, dateISO);
-                if (isDate) {
-                    dayBookingsCount++;
-                }
-            });
 
             weekRevenueSum += dayRevenue;
             weekBookingsSum += dayBookingsCount;

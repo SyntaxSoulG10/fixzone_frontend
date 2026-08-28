@@ -108,6 +108,9 @@ export default function SignupPage() {
     const isPasswordStrong = Object.values(validations).every(Boolean);
     const metConditionsCount = Object.values(validations).filter(Boolean).length;
     const doPasswordsMatch = password === confirmPassword && password.length > 0;
+    const isEmailFilled = email.trim().length > 0;
+    const isEmailValid = isEmailFilled && isValidEmail(email.trim());
+    const isEmailInvalid = isEmailFilled && !isValidEmail(email.trim());
 
     const validateForm = () => {
         const errors: Record<string, string> = {};
@@ -136,7 +139,7 @@ export default function SignupPage() {
         if (!email.trim()) {
             errors.email = "Email address is required";
         } else if (!isValidEmail(email.trim())) {
-            errors.email = "Please enter a valid email address";
+            errors.email = "Please enter a valid email address (e.g.example@gmail.com)";
         }
 
         if (!password) {
@@ -415,7 +418,14 @@ export default function SignupPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address *</label>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label htmlFor="input-email" className="block text-xs font-semibold text-gray-700">Email Address *</label>
+                                            {isEmailValid && (
+                                                <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                                                    <FiCheck className="text-xs" /> Valid format
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FiMail className="text-sm" />
@@ -429,13 +439,37 @@ export default function SignupPage() {
                                                     if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: "" }));
                                                     if (error) setError("");
                                                 }}
-                                                className={`block w-full pl-9 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm ${fieldErrors.email ? 'border-red-400 ring-1 ring-red-300' : 'border-gray-200'}`}
-                                                placeholder="you@example.com"
+                                                className={`block w-full pl-9 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42] transition-colors bg-gray-50/50 text-sm ${
+                                                    fieldErrors.email || isEmailInvalid
+                                                        ? 'border-red-400 ring-1 ring-red-300 bg-red-50/20'
+                                                        : isEmailValid
+                                                        ? 'border-emerald-400 ring-1 ring-emerald-300 bg-emerald-50/10'
+                                                        : 'border-gray-200'
+                                                }`}
+                                                placeholder="example@gmail.com"
                                             />
+                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                {isEmailValid && (
+                                                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                                        <FiCheck className="text-xs" />
+                                                    </div>
+                                                )}
+                                                {isEmailInvalid && (
+                                                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+                                                        <FiAlertCircle className="text-xs" />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        {fieldErrors.email && (
-                                            <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
-                                        )}
+                                        {fieldErrors.email ? (
+                                            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                                <FiAlertCircle className="text-xs shrink-0" /> {fieldErrors.email}
+                                            </p>
+                                        ) : isEmailInvalid ? (
+                                            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                                <FiAlertCircle className="text-xs shrink-0" /> Please enter a valid email address format (e.g. example@gmail.com)
+                                            </p>
+                                        ) : null}
                                     </div>
 
                                     <div>
