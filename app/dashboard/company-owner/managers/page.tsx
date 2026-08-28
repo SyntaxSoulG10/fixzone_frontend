@@ -410,10 +410,10 @@ export default function ManagersPage() {
     }, []);
 
     useEffect(() => { 
-        if (centersData && centersData.length > 0) {
+        if (centersData) {
             setCentersList((centersData || []).map((c: any) => c.name));
         }
-        if (managersData && managersData.length > 0) {
+        if (managersData !== undefined && managersData !== null) {
             setManagers(mapManagers(managersData, centersData || []));
             setLoading(false);
         }
@@ -523,7 +523,8 @@ export default function ManagersPage() {
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
             setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
-            refreshManagers();
+            await refreshManagers();
+            await fetchDirectManagers();
         } catch (e: any) { 
             // Revert on error without duplicate keys
             if (managerToDelete) {
