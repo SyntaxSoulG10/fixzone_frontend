@@ -65,7 +65,8 @@ describe('Company Owner Customers Tab Page', () => {
     render(<CustomersPage />)
     
     // Check main headings
-    expect(screen.getByText('Customers')).toBeInTheDocument()
+    expect(screen.getByText(/Customer Directory/i)).toBeInTheDocument()
+    expect(screen.getByText('Completed Bookings')).toBeInTheDocument()
     
     // Check stat cards
     expect(screen.getByText('Total Customers')).toBeInTheDocument()
@@ -78,6 +79,7 @@ describe('Company Owner Customers Tab Page', () => {
     // Check if customer details are in datagrid
     expect(screen.getByText('Amal Perera')).toBeInTheDocument()
     expect(screen.getByText('nimal@gmail.com')).toBeInTheDocument()
+    expect(screen.getByText('5 bookings')).toBeInTheDocument()
   })
 
   it('calculates repeat customer rate percentage correctly', () => {
@@ -92,5 +94,17 @@ describe('Company Owner Customers Tab Page', () => {
     
     expect(screen.getByText('Rs. 15,000')).toBeInTheDocument()
     expect(screen.getByText('Rs. 2,500')).toBeInTheDocument()
+  })
+
+  it('labels customer as VIP Client only when completed bookings are more than 10', () => {
+    render(<CustomersPage />)
+    
+    // cust1 has 5 visits, so it should NOT be labeled 'VIP Client' (threshold is > 10)
+    expect(screen.queryByText('VIP Client')).not.toBeInTheDocument()
+  })
+
+  it('renders Active status label correctly for active clients', () => {
+    render(<CustomersPage />)
+    expect(screen.getAllByText('Active').length).toBeGreaterThan(0)
   })
 })

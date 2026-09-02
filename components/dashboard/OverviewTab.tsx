@@ -23,19 +23,6 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
-// Data from material-dashboard-react-main (reportsLineChartData.js)
-const salesData = [
-    { name: 'Apr', sales: 50 },
-    { name: 'May', sales: 40 },
-    { name: 'Jun', sales: 300 },
-    { name: 'Jul', sales: 320 },
-    { name: 'Aug', sales: 500 },
-    { name: 'Sep', sales: 350 },
-    { name: 'Oct', sales: 200 },
-    { name: 'Nov', sales: 230 },
-    { name: 'Dec', sales: 500 },
-];
-
 export default function OverviewTab({ data }: { data: any }) {
     const [isMounted, setIsMounted] = React.useState(false);
 
@@ -60,106 +47,117 @@ export default function OverviewTab({ data }: { data: any }) {
         });
 
     return (
-        <Grid container spacing={3}>
-            {/* Left Column: Sales Chart */}
-            <Grid size={{ xs: 12 }}>
-                <Box mb={3}>
-                    <ChartCard
-                        title="Revenue Trend"
-                        description={
-                            <Box display="flex" alignItems="center">
-                                <Typography variant="button" fontWeight="bold" color={data?.revenueChange?.startsWith('+') ? "success.main" : "error.main"}>
-                                    {data?.revenueChange || "0%"}
-                                </Typography>
-                                <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
-                                    change in revenue.
-                                </Typography>
-                            </Box>
-                        }
-                        date={`Updated ${data?.updatedAt || 'just now'}`}
-                        color="primary"
-                        chart={
-                            isMounted ? (
-                                <ResponsiveContainer width="100%" height="100%" minWidth={1}>
-                                    <LineChart
-                                        data={chartData}
-                                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
-                                        <XAxis
-                                            dataKey="name"
-                                            fontSize={12}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            tick={{ fill: '#fff', opacity: 0.8 }}
-                                            interval={0}
-                                        />
-                                        <YAxis
-                                            fontSize={12}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            tick={{ fill: '#fff', opacity: 0.8 }}
-                                            tickFormatter={(value) => `Rs. ${value >= 1000 ? (value / 1000) + 'k' : value}`}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                            itemStyle={{ color: '#1e293b' }}
-                                            formatter={(value: any) => [`Rs. ${value.toLocaleString()}`, 'Revenue']}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="sales"
-                                            stroke="#ffffff"
-                                            strokeWidth={3}
-                                            dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                            activeDot={{ r: 6, stroke: '#fff' }}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            ) : null
-                        }
-                    />
-                </Box>
+        <Grid container spacing={3} mb={4}>
+            {/* Revenue Trend Chart */}
+            <Grid size={{ xs: 12, lg: 7 }}>
+                <ChartCard
+                    title="Revenue Trend"
+                    description={
+                        <Box display="flex" alignItems="center">
+                            <Typography variant="button" fontWeight="bold" color={data?.revenueChange?.startsWith('+') ? "success.main" : "error.main"}>
+                                {data?.revenueChange || "0%"}
+                            </Typography>
+                            <Typography variant="button" color="text.secondary" fontWeight="light" ml={0.5}>
+                                change in revenue vs last month
+                            </Typography>
+                        </Box>
+                    }
+                    date={`Updated ${data?.updatedAt || 'just now'}`}
+                    color="primary"
+                    chart={
+                        isMounted ? (
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1}>
+                                <LineChart
+                                    data={chartData}
+                                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.2)" />
+                                    <XAxis
+                                        dataKey="name"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fill: '#fff', opacity: 0.8 }}
+                                        interval={0}
+                                    />
+                                    <YAxis
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fill: '#fff', opacity: 0.8 }}
+                                        tickFormatter={(value) => `Rs. ${value >= 1000 ? (value / 1000) + 'k' : value}`}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        itemStyle={{ color: '#1e293b' }}
+                                        formatter={(value: any) => [`Rs. ${value.toLocaleString()}`, 'Revenue']}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="sales"
+                                        stroke="#ffffff"
+                                        strokeWidth={3}
+                                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                        activeDot={{ r: 6, stroke: '#fff' }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : null
+                    }
+                />
+            </Grid>
 
-                <Card>
-                    <Box p={2}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Top Performing Centers
-                        </Typography>
+            {/* Top Performing Centers */}
+            <Grid size={{ xs: 12, lg: 5 }}>
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Box p={3} flex={1}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6" fontWeight="bold">
+                                Top Performing Centers
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Revenue & Jobs
+                            </Typography>
+                        </Box>
                         <Box display="flex" flexDirection="column" gap={2}>
                             {data?.topCenters?.length > 0 ? (
-                                data.topCenters.map((center: any, index: number) => (
-                                    <Box key={center.id || index} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="background.paper" borderRadius="lg" boxShadow="0rem 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.06)">
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                            <Box
-                                                display="flex"
-                                                alignItems="center"
-                                                justifyContent="center"
-                                                width="2.5rem"
-                                                height="2.5rem"
-                                                borderRadius="50%"
-                                                bgcolor="primary.main"
-                                                color="#ffffff"
-                                                fontWeight="bold"
-                                                boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1)"
-                                            >
-                                                {center.initial || index + 1}
+                                data.topCenters.map((center: any, index: number) => {
+                                    const percentage = data.totalRevenue > 0 
+                                        ? Math.min(100, Math.round((center.revenue / data.totalRevenue) * 100)) 
+                                        : 0;
+                                    return (
+                                        <Box key={center.id || index} display="flex" alignItems="center" justifyContent="space-between" p={1.5} bgcolor="background.paper" borderRadius="0.75rem" border="1px solid" borderColor="divider">
+                                            <Box display="flex" alignItems="center" gap={1.5}>
+                                                <Box
+                                                    display="flex"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    width="2.25rem"
+                                                    height="2.25rem"
+                                                    borderRadius="50%"
+                                                    bgcolor="primary.main"
+                                                    color="#ffffff"
+                                                    fontWeight="bold"
+                                                    fontSize="0.875rem"
+                                                >
+                                                    {center.initial || index + 1}
+                                                </Box>
+                                                <Box>
+                                                    <Typography variant="subtitle2" fontWeight="bold">{center.name}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">{center.jobs || 0} Jobs • {percentage}% contribution</Typography>
+                                                </Box>
                                             </Box>
-                                            <Box>
-                                                <Typography variant="subtitle2" fontWeight="bold">{center.name}</Typography>
-                                                <Typography variant="caption" color="text.secondary">{center.jobs} Jobs completed</Typography>
+                                            <Box textAlign="right">
+                                                <Typography variant="subtitle2" fontWeight="bold">Rs. {center.revenue?.toLocaleString() || 0}</Typography>
+                                                <Box width="5rem" height="0.35rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
+                                                    <Box width={`${percentage}%`} height="100%" bgcolor="primary.main" borderRadius="xl" />
+                                                </Box>
                                             </Box>
                                         </Box>
-                                        <Box textAlign="right">
-                                            <Typography variant="subtitle2" fontWeight="bold">Rs. {center.revenue?.toLocaleString()}</Typography>
-                                            <Box width="6rem" height="0.4rem" bgcolor="grey.200" borderRadius="xl" mt={0.5} overflow="hidden">
-                                                <Box width={`${Math.min(100, (center.revenue / data.totalRevenue) * 200)}%`} height="100%" bgcolor="primary.main" borderRadius="xl" />
-                                            </Box>
-                                        </Box>
-                                    </Box>
-                                ))
+                                    );
+                                })
                             ) : (
-                                <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>
+                                <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
                                     No center performance data available yet.
                                 </Typography>
                             )}

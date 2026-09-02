@@ -130,28 +130,95 @@ const getManagerColumns = (theme: any, onEdit: any, onToggle: any, onDelete: any
         }
     },
     {
-        field: 'actions', headerName: 'Actions', flex: 2, minWidth: 260, align: 'right', sortable: false,
+        field: 'actions', 
+        headerName: 'Actions', 
+        flex: 2, 
+        minWidth: 320, 
+        align: 'right', 
+        headerAlign: 'right',
+        sortable: false,
         renderCell: (p: GridRenderCellParams) => {
             const isInvited = p.row.status === 'INVITED' || p.row.status === 'Pending';
             const isResending = resendingId === p.row.id;
             return (
-                <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end">
+                <Box display="flex" gap={1} height="100%" alignItems="center" justifyContent="flex-end" sx={{ flexWrap: 'nowrap' }}>
                     {isInvited && (
                         <Button 
                             size="small" 
                             variant="outlined" 
-                            color="primary"
                             disabled={isExpired || isResending} 
                             onClick={() => onResend(p.row.id)}
                             startIcon={isResending ? <CircularProgress size={14} color="inherit" /> : undefined}
-                            sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }}
+                            sx={{ 
+                                textTransform: 'none', 
+                                borderRadius: '0.5rem', 
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                px: 1.75,
+                                py: 0.5,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                borderColor: '#ea580c',
+                                color: '#ea580c',
+                                '&:hover': { borderColor: '#c2410c', bgcolor: 'rgba(234, 88, 12, 0.04)' },
+                                '&.Mui-disabled': { borderColor: '#e2e8f0', color: '#94a3b8' }
+                            }}
                         >
                             {isResending ? "Sending..." : "Resend Invite"}
                         </Button>
                     )}
-                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onEdit(p.row)}>Edit</Button>
-                    <Button size="small" color={p.row.status === 'Active' ? 'warning' : 'success'} sx={{ textTransform: 'none', borderRadius: '0.5rem', fontWeight: 600 }} disabled={isExpired || isInvited} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onToggle(p.row.id, p.row.status)}>{p.row.status === 'Active' ? 'Disable' : 'Enable'}</Button>
-                    <IconButton size="small" color="error" disabled={isExpired} title={isExpired ? "Upgrade your plan to use this feature" : ""} onClick={() => onDelete(p.row.id)}><FiTrash2 size={16} /></IconButton>
+                    <Button 
+                        size="small" 
+                        variant="outlined" 
+                        disabled={isExpired} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onEdit(p.row)}
+                        sx={{ 
+                            textTransform: 'none', 
+                            borderRadius: '0.5rem', 
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            px: 1.75,
+                            py: 0.5,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            borderColor: '#cbd5e1',
+                            color: '#334155',
+                            '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' }
+                        }}
+                    >
+                        Edit
+                    </Button>
+                    <Button 
+                        size="small" 
+                        variant="outlined"
+                        color={p.row.status === 'Active' ? 'warning' : 'success'} 
+                        disabled={isExpired || isInvited} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onToggle(p.row.id, p.row.status)}
+                        sx={{ 
+                            textTransform: 'none', 
+                            borderRadius: '0.5rem', 
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            px: 1.5,
+                            py: 0.5,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                        }}
+                    >
+                        {p.row.status === 'Active' ? 'Disable' : 'Enable'}
+                    </Button>
+                    <IconButton 
+                        size="small" 
+                        color="error" 
+                        disabled={isExpired} 
+                        title={isExpired ? "Upgrade your plan to use this feature" : ""} 
+                        onClick={() => onDelete(p.row.id)}
+                        sx={{ flexShrink: 0 }}
+                    >
+                        <FiTrash2 size={16} />
+                    </IconButton>
                 </Box>
             );
         }
@@ -270,20 +337,39 @@ export default function ManagersPage() {
     const theme = useTheme();
     const { managersData, centersData, ownerData, isLoading: contextLoading, refreshManagers } = useDashboardData();
     const isExpired = ownerData?.subscriptionStatus === 'TRIAL_EXPIRED' || ownerData?.subscriptionStatus === 'PREMIUM_EXPIRED';
-    const mapManagers = (mgrData: any[], ctrData: any[]) => {
-        const centersMap = (ctrData || []).reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
-        return (mgrData || []).map((m: any) => ({
-            id: m.userId, name: m.fullName, email: m.email, phone: m.phone, 
-            center: centersMap[m.managedCenterId] || "Unassigned", centerId: m.managedCenterId,
-            status: m.status || "Active", lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
-            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${m.fullName}`
+    
+    const mapManagers = (mgrData: any, ctrData: any): ManagerView[] => {
+        const safeMgrs = Array.isArray(mgrData) ? mgrData : (mgrData && typeof mgrData === 'object' && mgrData.userId ? [mgrData] : []);
+        const safeCenters = Array.isArray(ctrData) ? ctrData : [];
+        const centersMap = safeCenters.reduce((m: any, c: any) => ({ ...m, [c.centerId]: c.name }), {});
+        
+        const seen = new Set<string>();
+        const uniqueMgrs = safeMgrs.filter((m: any) => {
+            const id = m.userId || m.id;
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+
+        return uniqueMgrs.map((m: any) => ({
+            id: m.userId || m.id, 
+            name: m.fullName || "Unnamed Manager", 
+            email: m.email || "", 
+            phone: m.phone || "", 
+            center: centersMap[m.managedCenterId] || "Unassigned", 
+            centerId: m.managedCenterId,
+            status: m.status || "Active", 
+            lastLogin: m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleString() : "Never",
+            avatar: m.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName || "Manager")}`
         }));
     };
 
     const [managers, setManagers] = useState<ManagerView[]>(() => mapManagers(managersData, centersData));
     const [centersList, setCentersList] = useState<string[]>(() => (centersData || []).map((c: any) => c.name));
-    const [loading, setLoading] = useState<boolean>(() => contextLoading && (!managersData || managersData.length === 0));
+    const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCenterFilter, setSelectedCenterFilter] = useState("ALL");
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState("ALL");
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -293,10 +379,44 @@ export default function ManagersPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [resendingId, setResendingId] = useState<string | null>(null);
 
+    const fetchDirectManagers = async () => {
+        setLoading(true);
+        try {
+            const [mgrRes, ctrRes] = await Promise.all([
+                axios.get(`${APP_CONFIG.api.managers}/current`).catch((e) => {
+                    console.warn("Direct managers fetch failed", e);
+                    return { data: [] };
+                }),
+                axios.get(`${APP_CONFIG.api.serviceCenters}/current`).catch((e) => {
+                    console.warn("Direct centers fetch failed", e);
+                    return { data: [] };
+                })
+            ]);
+            const rawMgr = Array.isArray(mgrRes.data) ? mgrRes.data : (mgrRes.data ? [mgrRes.data] : []);
+            const rawCtr = Array.isArray(ctrRes.data) ? ctrRes.data : [];
+            if (rawCtr.length > 0) {
+                setCentersList(rawCtr.map((c: any) => c.name));
+            }
+            setManagers(mapManagers(rawMgr, rawCtr));
+        } catch (err) {
+            console.error("Failed to fetch managers", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDirectManagers();
+    }, []);
+
     useEffect(() => { 
-        setCentersList((centersData || []).map((c: any) => c.name));
-        setManagers(mapManagers(managersData || [], centersData || []));
-        setLoading(false);
+        if (centersData) {
+            setCentersList((centersData || []).map((c: any) => c.name));
+        }
+        if (managersData !== undefined && managersData !== null) {
+            setManagers(mapManagers(managersData, centersData || []));
+            setLoading(false);
+        }
     }, [managersData, centersData]);
 
     const handleFormChange = (e: any) => {
@@ -396,18 +516,19 @@ export default function ManagersPage() {
 
     const handleDeleteManager = async (id: string) => {
         const managerToDelete = managers.find(m => m.id === id);
-        // Optimistic delete (0ms)
+        // Optimistic delete
         setManagers(prev => prev.filter(m => m.id !== id));
         setDeleteModal({ isOpen: false, id: '' });
-        setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
 
         try {
             await axios.delete(`${APP_CONFIG.api.managers}/${id}`);
-            refreshManagers();
+            setSnackbar({ open: true, message: 'Manager deleted successfully', severity: 'success' });
+            await refreshManagers();
+            await fetchDirectManagers();
         } catch (e: any) { 
-            // Revert on error
+            // Revert on error without duplicate keys
             if (managerToDelete) {
-                setManagers(prev => [...prev, managerToDelete]);
+                setManagers(prev => prev.some(m => m.id === id) ? prev : [...prev, managerToDelete]);
             }
             setSnackbar({ open: true, message: e.response?.data?.message || 'Delete failed', severity: 'error' });
         }
@@ -425,7 +546,16 @@ export default function ManagersPage() {
         }
     };
 
-    const filtered = managers.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.center.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filtered = managers.filter(m => {
+        const q = searchTerm.toLowerCase().trim();
+        const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q) || m.center.toLowerCase().includes(q);
+        const matchCenter = selectedCenterFilter === "ALL" || m.center === selectedCenterFilter;
+        const matchStatus = selectedStatusFilter === "ALL" || 
+            (selectedStatusFilter === "Active" && m.status === "Active") ||
+            (selectedStatusFilter === "Pending" && (m.status === "INVITED" || m.status === "Pending")) ||
+            (selectedStatusFilter === "Inactive" && m.status !== "Active" && m.status !== "INVITED" && m.status !== "Pending");
+        return matchSearch && matchCenter && matchStatus;
+    });
 
     if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress sx={{ color: '#ea580c' }} /></Box>;
 
@@ -434,25 +564,81 @@ export default function ManagersPage() {
             <ManagersHeader onAdd={() => { setFormData({ name: "", center: "", email: "", phone: "", status: "Active", sendInvite: true }); setDialogError(null); setIsEditMode(false); setOpenDialog(true); }} isExpired={isExpired} />
 
             <Card sx={{ borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                <Box p={2.5} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} bgcolor="#ffffff">
-                    <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
-                    <TextField 
-                        size="small" 
-                        placeholder="Search managers..." 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{ 
-                            startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
-                            endAdornment: searchTerm ? (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setSearchTerm("")}>
-                                        <FiX size={15} />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null
-                        }} 
-                        sx={{ minWidth: 280, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }} 
-                    />
+                <Box p={2.5} bgcolor="#ffffff">
+                    {/* Header Row */}
+                    <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700} color="text.primary">Branch Managers ({filtered.length})</Typography>
+                            <Typography variant="caption" color="text.secondary">View and manage service center managers across your company</Typography>
+                        </Box>
+                        {(searchTerm || selectedCenterFilter !== "ALL" || selectedStatusFilter !== "ALL") && (
+                            <Button 
+                                size="small" 
+                                variant="outlined" 
+                                onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setSelectedStatusFilter("ALL"); }}
+                                sx={{ 
+                                    color: '#ea580c', 
+                                    borderColor: 'rgba(234, 88, 12, 0.3)',
+                                    bgcolor: 'rgba(234, 88, 12, 0.04)',
+                                    fontWeight: 700, 
+                                    textTransform: 'none', 
+                                    borderRadius: '0.5rem',
+                                    px: 1.75,
+                                    py: 0.5,
+                                    fontSize: '0.8rem',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                        borderColor: '#ea580c'
+                                    }
+                                }}
+                            >
+                                Reset Filters
+                            </Button>
+                        )}
+                    </Box>
+
+                    {/* Filter Toolbar Row */}
+                    <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+                        <TextField 
+                            size="small" 
+                            placeholder="Search managers..." 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{ 
+                                startAdornment: <InputAdornment position="start"><FiSearch color="#94a3b8" /></InputAdornment>,
+                                endAdornment: searchTerm ? (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                            <FiX size={15} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null
+                            }} 
+                            sx={{ 
+                                flex: { xs: '1 1 100%', sm: 1 },
+                                minWidth: { sm: 220 },
+                                '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
+                            }} 
+                        />
+
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 170 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>All Branches</InputLabel>
+                            <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Service Centers</MenuItem>
+                                {centersList.map((cName: string) => <MenuItem key={cName} value={cName}>{cName}</MenuItem>)}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                            <InputLabel>All Statuses</InputLabel>
+                            <Select value={selectedStatusFilter} label="All Statuses" onChange={(e) => setSelectedStatusFilter(e.target.value)}>
+                                <MenuItem value="ALL">All Statuses</MenuItem>
+                                <MenuItem value="Active">Active</MenuItem>
+                                <MenuItem value="Pending">Pending Invite</MenuItem>
+                                <MenuItem value="Inactive">Inactive</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
                 </Box>
                 
                 {filtered.length === 0 ? (

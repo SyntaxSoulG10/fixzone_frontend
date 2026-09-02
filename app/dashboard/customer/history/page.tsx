@@ -34,6 +34,8 @@ import ConfirmDialog from "@/components/UI/ConfirmDialog";
 import APP_CONFIG from "@/config";
 import { getMyBookings, rescheduleBookingAPI, cancelBookingAPI, getAvailableSlotsAPI, getPaymentIdByBooking, executeStripePayment } from "@/lib/api";
 import { enrichBookingsWithCenterNames } from "@/lib/enrichBookings";
+import InvoiceModal from "@/components/invoices/InvoiceModal";
+import { InvoiceDocumentProps } from "@/components/invoices/InvoiceDocument";
 
 
 // Keep dummy bookings as fallback for UI demonstration if no data
@@ -50,7 +52,8 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<any>({ current: [], upcoming: [], past: [] });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [invoiceModal, setInvoiceModal] = useState<any>(null);
+  const [invoiceModalData, setInvoiceModalData] = useState<InvoiceDocumentProps | null>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null);
   const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; bookingId: string }>({ isOpen: false, bookingId: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' });
@@ -181,12 +184,104 @@ export default function MyBookingsPage() {
     setInvoiceLoading(bookingId);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/invoices/booking/${bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Invoice not found');
-      const invoice = await res.json();
-      setInvoiceModal(invoice);
+      
+      // 1. Locate booking details in current state
+      let booking = [...(bookings.past || []), ...(bookings.current || []), ...(bookings.upcoming || [])].find(
+        (b: any) => (b.bookingId || b.id) === bookingId
+      );
+
+      // 2. If needed, fetch full booking details from backend
+      if (!booking || !booking.packageName) {
+        try {
+          const bookingRes = await fetch(`${APP_CONFIG.API_BASE_URL}/api/bookings/${bookingId}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (bookingRes.ok) {
+            const fetchedBooking = await bookingRes.json();
+            booking = { ...booking, ...fetchedBooking };
+          }
+        } catch (e) {
+          console.warn("Could not fetch detailed booking record", e);
+        }
+      }
+
+      // 3. Fetch invoice record from backend
+      let invoice: any = null;
+      try {
+        const res = await fetch(`${APP_CONFIG.API_BASE_URL}/api/invoices/booking/${bookingId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          invoice = await res.json();
+        }
+      } catch (e) {
+        console.warn("Could not fetch invoice endpoint", e);
+      }
+
+      // 4. Extract customer, vehicle, center details
+      let customerName = booking?.customerName || (typeof window !== 'undefined' ? localStorage.getItem('userName') : null);
+      if (!customerName || customerName.trim() === '') {
+        customerName = "Valued Customer";
+      }
+
+      let vehicleStr = booking?.vehicleName || "";
+      if (!vehicleStr && booking?.vehicleBrand) {
+        vehicleStr = `${booking.vehicleBrand} ${booking.vehicleModel || ''}`.trim();
+      }
+      if (!vehicleStr) {
+        vehicleStr = "Standard Vehicle";
+      }
+
+      const vehicleNumberStr = booking?.plateNumber || booking?.vehicleRegNumber || "";
+
+      const subtotalVal = Number(invoice?.subtotal || booking?.estimatedCost || 0);
+      const discountVal = Number(invoice?.discount || 0);
+      const taxVal = Number(invoice?.tax || 0);
+      const advancePaidVal = Number(booking?.bookingFeePaid ? (booking?.bookingFee || 0) : 0);
+      const totalVal = Number(
+        invoice?.total !== undefined && invoice?.total !== null
+          ? invoice.total
+          : (subtotalVal + taxVal - discountVal - advancePaidVal)
+      );
+
+      const invProps: InvoiceDocumentProps = {
+        invoiceNumber: invoice?.invoiceId 
+          ? `INV-${String(invoice.invoiceId).substring(0, 8).toUpperCase()}` 
+          : `INV-${bookingId.substring(0, 8).toUpperCase()}`,
+        issuedDate: invoice?.issuedAt || booking?.bookingDate || new Date(),
+        status: invoice?.status || (booking?.status === 'COMPLETED' ? 'PAID' : (booking?.status || 'ISSUED')),
+        serviceCenter: {
+          name: booking?.serviceCenterName || "FIXZONE AUTO",
+          address: booking?.centerAddress || "123 Service Road, Auto City",
+          email: "contact@fixzone.lk",
+          phone: booking?.contactPhone || "+94 (11) 234-5678",
+        },
+        billTo: {
+          customerName: customerName,
+          vehicle: vehicleStr,
+          vehicleNumber: vehicleNumberStr,
+          customerId: booking?.customerId || invoice?.issuedToCustomerId || "N/A",
+        },
+        serviceDetails: {
+          centerName: booking?.serviceCenterName || "FixZone Auto Center",
+          bookingRef: bookingId,
+        },
+        lineItems: [
+          {
+            name: booking?.packageName || "Full Service Package",
+            description: booking?.packageDescription || "Base maintenance and labor cost",
+            price: subtotalVal,
+          },
+        ],
+        subtotal: subtotalVal,
+        discount: discountVal,
+        tax: taxVal,
+        advancePaid: advancePaidVal,
+        total: totalVal > 0 ? totalVal : subtotalVal,
+      };
+
+      setInvoiceModalData(invProps);
+      setIsInvoiceModalOpen(true);
     } catch (err) {
       showSnackbar("Invoice not available yet. Please try again later.", "info");
     } finally {
@@ -385,93 +480,16 @@ export default function MyBookingsPage() {
         description="View and manage all your service appointments"
       />
 
-      {/* Invoice Preview MUI Dialog */}
-      <Dialog 
-        open={Boolean(invoiceModal)} 
-        onClose={() => setInvoiceModal(null)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '1.5rem', overflow: 'hidden' } }}
-      >
-        {invoiceModal && (
-          <>
-            {/* Header */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-6 flex items-start justify-between">
-              <div>
-                <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-1">FixZone</p>
-                <h3 className="text-2xl font-bold text-white">Invoice</h3>
-                <p className="text-slate-400 text-sm mt-1">#{invoiceModal.invoiceId?.slice(0, 8)?.toUpperCase() || 'N/A'}</p>
-              </div>
-              <IconButton onClick={() => setInvoiceModal(null)} sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}>
-                <FiX className="w-6 h-6" />
-              </IconButton>
-            </div>
-
-            {/* Body */}
-            <DialogContent sx={{ p: 4, spaceY: 3 }}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-slate-50 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Status</p>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                    invoiceModal.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>{invoiceModal.status || 'PENDING'}</span>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Issued</p>
-                  <p className="text-sm font-semibold text-slate-800">
-                    {invoiceModal.issuedAt ? new Date(invoiceModal.issuedAt).toLocaleDateString() : '—'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Breakdown</p>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  <div className="flex justify-between px-4 py-3">
-                    <span className="text-sm text-slate-600">Subtotal</span>
-                    <span className="text-sm font-semibold text-slate-800">Rs. {Number(invoiceModal.subtotal || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between px-4 py-3">
-                    <span className="text-sm text-slate-600">Tax (8%)</span>
-                    <span className="text-sm font-semibold text-slate-800">Rs. {Number(invoiceModal.tax || 0).toLocaleString()}</span>
-                  </div>
-                  {Number(invoiceModal.discount || 0) > 0 && (
-                    <div className="flex justify-between px-4 py-3">
-                      <span className="text-sm text-emerald-600">Discount</span>
-                      <span className="text-sm font-semibold text-emerald-600">- Rs. {Number(invoiceModal.discount || 0).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between px-4 py-3 bg-orange-50">
-                    <span className="text-base font-bold text-slate-900">Total</span>
-                    <span className="text-base font-bold text-orange-600">Rs. {Number(invoiceModal.total || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </DialogContent>
-
-            {/* Footer */}
-            <DialogActions sx={{ px: 4, pb: 4, gap: 2 }}>
-              <Button
-                onClick={() => setInvoiceModal(null)}
-                variant="secondary"
-                className="flex-1 py-3"
-              >
-                Close
-              </Button>
-              <Button
-                onClick={() => window.print()}
-                variant="primary"
-                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 flex items-center justify-center gap-2"
-              >
-                <FiPrinter className="w-4 h-4" />
-                Print / Save PDF
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+      {/* Unified Professional Invoice Modal */}
+      <InvoiceModal
+        open={isInvoiceModalOpen}
+        onClose={() => {
+          setIsInvoiceModalOpen(false);
+          setInvoiceModalData(null);
+        }}
+        invoiceData={invoiceModalData}
+        isLoading={Boolean(invoiceLoading)}
+      />
 
       {/* Reschedule MUI Dialog */}
       <Dialog

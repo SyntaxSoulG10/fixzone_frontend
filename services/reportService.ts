@@ -9,6 +9,8 @@ export interface ReportItem {
     date: string;
     type: string;
     size: string;
+    source?: string;
+    description?: string;
     fileContentBase64?: string;
     downloadUrl: string;
     createdAt?: string;

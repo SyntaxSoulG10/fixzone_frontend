@@ -36,7 +36,7 @@ function SubscriptionExpiredModal({ open, onClose }: { open: boolean; onClose: (
             onClose={onClose}
             PaperProps={{ sx: { borderRadius: '1.25rem', p: 1, maxWidth: 400, width: '100%', textAlign: 'center' } }}
         >
-            <DialogTitle sx={{ pt: 3, fontWeight: 'bold' }}>
+            <DialogTitle component="div" sx={{ pt: 3, fontWeight: 'bold' }}>
                 <div className="w-14 h-14 mx-auto mb-2 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-2xl">
                     <FiAlertTriangle className="w-7 h-7" />
                 </div>

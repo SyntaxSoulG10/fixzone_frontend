@@ -11,7 +11,12 @@ import {
     CircularProgress,
     TextField,
     InputAdornment,
-    IconButton
+    IconButton,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Button
 } from "@mui/material";
 import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 import { useTheme } from "@mui/material/styles";
@@ -20,7 +25,8 @@ import {
     FiRefreshCw,
     FiSearch,
     FiX,
-    FiMail
+    FiMail,
+    FiFilter
 } from "react-icons/fi";
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import StatCard from "@/components/dashboard/StatCard";
@@ -50,34 +56,58 @@ interface Customer {
     totalSpent: number;
     lastVisit: string;
     status: string;
+    centerName: string;
+    visitedCenterIds: string[];
     avatarUrl: string;
 }
 
 export default function CustomersPage() {
     const theme = useTheme();
-    const { customersData, analyticsData } = useDashboardData();
+    const { customersData, centersData, invoicesData } = useDashboardData();
     const mapCustomers = (data: CustomerDTO[]): Customer[] => {
-        return (data || []).map((customer: CustomerDTO) => ({
-            id: customer.userId || customer.id || Math.random().toString(),
-            name: customer.fullName || customer.name || "Unknown Customer",
-            email: customer.email || "N/A",
-            visits: customer.visits || 0,
-            totalSpent: customer.totalSpent || 0,
-            lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
-            status: customer.status || "Active",
-            avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=ea580c&color=fff`
-        }));
+        const centersMap: Record<string, string> = {};
+        (centersData || []).forEach((c: any) => {
+            if (c.centerId) centersMap[c.centerId] = c.name;
+            if (c.id) centersMap[c.id] = c.name;
+        });
+
+        return (data || []).map((customer: CustomerDTO) => {
+            const cId = customer.userId || customer.id;
+            const matchedInvoices = (invoicesData || []).filter((inv: any) => 
+                (inv.issuedToCustomerId && String(inv.issuedToCustomerId) === String(cId)) || 
+                (inv.customerId && String(inv.customerId) === String(cId))
+            );
+            const visitedIds = Array.from(new Set(matchedInvoices.map((inv: any) => inv.centerId).filter(Boolean)));
+            const visitedNames = visitedIds.map((id: any) => centersMap[id]).filter(Boolean);
+            const primaryBranch = visitedNames.length > 0 ? visitedNames[0] : (centersData && centersData.length > 0 ? centersData[0]?.name : "All Branches");
+
+            return {
+                id: cId || Math.random().toString(),
+                name: customer.fullName || customer.name || "Unknown Customer",
+                email: customer.email || "N/A",
+                visits: customer.visits || 0,
+                totalSpent: customer.totalSpent || 0,
+                lastVisit: customer.lastLoginAt || customer.createdAt || "N/A",
+                status: customer.status || "Active",
+                centerName: primaryBranch,
+                visitedCenterIds: (visitedIds as string[]).length > 0 ? (visitedIds as string[]) : (centersData && centersData[0]?.centerId ? [centersData[0].centerId] : []),
+                avatarUrl: customer.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.fullName || customer.name || "U")}&background=ea580c&color=fff`
+            };
+        });
     };
 
     const [customers, setCustomers] = useState<Customer[]>(() => mapCustomers(customersData));
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCenterFilter, setSelectedCenterFilter] = useState("ALL");
+    const [loyaltyFilter, setLoyaltyFilter] = useState("ALL");
+    const [sortFilter, setSortFilter] = useState("DEFAULT");
     const [loading, setLoading] = useState<boolean>(() => !customersData || customersData.length === 0);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
         setCustomers(mapCustomers(customersData || []));
         setLoading(false);
-    }, [customersData]);
+    }, [customersData, centersData, invoicesData]);
 
     const formatCurrency = (amount: number) => {
         return `Rs. ${Number(amount || 0).toLocaleString('en-LK')}`;
@@ -93,14 +123,37 @@ export default function CustomersPage() {
     };
 
     const filteredCustomers = useMemo(() => {
-        if (!searchTerm.trim()) return customers;
         const q = searchTerm.toLowerCase().trim();
-        return customers.filter(c =>
-            c.name.toLowerCase().includes(q) ||
-            c.email.toLowerCase().includes(q) ||
-            c.status.toLowerCase().includes(q)
-        );
-    }, [customers, searchTerm]);
+        let result = customers.filter(c => {
+            const matchSearch = !q ||
+                c.name.toLowerCase().includes(q) ||
+                c.email.toLowerCase().includes(q) ||
+                c.status.toLowerCase().includes(q) ||
+                c.centerName.toLowerCase().includes(q);
+
+            const matchCenter = selectedCenterFilter === "ALL" ||
+                c.centerName === selectedCenterFilter ||
+                (c.visitedCenterIds && c.visitedCenterIds.includes(selectedCenterFilter));
+
+            const matchLoyalty = 
+                loyaltyFilter === "ALL" ? true :
+                loyaltyFilter === "REPEAT" ? c.visits > 1 :
+                loyaltyFilter === "FIRST_TIME" ? c.visits === 1 :
+                loyaltyFilter === "NEW_LEAD" ? c.visits === 0 :
+                loyaltyFilter === "VIP" ? (c.visits >= 5 || c.totalSpent >= 25000) :
+                loyaltyFilter === "SUSPENDED" ? (c.status || "").toUpperCase() === "SUSPENDED" : true;
+
+            return matchSearch && matchCenter && matchLoyalty;
+        });
+
+        if (sortFilter === "SPENT_DESC") {
+            result = [...result].sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0));
+        } else if (sortFilter === "VISITS_DESC") {
+            result = [...result].sort((a, b) => (b.visits || 0) - (a.visits || 0));
+        }
+
+        return result;
+    }, [customers, searchTerm, selectedCenterFilter, loyaltyFilter, sortFilter]);
 
     const columns: GridColDef[] = [
         {
@@ -138,12 +191,34 @@ export default function CustomersPage() {
             ),
         },
         {
+            field: 'centerName',
+            headerName: 'Branch / Center',
+            flex: 1.4,
+            minWidth: 190,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    <Chip
+                        label={params.value || "All Branches"}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            color: '#475569',
+                            borderColor: '#cbd5e1',
+                            bgcolor: 'rgba(241, 245, 249, 0.6)'
+                        }}
+                    />
+                </Box>
+            )
+        },
+        {
             field: 'visits',
             headerName: 'Completed Bookings',
             flex: 1,
             headerAlign: 'center',
             align: 'center',
-            minWidth: 140,
+            minWidth: 160,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                     <Chip
@@ -177,9 +252,9 @@ export default function CustomersPage() {
         },
         {
             field: 'lastVisit',
-            headerName: 'Last Activity',
+            headerName: 'Last Booking / Activity',
             flex: 1,
-            minWidth: 160,
+            minWidth: 180,
             renderCell: (params: GridRenderCellParams) => (
                 <Box display="flex" alignItems="center" height="100%">
                     <Typography variant="body2" color="text.secondary">
@@ -196,8 +271,32 @@ export default function CustomersPage() {
             align: 'center',
             minWidth: 130,
             renderCell: (params: GridRenderCellParams) => {
-                const isVIP = params.row.visits >= 10;
-                const label = isVIP ? 'VIP Client' : (params.value || 'Active');
+                const rawStatus = (params.row.status || '').toUpperCase();
+                const isSuspended = rawStatus === 'SUSPENDED';
+                const isInactive = rawStatus === 'INACTIVE';
+                const isVIP = !isSuspended && params.row.visits > 10;
+                
+                let label = 'Active';
+                let bgcolor = 'rgba(76, 175, 80, 0.12)';
+                let color = '#2e7d32';
+                let border = '1px solid rgba(76, 175, 80, 0.3)';
+
+                if (isSuspended) {
+                    label = 'Suspended';
+                    bgcolor = 'rgba(239, 68, 68, 0.12)';
+                    color = '#dc2626';
+                    border = '1px solid rgba(239, 68, 68, 0.3)';
+                } else if (isVIP) {
+                    label = 'VIP Client';
+                    bgcolor = 'rgba(234, 88, 12, 0.12)';
+                    color = '#c2410c';
+                    border = '1px solid rgba(234, 88, 12, 0.3)';
+                } else if (isInactive) {
+                    label = 'Inactive';
+                    bgcolor = '#f1f5f9';
+                    color = '#64748b';
+                    border = '1px solid #e2e8f0';
+                }
                 return (
                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
                         <Chip
@@ -206,9 +305,9 @@ export default function CustomersPage() {
                             sx={{
                                 fontWeight: 700,
                                 fontSize: '0.72rem',
-                                bgcolor: isVIP ? 'rgba(234, 88, 12, 0.12)' : 'rgba(76, 175, 80, 0.12)',
-                                color: isVIP ? '#c2410c' : '#2e7d32',
-                                border: `1px solid ${isVIP ? 'rgba(234, 88, 12, 0.3)' : 'rgba(76, 175, 80, 0.3)'}`
+                                bgcolor,
+                                color,
+                                border
                             }}
                         />
                     </Box>
@@ -259,7 +358,7 @@ export default function CustomersPage() {
                         title="Repeat Customers"
                         count={`${repeatRate}%`}
                         percentage={{
-                            color: 'info',
+                            color: 'primary',
                             amount: `${repeatCustomers} clients`,
                             label: 'with multiple completed bookings'
                         }}
@@ -270,18 +369,47 @@ export default function CustomersPage() {
             </Grid>
 
             <Card sx={{ p: 3, borderRadius: '1rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-                <Box mb={3} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+                {/* Header Row */}
+                <Box mb={2.5} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold" color="#1e293b">
                             Client List ({filteredCustomers.length})
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            Search and inspect customer loyalty across your company
+                            Search and inspect customer loyalty across your company branches
                         </Typography>
                     </Box>
+                    {(searchTerm || selectedCenterFilter !== "ALL" || loyaltyFilter !== "ALL" || sortFilter !== "DEFAULT") && (
+                        <Button 
+                            size="small" 
+                            variant="outlined" 
+                            onClick={() => { setSearchTerm(""); setSelectedCenterFilter("ALL"); setLoyaltyFilter("ALL"); setSortFilter("DEFAULT"); }}
+                            sx={{ 
+                                color: '#ea580c', 
+                                borderColor: 'rgba(234, 88, 12, 0.3)',
+                                bgcolor: 'rgba(234, 88, 12, 0.04)',
+                                fontWeight: 700, 
+                                textTransform: 'none', 
+                                borderRadius: '0.5rem',
+                                px: 1.75,
+                                py: 0.5,
+                                fontSize: '0.8rem',
+                                '&:hover': {
+                                    bgcolor: 'rgba(234, 88, 12, 0.08)',
+                                    borderColor: '#ea580c'
+                                }
+                            }}
+                        >
+                            Reset Filters
+                        </Button>
+                    )}
+                </Box>
+
+                {/* Filter Toolbar Row */}
+                <Box mb={3} display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
                     <TextField
                         size="small"
-                        placeholder="Search customers by name, email..."
+                        placeholder="Search customers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         InputProps={{
@@ -299,10 +427,44 @@ export default function CustomersPage() {
                             ) : null
                         }}
                         sx={{ 
-                            minWidth: { xs: '100%', sm: 300 },
+                            flex: { xs: '1 1 100%', sm: 1 },
+                            minWidth: { sm: 220 },
                             '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' }
                         }}
                     />
+
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 170 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>All Branches</InputLabel>
+                        <Select value={selectedCenterFilter} label="All Branches" onChange={(e) => setSelectedCenterFilter(e.target.value)}>
+                            <MenuItem value="ALL">All Service Centers</MenuItem>
+                            {(centersData || []).map((c: any) => (
+                                <MenuItem key={c.centerId || c.id || c.name} value={c.name}>
+                                    {c.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>Client Category</InputLabel>
+                        <Select value={loyaltyFilter} label="Client Category" onChange={(e) => setLoyaltyFilter(e.target.value)}>
+                            <MenuItem value="ALL">All Clients</MenuItem>
+                            <MenuItem value="REPEAT">Repeat Clients (2+)</MenuItem>
+                            <MenuItem value="FIRST_TIME">First-Time Clients (1)</MenuItem>
+                            <MenuItem value="NEW_LEAD">New Leads (0 Visits)</MenuItem>
+                            <MenuItem value="VIP">VIP Clients (High Value)</MenuItem>
+                            <MenuItem value="SUSPENDED">Suspended Clients</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 140 }, '& .MuiOutlinedInput-root': { borderRadius: '0.75rem' } }}>
+                        <InputLabel>Sort By</InputLabel>
+                        <Select value={sortFilter} label="Sort By" onChange={(e) => setSortFilter(e.target.value)}>
+                            <MenuItem value="DEFAULT">Default Order</MenuItem>
+                            <MenuItem value="SPENT_DESC">Highest Spent</MenuItem>
+                            <MenuItem value="VISITS_DESC">Most Bookings</MenuItem>
+                        </Select>
+                    </FormControl>
                 </Box>
 
                 {filteredCustomers.length === 0 ? (

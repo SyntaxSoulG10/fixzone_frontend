@@ -83,27 +83,18 @@ describe('Company Owner Dashboard Main Page', () => {
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
-  it('renders tabs and changes active tab on click', () => {
+  it('renders revenue trend and top performing centers in unified view', () => {
     render(<CompanyOwnerDashboard />)
     
-    const overviewTab = screen.getByRole('tab', { name: /overview/i })
-    const performanceTab = screen.getByRole('tab', { name: /performance/i })
-    
-    expect(overviewTab).toBeInTheDocument()
-    expect(performanceTab).toBeInTheDocument()
-    
-    // Click performance tab
-    fireEvent.click(performanceTab)
-    
-    // Tab changes
-    expect(performanceTab.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByText('Revenue Trend')).toBeInTheDocument()
+    expect(screen.getByText('Top Performing Centers')).toBeInTheDocument()
   })
 
   it('contains quick action links with correct routes', () => {
     render(<CompanyOwnerDashboard />)
     
     expect(screen.getByRole('heading', { name: 'Service Reports' }).closest('a')).toHaveAttribute('href', '/dashboard/company-owner/reports')
-    expect(screen.getByRole('heading', { name: 'Create Service Center' }).closest('a')).toHaveAttribute('href', '/dashboard/company-owner/centers')
+    expect(screen.getByRole('heading', { name: 'Manage Service Centers' }).closest('a')).toHaveAttribute('href', '/dashboard/company-owner/centers')
     expect(screen.getByRole('heading', { name: 'Manage Services' }).closest('a')).toHaveAttribute('href', '/dashboard/company-owner/services')
   })
 })

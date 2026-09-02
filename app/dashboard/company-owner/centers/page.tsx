@@ -41,7 +41,6 @@ import PhotoCameraRounded from "@mui/icons-material/PhotoCameraRounded";
 import OpenInNewRounded from "@mui/icons-material/OpenInNewRounded";
 import SearchRounded from "@mui/icons-material/SearchRounded";
 import ClearRounded from "@mui/icons-material/ClearRounded";
-import MyLocationRounded from "@mui/icons-material/MyLocationRounded";
 import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
 import StorefrontRounded from "@mui/icons-material/StorefrontRounded";
 import CheckCircleOutlineRounded from "@mui/icons-material/CheckCircleOutlineRounded";
@@ -397,7 +396,7 @@ function CenterCard({
                     <Grid size={{ xs: 4 }}>
                         <Box sx={{ p: 1, bgcolor: "#f8fafc", borderRadius: "0.75rem", textAlign: "center", border: "1px solid #f1f5f9" }}>
                             <Box display="flex" alignItems="center" justifyContent="center" gap={0.5} mb={0.25}>
-                                <GroupsRounded sx={{ color: "#3b82f6", fontSize: 16 }} />
+                                <GroupsRounded sx={{ color: "#ea580c", fontSize: 16 }} />
                                 <Typography variant="caption" color="#64748b" fontWeight="700">Team</Typography>
                             </Box>
                             <Typography variant="body2" color="#1e293b" fontWeight="800">
@@ -500,9 +499,7 @@ function CenterDialog({
     onChange,
     onImageChange,
     onImageRemove,
-    onSave,
-    onDetectLocation,
-    detecting
+    onSave
 }: {
     open: boolean;
     onClose: () => void;
@@ -512,8 +509,6 @@ function CenterDialog({
     onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onImageRemove: () => void;
     onSave: () => void;
-    onDetectLocation: () => void;
-    detecting: boolean;
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragOver, setDragOver] = useState(false);
@@ -666,31 +661,32 @@ function CenterDialog({
                         sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.75rem" } }}
                     />
 
-                    <Box>
-                        <TextField
-                            label="Physical Address / Location"
-                            placeholder="Enter the full street address or landmarks"
-                            name="location"
-                            value={formData.location}
-                            onChange={onChange}
-                            fullWidth
-                            multiline
-                            rows={2}
-                            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.75rem" } }}
-                        />
-                    </Box>
+                    <TextField
+                        label="Physical Address / Location"
+                        placeholder="Enter the full street address or landmarks"
+                        name="location"
+                        value={formData.location}
+                        onChange={onChange}
+                        fullWidth
+                        required
+                        multiline
+                        rows={2}
+                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.75rem" } }}
+                    />
 
                     <TextField
-                        label="Google Maps Share Link (Optional)"
+                        label="Google Maps Share Link"
                         placeholder="e.g. https://maps.app.goo.gl/..."
                         name="googleMapsUrl"
                         value={formData.googleMapsUrl || ""}
                         onChange={onChange}
                         fullWidth
+                        required
+                        helperText="Required: Direct Google Maps link for customer directions & navigation"
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <LocationOnRounded sx={{ color: "#94a3b8", fontSize: 20 }} />
+                                    <LocationOnRounded sx={{ color: BRAND_ORANGE, fontSize: 20 }} />
                                 </InputAdornment>
                             )
                         }}
@@ -830,7 +826,6 @@ export default function MyCentersPage() {
         mechanics: DEFAULT_MECHANICS,
         capacity: DEFAULT_CAPACITY
     });
-    const [detecting, setDetecting] = useState(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -855,117 +850,7 @@ export default function MyCentersPage() {
     const handleFormChange = (e: any) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-
-        if (name === "googleMapsUrl" && value) {
-            handleAutoDetectFromMapUrl(value);
-        }
     };
-
-    const handleAutoDetectFromMapUrl = async (url: string) => {
-        const isGoogleMaps = /maps\.(google|app\.goo\.gl)/.test(url) || /google\.[a-z.]+\/maps/.test(url);
-        if (!isGoogleMaps) return;
-
-        setDetecting(true);
-        try {
-            let resolvedUrl = url;
-            if (url.includes("maps.app.goo.gl") || url.includes("goo.gl/maps")) {
-                const response = await axios.get(`${APP_CONFIG.api.serviceCenters}/resolve-map-url`, {
-                    params: { url }
-                });
-                if (response.data && response.data.resolvedUrl) {
-                    resolvedUrl = response.data.resolvedUrl;
-                }
-            }
-
-            const atRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-            const matchAt = resolvedUrl.match(atRegex);
-            let lat: number | null = null;
-            let lng: number | null = null;
-
-            if (matchAt) {
-                lat = parseFloat(matchAt[1]);
-                lng = parseFloat(matchAt[2]);
-            } else {
-                const queryRegex = /[?&](query|q)=(-?\d+\.\d+),(-?\d+\.\d+)/;
-                const matchQuery = resolvedUrl.match(queryRegex);
-                if (matchQuery) {
-                    lat = parseFloat(matchQuery[2]);
-                    lng = parseFloat(matchQuery[3]);
-                }
-            }
-
-            if (lat !== null && lng !== null) {
-                const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-                    { headers: { "User-Agent": "FixZone-Client-Application" } }
-                );
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.display_name) {
-                        setFormData(prev => ({ ...prev, location: data.display_name }));
-                        setSnackbar({ open: true, message: "Location coordinates & address auto-detected from map link!", severity: "success" });
-                    } else {
-                        setFormData(prev => ({ ...prev, location: `${lat}, ${lng}` }));
-                        setSnackbar({ open: true, message: "Location coordinates auto-detected from map link!", severity: "success" });
-                    }
-                } else {
-                    setFormData(prev => ({ ...prev, location: `${lat}, ${lng}` }));
-                    setSnackbar({ open: true, message: "Location coordinates auto-detected from map link!", severity: "success" });
-                }
-            }
-        } catch (error) {
-            console.error("Auto detect from map URL failed", error);
-        } finally {
-            setDetecting(false);
-        }
-    };
-
-    const handleDetectLocation = () => {
-        if (typeof window === "undefined" || !navigator.geolocation) {
-            setSnackbar({ open: true, message: "Geolocation is not supported by your browser", severity: "error" });
-            return;
-        }
-
-        setDetecting(true);
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-                        { headers: { "User-Agent": "FixZone-Client-Application" } }
-                    );
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.display_name) {
-                            setFormData(prev => ({ ...prev, location: data.display_name }));
-                            setSnackbar({ open: true, message: "Location detected successfully!", severity: "success" });
-                            return;
-                        }
-                    }
-                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
-                    setSnackbar({ open: true, message: "Location coordinates detected!", severity: "success" });
-                } catch (error) {
-                    console.error("Reverse geocoding failed", error);
-                    setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
-                    setSnackbar({ open: true, message: "Location coordinates detected (address lookup failed)", severity: "success" });
-                } finally {
-                    setDetecting(false);
-                }
-            },
-            (error) => {
-                console.error("Geolocation error", error);
-                let msg = "Failed to get your location";
-                if (error.code === error.PERMISSION_DENIED) {
-                    msg = "Location access denied. Please enable location permissions.";
-                }
-                setSnackbar({ open: true, message: msg, severity: "error" });
-                setDetecting(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    };
-
     const mapCentersData = (data: any[]): ServiceCenterView[] => {
         return (data || []).map((c: any) => {
             let status: "Active" | "Inactive" | "Suspended" | "Pending" | "Rejected" = "Active";
@@ -1061,12 +946,31 @@ export default function MyCentersPage() {
     };
 
     const handleSave = async () => {
+        if (!isEditMode && !stripeConnected) {
+            setSnackbar({
+                open: true,
+                message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                severity: "error"
+            });
+            return;
+        }
+
         if (!formData.name || formData.name.trim().length < MIN_CENTER_NAME_LENGTH) {
             setSnackbar({ open: true, message: `Center name must be at least ${MIN_CENTER_NAME_LENGTH} characters`, severity: "error" });
             return;
         }
-        if (!formData.location) {
-            setSnackbar({ open: true, message: "Address/Location is required", severity: "error" });
+        if (!formData.location || !formData.location.trim()) {
+            setSnackbar({ open: true, message: "Physical address / location is required", severity: "error" });
+            return;
+        }
+
+        const trimmedMapsUrl = (formData.googleMapsUrl || "").trim();
+        if (!trimmedMapsUrl) {
+            setSnackbar({ open: true, message: "Google Maps link is required", severity: "error" });
+            return;
+        }
+        if (!/^https?:\/\//i.test(trimmedMapsUrl)) {
+            setSnackbar({ open: true, message: "Please enter a valid Google Maps link (starting with http:// or https://)", severity: "error" });
             return;
         }
 
@@ -1230,6 +1134,14 @@ export default function MyCentersPage() {
         <Box sx={{ pb: 6, px: { xs: 2, md: 4 } }}>
             <CentersHeader
                 onAdd={() => {
+                    if (!stripeConnected) {
+                        setSnackbar({
+                            open: true,
+                            message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                            severity: "error"
+                        });
+                        return;
+                    }
                     setIsEditMode(false);
                     setFormData({
                         name: "",
@@ -1247,6 +1159,27 @@ export default function MyCentersPage() {
                 }}
                 isExpired={isExpired}
             />
+
+            {!stripeConnected && (
+                <Alert
+                    severity="error"
+                    icon={<WarningAmberRounded sx={{ fontSize: 22 }} />}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={handleConnectStripe}
+                            disabled={stripeLoading}
+                            sx={{ fontWeight: 700, textTransform: "none", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "0.5rem", px: 1.75 }}
+                        >
+                            Set Up Stripe Account
+                        </Button>
+                    }
+                    sx={{ mb: 4, borderRadius: "1rem", fontWeight: 600, border: "1px solid #fca5a5" }}
+                >
+                    Stripe Account Required: You cannot create a service center branch or HQ until you have set up and connected your Stripe payout account.
+                </Alert>
+            )}
 
             {hasSuspendedCenters && (
                 <Alert
@@ -1367,6 +1300,14 @@ export default function MyCentersPage() {
                     description="You haven't added any service center branches yet, or none matched your search criteria."
                     actionLabel="Add First Branch"
                     onAction={() => {
+                        if (!stripeConnected) {
+                            setSnackbar({
+                                open: true,
+                                message: "Please complete your Stripe account setup first before creating a service center branch or HQ.",
+                                severity: "error"
+                            });
+                            return;
+                        }
                         setIsEditMode(false);
                         setFormData({
                             name: "",
@@ -1409,8 +1350,6 @@ export default function MyCentersPage() {
                 onImageChange={handleImageChange}
                 onImageRemove={handleImageRemove}
                 onSave={handleSave}
-                onDetectLocation={handleDetectLocation}
-                detecting={detecting}
             />
 
             {/* DELETE CENTER CONFIRMATION MODAL */}

@@ -42,12 +42,12 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
         <Card sx={{ 
             height: '100%', 
             overflow: 'visible', 
-            mt: 4, 
-            mb: 2, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            borderRadius: 3, 
-            boxShadow: theme.shadows[2] 
+            mt: 3, 
+            borderRadius: '1rem', 
+            border: '1px solid #e2e8f0', 
+            boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+            display: 'flex',
+            flexDirection: 'column'
         }}>
             <Box
                 sx={{
@@ -55,32 +55,32 @@ export default function ChartCard({ title, description, date, chart, color = 'pr
                     boxShadow: getShadow(validColor),
                     color: validColor === 'light' ? 'text.primary' : '#ffffff',
                     borderRadius: '0.75rem',
-                    padding: '1rem',
+                    p: 2,
                     position: 'relative',
-                    mt: '-32px',
+                    mt: '-24px',
                     mx: 2,
-                    height: '13rem',
-                    overflow: 'hidden'
+                    height: 210,
+                    boxSizing: 'border-box'
                 }}
             >
-                <Box sx={{ height: '100%', minHeight: 200, width: '100%' }}>
+                <Box sx={{ height: '100%', width: '100%' }}>
                     {chart}
                 </Box>
             </Box>
-            <Box p={2.5} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box p={2.5} pt={1.5} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <Box>
-                    <Typography variant="h6" textTransform="capitalize" fontWeight="bold">
+                    <Typography variant="h6" textTransform="capitalize" fontWeight="bold" color="text.primary">
                         {title}
                     </Typography>
-                    <Typography component="div" variant="button" color="text.secondary" fontWeight="light">
+                    <Typography component="div" variant="button" color="text.secondary" fontWeight="light" sx={{ mt: 0.5 }}>
                         {description}
                     </Typography>
                 </Box>
                 <Box sx={{ mt: 1.5 }}>
                     <Divider sx={{ my: 1.5 }} />
                     <Box display="flex" alignItems="center" color="text.secondary">
-                        <FiClock style={{ marginRight: '5px' }} />
-                        <Typography variant="button" fontWeight="light" color="text.secondary">
+                        <FiClock style={{ marginRight: '6px' }} />
+                        <Typography variant="caption" fontWeight="medium" color="text.secondary">
                             {date}
                         </Typography>
                     </Box>
