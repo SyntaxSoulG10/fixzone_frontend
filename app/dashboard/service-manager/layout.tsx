@@ -8,7 +8,7 @@ export default function ServiceManagerLayout({ children }: { children: React.Rea
     if (isLoading || !isAuthorized) {
         return (
             <div className="flex flex-col items-center justify-center h-screen space-y-4">
-                <FiLoader className="w-8 h-8 text-blue-600 animate-spin" />
+                <FiLoader className="w-8 h-8 text-orange-600 animate-spin" />
                 <p className="text-slate-500 font-medium">Verifying Access...</p>
             </div>
         );

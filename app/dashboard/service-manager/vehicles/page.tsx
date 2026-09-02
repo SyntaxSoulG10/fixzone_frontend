@@ -12,7 +12,8 @@ import {
     FiCheckCircle, 
     FiXCircle, 
     FiSliders, 
-    FiClock
+    FiClock,
+    FiLoader
 } from "react-icons/fi";
 import { useDashboardData } from "../../../../context/DashboardDataContext";
 import * as bookingService from "../../../../services/bookingService";
@@ -39,6 +40,7 @@ export default function ServiceLaneManagePage() {
     
     const [lanes, setLanes] = useState<Lane[]>([]);
     const [isClient, setIsClient] = useState(false);
+    const [isLoadingLanes, setIsLoadingLanes] = useState(true);
     const [centerInfo, setCenterInfo] = useState<any>(null);
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [isRemoveSelectOpen, setIsRemoveSelectOpen] = useState(false);
@@ -174,6 +176,8 @@ export default function ServiceLaneManagePage() {
             }
         } catch (error) {
             console.error("Failed to fetch service center details:", error);
+        } finally {
+            setIsLoadingLanes(false);
         }
     }, [managerCenterId, bookingsData]);
 
@@ -340,7 +344,14 @@ export default function ServiceLaneManagePage() {
         setManageLaneId(null);
     };
 
-    if (!isClient) return null;
+    if (!isClient || isLoadingLanes) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[350px] space-y-4">
+                <FiLoader className="w-8 h-8 text-orange-600 animate-spin" />
+                <p className="text-slate-500 font-medium">Service lanes loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

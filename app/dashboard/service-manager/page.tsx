@@ -12,6 +12,28 @@ import FeedbackSnackbar from "@/components/UI/FeedbackSnackbar";
 
 const normalizeStatus = (s: any) => String(s || "").toUpperCase().trim().replace(/[\s-]+/g, "_");
 
+const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const isDateToday = (dStr: any) => {
+    if (!dStr) return false;
+    try {
+        const today = getTodayStr();
+        const str = String(dStr).split("T")[0].trim();
+        if (str === today) return true;
+        const dateObj = new Date(dStr);
+        if (!isNaN(dateObj.getTime())) {
+            const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+            return localStr === today;
+        }
+        return false;
+    } catch {
+        return false;
+    }
+};
+
 export default function ServiceManagerDashboard() {
     const { bookingsData, invoicesData, hasDataInitialized, refreshBookings, refreshInvoices, managersData, refreshAll } = useDashboardData();
     const [activeBookings, setActiveBookings] = useState<any[]>([]);
@@ -122,35 +144,16 @@ export default function ServiceManagerDashboard() {
     useEffect(() => {
         if (hasDataInitialized) {
             console.log("[Dashboard] bookingsData received:", bookingsData);
-            const d = new Date();
-            const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const managerCenterId = managersData?.[0]?.managedCenterId;
             
             // Strictly isolate to manager's center if present
             const centerBookings = (bookingsData || []).filter((b: any) => !managerCenterId || b.centerId === managerCenterId);
 
-            const isDateToday = (dStr: any) => {
-                if (!dStr) return false;
-                try {
-                    const str = String(dStr).split("T")[0].trim();
-                    if (str === today) return true;
-                    const dateObj = new Date(dStr);
-                    if (!isNaN(dateObj.getTime())) {
-                        const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-                        if (localStr === today) return true;
-                        const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
-                        if (diffHours <= 24) return true;
-                    }
-                    return false;
-                } catch {
-                    return false;
-                }
-            };
-
+            // Upcoming bookings for today strictly based on scheduled booking date
             const upcoming = centerBookings.filter((b: any) => {
                 const s = normalizeStatus(b.status);
                 const isUpcomingStatus = s === "PENDING_PAYMENT" || s === "CONFIRMED" || s === "PENDING";
-                return isUpcomingStatus && (isDateToday(b.bookingDate) || isDateToday(b.createdAt));
+                return isUpcomingStatus && isDateToday(b.bookingDate);
             });
             
             // Map of paid booking IDs from invoicesData
@@ -161,7 +164,7 @@ export default function ServiceManagerDashboard() {
                 }
             });
 
-            // Keep all IN_PROGRESS, and today's / recent COMPLETED, PAID, and CANCELLED in active list
+            // Keep all IN_PROGRESS, and today's COMPLETED, PAID, and CANCELLED in active list
             const active = centerBookings
                 .filter((b: any) => {
                     const s = normalizeStatus(b.status);
@@ -169,7 +172,7 @@ export default function ServiceManagerDashboard() {
                     if (s === "IN_PROGRESS") return true;
                     
                     if (s === "COMPLETED" || s === "CANCELLED" || s === "PAID" || isPaidByInvoice) {
-                        return isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+                        return isDateToday(b.updatedAt) || isDateToday(b.bookingDate);
                     }
                     return false;
                 })
@@ -184,7 +187,7 @@ export default function ServiceManagerDashboard() {
             // Filter invoices issued today for this center
             const centerInvoices = (invoicesData || []).filter((inv: any) => {
                 const invDate = inv.issuedAt ? inv.issuedAt.split("T")[0] : (inv.createdDate || inv.createdAt ? String(inv.createdDate || inv.createdAt).split("T")[0] : null);
-                const matchesDate = isDateToday(invDate) || isDateToday(inv.issuedAt) || isDateToday(inv.createdAt) || isDateToday(inv.updatedAt);
+                const matchesDate = isDateToday(invDate) || isDateToday(inv.issuedAt) || isDateToday(inv.updatedAt);
                 const matchesCenter = !managerCenterId || inv.centerId === managerCenterId;
                 return matchesDate && matchesCenter;
             });
@@ -197,33 +200,13 @@ export default function ServiceManagerDashboard() {
     }, [hasDataInitialized, bookingsData, invoicesData, managersData]);
 
     const completedCount = useMemo(() => {
-        const d = new Date();
-        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const managerCenterId = managersData?.[0]?.managedCenterId;
-
-        const isDateToday = (dStr: any) => {
-            if (!dStr) return false;
-            try {
-                const str = String(dStr).split("T")[0].trim();
-                if (str === today) return true;
-                const dateObj = new Date(dStr);
-                if (!isNaN(dateObj.getTime())) {
-                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-                    if (localStr === today) return true;
-                    const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
-                    if (diffHours <= 24) return true;
-                }
-                return false;
-            } catch {
-                return false;
-            }
-        };
 
         return (bookingsData || []).filter((b: any) => {
             const s = normalizeStatus(b.status);
             if (s !== "COMPLETED" && s !== "PAID") return false;
             if (managerCenterId && b.centerId !== managerCenterId) return false;
-            return isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+            return isDateToday(b.updatedAt) || isDateToday(b.bookingDate);
         }).length;
     }, [bookingsData, managersData]);
 
@@ -237,28 +220,7 @@ export default function ServiceManagerDashboard() {
 
     // Income Today: Total of all services that have PAID status belonging to current date
     const totalIncome = useMemo(() => {
-        const d = new Date();
-        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const managerCenterId = managersData?.[0]?.managedCenterId;
-
-        const isDateToday = (dStr: any) => {
-            if (!dStr) return false;
-            try {
-                const str = String(dStr).split("T")[0].trim();
-                if (str === today) return true;
-                const dateObj = new Date(dStr);
-                if (!isNaN(dateObj.getTime())) {
-                    const localStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-                    if (localStr === today) return true;
-                    const diffHours = Math.abs(d.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
-                    if (diffHours <= 24) return true;
-                }
-                return false;
-            } catch {
-                return false;
-            }
-        };
-
         const countedBookingIds = new Set<string>();
         let income = 0;
 
@@ -268,7 +230,7 @@ export default function ServiceManagerDashboard() {
             const isPaid = String(inv.status || "").toUpperCase() === "PAID";
             if (!isPaid) return;
 
-            const isToday = isDateToday(inv.updatedAt) || isDateToday(inv.issuedAt) || isDateToday(inv.createdAt) || isDateToday(inv.createdDate);
+            const isToday = isDateToday(inv.updatedAt) || isDateToday(inv.issuedAt) || isDateToday(inv.createdDate);
             if (isToday) {
                 const amt = Number(inv.total) || Number(inv.amount) || Number(inv.subtotal) || 0;
                 income += amt;
@@ -283,7 +245,7 @@ export default function ServiceManagerDashboard() {
             if (!isPaid) return;
             if (b.bookingId && countedBookingIds.has(String(b.bookingId))) return;
 
-            const isToday = isDateToday(b.updatedAt) || isDateToday(b.bookingDate) || isDateToday(b.createdAt);
+            const isToday = isDateToday(b.updatedAt) || isDateToday(b.bookingDate);
             if (isToday) {
                 const cost = Number(b.estimatedCost) || Number(b.totalAmount) || Number(b.bookingFee) || 0;
                 income += cost;
@@ -330,7 +292,7 @@ export default function ServiceManagerDashboard() {
     if (!hasDataInitialized) {
         return (
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <FiLoader className="w-8 h-8 text-blue-600 animate-spin" />
+                <FiLoader className="w-8 h-8 text-orange-600 animate-spin" />
                 <p className="text-slate-500 font-medium">Loading Dashboard Data...</p>
             </div>
         );
